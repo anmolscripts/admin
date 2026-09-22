@@ -1,0 +1,61 @@
+|-- .gitignore
+|-- app
+    |-- app.js
+    |-- views
+        |-- dashboard
+            |-- index.ejs
+        |-- layouts
+            |-- footer.ejs
+            |-- header.ejs
+|-- assets
+    |-- css
+        |-- main.css
+    |-- images
+        |-- avatar.png
+        |-- favicon.ico
+        |-- spark-admin-free.png
+        |-- user_1.jpg
+        |-- user_2.jpg
+        |-- user_3.jpg
+        |-- user_4.jpg
+        |-- user_5.jpg
+        |-- user_6.jpg
+        |-- user_7.jpg
+        |-- user_8.jpg
+    |-- js
+        |-- auth.js
+        |-- dashboard.js
+    |-- libs
+        |-- apexcharts
+            |-- apexcharts.css
+            |-- apexcharts.min.js
+        |-- bootstrap
+            |-- css
+                |-- bootstrap.min.css
+            |-- js
+                |-- bootstrap.bundle.min.js
+        |-- bootstrap-icons
+            |-- bootstrap-icons.css
+            |-- fonts
+                |-- bootstrap-icons.woff
+                |-- bootstrap-icons.woff2
+        |-- flatpickr
+            |-- flatpickr.min.css
+            |-- flatpickr.min.js
+|-- documentation
+    |-- assets
+        |-- css
+            |-- docs.css
+        |-- js
+            |-- docs.js
+    |-- index.html
+|-- index.html
+|-- package-lock.json
+|-- package.json
+|-- page-404.html
+|-- page-blank.html
+|-- page-login.html
+|-- README.md
+|-- tables-basic.html
+|-- ui-buttons.html
+|-- ui-forms.html
