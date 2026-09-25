@@ -11,3 +11,17 @@ generator client {
 datasource db {
   provider = "mysql"
 }
+
+
+model User {
+    id        Int      @id @default(autoincrement())
+    name      String   @db.VarChar(100)
+    email     String   @unique @db.VarChar(150)
+    password  String   @db.VarChar(255)
+    role      String   @default("ADMIN") @db.VarChar(30)
+    active    Boolean  @default(true)
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@map("users")
+}
