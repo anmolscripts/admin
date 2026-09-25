@@ -5,6 +5,7 @@ require('dotenv').config();
 
 const webRoutes = require('./routes/web.routes');
 const authRoutes = require('./routes/auth.routes');
+const adminRoutes = require('./routes/admin.routes');
 
 const {
     notFound,
@@ -48,6 +49,7 @@ app.use((req, res, next) => {
 // Routes
 app.use('/', authRoutes);
 app.use('/', webRoutes);
+app.use('/', adminRoutes);
 
 
 // Error handling

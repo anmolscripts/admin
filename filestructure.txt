@@ -1,9 +1,21 @@
 |-- .gitignore
 |-- app
     |-- app.js
+    |-- middleware
+        |-- auth.middleware.js
+        |-- error.middleware.js
+    |-- routes
+        |-- admin.routes.js
+        |-- auth.routes.js
+        |-- web.routes.js
     |-- views
+        |-- auth
+            |-- login.ejs
         |-- dashboard
             |-- index.ejs
+        |-- errors
+            |-- 404.ejs
+            |-- 500.ejs
         |-- layouts
             |-- footer.ejs
             |-- header.ejs
