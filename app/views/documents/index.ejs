@@ -1,0 +1,219 @@
+<% 
+  const headerActionHtml = `
+    <div class="dropdown">
+      <button class="btn-new-doc-toggle dropdown-toggle" type="button" id="dropdownNewDoc" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Create new quotation or invoice">
+        <i class="bi bi-plus-lg"></i>
+        <span>New Document</span>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end dropdown-menu-new-doc shadow-sm" aria-labelledby="dropdownNewDoc">
+        <li>
+          <a class="dropdown-item" href="#" id="btn-new-quotation" role="button">
+            <i class="bi bi-file-earmark-text text-info"></i>
+            <span>New Quotation</span>
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item" href="#" id="btn-new-invoice" role="button">
+            <i class="bi bi-receipt text-primary"></i>
+            <span>New Invoice</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  `;
+%>
+
+<%- include('../layouts/header', { 
+    pageTitle: 'Quotations & Invoices', 
+    pageSubtitle: 'Search, filter, inspect and manage quotations and invoices with precision.', 
+    extraCss: '<link rel="stylesheet" href="/css/documents.css">', 
+    headerAction: headerActionHtml 
+}) %>
+
+<!-- START: Filter & Search Toolbar Card -->
+<section class="documents-toolbar-card" aria-label="Document filters and search">
+  <div class="row g-3 align-items-end toolbar-row">
+    <!-- Search Query Input -->
+    <div class="col-12 col-lg-4">
+      <label for="search-input" class="toolbar-control-label">Search</label>
+      <div class="toolbar-search-group">
+        <i class="bi bi-search toolbar-search-icon" aria-hidden="true"></i>
+        <input 
+          type="search" 
+          class="form-control toolbar-search-input" 
+          id="search-input" 
+          placeholder="Search document no or client..." 
+          aria-label="Search by document number or client name" 
+          autocomplete="off"
+        />
+      </div>
+    </div>
+
+    <!-- Document Type Filter -->
+    <div class="col-6 col-md-3 col-lg-2">
+      <label for="filter-type" class="toolbar-control-label">Document Type</label>
+      <select class="form-select toolbar-select" id="filter-type" aria-label="Filter by document type">
+        <option value="">All Types</option>
+        <option value="QUOTATION">Quotation</option>
+        <option value="INVOICE">Invoice</option>
+      </select>
+    </div>
+
+    <!-- Lifecycle Status Filter -->
+    <div class="col-6 col-md-3 col-lg-2">
+      <label for="filter-status" class="toolbar-control-label">Status</label>
+      <select class="form-select toolbar-select" id="filter-status" aria-label="Filter by document lifecycle status">
+        <option value="">All Statuses</option>
+        <option value="ACTIVE">Active</option>
+        <option value="INACTIVE">Inactive</option>
+        <option value="VOID">Void</option>
+        <option value="DELETED">Deleted (Trash)</option>
+      </select>
+    </div>
+
+    <!-- Date Range: From -->
+    <div class="col-6 col-md-3 col-lg-1-5 col-xl">
+      <label for="filter-date-from" class="toolbar-control-label">Date From</label>
+      <input 
+        type="date" 
+        class="form-control toolbar-date-input" 
+        id="filter-date-from" 
+        aria-label="Filter documents from date"
+      />
+    </div>
+
+    <!-- Date Range: To -->
+    <div class="col-6 col-md-3 col-lg-1-5 col-xl">
+      <label for="filter-date-to" class="toolbar-control-label">Date To</label>
+      <input 
+        type="date" 
+        class="form-control toolbar-date-input" 
+        id="filter-date-to" 
+        aria-label="Filter documents to date"
+      />
+    </div>
+
+    <!-- Clear Filters Button -->
+    <div class="col-12 col-md-auto d-flex align-items-end">
+      <button 
+        type="button" 
+        class="btn-clear-filters w-100" 
+        id="btn-clear-filters" 
+        aria-label="Reset all search filters"
+      >
+        <i class="bi bi-x-circle" aria-hidden="true"></i>
+        <span>Clear Filters</span>
+      </button>
+    </div>
+  </div>
+</section>
+<!-- END: Filter & Search Toolbar Card -->
+
+<!-- START: Main Documents Table Card -->
+<section class="documents-table-card" id="documents-table-card" aria-label="Documents data table">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0 document-table" id="documents-table" aria-label="Quotations and Invoices list">
+      <thead>
+        <tr>
+          <th scope="col" class="th-doc-no">Document No</th>
+          <th scope="col" class="th-type">Type</th>
+          <th scope="col" class="th-client">Client</th>
+          <th scope="col" class="th-date">Document Date</th>
+          <th scope="col" class="th-due">Due/Expiry Date</th>
+          <th scope="col" class="th-amount text-end">Amount</th>
+          <th scope="col" class="th-status text-center">Status</th>
+          <th scope="col" class="th-actions text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="documents-tbody" aria-live="polite">
+        <!-- Rendered dynamically by documents.js with safe DOM elements -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- START: Pagination Bar -->
+  <div class="documents-pagination-bar" id="documents-pagination-bar" aria-label="Table pagination navigation">
+    <div class="pagination-info-text" id="pagination-info">
+      Loading documents...
+    </div>
+
+    <div class="d-flex align-items-center gap-3">
+      <div class="pagination-size-wrapper">
+        <label for="page-size-select" class="visually-hidden">Documents per page</label>
+        <span>Per page:</span>
+        <select class="form-select form-select-sm pagination-size-select" id="page-size-select" aria-label="Select number of documents per page">
+          <option value="10">10</option>
+          <option value="25">25</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+      </div>
+
+      <nav class="pagination-buttons-nav" aria-label="Pagination page navigation">
+        <button 
+          type="button" 
+          class="btn-page-nav" 
+          id="btn-prev-page" 
+          disabled 
+          aria-label="Go to previous page"
+        >
+          <i class="bi bi-chevron-left" aria-hidden="true"></i>
+          <span>Previous</span>
+        </button>
+
+        <span class="page-indicator-badge" id="page-indicator" aria-current="page">
+          Page 1 of 1
+        </span>
+
+        <button 
+          type="button" 
+          class="btn-page-nav" 
+          id="btn-next-page" 
+          disabled 
+          aria-label="Go to next page"
+        >
+          <span>Next</span>
+          <i class="bi bi-chevron-right" aria-hidden="true"></i>
+        </button>
+      </nav>
+    </div>
+  </div>
+  <!-- END: Pagination Bar -->
+</section>
+<!-- END: Main Documents Table Card -->
+
+<!-- START: Empty State Container (Hidden by default) -->
+<section class="documents-table-card table-state-container d-none" id="empty-state" aria-label="No documents state">
+  <div class="state-icon-wrapper state-icon-empty">
+    <i class="bi bi-file-earmark-x" aria-hidden="true"></i>
+  </div>
+  <h2 class="state-title">No documents found</h2>
+  <p class="state-desc">
+    There are currently no quotations or invoices matching your criteria.
+  </p>
+  <button type="button" class="btn btn-outline-secondary d-none" id="btn-empty-clear">
+    <i class="bi bi-arrow-counterclockwise me-1" aria-hidden="true"></i>
+    Clear all filters
+  </button>
+</section>
+<!-- END: Empty State Container -->
+
+<!-- START: Error State Container (Hidden by default) -->
+<section class="documents-table-card table-state-container d-none" id="error-state" role="alert" aria-label="Error loading documents">
+  <div class="state-icon-wrapper state-icon-error">
+    <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+  </div>
+  <h2 class="state-title">Unable to Load Documents</h2>
+  <p class="state-desc" id="error-message">
+    An error occurred while communicating with the server.
+  </p>
+  <button type="button" class="btn btn-primary" id="btn-retry">
+    <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>
+    Retry
+  </button>
+</section>
+<!-- END: Error State Container -->
+
+<%- include('../layouts/footer', { 
+    extraJs: '<script src="/js/documents.js"></script>' 
+}) %>

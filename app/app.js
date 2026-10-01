@@ -8,6 +8,7 @@ const { csrfProtection } = require('./middleware/csrf.middleware');
 const webRoutes = require('./routes/web.routes');
 const authRoutes = require('./routes/auth.routes');
 const adminRoutes = require('./routes/admin.routes');
+const invoiceRoutes = require('./routes/invoice.routes');
 
 const {
     notFound,
@@ -44,6 +45,7 @@ app.use((req, res, next) => {
 app.use('/', authRoutes);
 app.use('/', webRoutes);
 app.use('/', adminRoutes);
+app.use('/api', invoiceRoutes);
 
 // Error handling
 app.use(notFound);

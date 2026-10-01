@@ -35,11 +35,13 @@ function handleControllerError(err, res, next) {
  */
 async function listInvoices(req, res, next) {
     try {
-        const { search, status, type, documentType, page, limit } = req.query;
+        const { search, status, type, documentType, dateFrom, dateTo, page, limit } = req.query;
         const result = await invoiceService.listInvoices({
             documentType: type || documentType,
             search,
             status,
+            dateFrom,
+            dateTo,
             page,
             limit
         });

@@ -1047,7 +1047,7 @@ async function copyDocument(id) {
 /**
  * List documents with search, documentType filtering, status filtering, and pagination.
  */
-async function listInvoices({ documentType, search, status, page = 1, limit = 10 } = {}) {
+async function listInvoices({ documentType, search, status, dateFrom, dateTo, page = 1, limit = 10 } = {}) {
     const parsedPage = Math.max(1, parseInt(page, 10) || 1);
     const parsedLimit = Math.min(100, Math.max(1, parseInt(limit, 10) || 10));
     const skip = (parsedPage - 1) * parsedLimit;
@@ -1070,6 +1070,22 @@ async function listInvoices({ documentType, search, status, page = 1, limit = 10
         const normalized = status.trim().toUpperCase();
         if (ALLOWED_STATUSES.includes(normalized)) {
             where.status = normalized;
+        }
+    }
+
+    if (dateFrom || dateTo) {
+        where.invoiceDate = {};
+        if (dateFrom) {
+            const dFrom = new Date(dateFrom);
+            if (!isNaN(dFrom.getTime())) {
+                where.invoiceDate.gte = dFrom;
+            }
+        }
+        if (dateTo) {
+            const dTo = new Date(dateTo);
+            if (!isNaN(dTo.getTime())) {
+                where.invoiceDate.lte = dTo;
+            }
         }
     }
 

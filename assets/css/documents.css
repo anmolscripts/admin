@@ -1,0 +1,550 @@
+/* ========================================================================
+   SPARK ADMIN - QUOTATION & INVOICE LISTING STYLES
+   Responsive, Accessible, Application-Focused Document Management
+   ======================================================================== */
+
+/* ---------------------------------------------------------------------
+   1. Document Header & New Document Button
+   --------------------------------------------------------------------- */
+.btn-new-doc-toggle {
+    background-color: var(--brand-forest-dark, #051C12);
+    color: #FFFFFF;
+    border: none;
+    padding: 0.65rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border-radius: var(--radius-md, 10px);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 4px 12px rgba(5, 28, 18, 0.15);
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-new-doc-toggle:hover,
+.btn-new-doc-toggle:focus {
+    background-color: var(--brand-forest-light, #1A3E30);
+    color: var(--brand-lime, #B4F105);
+    box-shadow: 0 6px 16px rgba(5, 28, 18, 0.22);
+}
+
+.btn-new-doc-toggle i.bi-plus-lg {
+    font-size: 1rem;
+    color: var(--brand-lime, #B4F105);
+}
+
+.dropdown-menu-new-doc {
+    min-width: 200px;
+    border-radius: var(--radius-lg, 14px);
+    border: 1px solid var(--border-light, #E9EFEF);
+    box-shadow: 0 10px 30px rgba(11, 19, 15, 0.08);
+    padding: 0.5rem;
+}
+
+.dropdown-menu-new-doc .dropdown-item {
+    border-radius: var(--radius-sm, 6px);
+    padding: 0.6rem 0.85rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-main, #0B130F);
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    transition: all 0.15s ease;
+}
+
+.dropdown-menu-new-doc .dropdown-item:hover {
+    background-color: rgba(180, 241, 5, 0.15);
+    color: var(--brand-forest-dark, #051C12);
+}
+
+/* ---------------------------------------------------------------------
+   2. Filter & Search Toolbar
+   --------------------------------------------------------------------- */
+.documents-toolbar-card {
+    background-color: #FFFFFF;
+    border: 1px solid var(--border-light, #E9EFEF);
+    border-radius: var(--radius-lg, 14px);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(11, 19, 15, 0.02);
+}
+
+.toolbar-search-group {
+    position: relative;
+    flex-grow: 1;
+}
+
+.toolbar-search-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted-green, #6C7E75);
+    pointer-events: none;
+    font-size: 0.95rem;
+}
+
+.toolbar-search-input {
+    padding-left: 2.5rem !important;
+    border-radius: var(--radius-md, 10px);
+    border: 1px solid var(--border-light, #E9EFEF);
+    font-size: 0.875rem;
+    background-color: #F8FAF9;
+    transition: all 0.2s ease;
+    height: 42px;
+}
+
+.toolbar-search-input:focus {
+    background-color: #FFFFFF;
+    border-color: var(--brand-forest-light, #1A3E30);
+    box-shadow: 0 0 0 3px rgba(7, 47, 31, 0.1);
+    outline: none;
+}
+
+.toolbar-control-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted-green, #6C7E75);
+    margin-bottom: 0.25rem;
+    display: block;
+}
+
+.toolbar-select,
+.toolbar-date-input {
+    border-radius: var(--radius-md, 10px);
+    border: 1px solid var(--border-light, #E9EFEF);
+    font-size: 0.875rem;
+    height: 42px;
+    background-color: #F8FAF9;
+    color: var(--text-main, #0B130F);
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.toolbar-select:focus,
+.toolbar-date-input:focus {
+    background-color: #FFFFFF;
+    border-color: var(--brand-forest-light, #1A3E30);
+    box-shadow: 0 0 0 3px rgba(7, 47, 31, 0.1);
+    outline: none;
+}
+
+.btn-clear-filters {
+    height: 42px;
+    border-radius: var(--radius-md, 10px);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-muted-green, #6C7E75);
+    background-color: #F8FAF9;
+    border: 1px solid var(--border-light, #E9EFEF);
+    padding: 0 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.btn-clear-filters:hover {
+    color: #DC2626;
+    background-color: #FEE2E2;
+    border-color: #FECACA;
+}
+
+/* ---------------------------------------------------------------------
+   3. Document Table & Card Container
+   --------------------------------------------------------------------- */
+.documents-table-card {
+    background-color: #FFFFFF;
+    border: 1px solid var(--border-light, #E9EFEF);
+    border-radius: var(--radius-lg, 14px);
+    box-shadow: 0 4px 16px rgba(11, 19, 15, 0.03);
+    overflow: hidden;
+}
+
+.document-table {
+    margin-bottom: 0;
+    width: 100%;
+}
+
+.document-table thead th {
+    background-color: #F8FAF9;
+    color: var(--text-muted-green, #6C7E75);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0.95rem 1.25rem;
+    border-bottom: 1px solid var(--border-light, #E9EFEF);
+    white-space: nowrap;
+}
+
+.document-table tbody td {
+    padding: 1rem 1.25rem;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--border-light, #E9EFEF);
+    font-size: 0.875rem;
+    color: var(--text-main, #0B130F);
+}
+
+.document-table tbody tr {
+    transition: background-color 0.15s ease-in-out;
+}
+
+.document-table tbody tr:hover {
+    background-color: rgba(244, 246, 245, 0.6);
+}
+
+/* Specific Columns */
+.doc-number-cell {
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-weight: 600;
+    color: var(--brand-forest-dark, #051C12);
+    letter-spacing: 0.02em;
+}
+
+.doc-client-cell {
+    font-weight: 600;
+    color: var(--text-main, #0B130F);
+    max-width: 220px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.doc-date-cell {
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.825rem;
+    color: var(--text-muted-green, #6C7E75);
+    white-space: nowrap;
+}
+
+.doc-amount-cell {
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-weight: 700;
+    font-size: 0.925rem;
+    color: var(--text-main, #0B130F);
+    text-align: right;
+    white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------------
+   4. Status & Type Badges (Text is always visible)
+   --------------------------------------------------------------------- */
+.badge-doc-type {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 50rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.badge-type-quotation {
+    background-color: #E0F2FE;
+    color: #0369A1;
+    border: 1px solid #BAE6FD;
+}
+
+.badge-type-invoice {
+    background-color: #EDE9FE;
+    color: #6D28D9;
+    border: 1px solid #DDD6FE;
+}
+
+.badge-doc-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 50rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.badge-status-active {
+    background-color: #DCFCE7;
+    color: #15803D;
+    border: 1px solid #BBF7D0;
+}
+
+.badge-status-inactive {
+    background-color: #F1F5F9;
+    color: #475569;
+    border: 1px solid #E2E8F0;
+}
+
+.badge-status-void {
+    background-color: #FEF3C7;
+    color: #92400E;
+    border: 1px solid #FDE68A;
+}
+
+.badge-status-deleted {
+    background-color: #FEE2E2;
+    color: #B91C1C;
+    border: 1px solid #FECACA;
+}
+
+/* ---------------------------------------------------------------------
+   5. Action Dropdown Button
+   --------------------------------------------------------------------- */
+.btn-doc-actions {
+    border: 1px solid var(--border-light, #E9EFEF);
+    background-color: #FFFFFF;
+    color: var(--text-main, #0B130F);
+    border-radius: var(--radius-sm, 6px);
+    padding: 0.35rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.btn-doc-actions:hover,
+.btn-doc-actions:focus {
+    background-color: #F8FAF9;
+    border-color: var(--text-muted-green, #6C7E75);
+}
+
+.dropdown-menu-actions {
+    min-width: 170px;
+    border-radius: var(--radius-md, 10px);
+    border: 1px solid var(--border-light, #E9EFEF);
+    box-shadow: 0 10px 25px rgba(11, 19, 15, 0.08);
+    padding: 0.4rem;
+}
+
+.dropdown-menu-actions .dropdown-item {
+    font-size: 0.825rem;
+    font-weight: 500;
+    padding: 0.45rem 0.75rem;
+    border-radius: var(--radius-sm, 6px);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-main, #0B130F);
+    transition: all 0.12s ease;
+}
+
+.dropdown-menu-actions .dropdown-item:hover {
+    background-color: #F4F6F5;
+    color: var(--brand-forest-dark, #051C12);
+}
+
+.dropdown-menu-actions .dropdown-item.text-danger:hover {
+    background-color: #FEE2E2;
+    color: #B91C1C !important;
+}
+
+/* ---------------------------------------------------------------------
+   6. Loading Skeleton & Shimmer
+   --------------------------------------------------------------------- */
+.skeleton-row td {
+    padding: 1.15rem 1.25rem;
+}
+
+.skeleton-box {
+    height: 16px;
+    background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s infinite;
+    border-radius: 4px;
+}
+
+@keyframes skeleton-shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* ---------------------------------------------------------------------
+   7. Empty & Error State Views
+   --------------------------------------------------------------------- */
+.table-state-container {
+    padding: 3.5rem 2rem;
+    text-align: center;
+}
+
+.state-icon-wrapper {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 1.25rem;
+    border-radius: 50rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+}
+
+.state-icon-empty {
+    background-color: #F4F6F5;
+    color: var(--text-muted-green, #6C7E75);
+}
+
+.state-icon-error {
+    background-color: #FEE2E2;
+    color: #EF4444;
+}
+
+.state-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-main, #0B130F);
+    margin-bottom: 0.5rem;
+}
+
+.state-desc {
+    font-size: 0.875rem;
+    color: var(--text-muted-green, #6C7E75);
+    max-width: 440px;
+    margin: 0 auto 1.5rem;
+}
+
+/* ---------------------------------------------------------------------
+   8. Pagination Bar
+   --------------------------------------------------------------------- */
+.documents-pagination-bar {
+    padding: 1rem 1.5rem;
+    background-color: #FFFFFF;
+    border-top: 1px solid var(--border-light, #E9EFEF);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.pagination-info-text {
+    font-size: 0.825rem;
+    color: var(--text-muted-green, #6C7E75);
+    font-weight: 500;
+}
+
+.pagination-size-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.825rem;
+    color: var(--text-muted-green, #6C7E75);
+}
+
+.pagination-size-select {
+    width: auto;
+    font-size: 0.825rem;
+    padding: 0.25rem 1.8rem 0.25rem 0.65rem;
+    border-radius: var(--radius-sm, 6px);
+    border: 1px solid var(--border-light, #E9EFEF);
+}
+
+.pagination-buttons-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.btn-page-nav {
+    border: 1px solid var(--border-light, #E9EFEF);
+    background-color: #FFFFFF;
+    color: var(--text-main, #0B130F);
+    border-radius: var(--radius-sm, 6px);
+    padding: 0.35rem 0.75rem;
+    font-size: 0.825rem;
+    font-weight: 600;
+    transition: all 0.15s ease;
+}
+
+.btn-page-nav:hover:not(:disabled) {
+    background-color: #F8FAF9;
+    border-color: var(--text-muted-green, #6C7E75);
+}
+
+.btn-page-nav:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.page-indicator-badge {
+    font-size: 0.825rem;
+    font-weight: 600;
+    color: var(--brand-forest-dark, #051C12);
+    padding: 0.35rem 0.75rem;
+}
+
+/* ---------------------------------------------------------------------
+   9. Toast Notice Container
+   --------------------------------------------------------------------- */
+.notice-toast-container {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 1080;
+}
+
+.notice-toast {
+    background-color: var(--brand-forest-dark, #051C12);
+    color: #FFFFFF;
+    border-radius: var(--radius-md, 10px);
+    padding: 0.85rem 1.25rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.875rem;
+    border-left: 4px solid var(--brand-lime, #B4F105);
+    animation: toast-in 0.25s ease-out;
+}
+
+@keyframes toast-in {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* ---------------------------------------------------------------------
+   10. Responsive Breakpoints
+   --------------------------------------------------------------------- */
+@media (max-width: 991.98px) {
+    .documents-toolbar-card {
+        padding: 1rem;
+    }
+    
+    .toolbar-row {
+        gap: 0.75rem !important;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .documents-pagination-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+    
+    .pagination-buttons-nav {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .document-table {
+        min-width: 760px;
+    }
+}

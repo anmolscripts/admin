@@ -92,6 +92,10 @@
 <!-- Spark Admin -->
 <script src="/js/dashboard.js"></script>
 
+<% if (locals.extraJs) { %>
+  <%- locals.extraJs %>
+<% } %>
+
 </body>
 
 </html>
