@@ -1,6 +1,7 @@
 const express = require('express');
 const requireAuth = require('../middleware/auth.middleware');
 const invoiceService = require('../services/invoice.service');
+const invoiceController = require('../controllers/invoice.controller');
 
 const router = express.Router();
 
@@ -114,6 +115,37 @@ router.get('/documents/:id/edit', requireAuth, async (req, res, next) => {
         return next(err);
     }
 });
+
+// Export Excel Route (must precede /documents/:id)
+router.get('/documents/export/excel', requireAuth, invoiceController.exportExcel);
+
+// Dedicated Document Print View (must precede /documents/:id)
+router.get('/documents/:id/print', requireAuth, async (req, res, next) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        if (isNaN(id) || id <= 0) {
+            return res.status(400).render('errors/500', {
+                pageTitle: 'Bad Request',
+                error: new Error('Invalid document ID.')
+            });
+        }
+
+        const doc = await invoiceService.getInvoiceById(id);
+        res.render('documents/print', {
+            document: doc
+        });
+    } catch (err) {
+        if (err instanceof invoiceService.NotFoundError) {
+            return res.status(404).render('errors/404', {
+                pageTitle: 'Document Not Found'
+            });
+        }
+        return next(err);
+    }
+});
+
+// Document PDF Download Route (must precede /documents/:id)
+router.get('/documents/:id/pdf', requireAuth, invoiceController.exportPdf);
 
 // Document View / Detail Screen: Comprehensive Document Inspection & Lifecycle Hub
 router.get('/documents/:id', requireAuth, async (req, res, next) => {

@@ -671,6 +671,20 @@
             emptyClearBtn.addEventListener('click', resetFilters);
         }
 
+        // Export Excel Button
+        const exportExcelBtn = document.getElementById('btn-export-excel');
+        if (exportExcelBtn) {
+            exportExcelBtn.addEventListener('click', function () {
+                const params = new URLSearchParams();
+                if (state.type) params.set('documentType', state.type);
+                if (state.status) params.set('status', state.status);
+                if (state.search) params.set('search', state.search);
+                if (state.dateFrom) params.set('dateFrom', state.dateFrom);
+                if (state.dateTo) params.set('dateTo', state.dateTo);
+                window.location.href = `/api/invoices/export/excel?${params.toString()}`;
+            });
+        }
+
         // Retry Button in Error State
         if (retryBtn) {
             retryBtn.addEventListener('click', loadDocuments);

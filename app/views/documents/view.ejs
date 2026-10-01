@@ -209,6 +209,14 @@
           <i class="bi bi-pencil me-1"></i> Edit
         </a>
 
+        <a href="/documents/<%= document.id %>/pdf" class="btn-custom btn-custom-secondary" id="btn-action-pdf" title="Download PDF" target="_blank">
+          <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+        </a>
+
+        <a href="/documents/<%= document.id %>/print" class="btn-custom btn-custom-secondary" id="btn-action-print" title="Print Document" target="_blank">
+          <i class="bi bi-printer me-1"></i> Print
+        </a>
+
         <a href="/documents/new?copyFrom=<%= document.id %>" class="btn-custom btn-custom-secondary" id="btn-action-copy">
           <i class="bi bi-files me-1"></i> Copy
         </a>
@@ -246,6 +254,14 @@
           <i class="bi bi-pencil me-1"></i> Edit
         </a>
 
+        <a href="/documents/<%= document.id %>/pdf" class="btn-custom btn-custom-secondary" id="btn-action-pdf" title="Download PDF" target="_blank">
+          <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+        </a>
+
+        <a href="/documents/<%= document.id %>/print" class="btn-custom btn-custom-secondary" id="btn-action-print" title="Print Document" target="_blank">
+          <i class="bi bi-printer me-1"></i> Print
+        </a>
+
         <a href="/documents/new?copyFrom=<%= document.id %>" class="btn-custom btn-custom-secondary" id="btn-action-copy">
           <i class="bi bi-files me-1"></i> Copy
         </a>
@@ -269,6 +285,14 @@
         </div>
 
       <% } else if (document.status === 'VOID') { %>
+        <a href="/documents/<%= document.id %>/pdf" class="btn-custom btn-custom-secondary" id="btn-action-pdf" title="Download PDF" target="_blank">
+          <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+        </a>
+
+        <a href="/documents/<%= document.id %>/print" class="btn-custom btn-custom-secondary" id="btn-action-print" title="Print Document" target="_blank">
+          <i class="bi bi-printer me-1"></i> Print
+        </a>
+
         <a href="/documents/new?copyFrom=<%= document.id %>" class="btn-custom btn-custom-secondary" id="btn-action-copy">
           <i class="bi bi-files me-1"></i> Copy Document
         </a>
@@ -277,6 +301,14 @@
         <button type="button" class="btn-custom btn-custom-success" id="btn-action-restore" data-bs-toggle="modal" data-bs-target="#modal-restore">
           <i class="bi bi-arrow-counterclockwise me-1"></i> Restore Document
         </button>
+
+        <a href="/documents/<%= document.id %>/pdf" class="btn-custom btn-custom-secondary" id="btn-action-pdf" title="Download PDF" target="_blank">
+          <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+        </a>
+
+        <a href="/documents/<%= document.id %>/print" class="btn-custom btn-custom-secondary" id="btn-action-print" title="Print Document" target="_blank">
+          <i class="bi bi-printer me-1"></i> Print
+        </a>
 
         <a href="/documents/new?copyFrom=<%= document.id %>" class="btn-custom btn-custom-secondary" id="btn-action-copy">
           <i class="bi bi-files me-1"></i> Copy Document

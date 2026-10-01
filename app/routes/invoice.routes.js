@@ -9,6 +9,8 @@ router.use(requireAuth);
 
 // Document CRUD and history routes
 router.get('/invoices', invoiceController.listInvoices);
+router.get('/invoices/export/excel', invoiceController.exportExcel);
+router.get('/invoices/:id/pdf', invoiceController.exportPdf);
 router.get('/invoices/:id', invoiceController.getInvoice);
 router.post('/invoices', invoiceController.createInvoice);
 router.put('/invoices/:id', invoiceController.updateInvoice);

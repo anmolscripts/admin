@@ -312,3 +312,41 @@
   }
 }
 
+/* Print Media Styles */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #111827 !important;
+    font-size: 12px !important;
+  }
+  .app-header,
+  .app-footer,
+  .btn-back-documents,
+  .view-actions-group,
+  .alert,
+  .modal,
+  .view-tab-nav,
+  #timeline-pane,
+  .btn,
+  .dropdown,
+  .btn-custom {
+    display: none !important;
+  }
+  .document-view-container {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .view-card {
+    box-shadow: none !important;
+    border: 1px solid #e5e7eb !important;
+    page-break-inside: avoid;
+  }
+  .view-items-table {
+    border-collapse: collapse !important;
+  }
+  .view-items-table th, .view-items-table td {
+    border: 1px solid #e5e7eb !important;
+  }
+}
+

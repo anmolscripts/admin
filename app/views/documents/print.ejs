@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= document.invoiceNumber %> - <%= document.documentType %></title>
+  <link rel="stylesheet" href="/libs/bootstrap/bootstrap.min.css">
+  <link rel="stylesheet" href="/libs/bootstrap-icons/bootstrap-icons.css">
+  <style>
+    @page {
+      size: A4;
+      margin: 12mm 15mm;
+    }
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: #1f2937;
+      background: #f8fafc;
+      margin: 0;
+      padding: 0;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .print-actions-bar {
+      background: #111827;
+      color: #ffffff;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .print-actions-bar a, .print-actions-bar button {
+      font-size: 13px;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-weight: 500;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+    .btn-print-primary {
+      background: #1b5e20;
+      color: #ffffff;
+      border-color: #1b5e20;
+    }
+    .btn-print-primary:hover {
+      background: #144618;
+      color: #ffffff;
+    }
+    .btn-print-secondary {
+      background: #374151;
+      color: #f3f4f6;
+      border-color: #4b5563;
+    }
+    .btn-print-secondary:hover {
+      background: #4b5563;
+      color: #ffffff;
+    }
+    .print-container {
+      max-width: 800px;
+      margin: 24px auto;
+      background: #ffffff;
+      padding: 40px;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+      position: relative;
+    }
+    
+    /* Watermark for VOID and DELETED */
+    .print-watermark {
+      position: absolute;
+      top: 45%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-30deg);
+      font-size: 80px;
+      font-weight: 900;
+      letter-spacing: 8px;
+      opacity: 0.12;
+      pointer-events: none;
+      user-select: none;
+      z-index: 10;
+    }
+    .watermark-void { color: #dc2626; }
+    .watermark-deleted { color: #6b7280; }
+
+    .doc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 20px;
+      margin-bottom: 24px;
+    }
+    .company-name {
+      font-size: 22px;
+      font-weight: 700;
+      color: #1b5e20;
+      margin-bottom: 4px;
+    }
+    .doc-type-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: #111827;
+      text-align: right;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .doc-num-highlight {
+      font-family: monospace;
+      font-size: 15px;
+      font-weight: 700;
+      color: #374151;
+      text-align: right;
+    }
+    .status-badge-pill {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      text-align: right;
+      margin-top: 4px;
+    }
+    .badge-active { background: #dcfce7; color: #166534; }
+    .badge-inactive { background: #fef3c7; color: #92400e; }
+    .badge-void { background: #fee2e2; color: #991b1b; }
+    .badge-deleted { background: #f3f4f6; color: #374151; }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 28px;
+    }
+    .meta-box {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 16px;
+    }
+    .meta-box-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #6b7280;
+      margin-bottom: 8px;
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 4px;
+    }
+    .client-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 4px;
+    }
+
+    .doc-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 24px;
+    }
+    .doc-table th {
+      background: #1b5e20;
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 10px 12px;
+      border: none;
+    }
+    .doc-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 13px;
+    }
+    .doc-table tr:nth-child(even) td {
+      background: #f9fafb;
+    }
+
+    .summary-section {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 24px;
+      margin-bottom: 28px;
+      page-break-inside: avoid;
+    }
+    .totals-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .totals-table td {
+      padding: 8px 14px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .totals-table .grand-total-row {
+      background: #1b5e20;
+      color: #ffffff;
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .totals-table .grand-total-row td {
+      border: none;
+      padding: 12px 14px;
+    }
+
+    .terms-block {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 14px;
+      font-size: 11.5px;
+      color: #4b5563;
+    }
+    .terms-title {
+      font-weight: 700;
+      color: #1f2937;
+      margin-bottom: 4px;
+    }
+
+    .doc-footer {
+      border-top: 1px solid #e5e7eb;
+      padding-top: 16px;
+      text-align: center;
+      color: #9ca3af;
+      font-size: 11px;
+    }
+
+    @media print {
+      body {
+        background: #ffffff !important;
+        font-size: 12px;
+      }
+      .print-actions-bar {
+        display: none !important;
+      }
+      .print-container {
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+      }
+      .doc-table th {
+        background: #1b5e20 !important;
+        color: #ffffff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .totals-table .grand-total-row {
+        background: #1b5e20 !important;
+        color: #ffffff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .status-badge-pill {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .print-watermark {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<%
+  const isQuotation = document.documentType === 'QUOTATION';
+  const title = isQuotation ? 'QUOTATION' : 'TAX INVOICE';
+  
+  function formatMoney(amount) {
+    const num = Number(amount) || 0;
+    return num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function formatDate(d) {
+    if (!d) return '—';
+    const dt = new Date(d);
+    if (isNaN(dt.getTime())) return '—';
+    return dt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  const dueDateCalc = new Date(document.invoiceDate);
+  dueDateCalc.setDate(dueDateCalc.getDate() + (isQuotation ? 15 : 30));
+
+  const totalGst = Number(document.gstAmount) || 0;
+  const gstRate = Number(document.gstRate) || 0;
+  const halfGst = Math.round((totalGst / 2) * 100) / 100;
+  const remGst = Math.round((totalGst - halfGst) * 100) / 100;
+%>
+
+<!-- Screen-Only Action Toolbar -->
+<div class="print-actions-bar">
+  <div>
+    <strong>Spark Admin ERP</strong>
+    <span class="ms-2 opacity-75">| Document Print Preview</span>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="/documents/<%= document.id %>" class="btn-print-secondary">
+      <i class="bi bi-arrow-left"></i> Back to View
+    </a>
+    <a href="/documents/<%= document.id %>/pdf" class="btn-print-secondary" target="_blank">
+      <i class="bi bi-file-earmark-pdf"></i> Download PDF
+    </a>
+    <button onclick="window.print()" class="btn-print-primary">
+      <i class="bi bi-printer"></i> Print Now
+    </button>
+  </div>
+</div>
+
+<div class="print-container">
+
+  <!-- Watermark if VOID or DELETED -->
+  <% if (document.status === 'VOID') { %>
+    <div class="print-watermark watermark-void">VOID</div>
+  <% } else if (document.status === 'DELETED') { %>
+    <div class="print-watermark watermark-deleted">DELETED</div>
+  <% } %>
+
+  <!-- Document Header -->
+  <div class="doc-header">
+    <div>
+      <div class="company-name"><%= document.sellerName || 'Spark ERP Technologies Pvt Ltd' %></div>
+      <div class="text-muted"><%= document.sellerAddress || 'Tech Park Tower, 4th Floor, MG Road, Bengaluru, Karnataka 560001' %></div>
+      <div class="text-muted">GSTIN: <strong><%= document.sellerGSTIN || '29AAAAA0000A1Z5' %></strong></div>
+      <div class="text-muted">Email: <%= document.sellerEmail || 'billing@sparkadmin.com' %> | Phone: <%= document.sellerPhone || '+91 80 4000 1234' %></div>
+    </div>
+    <div class="text-end">
+      <div class="doc-type-title" style="color: <%= isQuotation ? '#0070f3' : '#1b5e20' %>;"><%= title %></div>
+      <div class="doc-num-highlight"><%= document.invoiceNumber %></div>
+      <div>
+        <% if (document.status === 'ACTIVE') { %>
+          <span class="status-badge-pill badge-active">ACTIVE</span>
+        <% } else if (document.status === 'INACTIVE') { %>
+          <span class="status-badge-pill badge-inactive">INACTIVE</span>
+        <% } else if (document.status === 'VOID') { %>
+          <span class="status-badge-pill badge-void">VOID</span>
+        <% } else if (document.status === 'DELETED') { %>
+          <span class="status-badge-pill badge-deleted">DELETED</span>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Client & Document Meta Grid -->
+  <div class="meta-grid">
+    <div class="meta-box">
+      <div class="meta-box-title">Bill To (Client)</div>
+      <div class="client-name"><%= document.clientName %></div>
+      <div><%= document.billingAddress || 'No billing address provided' %></div>
+      <% if (document.clientGSTIN) { %>
+        <div>GSTIN: <strong><%= document.clientGSTIN %></strong></div>
+      <% } %>
+      <% if (document.clientEmail) { %>
+        <div>Email: <%= document.clientEmail %></div>
+      <% } %>
+      <% if (document.clientPhone) { %>
+        <div>Phone: <%= document.clientPhone %></div>
+      <% } %>
+    </div>
+
+    <div class="meta-box">
+      <div class="meta-box-title">Document Details</div>
+      <table style="width: 100%; font-size: 12.5px;">
+        <tr>
+          <td class="text-muted py-1">Document Date:</td>
+          <td class="fw-bold text-end py-1"><%= formatDate(document.invoiceDate) %></td>
+        </tr>
+        <tr>
+          <td class="text-muted py-1"><%= isQuotation ? 'Valid Until:' : 'Due Date:' %></td>
+          <td class="fw-bold text-end py-1"><%= formatDate(dueDateCalc) %></td>
+        </tr>
+        <tr>
+          <td class="text-muted py-1">Place of Supply:</td>
+          <td class="fw-bold text-end py-1"><%= document.placeOfSupplyStateCode ? `State Code ${document.placeOfSupplyStateCode}` : 'Default State' %></td>
+        </tr>
+        <% if (document.sourceQuotation) { %>
+        <tr>
+          <td class="text-muted py-1">Source Quotation:</td>
+          <td class="fw-bold text-end py-1 text-primary"><%= document.sourceQuotation.invoiceNumber %></td>
+        </tr>
+        <% } else if (document.convertedInvoice) { %>
+        <tr>
+          <td class="text-muted py-1">Converted Invoice:</td>
+          <td class="fw-bold text-end py-1 text-primary"><%= document.convertedInvoice.invoiceNumber %></td>
+        </tr>
+        <% } %>
+      </table>
+    </div>
+  </div>
+
+  <!-- Line Items Table -->
+  <table class="doc-table">
+    <thead>
+      <tr style="background: <%= isQuotation ? '#0070f3' : '#1b5e20' %>;">
+        <th style="width: 40px; text-align: center;">#</th>
+        <th>Item Description</th>
+        <th style="width: 80px; text-align: right;">Qty</th>
+        <th style="width: 70px; text-align: center;">Unit</th>
+        <th style="width: 100px; text-align: right;">Rate (₹)</th>
+        <th style="width: 120px; text-align: right;">Amount (₹)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% (document.items || []).forEach(function(item, idx) { %>
+        <tr>
+          <td style="text-align: center;"><%= item.lineNumber || (idx + 1) %></td>
+          <td>
+            <strong><%= item.name %></strong>
+            <% if (item.hsnSac) { %>
+              <span class="text-muted small ms-1">(HSN/SAC: <%= item.hsnSac %>)</span>
+            <% } %>
+          </td>
+          <td style="text-align: right;"><%= Number(item.quantity).toFixed(2) %></td>
+          <td style="text-align: center;"><%= item.unit || 'PCS' %></td>
+          <td style="text-align: right;"><%= formatMoney(item.rate) %></td>
+          <td style="text-align: right; font-weight: 600;"><%= formatMoney(item.amount) %></td>
+        </tr>
+      <% }); %>
+    </tbody>
+  </table>
+
+  <!-- Totals & Terms -->
+  <div class="summary-section">
+    <div>
+      <div class="terms-block mb-3">
+        <div class="terms-title">Terms & Conditions:</div>
+        <div><%= document.termsAndConditions || 'Payment is due within agreed terms. Goods once sold are not returnable.' %></div>
+      </div>
+      <% if (document.remarks) { %>
+        <div class="terms-block">
+          <div class="terms-title">Remarks / Notes:</div>
+          <div><%= document.remarks %></div>
+        </div>
+      <% } %>
+    </div>
+
+    <div>
+      <table class="totals-table">
+        <tr>
+          <td class="text-muted">Subtotal:</td>
+          <td class="text-end fw-semibold">₹ <%= formatMoney(document.subtotal) %></td>
+        </tr>
+        <% if (document.gstEnabled) { %>
+          <tr>
+            <td class="text-muted">CGST (<%= (gstRate / 2).toFixed(2) %>%):</td>
+            <td class="text-end">₹ <%= formatMoney(halfGst) %></td>
+          </tr>
+          <tr>
+            <td class="text-muted">SGST (<%= (gstRate / 2).toFixed(2) %>%):</td>
+            <td class="text-end">₹ <%= formatMoney(remGst) %></td>
+          </tr>
+          <tr>
+            <td class="text-muted">Total GST (<%= gstRate.toFixed(2) %>%):</td>
+            <td class="text-end">₹ <%= formatMoney(document.gstAmount) %></td>
+          </tr>
+        <% } else { %>
+          <tr>
+            <td class="text-muted">GST (0%):</td>
+            <td class="text-end">₹ 0.00 (Exempt)</td>
+          </tr>
+        <% } %>
+        <% if (Number(document.roundOff) !== 0) { %>
+          <tr>
+            <td class="text-muted">Round Off:</td>
+            <td class="text-end">₹ <%= formatMoney(document.roundOff) %></td>
+          </tr>
+        <% } %>
+        <tr class="grand-total-row" style="background: <%= isQuotation ? '#0070f3' : '#1b5e20' %>;">
+          <td>Grand Total:</td>
+          <td class="text-end">₹ <%= formatMoney(document.grandTotal) %></td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="doc-footer">
+    <div>This is a computer-generated <%= isQuotation ? 'quotation' : 'invoice' %> and does not require a physical signature.</div>
+    <div>Generated via Spark Admin ERP on <%= formatDate(new Date()) %></div>
+  </div>
+
+</div>
+
+</body>
+</html>

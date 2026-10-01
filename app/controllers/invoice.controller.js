@@ -1,4 +1,6 @@
 const invoiceService = require('../services/invoice.service');
+const pdfService = require('../services/pdf.service');
+const excelService = require('../services/excel.service');
 
 function handleControllerError(err, res, next) {
     if (err instanceof invoiceService.ValidationError) {
@@ -258,6 +260,57 @@ async function copyInvoice(req, res, next) {
     }
 }
 
+/**
+ * GET /api/invoices/:id/pdf
+ * Export document as styled PDF
+ */
+async function exportPdf(req, res, next) {
+    try {
+        const id = parseInt(req.params.id, 10);
+        if (isNaN(id) || id <= 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid document ID.'
+            });
+        }
+
+        const invoice = await invoiceService.getInvoiceById(id);
+        const pdfBuffer = await pdfService.generateDocumentPdf(invoice);
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${invoice.invoiceNumber}.pdf"`);
+        res.setHeader('Content-Length', pdfBuffer.length);
+        return res.send(pdfBuffer);
+    } catch (err) {
+        return handleControllerError(err, res, next);
+    }
+}
+
+/**
+ * GET /api/invoices/export/excel
+ * Export documents as styled multi-sheet Excel spreadsheet
+ */
+async function exportExcel(req, res, next) {
+    try {
+        const { search, status, type, documentType, dateFrom, dateTo, limit } = req.query;
+        const excelBuffer = await excelService.generateInvoicesExcel({
+            documentType: type || documentType,
+            search,
+            status,
+            dateFrom,
+            dateTo,
+            limit
+        });
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="documents_export_${Date.now()}.xlsx"`);
+        res.setHeader('Content-Length', excelBuffer.length);
+        return res.send(excelBuffer);
+    } catch (err) {
+        return handleControllerError(err, res, next);
+    }
+}
+
 module.exports = {
     listInvoices,
     getInvoice,
@@ -268,5 +321,7 @@ module.exports = {
     softDeleteInvoice,
     restoreInvoice,
     convertQuotation,
-    copyInvoice
+    copyInvoice,
+    exportPdf,
+    exportExcel
 };
