@@ -35,6 +35,40 @@ class ConflictError extends Error {
     }
 }
 
+function validateEmail(email) {
+    if (email === undefined || email === null) return null;
+    const str = String(email).trim();
+    if (!str) return null;
+    if (str.length > 255) {
+        throw new ValidationError('Client email must not exceed 255 characters.');
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(str)) {
+        throw new ValidationError('Invalid client email format.');
+    }
+    return str;
+}
+
+function validatePhone(phone) {
+    if (phone === undefined || phone === null) return null;
+    const str = String(phone).trim();
+    if (!str) return null;
+    if (str.length > 50) {
+        throw new ValidationError('Client phone number must not exceed 50 characters.');
+    }
+    return str;
+}
+
+function validateText(text, fieldName, maxLength = 65535) {
+    if (text === undefined || text === null) return null;
+    const str = String(text).trim();
+    if (!str) return null;
+    if (str.length > maxLength) {
+        throw new ValidationError(`${fieldName} must not exceed ${maxLength} characters.`);
+    }
+    return str;
+}
+
 /**
  * Server-side calculation of invoice item amounts and overall totals.
  * Client-submitted totals and amounts are strictly ignored.
@@ -175,6 +209,22 @@ async function createDocument(data, userId) {
     if (!clientName) {
         throw new ValidationError('Client name is required.');
     }
+    if (clientName.length > 255) {
+        throw new ValidationError('Client name must not exceed 255 characters.');
+    }
+
+    const clientEmail = validateEmail(data.clientEmail);
+    const clientPhone = validatePhone(data.clientPhone);
+    const billingAddress = validateText(data.billingAddress, 'Billing address');
+    const shippingAddress = validateText(data.shippingAddress, 'Shipping address');
+    const termsAndConditions = validateText(
+        data.termsAndConditions !== undefined ? data.termsAndConditions : data.terms,
+        'Terms and conditions'
+    );
+    const remarks = validateText(
+        data.remarks !== undefined ? data.remarks : data.notes,
+        'Remarks'
+    );
 
     if (!data.invoiceDate) {
         throw new ValidationError('Invoice date is required.');
@@ -182,6 +232,25 @@ async function createDocument(data, userId) {
     const invoiceDate = new Date(data.invoiceDate);
     if (isNaN(invoiceDate.getTime())) {
         throw new ValidationError('Invalid invoice date format.');
+    }
+
+    const expiryOrDueDate = data.dueDate || data.validUntil;
+    if (expiryOrDueDate) {
+        const dueDateObj = new Date(expiryOrDueDate);
+        if (isNaN(dueDateObj.getTime())) {
+            throw new ValidationError(
+                documentType === 'QUOTATION'
+                    ? 'Invalid quotation expiry date format.'
+                    : 'Invalid invoice due date format.'
+            );
+        }
+        if (dueDateObj < invoiceDate) {
+            throw new ValidationError(
+                documentType === 'QUOTATION'
+                    ? 'Quotation expiry date cannot be earlier than quotation date.'
+                    : 'Invoice due date cannot be earlier than invoice date.'
+            );
+        }
     }
 
     const calculated = calculateInvoiceTotals({
@@ -229,6 +298,12 @@ async function createDocument(data, userId) {
                 documentType,
                 invoiceNumber,
                 clientName,
+                clientEmail,
+                clientPhone,
+                billingAddress,
+                shippingAddress,
+                termsAndConditions,
+                remarks,
                 invoiceDate,
                 gstEnabled: calculated.gstEnabled,
                 gstRate: calculated.gstRate.toFixed(2),
@@ -347,6 +422,22 @@ async function updateInvoice(id, data, userId) {
     if (!clientName) {
         throw new ValidationError('Client name is required.');
     }
+    if (clientName.length > 255) {
+        throw new ValidationError('Client name must not exceed 255 characters.');
+    }
+
+    const clientEmail = validateEmail(data.clientEmail);
+    const clientPhone = validatePhone(data.clientPhone);
+    const billingAddress = validateText(data.billingAddress, 'Billing address');
+    const shippingAddress = validateText(data.shippingAddress, 'Shipping address');
+    const termsAndConditions = validateText(
+        data.termsAndConditions !== undefined ? data.termsAndConditions : data.terms,
+        'Terms and conditions'
+    );
+    const remarks = validateText(
+        data.remarks !== undefined ? data.remarks : data.notes,
+        'Remarks'
+    );
 
     if (!data.invoiceDate) {
         throw new ValidationError('Invoice date is required.');
@@ -370,6 +461,25 @@ async function updateInvoice(id, data, userId) {
 
         if (!existing) {
             throw new NotFoundError(`Document with ID ${numericId} was not found.`);
+        }
+
+        const expiryOrDueDate = data.dueDate || data.validUntil;
+        if (expiryOrDueDate) {
+            const dueDateObj = new Date(expiryOrDueDate);
+            if (isNaN(dueDateObj.getTime())) {
+                throw new ValidationError(
+                    existing.documentType === 'QUOTATION'
+                        ? 'Invalid quotation expiry date format.'
+                        : 'Invalid invoice due date format.'
+                );
+            }
+            if (dueDateObj < invoiceDate) {
+                throw new ValidationError(
+                    existing.documentType === 'QUOTATION'
+                        ? 'Quotation expiry date cannot be earlier than quotation date.'
+                        : 'Invoice due date cannot be earlier than invoice date.'
+                );
+            }
         }
 
         if (data.documentType && String(data.documentType).trim().toUpperCase() !== existing.documentType) {
@@ -400,6 +510,12 @@ async function updateInvoice(id, data, userId) {
             },
             data: {
                 clientName,
+                clientEmail,
+                clientPhone,
+                billingAddress,
+                shippingAddress,
+                termsAndConditions,
+                remarks,
                 invoiceDate,
                 gstEnabled: calculated.gstEnabled,
                 gstRate: calculated.gstRate.toFixed(2),
@@ -920,6 +1036,12 @@ async function convertQuotationToInvoice(quotationId, userId, options = {}) {
                     documentType: 'INVOICE',
                     invoiceNumber,
                     clientName: quotation.clientName,
+                    clientEmail: quotation.clientEmail,
+                    clientPhone: quotation.clientPhone,
+                    billingAddress: quotation.billingAddress,
+                    shippingAddress: quotation.shippingAddress,
+                    termsAndConditions: quotation.termsAndConditions,
+                    remarks: quotation.remarks,
                     invoiceDate: quotation.invoiceDate,
                     gstEnabled: quotation.gstEnabled,
                     gstRate: quotation.gstRate,
@@ -1032,6 +1154,12 @@ async function copyDocument(id) {
     return {
         documentType: doc.documentType,
         clientName: doc.clientName,
+        clientEmail: doc.clientEmail,
+        clientPhone: doc.clientPhone,
+        billingAddress: doc.billingAddress,
+        shippingAddress: doc.shippingAddress,
+        termsAndConditions: doc.termsAndConditions,
+        remarks: doc.remarks,
         invoiceDate: new Date().toISOString().split('T')[0],
         gstEnabled: doc.gstEnabled,
         gstRate: Number(doc.gstRate),

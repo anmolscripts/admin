@@ -1,0 +1,312 @@
+/* ========================================================================
+   SPARK ADMIN - REUSABLE DOCUMENT EDITOR STYLES
+   Desktop-first, Responsive, Accessible Quotation & Invoice Editor
+   ======================================================================== */
+
+.document-editor-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 0.5rem 3rem 0.5rem;
+}
+
+/* ---------------------------------------------------------------------
+   1. Section Cards & Headers
+   --------------------------------------------------------------------- */
+.editor-section-card {
+    background-color: var(--card-background, #FFFFFF);
+    border-radius: var(--radius-lg, 14px) !important;
+    border: 1px solid var(--border-light, #E9EFEF) !important;
+    box-shadow: 0 4px 18px rgba(11, 19, 15, 0.04) !important;
+    transition: box-shadow 0.2s ease;
+}
+
+.editor-section-card:hover {
+    box-shadow: 0 6px 24px rgba(11, 19, 15, 0.07) !important;
+}
+
+.editor-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 0.85rem;
+    margin-bottom: 1.25rem;
+    border-bottom: 1px solid #F0F4F2;
+}
+
+/* ---------------------------------------------------------------------
+   2. Input Controls & Feedback
+   --------------------------------------------------------------------- */
+.form-label-custom {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text-main, #0B130F);
+    margin-bottom: 0.35rem;
+}
+
+.form-control-custom,
+.form-select-custom {
+    display: block;
+    width: 100%;
+    padding: 0.6rem 0.85rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.5;
+    color: var(--text-main, #0B130F);
+    background-color: #FFFFFF;
+    background-clip: padding-box;
+    border: 1.5px solid var(--border-light, #E9EFEF);
+    border-radius: var(--radius-md, 10px);
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control-custom:focus,
+.form-select-custom:focus {
+    color: var(--text-main, #0B130F);
+    background-color: #FFFFFF;
+    border-color: var(--brand-forest-light, #1A3E30);
+    outline: 0;
+    box-shadow: 0 0 0 3px rgba(26, 62, 48, 0.12);
+}
+
+.form-control-custom.is-invalid-custom {
+    border-color: #dc3545 !important;
+    background-color: #fff8f8;
+}
+
+.form-control-custom.is-invalid-custom:focus {
+    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.15) !important;
+}
+
+.invalid-feedback-custom {
+    font-size: 0.775rem;
+    color: #dc3545;
+    font-weight: 500;
+    margin-top: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+/* ---------------------------------------------------------------------
+   3. Dynamic Line Items Table
+   --------------------------------------------------------------------- */
+.line-items-table-wrapper {
+    border: 1px solid var(--border-light, #E9EFEF);
+    border-radius: var(--radius-md, 10px);
+    background-color: #FFFFFF;
+    overflow-x: auto;
+}
+
+.line-items-table {
+    margin-bottom: 0;
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.line-items-table th {
+    background-color: #F8FAF9;
+    color: var(--text-muted-green, #6C7E75);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.75rem 0.85rem;
+    border-bottom: 1.5px solid var(--border-light, #E9EFEF);
+    white-space: nowrap;
+}
+
+.line-items-table td {
+    padding: 0.6rem 0.65rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #F0F4F2;
+}
+
+.line-items-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.line-items-table tbody tr:hover {
+    background-color: rgba(244, 246, 245, 0.5);
+}
+
+.line-items-table .th-num { width: 44px; }
+.line-items-table .th-desc { min-width: 260px; }
+.line-items-table .th-qty { width: 105px; min-width: 95px; }
+.line-items-table .th-unit { width: 120px; min-width: 110px; }
+.line-items-table .th-rate { width: 135px; min-width: 125px; }
+.line-items-table .th-amount { width: 140px; min-width: 130px; }
+.line-items-table .th-action { width: 50px; }
+
+.item-index-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: #EFF3F1;
+    color: var(--text-muted-green, #6C7E75);
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.item-amount-display {
+    font-size: 0.9rem;
+    color: var(--text-main, #0B130F);
+    letter-spacing: -0.01em;
+}
+
+.btn-remove-item {
+    background: transparent;
+    border: none;
+    color: #A0B0A8;
+    padding: 0.35rem 0.5rem;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.btn-remove-item:hover,
+.btn-remove-item:focus {
+    color: #dc3545;
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+.btn-remove-item:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* ---------------------------------------------------------------------
+   4. Financial Summary Card
+   --------------------------------------------------------------------- */
+.totals-summary-box {
+    background-color: #F8FAF9;
+    border: 1px solid #E4EAE6;
+}
+
+.totals-summary-box .summary-label {
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.totals-summary-box .summary-value {
+    color: var(--text-main, #0B130F);
+}
+
+.totals-summary-box .grand-total-line {
+    border-top: 2px dashed #CCD7D1 !important;
+}
+
+.totals-summary-box .grand-total-value {
+    color: var(--brand-forest-dark, #051C12);
+    letter-spacing: -0.02em;
+}
+
+/* ---------------------------------------------------------------------
+   5. Sticky / Action Footer Bar
+   --------------------------------------------------------------------- */
+.editor-actions-card {
+    position: sticky;
+    bottom: 1rem;
+    z-index: 50;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--border-light, #E9EFEF) !important;
+    border-radius: var(--radius-lg, 14px) !important;
+    box-shadow: 0 10px 30px rgba(5, 28, 18, 0.12) !important;
+}
+
+.btn-save-action {
+    background-color: var(--brand-forest-dark, #051C12);
+    color: #FFFFFF;
+    border: none;
+    padding: 0.65rem 1.6rem;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    border-radius: var(--radius-md, 10px);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 14px rgba(5, 28, 18, 0.2);
+}
+
+.btn-save-action:hover:not(:disabled),
+.btn-save-action:focus:not(:disabled) {
+    background-color: var(--brand-forest-light, #1A3E30);
+    color: var(--brand-lime, #B4F105);
+    box-shadow: 0 6px 18px rgba(5, 28, 18, 0.28);
+}
+
+.btn-save-action:disabled {
+    opacity: 0.7;
+    cursor: wait;
+}
+
+.btn-back-documents {
+    border: 1px solid var(--border-light, #E9EFEF);
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 0.55rem 1.1rem;
+    border-radius: var(--radius-md, 10px);
+}
+
+/* ---------------------------------------------------------------------
+   6. Custom Alert Boxes
+   --------------------------------------------------------------------- */
+.alert-custom {
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius-md, 10px);
+    border: 1px solid transparent;
+}
+
+.alert-custom-warning {
+    background-color: #FFF9E6;
+    border-color: #FFE699;
+    color: #856404;
+}
+
+.alert-custom-danger {
+    background-color: #FFF0F1;
+    border-color: #F8D7DA;
+    color: #721C24;
+}
+
+.alert-custom-success {
+    background-color: #EFFBF4;
+    border-color: #C3E6CB;
+    color: #155724;
+}
+
+/* ---------------------------------------------------------------------
+   7. Responsive Refinements
+   --------------------------------------------------------------------- */
+@media (min-width: 992px) {
+    .border-end-lg {
+        border-right: 1px solid #E9EFEF !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .document-editor-container {
+        padding: 0 0 2rem 0;
+    }
+
+    .editor-section-card {
+        padding: 1rem !important;
+    }
+
+    .editor-actions-card {
+        bottom: 0.5rem;
+        padding: 0.75rem !important;
+    }
+
+    .btn-save-action {
+        width: 100%;
+        justify-content: center;
+    }
+}

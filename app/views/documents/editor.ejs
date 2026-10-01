@@ -1,0 +1,529 @@
+<% 
+  const isQuotation = documentType === 'QUOTATION';
+  const isEdit = mode === 'edit';
+  const typeLabel = isQuotation ? 'Quotation' : 'Invoice';
+  const typeBadgeClass = isQuotation ? 'badge-type-quotation' : 'badge-type-invoice';
+  const typeIcon = isQuotation ? 'bi-file-earmark-text' : 'bi-receipt';
+
+  const headerActionHtml = `
+    <a href="/documents" class="btn-custom btn-custom-light btn-back-documents" id="btn-back-header" aria-label="Cancel and return to documents listing">
+      <i class="bi bi-arrow-left me-1"></i>
+      <span>Back to Documents</span>
+    </a>
+  `;
+%>
+
+<%- include('../layouts/header', { 
+    pageTitle: pageTitle, 
+    pageSubtitle: pageSubtitle, 
+    extraCss: '<link rel="stylesheet" href="/css/documents.css"><link rel="stylesheet" href="/css/editor.css">', 
+    headerAction: headerActionHtml 
+}) %>
+
+<!-- Main Document Editor Container -->
+<div class="document-editor-container" id="editor-container">
+
+  <!-- Unsaved Changes Warning Banner (Appears dynamically if user attempts to leave) -->
+  <div class="alert alert-warning alert-dismissible fade show d-none mb-4" id="unsaved-warning-banner" role="alert">
+    <div class="d-flex align-items-center gap-2">
+      <i class="bi bi-exclamation-triangle-fill fs-5 text-warning"></i>
+      <div>
+        <strong>Unsaved Changes:</strong> You have unsaved changes in this <%= typeLabel.toLowerCase() %>. Remember to save before navigating away.
+      </div>
+    </div>
+  </div>
+
+  <!-- 409 Optimistic Concurrency Conflict Alert Banner -->
+  <div class="alert-custom alert-custom-warning d-none mb-4 shadow-sm" id="conflict-alert" role="alert">
+    <div class="d-flex align-items-start gap-3">
+      <i class="bi bi-exclamation-octagon-fill fs-4 text-warning"></i>
+      <div class="flex-grow-1">
+        <h6 class="alert-heading fw-bold mb-1">Concurrency Conflict Detected</h6>
+        <p class="mb-2" id="conflict-message">
+          This document was modified by another user or session while you were editing it. Your changes cannot overwrite the newer version.
+        </p>
+        <div class="d-flex gap-2 align-items-center">
+          <button type="button" class="btn-custom btn-custom-warning btn-custom-sm" id="btn-reload-conflict">
+            <i class="bi bi-arrow-clockwise me-1"></i> Reload Latest Version
+          </button>
+          <span class="small text-muted">Reloading will update the form with current database values.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- General Validation / Server Error Banner -->
+  <div class="alert-custom alert-custom-danger d-none mb-4 shadow-sm" id="form-error-alert" role="alert">
+    <div class="d-flex align-items-start gap-3">
+      <i class="bi bi-x-circle-fill fs-4 text-danger"></i>
+      <div class="flex-grow-1">
+        <h6 class="alert-heading fw-bold mb-1" id="form-error-title">Validation Error</h6>
+        <div id="form-error-message">Please correct the highlighted issues below.</div>
+      </div>
+      <button type="button" class="btn-close" id="btn-close-error" aria-label="Close error notice"></button>
+    </div>
+  </div>
+
+  <!-- Success Notification Banner -->
+  <div class="alert-custom alert-custom-success d-none mb-4 shadow-sm" id="form-success-alert" role="alert">
+    <div class="d-flex align-items-center gap-3">
+      <i class="bi bi-check-circle-fill fs-4 text-success"></i>
+      <div class="flex-grow-1">
+        <h6 class="alert-heading fw-bold mb-0" id="form-success-message"><%= typeLabel %> saved successfully!</h6>
+      </div>
+    </div>
+  </div>
+
+  <form id="document-form" novalidate>
+    <!-- Hidden Security & Concurrency Tracking Fields -->
+    <input type="hidden" name="_csrf" id="csrf-token" value="<%= csrfToken || '' %>">
+    <input type="hidden" id="doc-id" value="<%= document ? document.id : '' %>">
+    <input type="hidden" id="doc-mode" value="<%= mode %>">
+    <input type="hidden" id="doc-type" value="<%= documentType %>">
+    <input type="hidden" id="doc-version" value="<%= document ? document.version : '1' %>">
+
+    <!-- ===================================================================
+         SECTION A: DOCUMENT INFORMATION
+         =================================================================== -->
+    <div class="card border-light shadow-sm p-4 mb-4 editor-section-card">
+      <div class="editor-section-header">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi <%= typeIcon %> text-primary fs-5"></i>
+          <h5 class="mb-0 fw-bold">Document Information</h5>
+        </div>
+        <span class="badge <%= typeBadgeClass %> text-uppercase">
+          <i class="bi <%= typeIcon %> me-1"></i><%= documentType %>
+        </span>
+      </div>
+
+      <div class="row g-3">
+        <!-- Document Type (Immutable) -->
+        <div class="col-12 col-md-3">
+          <label class="form-label-custom" for="display-doc-type">Document Type</label>
+          <input 
+            type="text" 
+            class="form-control-custom bg-light text-muted" 
+            id="display-doc-type" 
+            value="<%= typeLabel %>" 
+            readonly 
+            disabled 
+            aria-describedby="doc-type-help"
+          />
+          <div id="doc-type-help" class="form-text small text-muted">
+            <i class="bi bi-lock-fill me-1"></i>Type is permanently immutable
+          </div>
+        </div>
+
+        <!-- Document Number (Server-Generated, Read-only) -->
+        <div class="col-12 col-md-3">
+          <label class="form-label-custom" for="display-doc-number">Document Number</label>
+          <input 
+            type="text" 
+            class="form-control-custom font-monospace <%= isEdit ? 'fw-bold text-main' : 'bg-light text-muted' %>" 
+            id="display-doc-number" 
+            value="<%= isEdit ? document.invoiceNumber : 'Number assigned when saved' %>" 
+            readonly 
+            disabled 
+            aria-describedby="doc-number-help"
+          />
+          <div id="doc-number-help" class="form-text small text-muted">
+            <%= isEdit ? 'Assigned sequence identifier' : 'Number assigned automatically upon saving' %>
+          </div>
+        </div>
+
+        <!-- Document Date (invoiceDate) -->
+        <div class="col-12 col-md-3">
+          <label class="form-label-custom" for="doc-date">
+            <%= isQuotation ? 'Quotation Date *' : 'Invoice Date *' %>
+          </label>
+          <input 
+            type="date" 
+            class="form-control-custom" 
+            id="doc-date" 
+            name="invoiceDate" 
+            required 
+            aria-required="true" 
+            aria-describedby="doc-date-feedback"
+          />
+          <div class="invalid-feedback-custom d-none" id="doc-date-feedback">
+            Please select a valid <%= typeLabel.toLowerCase() %> date.
+          </div>
+        </div>
+
+        <!-- Valid Until / Due Date -->
+        <div class="col-12 col-md-3">
+          <label class="form-label-custom" for="doc-due-date">
+            <%= isQuotation ? 'Valid Until (Expiry Date)' : 'Due Date' %>
+          </label>
+          <input 
+            type="date" 
+            class="form-control-custom" 
+            id="doc-due-date" 
+            name="dueDate" 
+            aria-describedby="doc-due-date-feedback doc-due-date-help"
+          />
+          <div class="invalid-feedback-custom d-none" id="doc-due-date-feedback">
+            <%= isQuotation ? 'Expiry date cannot precede quotation date.' : 'Due date cannot precede invoice date.' %>
+          </div>
+          <div id="doc-due-date-help" class="form-text small text-muted">
+            <%= isQuotation ? 'Default: 15 days validity' : 'Default: 30 days credit' %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================================================================
+         SECTION B: CLIENT / CUSTOMER INFORMATION
+         =================================================================== -->
+    <div class="card border-light shadow-sm p-4 mb-4 editor-section-card">
+      <div class="editor-section-header">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-person-badge text-info fs-5"></i>
+          <h5 class="mb-0 fw-bold">Client Information</h5>
+        </div>
+        <span class="small text-muted-green">Document-level client snapshot</span>
+      </div>
+
+      <div class="row g-3">
+        <!-- Client Name (Required, database backed) -->
+        <div class="col-12 col-lg-6">
+          <label class="form-label-custom" for="client-name">
+            Client / Company Name *
+          </label>
+          <div class="input-group-custom">
+            <input 
+              type="text" 
+              class="form-control-custom" 
+              id="client-name" 
+              name="clientName" 
+              value="<%= document ? document.clientName : '' %>" 
+              placeholder="e.g. Acme Corporation, Solaris Energy Ltd" 
+              required 
+              aria-required="true" 
+              maxlength="255" 
+              autocomplete="organization"
+              aria-describedby="client-name-feedback"
+            />
+          </div>
+          <div class="invalid-feedback-custom d-none" id="client-name-feedback">
+            Client or company name is required.
+          </div>
+        </div>
+
+        <!-- Client Email -->
+        <div class="col-12 col-sm-6 col-lg-3">
+          <label class="form-label-custom" for="client-email">Email Address</label>
+          <input 
+            type="email" 
+            class="form-control-custom" 
+            id="client-email" 
+            name="clientEmail" 
+            value="<%= document ? (document.clientEmail || '') : '' %>"
+            placeholder="billing@client.com" 
+            autocomplete="email" 
+            aria-describedby="client-email-feedback"
+          />
+          <div class="invalid-feedback-custom d-none" id="client-email-feedback">
+            Please enter a valid email address.
+          </div>
+        </div>
+
+        <!-- Client Phone -->
+        <div class="col-12 col-sm-6 col-lg-3">
+          <label class="form-label-custom" for="client-phone">Phone Number</label>
+          <input 
+            type="tel" 
+            class="form-control-custom" 
+            id="client-phone" 
+            name="clientPhone" 
+            value="<%= document ? (document.clientPhone || '') : '' %>"
+            placeholder="+91 98765 43210" 
+            autocomplete="tel"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================================================================
+         SECTION C: BILLING & SHIPPING ADDRESS
+         =================================================================== -->
+    <div class="card border-light shadow-sm p-4 mb-4 editor-section-card">
+      <div class="editor-section-header">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-geo-alt text-success fs-5"></i>
+          <h5 class="mb-0 fw-bold">Billing & Shipping Addresses</h5>
+<%
+  const isSameAddress = !document || (!document.shippingAddress && !document.billingAddress) || (document.billingAddress && document.shippingAddress && document.billingAddress === document.shippingAddress);
+%>
+        </div>
+        <div class="form-check form-switch m-0 d-flex align-items-center gap-2">
+          <input class="form-check-input" type="checkbox" id="same-as-billing" <%= isSameAddress ? 'checked' : '' %>>
+          <label class="form-check-label small fw-semibold" for="same-as-billing">
+            Shipping same as billing
+          </label>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <!-- Billing Address -->
+        <div class="col-12 col-md-6">
+          <label class="form-label-custom" for="billing-address">Billing Address</label>
+          <textarea 
+            class="form-control-custom" 
+            id="billing-address" 
+            name="billingAddress" 
+            rows="3" 
+            placeholder="Street address, building, city, state, postal code..."
+          ><%= document ? (document.billingAddress || '') : '' %></textarea>
+        </div>
+
+        <!-- Shipping Address -->
+        <div class="col-12 col-md-6">
+          <label class="form-label-custom" for="shipping-address">Shipping Address</label>
+          <textarea 
+            class="form-control-custom <%= isSameAddress ? 'bg-light' : '' %>" 
+            id="shipping-address" 
+            name="shippingAddress" 
+            rows="3" 
+            placeholder="Delivery destination, warehouse, city, postal code..." 
+            <%= isSameAddress ? 'readonly' : '' %>
+          ><%= document ? (document.shippingAddress || '') : '' %></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================================================================
+         SECTION D: DYNAMIC LINE ITEMS TABLE
+         =================================================================== -->
+    <div class="card border-light shadow-sm p-4 mb-4 editor-section-card">
+      <div class="editor-section-header">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-list-check text-primary fs-5"></i>
+          <h5 class="mb-0 fw-bold">Line Items</h5>
+        </div>
+        <button type="button" class="btn-custom btn-custom-outline-primary btn-custom-sm" id="btn-add-item-header">
+          <i class="bi bi-plus-lg me-1"></i> Add Item
+        </button>
+      </div>
+
+      <!-- Items Table Wrapper -->
+      <div class="table-responsive line-items-table-wrapper">
+        <table class="table align-middle line-items-table" id="items-table" aria-label="Document line items">
+          <thead>
+            <tr>
+              <th scope="col" class="th-num text-center">#</th>
+              <th scope="col" class="th-desc">Item Description *</th>
+              <th scope="col" class="th-qty text-end">Quantity *</th>
+              <th scope="col" class="th-unit">Unit</th>
+              <th scope="col" class="th-rate text-end">Rate (₹) *</th>
+              <th scope="col" class="th-amount text-end">Amount (₹)</th>
+              <th scope="col" class="th-action text-center" aria-label="Action"></th>
+            </tr>
+          </thead>
+          <tbody id="items-tbody">
+            <!-- Dynamic item rows will be populated via JavaScript -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Table Bottom Toolbar -->
+      <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+        <button type="button" class="btn-custom btn-custom-outline-primary" id="btn-add-item">
+          <i class="bi bi-plus-circle me-1"></i> Add Line Item
+        </button>
+        <span class="small text-muted-green" id="items-count-indicator">
+          At least 1 item required
+        </span>
+      </div>
+
+      <div class="invalid-feedback-custom d-none mt-2" id="items-validation-feedback">
+        At least one valid line item with description, positive quantity, and rate is required.
+      </div>
+    </div>
+
+    <!-- ===================================================================
+         SECTION E: GST & LIVE FINANCIAL SUMMARY
+         =================================================================== -->
+    <div class="card border-light shadow-sm p-4 mb-4 editor-section-card">
+      <div class="editor-section-header">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-calculator text-primary fs-5"></i>
+          <h5 class="mb-0 fw-bold">Taxes & Financial Summary</h5>
+        </div>
+        <span class="small text-muted">Authoritative totals calculated on server</span>
+      </div>
+
+      <div class="row g-4">
+        <!-- GST Configuration Column -->
+        <div class="col-12 col-lg-5 border-end-lg pe-lg-4">
+          <div class="p-3 bg-light rounded-3 mb-3">
+            <div class="form-check form-switch mb-3">
+              <input 
+                class="form-check-input" 
+                type="checkbox" 
+                id="gst-enabled-toggle" 
+                name="gstEnabled"
+                <%= (document && document.gstEnabled) ? 'checked' : '' %>
+              />
+              <label class="form-check-label fw-bold ms-2" for="gst-enabled-toggle">
+                Enable GST (India Goods & Services Tax)
+              </label>
+            </div>
+
+            <!-- GST Rate Selection -->
+            <div id="gst-rate-container" class="<%= (document && document.gstEnabled) ? '' : 'd-none' %>">
+              <label class="form-label-custom" for="gst-rate-select">Applicable GST Rate</label>
+              <select class="form-select-custom" id="gst-rate-select" name="gstRate" aria-label="Select GST Rate">
+                <option value="5" <%= (document && Number(document.gstRate) === 5) ? 'selected' : '' %>>5% (CGST 2.5% + SGST 2.5%)</option>
+                <option value="12" <%= (document && Number(document.gstRate) === 12) ? 'selected' : '' %>>12% (CGST 6% + SGST 6%)</option>
+                <option value="18" <%= (!document || Number(document.gstRate) === 18) ? 'selected' : '' %>>18% (CGST 9% + SGST 9%) - Standard</option>
+                <option value="28" <%= (document && Number(document.gstRate) === 28) ? 'selected' : '' %>>28% (CGST 14% + SGST 14%)</option>
+              </select>
+              <div class="form-text small text-muted mt-2">
+                <i class="bi bi-info-circle me-1"></i>Split equally between Central (CGST) and State (SGST) taxes.
+              </div>
+            </div>
+          </div>
+
+          <div class="small text-muted-green">
+            <i class="bi bi-shield-check text-success me-1"></i>
+            <strong>Financial Integrity:</strong> Display amounts update live for immediate feedback. When saved, the server rigorously verifies every item amount, subtotal, GST percentage, and round-off.
+          </div>
+        </div>
+
+        <!-- Totals Display Column -->
+        <div class="col-12 col-lg-7 ps-lg-4">
+          <div class="totals-summary-box p-3 rounded-3" aria-live="polite">
+            <!-- Subtotal (Taxable Value) -->
+            <div class="summary-line d-flex justify-content-between align-items-center mb-2">
+              <span class="summary-label text-muted-green">Subtotal (Taxable Amount):</span>
+              <span class="summary-value font-monospace fw-semibold fs-6" id="summary-subtotal">₹0.00</span>
+            </div>
+
+            <!-- GST Breakdown (Shown when enabled) -->
+            <div id="summary-gst-breakdown" class="<%= (document && document.gstEnabled) ? '' : 'd-none' %>">
+              <div class="summary-line d-flex justify-content-between align-items-center mb-1 ps-3 text-muted small">
+                <span id="summary-cgst-label">CGST (9.00%):</span>
+                <span class="font-monospace" id="summary-cgst-amount">₹0.00</span>
+              </div>
+              <div class="summary-line d-flex justify-content-between align-items-center mb-2 ps-3 text-muted small">
+                <span id="summary-sgst-label">SGST (9.00%):</span>
+                <span class="font-monospace" id="summary-sgst-amount">₹0.00</span>
+              </div>
+              <div class="summary-line d-flex justify-content-between align-items-center mb-2">
+                <span class="summary-label text-muted-green">Total GST:</span>
+                <span class="summary-value font-monospace fw-semibold text-primary" id="summary-gst-total">₹0.00</span>
+              </div>
+            </div>
+
+            <!-- Round Off -->
+            <div class="summary-line d-flex justify-content-between align-items-center mb-2 pt-2 border-top">
+              <span class="summary-label text-muted-green">Round Off:</span>
+              <span class="summary-value font-monospace small" id="summary-roundoff">₹0.00</span>
+            </div>
+
+            <!-- Grand Total -->
+            <div class="summary-line d-flex justify-content-between align-items-center pt-3 border-top grand-total-line">
+              <span class="grand-total-label fw-bold fs-5 text-main">Grand Total:</span>
+              <span class="grand-total-value font-monospace fw-bold fs-4 text-forest-dark" id="summary-grandtotal">₹0.00</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================================================================
+         SECTION F: TERMS & NOTES
+         =================================================================== -->
+    <div class="card border-light shadow-sm p-4 mb-4 editor-section-card">
+      <div class="editor-section-header">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-card-text text-secondary fs-5"></i>
+          <h5 class="mb-0 fw-bold">Terms & Remarks</h5>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-12 col-md-6">
+          <label class="form-label-custom" for="doc-terms">Terms & Conditions</label>
+          <textarea 
+            class="form-control-custom" 
+            id="doc-terms" 
+            name="terms" 
+            rows="3" 
+            placeholder="Payment due in 30 days. Goods once sold will not be taken back without prior authorization."
+          ><%= document ? (document.termsAndConditions || '') : '' %></textarea>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label-custom" for="doc-notes">Notes / Remarks</label>
+          <textarea 
+            class="form-control-custom" 
+            id="doc-notes" 
+            name="notes" 
+            rows="3" 
+            placeholder="Internal remarks or additional notes for the client..."
+          ><%= document ? (document.remarks || '') : '' %></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================================================================
+         SECTION G: ACTIONS FOOTER BAR
+         =================================================================== -->
+    <div class="editor-actions-card card border-light shadow-sm p-3 mb-5">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <button type="button" class="btn-custom btn-custom-secondary" id="btn-cancel">
+          <i class="bi bi-x-lg me-1"></i> Cancel
+        </button>
+
+        <div class="d-flex align-items-center gap-2">
+          <button type="submit" class="btn-custom btn-custom-primary btn-save-action" id="btn-save">
+            <span class="spinner-border spinner-border-sm d-none me-1" id="save-spinner" role="status" aria-hidden="true"></span>
+            <i class="bi bi-check2-circle me-1" id="save-icon"></i>
+            <span id="save-btn-text">
+              <%= isEdit ? 'Save Changes' : (isQuotation ? 'Save Quotation' : 'Save Invoice') %>
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Initial Document Hydration Scripts for Client-Side Controller -->
+<% 
+  const clientDocumentData = document ? {
+    id: document.id,
+    documentType: document.documentType,
+    invoiceNumber: document.invoiceNumber,
+    clientName: document.clientName,
+    clientEmail: document.clientEmail,
+    clientPhone: document.clientPhone,
+    billingAddress: document.billingAddress,
+    shippingAddress: document.shippingAddress,
+    termsAndConditions: document.termsAndConditions,
+    remarks: document.remarks,
+    invoiceDate: document.invoiceDate,
+    gstEnabled: document.gstEnabled,
+    gstRate: document.gstRate,
+    subtotal: document.subtotal,
+    gstAmount: document.gstAmount,
+    roundOff: document.roundOff,
+    grandTotal: document.grandTotal,
+    status: document.status,
+    version: document.version,
+    items: document.items || []
+  } : null;
+%>
+
+<%- include('../layouts/footer', { 
+    extraJs: `
+      <script>
+        window.__INITIAL_DOCUMENT__ = ${JSON.stringify(clientDocumentData)};
+        window.__EDITOR_MODE__ = "${mode}";
+        window.__DOCUMENT_TYPE__ = "${documentType}";
+      </script>
+      <script src="/js/editor.js"></script>
+    ` 
+}) %>

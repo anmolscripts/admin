@@ -334,7 +334,7 @@
                 showNoticeToast(`View workflow for document #${docId} will be available in Phase 3.`, 'bi-eye');
                 break;
             case 'edit':
-                showNoticeToast(`Edit document #${docId} will be available in Phase 3.`, 'bi-pencil');
+                window.location.href = `/documents/${docId}/edit`;
                 break;
             case 'convert':
                 showNoticeToast(`Quotation conversion workflow for #${docId} will be available in Phase 3.`, 'bi-arrow-repeat');
@@ -697,23 +697,6 @@
                     state.page++;
                     loadDocuments();
                 }
-            });
-        }
-
-        // New Document Dropdown Buttons (Phase 3 Stubs)
-        const newQuotationBtn = document.getElementById('btn-new-quotation');
-        if (newQuotationBtn) {
-            newQuotationBtn.addEventListener('click', function (e) {
-                e.preventDefault();
-                showNoticeToast('Quotation creation form will be available in Phase 3.', 'bi-file-earmark-text');
-            });
-        }
-
-        const newInvoiceBtn = document.getElementById('btn-new-invoice');
-        if (newInvoiceBtn) {
-            newInvoiceBtn.addEventListener('click', function (e) {
-                e.preventDefault();
-                showNoticeToast('Invoice creation form will be available in Phase 3.', 'bi-receipt');
             });
         }
 

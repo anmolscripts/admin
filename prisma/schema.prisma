@@ -43,6 +43,12 @@ model Invoice {
   documentType               DocumentType      @default(INVOICE)
   invoiceNumber              String            @unique @db.VarChar(50)
   clientName                 String            @db.VarChar(255)
+  clientEmail                String?           @db.VarChar(255)
+  clientPhone                String?           @db.VarChar(50)
+  billingAddress             String?           @db.Text
+  shippingAddress            String?           @db.Text
+  termsAndConditions         String?           @db.Text
+  remarks                    String?           @db.Text
   invoiceDate                DateTime          @db.Date
   gstEnabled                 Boolean           @default(false)
   gstRate                    Decimal           @default(0.00) @db.Decimal(5, 2)
