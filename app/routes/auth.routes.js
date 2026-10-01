@@ -1,92 +1,19 @@
 const express = require('express');
+const authController = require('../controllers/auth.controller');
+const { redirectIfAuthenticated } = require('../middleware/auth.middleware');
+const { loginRateLimiter } = require('../middleware/rateLimit.middleware');
 
 const router = express.Router();
 
+// ==========================================
+// Login Routes
+// ==========================================
+router.get('/login', redirectIfAuthenticated, authController.showLoginForm);
+router.post('/login', redirectIfAuthenticated, loginRateLimiter, authController.login);
 
 // ==========================================
-// Login Page
+// Logout Route (Only POST allowed)
 // ==========================================
-
-router.get('/login', (req, res) => {
-
-    // Already logged in
-    if (req.session.user) {
-        return res.redirect('/');
-    }
-
-    res.render('auth/login', {
-        pageTitle: 'Login',
-        error: null
-    });
-
-});
-
-
-// ==========================================
-// Login Submit
-// ==========================================
-
-router.post('/login', (req, res) => {
-
-    const { email, password } = req.body;
-
-    // Development credentials
-    const validUser = {
-        id: 1,
-        name: 'Administrator',
-        email: 'admin@email.com',
-        password: 'admin123'
-    };
-
-    // Validate credentials
-    if (
-        email !== validUser.email ||
-        password !== validUser.password
-    ) {
-
-        return res.status(401).render('auth/login', {
-            pageTitle: 'Login',
-            error: 'Invalid email or password.'
-        });
-
-    }
-
-    // Create session
-    req.session.user = {
-        id: validUser.id,
-        name: validUser.name,
-        email: validUser.email
-    };
-
-    // Redirect to dashboard
-    res.redirect('/');
-
-});
-
-
-// ==========================================
-// Logout
-// ==========================================
-
-router.get('/logout', (req, res) => {
-
-    req.session.destroy((error) => {
-
-        if (error) {
-            console.error('Logout error:', error);
-
-            return res.status(500).send(
-                'Unable to logout.'
-            );
-        }
-
-        res.clearCookie('connect.sid');
-
-        res.redirect('/login');
-
-    });
-
-});
-
+router.post('/logout', authController.logout);
 
 module.exports = router;

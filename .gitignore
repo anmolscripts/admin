@@ -92,3 +92,4 @@ desktop.ini
 
 *.swp
 *.swo
+/app/generated/prisma

@@ -14,8 +14,8 @@
     <link rel="icon" type="image/png" href="/images/favicon.ico">
 
     <!-- Local Third-Party Libraries (100% Offline Compatible) -->
-    <link rel="stylesheet" href="assets/libs/bootstrap/css/bootstrap.min.css">
-    <link rel="stylesheet" href="assets/libs/bootstrap-icons/bootstrap-icons.css">
+    <link rel="stylesheet" href="/libs/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/libs/bootstrap-icons/bootstrap-icons.css">
 
     <!-- Main Design System & Custom Stylesheet -->
     <link rel="stylesheet" href="/css/main.css">
@@ -44,6 +44,7 @@
 
             <!-- Login Form -->
             <form action="/login" method="POST" id="loginForm" class="needs-validation" novalidate>
+                <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>">
                 <% if (error) { %>
 
                     <div class="alert alert-danger" role="alert">
@@ -56,8 +57,8 @@
                             <label for="email" class="login-form-label">Email Address</label>
                             <div class="login-input-group">
                                 <i class="bi bi-envelope input-icon"></i>
-                                <input value="admin@email.com" type="email" name="email" id="email" class="login-input"
-                                    placeholder="name@company.com" required>
+                                <input value="<%= locals.email || '' %>" type="email" name="email" id="email" class="login-input"
+                                    placeholder="name@company.com" required autocomplete="username">
                             </div>
                         </div>
 
@@ -66,8 +67,8 @@
                             <label for="password" class="login-form-label">Password</label>
                             <div class="login-input-group">
                                 <i class="bi bi-shield-lock input-icon"></i>
-                                <input value="admin123" type="password" id="password" name="password"
-                                    class="login-input login-input-password" placeholder="••••••••" required>
+                                <input value="" type="password" id="password" name="password"
+                                    class="login-input login-input-password" placeholder="••••••••" required autocomplete="current-password">
                                 <button type="button" class="password-toggle-btn" id="toggle-password"
                                     aria-label="Show password">
                                     <i class="bi bi-eye"></i>
@@ -117,7 +118,7 @@
     <!-- END: Authentication Container -->
 
     <!-- Local Bootstrap bundle -->
-    <script src="assets/libs/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="/libs/bootstrap/js/bootstrap.bundle.min.js"></script>
 
     <!-- Custom Authentication interactions script -->
     <script src="/js/auth.js"></script>

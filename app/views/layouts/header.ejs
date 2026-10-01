@@ -110,8 +110,8 @@
       <img src="assets/images/avatar.png" alt="Administrator" class="sidebar-profile-img"
         onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=256&auto=format&fit=crop'">
       <div class="sidebar-profile-info">
-        <div class="sidebar-profile-name">Administrator</div>
-        <div class="sidebar-profile-email">admin@email.com</div>
+        <div class="sidebar-profile-name"><%= user ? user.name : 'Guest' %></div>
+        <div class="sidebar-profile-email"><%= user ? user.email : '' %></div>
       </div>
     </div>
   </div>
@@ -311,10 +311,13 @@
             </li>
 
             <li>
-              <a href="/logout" class="dropdown-item">
-                <i class="bi bi-box-arrow-right me-2"></i>
-                Logout
-              </a>
+              <form action="/logout" method="POST" class="m-0 p-0" id="logout-form">
+                <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>">
+                <button type="submit" class="dropdown-item">
+                  <i class="bi bi-box-arrow-right me-2"></i>
+                  Logout
+                </button>
+              </form>
             </li>
           </ul>
         </div>
