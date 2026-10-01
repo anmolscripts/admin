@@ -2,22 +2,126 @@
 // learn more about the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-    provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-    provider = "mysql"
+  provider = "mysql"
+}
+
+enum DocumentType {
+  QUOTATION
+  INVOICE
+}
+
+enum InvoiceStatus {
+  ACTIVE
+  INACTIVE
+  VOID
+  DELETED
 }
 
 model User {
-    id        Int      @id @default(autoincrement())
-    name      String   @db.VarChar(100)
-    email     String   @unique @db.VarChar(150)
-    password  String   @db.VarChar(255)
-    role      String   @default("ADMIN") @db.VarChar(30)
-    active    Boolean  @default(true)
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  id               Int               @id @default(autoincrement())
+  name             String            @db.VarChar(100)
+  email            String            @unique @db.VarChar(150)
+  password         String            @db.VarChar(255)
+  role             String            @default("ADMIN") @db.VarChar(30)
+  active           Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  invoicesCreated  Invoice[]         @relation("InvoiceCreatedBy")
+  invoicesUpdated  Invoice[]         @relation("InvoiceUpdatedBy")
+  invoicesDeleted  Invoice[]         @relation("InvoiceDeletedBy")
+  revisionsCreated InvoiceRevision[] @relation("RevisionChangedBy")
 
-    @@map("users")
+  @@map("users")
+}
+
+model Invoice {
+  id                         Int               @id @default(autoincrement())
+  documentType               DocumentType      @default(INVOICE)
+  invoiceNumber              String            @unique @db.VarChar(50)
+  clientName                 String            @db.VarChar(255)
+  invoiceDate                DateTime          @db.Date
+  gstEnabled                 Boolean           @default(false)
+  gstRate                    Decimal           @default(0.00) @db.Decimal(5, 2)
+  subtotal                   Decimal           @db.Decimal(12, 2)
+  gstAmount                  Decimal           @db.Decimal(12, 2)
+  roundOff                   Decimal           @db.Decimal(12, 2)
+  grandTotal                 Decimal           @db.Decimal(12, 2)
+  status                     InvoiceStatus     @default(ACTIVE)
+  previousStatusBeforeDelete InvoiceStatus?
+  deletedAt                  DateTime?
+  deletedById                Int?
+  deleteReason               String?           @db.Text
+  version                    Int               @default(1)
+  sourceQuotationId          Int?              @unique
+  createdById                Int
+  updatedById                Int
+  createdAt                  DateTime          @default(now())
+  updatedAt                  DateTime          @updatedAt
+  createdBy                  User              @relation("InvoiceCreatedBy", fields: [createdById], references: [id])
+  updatedBy                  User              @relation("InvoiceUpdatedBy", fields: [updatedById], references: [id])
+  deletedBy                  User?             @relation("InvoiceDeletedBy", fields: [deletedById], references: [id])
+  sourceQuotation            Invoice?          @relation("QuotationToInvoice", fields: [sourceQuotationId], references: [id], onDelete: Restrict)
+  convertedInvoice           Invoice?          @relation("QuotationToInvoice")
+  items                      InvoiceItem[]
+  revisions                  InvoiceRevision[]
+
+  @@index([documentType])
+  @@index([clientName])
+  @@index([status])
+  @@index([invoiceDate])
+  @@index([createdById])
+  @@index([updatedById])
+  @@index([deletedById])
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id         Int      @id @default(autoincrement())
+  invoiceId  Int
+  lineNumber Int
+  name       String   @db.VarChar(255)
+  quantity   Decimal  @db.Decimal(10, 2)
+  unit       String   @default("PCS") @db.VarChar(30)
+  rate       Decimal  @db.Decimal(12, 2)
+  amount     Decimal  @db.Decimal(12, 2)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  invoice    Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@map("invoice_items")
+}
+
+model InvoiceRevision {
+  id          Int      @id @default(autoincrement())
+  invoiceId   Int
+  revisionNo  Int
+  action      String   @db.VarChar(50)
+  changedById Int
+  changedAt   DateTime @default(now())
+  changes     Json
+  snapshot    Json
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  changedBy   User     @relation("RevisionChangedBy", fields: [changedById], references: [id])
+
+  @@unique([invoiceId, revisionNo])
+  @@index([invoiceId])
+  @@index([changedById])
+  @@map("invoice_revisions")
+}
+
+model InvoiceNumberSequence {
+  id            Int          @id @default(autoincrement())
+  documentType  DocumentType @default(INVOICE)
+  year          Int
+  currentNumber Int          @default(0)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@unique([documentType, year])
+  @@map("invoice_number_sequences")
 }
