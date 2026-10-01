@@ -819,6 +819,55 @@
             updateItemRowNumbers();
             recalculateTotals();
 
+        } else if (editorMode === 'create' && initialDoc) {
+            // Create Mode with Prefilled / Copied Data
+            const today = new Date();
+            docDateInput.value = formatDateToInputString(today);
+
+            const futureDate = new Date(today);
+            if (docType === 'QUOTATION') {
+                futureDate.setDate(futureDate.getDate() + 15);
+            } else {
+                futureDate.setDate(futureDate.getDate() + 30);
+            }
+            docDueDateInput.value = formatDateToInputString(futureDate);
+
+            if (clientNameInput && initialDoc.clientName) clientNameInput.value = initialDoc.clientName;
+            if (clientEmailInput && initialDoc.clientEmail) clientEmailInput.value = initialDoc.clientEmail;
+            if (clientPhoneInput && initialDoc.clientPhone) clientPhoneInput.value = initialDoc.clientPhone;
+            if (billingAddressInput && initialDoc.billingAddress) billingAddressInput.value = initialDoc.billingAddress;
+            if (shippingAddressInput && initialDoc.shippingAddress) shippingAddressInput.value = initialDoc.shippingAddress;
+            if (docTermsInput && initialDoc.termsAndConditions) docTermsInput.value = initialDoc.termsAndConditions;
+            if (docNotesInput && initialDoc.remarks) docNotesInput.value = initialDoc.remarks;
+
+            // Hydrate items
+            itemsTbody.innerHTML = '';
+            if (initialDoc.items && initialDoc.items.length > 0) {
+                initialDoc.items.forEach(item => {
+                    const row = createItemRow({
+                        name: item.name,
+                        quantity: Number(item.quantity),
+                        unit: item.unit,
+                        rate: Number(item.rate)
+                    });
+                    itemsTbody.appendChild(row);
+                });
+            } else {
+                addItemRow();
+            }
+
+            // GST
+            gstEnabledToggle.checked = Boolean(initialDoc.gstEnabled);
+            if (initialDoc.gstEnabled) {
+                gstRateContainer.classList.remove('d-none');
+                gstRateSelect.value = String(Number(initialDoc.gstRate));
+            } else {
+                gstRateContainer.classList.add('d-none');
+            }
+
+            updateItemRowNumbers();
+            recalculateTotals();
+
         } else {
             // Create Mode Defaults
             const today = new Date();

@@ -1,0 +1,851 @@
+<%
+  const isQuotation = document.documentType === 'QUOTATION';
+  const typeLabel = isQuotation ? 'Quotation' : 'Invoice';
+  const typeBadgeClass = isQuotation ? 'badge-type-quotation' : 'badge-type-invoice';
+  const typeIcon = isQuotation ? 'bi-file-earmark-text' : 'bi-receipt';
+
+  function formatMoney(amount) {
+    const num = Number(amount);
+    if (isNaN(num)) return '₹0.00';
+    const isNegative = num < 0;
+    const absNum = Math.abs(num);
+    const parts = absNum.toFixed(2).split('.');
+    let intPart = parts[0];
+    const decPart = parts[1];
+    if (intPart.length > 3) {
+      const lastThree = intPart.substring(intPart.length - 3);
+      const remaining = intPart.substring(0, intPart.length - 3);
+      intPart = remaining.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + lastThree;
+    }
+    return (isNegative ? '-₹' : '₹') + intPart + '.' + decPart;
+  }
+
+  function formatDate(d) {
+    if (!d) return '—';
+    const dt = new Date(d);
+    if (isNaN(dt.getTime())) return '—';
+    const day = String(dt.getDate()).padStart(2, '0');
+    const month = String(dt.getMonth() + 1).padStart(2, '0');
+    const year = dt.getFullYear();
+    return `${day}/${month}/${year}`;
+  }
+
+  function formatDateTime(d) {
+    if (!d) return '—';
+    const dt = new Date(d);
+    if (isNaN(dt.getTime())) return '—';
+    return dt.toLocaleString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  // Calculate display due/validity date
+  let displayDueDate = '—';
+  if (document.invoiceDate) {
+    const d = new Date(document.invoiceDate);
+    if (!isNaN(d.getTime())) {
+      d.setDate(d.getDate() + (isQuotation ? 15 : 30));
+      displayDueDate = formatDate(d);
+    }
+  }
+
+  const headerActionHtml = `
+    <a href="/documents" class="btn-custom btn-custom-light btn-back-documents" aria-label="Back to documents listing">
+      <i class="bi bi-arrow-left me-1"></i>
+      <span>Back to Documents</span>
+    </a>
+  `;
+%>
+
+<%- include('../layouts/header', { 
+    pageTitle: pageTitle, 
+    pageSubtitle: pageSubtitle, 
+    extraCss: '<link rel="stylesheet" href="/css/documents.css"><link rel="stylesheet" href="/css/view.css">', 
+    headerAction: headerActionHtml 
+}) %>
+
+<!-- Hidden CSRF Token -->
+<input type="hidden" id="csrf-token" value="<%= csrfToken %>" />
+
+<div class="document-view-container" id="view-container">
+
+  <!-- 409 Optimistic Concurrency Conflict Alert Banner -->
+  <div class="alert alert-warning border-warning d-none mb-4 shadow-sm" id="conflict-alert" role="alert">
+    <div class="d-flex align-items-start gap-3">
+      <i class="bi bi-exclamation-triangle-fill fs-4 text-warning"></i>
+      <div class="flex-grow-1">
+        <h6 class="alert-heading fw-bold mb-1">Concurrency Conflict</h6>
+        <p class="mb-2" id="conflict-message">
+          This document was modified by another session. Please reload the latest version before retrying.
+        </p>
+        <button type="button" class="btn-custom btn-custom-warning btn-custom-sm" id="btn-reload-conflict">
+          <i class="bi bi-arrow-clockwise me-1"></i> Reload Latest Version
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- General Action Feedback Alert -->
+  <div class="alert alert-danger alert-dismissible fade d-none mb-4 shadow-sm" id="action-feedback-alert" role="alert">
+    <div class="d-flex align-items-center">
+      <i class="bi bi-exclamation-circle-fill me-2 fs-5"></i>
+      <span id="feedback-message">An error occurred.</span>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+
+  <!-- Converted Success Toast / Notice if just converted -->
+  <% if (document.status === 'VOID') { %>
+  <div class="alert alert-dark border-secondary d-flex align-items-center gap-3 mb-4 shadow-sm" role="alert">
+    <i class="bi bi-slash-circle-fill text-muted fs-4"></i>
+    <div>
+      <h6 class="alert-heading fw-bold mb-0">Permanently Voided</h6>
+      <div class="small text-muted">This document is marked as VOID. It is permanently locked and cannot be edited, activated, or deleted.</div>
+    </div>
+  </div>
+  <% } else if (document.status === 'DELETED') { %>
+  <div class="alert alert-danger border-danger d-flex align-items-center justify-content-between mb-4 shadow-sm" role="alert">
+    <div class="d-flex align-items-center gap-3">
+      <i class="bi bi-trash3-fill text-danger fs-4"></i>
+      <div>
+        <h6 class="alert-heading fw-bold mb-0">Document Soft-Deleted</h6>
+        <div class="small text-danger">
+          Reason: <strong><%= document.deleteReason || 'Deleted by user' %></strong> 
+          • Deleted on: <%= formatDateTime(document.deletedAt) %> 
+          <% if (document.deletedBy) { %>• By: <%= document.deletedBy.name || document.deletedBy.email %><% } %>
+        </div>
+      </div>
+    </div>
+    <button type="button" class="btn-custom btn-custom-success btn-custom-sm" data-bs-toggle="modal" data-bs-target="#modal-restore">
+      <i class="bi bi-arrow-counterclockwise me-1"></i> Restore Document
+    </button>
+  </div>
+  <% } %>
+
+  <!-- Source / Conversion Relationship Cards -->
+  <% if (document.convertedInvoice) { %>
+  <div class="conversion-relation-card d-flex align-items-center justify-content-between shadow-sm">
+    <div class="d-flex align-items-center gap-3">
+      <i class="bi bi-arrow-right-circle-fill text-success fs-3"></i>
+      <div>
+        <div class="fw-bold text-forest-dark">Converted to Invoice</div>
+        <div class="small text-muted">
+          This quotation was officially converted to invoice 
+          <strong class="font-monospace text-primary"><%= document.convertedInvoice.invoiceNumber %></strong>.
+        </div>
+      </div>
+    </div>
+    <a href="/documents/<%= document.convertedInvoice.id %>" class="btn-custom btn-custom-outline-primary btn-custom-sm" id="btn-view-converted-invoice">
+      <i class="bi bi-receipt me-1"></i> View Converted Invoice
+    </a>
+  </div>
+  <% } %>
+
+  <% if (document.sourceQuotation) { %>
+  <div class="conversion-relation-card d-flex align-items-center justify-content-between shadow-sm">
+    <div class="d-flex align-items-center gap-3">
+      <i class="bi bi-link-45deg text-primary fs-3"></i>
+      <div>
+        <div class="fw-bold text-forest-dark">Generated from Quotation</div>
+        <div class="small text-muted">
+          This invoice was created by converting quotation 
+          <strong class="font-monospace text-primary"><%= document.sourceQuotation.invoiceNumber %></strong>.
+        </div>
+      </div>
+    </div>
+    <a href="/documents/<%= document.sourceQuotation.id %>" class="btn-custom btn-custom-outline-primary btn-custom-sm" id="btn-view-source-quotation">
+      <i class="bi bi-file-earmark-text me-1"></i> View Source Quotation
+    </a>
+  </div>
+  <% } %>
+
+  <!-- ===================================================================
+       TOP ACTION & IDENTITY BAR
+       =================================================================== -->
+  <div class="view-header-bar d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <!-- Left: Identity & Status Badges -->
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+      <span class="badge-doc-type <%= typeBadgeClass %>">
+        <i class="bi <%= typeIcon %> me-1"></i><%= document.documentType %>
+      </span>
+
+      <span class="doc-hero-number" id="view-doc-number"><%= document.invoiceNumber %></span>
+
+      <% if (document.status === 'ACTIVE') { %>
+        <span class="badge-doc-status badge-status-active" id="view-doc-status">
+          <i class="bi bi-check-circle-fill me-1"></i>ACTIVE
+        </span>
+      <% } else if (document.status === 'INACTIVE') { %>
+        <span class="badge-doc-status badge-status-inactive" id="view-doc-status">
+          <i class="bi bi-pause-circle-fill me-1"></i>INACTIVE
+        </span>
+      <% } else if (document.status === 'VOID') { %>
+        <span class="badge-doc-status badge-status-void" id="view-doc-status">
+          <i class="bi bi-slash-circle-fill me-1"></i>VOID
+        </span>
+      <% } else if (document.status === 'DELETED') { %>
+        <span class="badge-doc-status badge-status-deleted" id="view-doc-status">
+          <i class="bi bi-trash3-fill me-1"></i>DELETED
+        </span>
+      <% } %>
+
+      <span class="version-pill" id="view-doc-version">v<%= document.version %></span>
+    </div>
+
+    <!-- Right: Status-Aware Action Controls -->
+    <div class="view-actions-group" id="view-actions-toolbar">
+      <% if (document.status === 'ACTIVE') { %>
+        <% if (isQuotation && !document.convertedInvoice) { %>
+          <button type="button" class="btn-custom btn-custom-primary" id="btn-action-convert" data-bs-toggle="modal" data-bs-target="#modal-convert">
+            <i class="bi bi-arrow-repeat me-1"></i> Convert to Invoice
+          </button>
+        <% } %>
+
+        <a href="/documents/<%= document.id %>/edit" class="btn-custom btn-custom-outline-primary" id="btn-action-edit">
+          <i class="bi bi-pencil me-1"></i> Edit
+        </a>
+
+        <a href="/documents/new?copyFrom=<%= document.id %>" class="btn-custom btn-custom-secondary" id="btn-action-copy">
+          <i class="bi bi-files me-1"></i> Copy
+        </a>
+
+        <div class="dropdown">
+          <button class="btn-custom btn-custom-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More actions">
+            <i class="bi bi-three-dots-vertical"></i>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li>
+              <button class="dropdown-item text-warning" type="button" data-bs-toggle="modal" data-bs-target="#modal-deactivate" id="dropdown-btn-deactivate">
+                <i class="bi bi-pause-circle me-2"></i> Deactivate Document
+              </button>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <button class="dropdown-item text-danger" type="button" data-bs-toggle="modal" data-bs-target="#modal-void" id="dropdown-btn-void">
+                <i class="bi bi-slash-circle me-2"></i> Void Document
+              </button>
+            </li>
+            <li>
+              <button class="dropdown-item text-danger" type="button" data-bs-toggle="modal" data-bs-target="#modal-delete" id="dropdown-btn-delete">
+                <i class="bi bi-trash3 me-2"></i> Delete Document
+              </button>
+            </li>
+          </ul>
+        </div>
+
+      <% } else if (document.status === 'INACTIVE') { %>
+        <button type="button" class="btn-custom btn-custom-success" id="btn-action-activate" data-bs-toggle="modal" data-bs-target="#modal-activate">
+          <i class="bi bi-play-circle me-1"></i> Activate
+        </button>
+
+        <a href="/documents/<%= document.id %>/edit" class="btn-custom btn-custom-outline-primary" id="btn-action-edit">
+          <i class="bi bi-pencil me-1"></i> Edit
+        </a>
+
+        <a href="/documents/new?copyFrom=<%= document.id %>" class="btn-custom btn-custom-secondary" id="btn-action-copy">
+          <i class="bi bi-files me-1"></i> Copy
+        </a>
+
+        <div class="dropdown">
+          <button class="btn-custom btn-custom-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More actions">
+            <i class="bi bi-three-dots-vertical"></i>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li>
+              <button class="dropdown-item text-danger" type="button" data-bs-toggle="modal" data-bs-target="#modal-void" id="dropdown-btn-void">
+                <i class="bi bi-slash-circle me-2"></i> Void Document
+              </button>
+            </li>
+            <li>
+              <button class="dropdown-item text-danger" type="button" data-bs-toggle="modal" data-bs-target="#modal-delete" id="dropdown-btn-delete">
+                <i class="bi bi-trash3 me-2"></i> Delete Document
+              </button>
+            </li>
+          </ul>
+        </div>
+
+      <% } else if (document.status === 'VOID') { %>
+        <a href="/documents/new?copyFrom=<%= document.id %>" class="btn-custom btn-custom-secondary" id="btn-action-copy">
+          <i class="bi bi-files me-1"></i> Copy Document
+        </a>
+
+      <% } else if (document.status === 'DELETED') { %>
+        <button type="button" class="btn-custom btn-custom-success" id="btn-action-restore" data-bs-toggle="modal" data-bs-target="#modal-restore">
+          <i class="bi bi-arrow-counterclockwise me-1"></i> Restore Document
+        </button>
+
+        <a href="/documents/new?copyFrom=<%= document.id %>" class="btn-custom btn-custom-secondary" id="btn-action-copy">
+          <i class="bi bi-files me-1"></i> Copy Document
+        </a>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- ===================================================================
+       DOCUMENT METADATA CARD
+       =================================================================== -->
+  <div class="view-card">
+    <div class="view-card-header">
+      <h3 class="view-card-title">
+        <i class="bi bi-info-circle text-primary"></i>
+        <span>Document Overview</span>
+      </h3>
+      <span class="small text-muted font-monospace">ID: <%= document.id %></span>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-6 col-md-3">
+        <div class="meta-field">
+          <div class="meta-field-label">Document Number</div>
+          <div class="meta-field-value font-monospace fw-bold text-main"><%= document.invoiceNumber %></div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="meta-field">
+          <div class="meta-field-label">Document Type</div>
+          <div class="meta-field-value fw-semibold"><%= typeLabel %></div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="meta-field">
+          <div class="meta-field-label"><%= isQuotation ? 'Quotation Date' : 'Invoice Date' %></div>
+          <div class="meta-field-value"><%= formatDate(document.invoiceDate) %></div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="meta-field">
+          <div class="meta-field-label"><%= isQuotation ? 'Valid Until' : 'Due Date' %></div>
+          <div class="meta-field-value"><%= displayDueDate %></div>
+        </div>
+      </div>
+
+      <div class="col-6 col-md-3">
+        <div class="meta-field">
+          <div class="meta-field-label">Created At</div>
+          <div class="meta-field-value small text-muted"><%= formatDateTime(document.createdAt) %></div>
+          <% if (document.createdBy) { %>
+            <div class="small text-muted">by <%= document.createdBy.name || document.createdBy.email %></div>
+          <% } %>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="meta-field">
+          <div class="meta-field-label">Last Updated</div>
+          <div class="meta-field-value small text-muted"><%= formatDateTime(document.updatedAt) %></div>
+          <% if (document.updatedBy) { %>
+            <div class="small text-muted">by <%= document.updatedBy.name || document.updatedBy.email %></div>
+          <% } %>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="meta-field">
+          <div class="meta-field-label">Tax Specification</div>
+          <div class="meta-field-value">
+            <%= document.gstEnabled ? `GST Registered (${Number(document.gstRate).toFixed(2)}%)` : 'Non-GST' %>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="meta-field">
+          <div class="meta-field-label">Current Version</div>
+          <div class="meta-field-value font-monospace fw-semibold">Revision <%= document.version %></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================
+       CLIENT & ADDRESSES CARD
+       =================================================================== -->
+  <div class="view-card">
+    <div class="view-card-header">
+      <h3 class="view-card-title">
+        <i class="bi bi-building text-info"></i>
+        <span>Client & Delivery Details</span>
+      </h3>
+    </div>
+
+    <!-- Client Primary Info -->
+    <div class="row g-3 mb-4">
+      <div class="col-12 col-md-6">
+        <div class="meta-field">
+          <div class="meta-field-label">Client / Company Name</div>
+          <div class="meta-field-value fs-5 fw-bold text-forest-dark"><%= document.clientName %></div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="meta-field">
+          <div class="meta-field-label">Email Address</div>
+          <div class="meta-field-value">
+            <% if (document.clientEmail) { %>
+              <a href="mailto:<%= document.clientEmail %>" class="text-decoration-none text-primary">
+                <i class="bi bi-envelope me-1"></i><%= document.clientEmail %>
+              </a>
+            <% } else { %>
+              <span class="text-muted">—</span>
+            <% } %>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="meta-field">
+          <div class="meta-field-label">Phone Number</div>
+          <div class="meta-field-value">
+            <% if (document.clientPhone) { %>
+              <a href="tel:<%= document.clientPhone %>" class="text-decoration-none text-primary">
+                <i class="bi bi-telephone me-1"></i><%= document.clientPhone %>
+              </a>
+            <% } else { %>
+              <span class="text-muted">—</span>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Billing & Shipping Addresses -->
+    <div class="row g-3">
+      <div class="col-12 col-md-6">
+        <div class="address-card">
+          <div class="meta-field-label d-flex align-items-center gap-1 mb-2">
+            <i class="bi bi-geo-alt text-success"></i>
+            <span>Billing Address</span>
+          </div>
+          <div class="address-content"><%= document.billingAddress || 'No billing address provided.' %></div>
+        </div>
+      </div>
+      <div class="col-12 col-md-6">
+        <div class="address-card">
+          <div class="meta-field-label d-flex align-items-center gap-1 mb-2">
+            <i class="bi bi-truck text-primary"></i>
+            <span>Shipping / Delivery Address</span>
+          </div>
+          <div class="address-content"><%= document.shippingAddress || 'No shipping address provided.' %></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================
+       LINE ITEMS TABLE CARD
+       =================================================================== -->
+  <div class="view-card">
+    <div class="view-card-header">
+      <h3 class="view-card-title">
+        <i class="bi bi-list-ol text-primary"></i>
+        <span>Line Items</span>
+      </h3>
+      <span class="small text-muted font-monospace"><%= (document.items || []).length %> item<%= (document.items || []).length === 1 ? '' : 's' %></span>
+    </div>
+
+    <div class="table-responsive view-table-wrapper">
+      <table class="table view-items-table align-middle" aria-label="Document line items">
+        <thead>
+          <tr>
+            <th scope="col" class="text-center" style="width: 50px;">#</th>
+            <th scope="col">Description</th>
+            <th scope="col" class="text-end" style="width: 120px;">Quantity</th>
+            <th scope="col" style="width: 100px;">Unit</th>
+            <th scope="col" class="text-end" style="width: 140px;">Rate (₹)</th>
+            <th scope="col" class="text-end" style="width: 150px;">Amount (₹)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (document.items && document.items.length > 0) { %>
+            <% document.items.forEach((item, index) => { %>
+              <tr>
+                <td class="text-center font-monospace text-muted"><%= item.lineNumber || (index + 1) %></td>
+                <td class="fw-medium text-main"><%= item.name %></td>
+                <td class="text-end font-monospace"><%= Number(item.quantity).toFixed(2) %></td>
+                <td><span class="badge bg-light text-dark border"><%= item.unit || 'PCS' %></span></td>
+                <td class="text-end font-monospace"><%= formatMoney(item.rate) %></td>
+                <td class="text-end font-monospace fw-semibold"><%= formatMoney(item.amount) %></td>
+              </tr>
+            <% }); %>
+          <% } else { %>
+            <tr>
+              <td colspan="6" class="text-center py-4 text-muted">No line items in this document.</td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===================================================================
+       FINANCIAL TOTALS & TAX CARD
+       =================================================================== -->
+  <div class="row g-4 mb-4">
+    <!-- Left: Terms & Remarks -->
+    <div class="col-12 col-lg-7">
+      <div class="view-card h-100 mb-0">
+        <div class="view-card-header">
+          <h3 class="view-card-title">
+            <i class="bi bi-card-text text-secondary"></i>
+            <span>Terms & Conditions / Remarks</span>
+          </h3>
+        </div>
+        <div class="mb-4">
+          <div class="meta-field-label">Terms & Conditions</div>
+          <div class="p-3 bg-light rounded border text-muted small" style="white-space: pre-line;">
+            <%= document.termsAndConditions || 'No specific terms specified for this document.' %>
+          </div>
+        </div>
+        <div>
+          <div class="meta-field-label">Notes & Remarks</div>
+          <div class="p-3 bg-light rounded border text-muted small" style="white-space: pre-line;">
+            <%= document.remarks || 'No remarks added.' %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Server-Authoritative Financial Totals -->
+    <div class="col-12 col-lg-5">
+      <div class="view-card h-100 mb-0">
+        <div class="view-card-header">
+          <h3 class="view-card-title">
+            <i class="bi bi-calculator text-success"></i>
+            <span>Financial Summary</span>
+          </h3>
+          <span class="small text-muted font-monospace">INR (₹)</span>
+        </div>
+
+        <div class="view-summary-box">
+          <div class="view-summary-line">
+            <span class="text-muted">Subtotal:</span>
+            <span class="font-monospace fw-semibold"><%= formatMoney(document.subtotal) %></span>
+          </div>
+
+          <% if (document.gstEnabled) { %>
+            <% 
+              const numericRate = Number(document.gstRate);
+              const halfRate = (numericRate / 2).toFixed(2);
+              const totalGst = Number(document.gstAmount);
+              const halfGst = Math.round((totalGst / 2) * 100) / 100;
+              const remainingGst = Math.round((totalGst - halfGst) * 100) / 100;
+            %>
+            <div class="view-summary-line ps-2 text-muted small">
+              <span>CGST (<%= halfRate %>%):</span>
+              <span class="font-monospace"><%= formatMoney(halfGst) %></span>
+            </div>
+            <div class="view-summary-line ps-2 text-muted small">
+              <span>SGST (<%= halfRate %>%):</span>
+              <span class="font-monospace"><%= formatMoney(remainingGst) %></span>
+            </div>
+            <div class="view-summary-line border-top pt-1 mt-1">
+              <span class="fw-semibold text-primary">Total GST (<%= numericRate.toFixed(2) %>%):</span>
+              <span class="font-monospace fw-bold text-primary"><%= formatMoney(document.gstAmount) %></span>
+            </div>
+          <% } %>
+
+          <div class="view-summary-line border-top pt-2 mt-1">
+            <span class="text-muted">Round Off:</span>
+            <span class="font-monospace small <%= Number(document.roundOff) >= 0 ? 'text-success' : 'text-danger' %>">
+              <%= (Number(document.roundOff) >= 0 ? '+' : '') + formatMoney(document.roundOff) %>
+            </span>
+          </div>
+
+          <div class="grand-total-box d-flex justify-content-between align-items-center">
+            <span class="fw-bold fs-5 text-forest-dark">Grand Total:</span>
+            <span class="grand-total-amount"><%= formatMoney(document.grandTotal) %></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================
+       ACTIVITY TIMELINE / REVISION HISTORY CARD
+       =================================================================== -->
+  <div class="view-card">
+    <div class="view-card-header">
+      <h3 class="view-card-title">
+        <i class="bi bi-clock-history text-secondary"></i>
+        <span>Activity & Revision History</span>
+      </h3>
+      <span class="small text-muted font-monospace"><%= (document.revisions || []).length %> record<%= (document.revisions || []).length === 1 ? '' : 's' %></span>
+    </div>
+
+    <% if (document.revisions && document.revisions.length > 0) { %>
+      <div class="timeline-container">
+        <% document.revisions.forEach((rev) => { %>
+          <%
+            const ACTION_LABELS = {
+              CREATED: 'Created',
+              UPDATED: 'Updated',
+              ACTIVATED: 'Activated',
+              DEACTIVATED: 'Deactivated',
+              VOIDED: 'Voided',
+              DELETED: 'Deleted',
+              SOFT_DELETED: 'Deleted',
+              RESTORED: 'Restored',
+              CONVERTED: 'Converted',
+              STATUS_CHANGED: 'Status Changed'
+            };
+            let badgeClass = 'action-badge-created';
+            let iconClass = 'bi-plus-circle-fill text-success';
+            if (rev.action === 'UPDATED') { badgeClass = 'action-badge-updated'; iconClass = 'bi-pencil-fill text-primary'; }
+            else if (rev.action === 'ACTIVATED') { badgeClass = 'action-badge-activated'; iconClass = 'bi-check-circle-fill text-success'; }
+            else if (rev.action === 'DEACTIVATED') { badgeClass = 'action-badge-deactivated'; iconClass = 'bi-pause-circle-fill text-warning'; }
+            else if (rev.action === 'VOIDED') { badgeClass = 'action-badge-voided'; iconClass = 'bi-slash-circle-fill text-secondary'; }
+            else if (rev.action === 'DELETED' || rev.action === 'SOFT_DELETED') { badgeClass = 'action-badge-deleted'; iconClass = 'bi-trash3-fill text-danger'; }
+            else if (rev.action === 'RESTORED') { badgeClass = 'action-badge-restored'; iconClass = 'bi-arrow-counterclockwise text-info'; }
+            else if (rev.action === 'CONVERTED') { badgeClass = 'action-badge-converted'; iconClass = 'bi-arrow-repeat text-purple'; }
+            else if (rev.action === 'STATUS_CHANGED') { badgeClass = 'action-badge-status-changed'; iconClass = 'bi-arrow-left-right text-info'; }
+            const displayAction = ACTION_LABELS[rev.action] || rev.action;
+          %>
+          <div class="timeline-entry">
+            <div class="timeline-icon">
+              <i class="bi <%= iconClass %>"></i>
+            </div>
+            <div class="timeline-card">
+              <div class="timeline-header">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="timeline-action-badge <%= badgeClass %>"><%= displayAction %></span>
+                  <span class="font-monospace small text-muted">Rev <%= rev.revisionNo %></span>
+                </div>
+                <div class="timeline-meta">
+                  <%= formatDateTime(rev.createdAt) %>
+                  <% if (rev.changedBy) { %>
+                    • <span class="fw-semibold text-dark"><%= rev.changedBy.name || rev.changedBy.email %></span>
+                  <% } %>
+                </div>
+              </div>
+              <% if (rev.changes && typeof rev.changes === 'object') { %>
+                <div class="timeline-details small">
+                  <% if (rev.changes.summary) { %>
+                    <div class="text-main fw-medium"><%= rev.changes.summary %></div>
+                  <% } else if (rev.changes.fromStatus && rev.changes.toStatus) { %>
+                    <div>Status changed from <span class="badge bg-light text-dark"><%= rev.changes.fromStatus %></span> to <span class="badge bg-light text-dark"><%= rev.changes.toStatus %></span>.</div>
+                  <% } else if (rev.changes.deleteReason) { %>
+                    <div>Reason: <span class="fst-italic"><%= rev.changes.deleteReason %></span></div>
+                  <% } else if (Object.keys(rev.changes).length > 0) { %>
+                    <div class="text-muted">Modified: <%= Object.keys(rev.changes).filter(k => k !== 'items').join(', ') %></div>
+                  <% } %>
+                </div>
+              <% } %>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } else { %>
+      <div class="text-center py-4 text-muted">No revision history found.</div>
+    <% } %>
+  </div>
+
+</div>
+
+<!-- ===================================================================
+     MODALS: LIFECYCLE ACTION CONFIRMATIONS
+     =================================================================== -->
+
+<!-- 1. Activate Modal -->
+<div class="modal fade" id="modal-activate" tabindex="-1" aria-labelledby="modal-activate-title" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="modal-activate-title">
+          <i class="bi bi-play-circle me-1"></i> Activate <%= typeLabel %>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p class="mb-2">Are you sure you want to activate <strong><%= document.invoiceNumber %></strong>?</p>
+        <p class="text-muted small mb-0">Active documents can be sent to clients and undergo further business processing.</p>
+      </div>
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn-custom btn-custom-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn-custom btn-custom-success" id="btn-confirm-activate">
+          <span class="spinner-border spinner-border-sm d-none me-1" id="spinner-activate" role="status" aria-hidden="true"></span>
+          Confirm Activation
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 2. Deactivate Modal -->
+<div class="modal fade" id="modal-deactivate" tabindex="-1" aria-labelledby="modal-deactivate-title" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title" id="modal-deactivate-title">
+          <i class="bi bi-pause-circle me-1"></i> Deactivate <%= typeLabel %>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p class="mb-2">Are you sure you want to pause / deactivate <strong><%= document.invoiceNumber %></strong>?</p>
+        <p class="text-muted small mb-0">Deactivating places this document on hold. You can re-activate it at any time.</p>
+      </div>
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn-custom btn-custom-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn-custom btn-custom-warning" id="btn-confirm-deactivate">
+          <span class="spinner-border spinner-border-sm d-none me-1" id="spinner-deactivate" role="status" aria-hidden="true"></span>
+          Confirm Deactivation
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 3. Void Modal -->
+<div class="modal fade" id="modal-void" tabindex="-1" aria-labelledby="modal-void-title" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-dark text-white">
+        <h5 class="modal-title" id="modal-void-title">
+          <i class="bi bi-slash-circle me-1"></i> Void <%= typeLabel %>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="alert alert-danger d-flex align-items-center gap-2 mb-3">
+          <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+          <div><strong>Irreversible Action:</strong> Voiding is permanent. Once voided, this document cannot be edited or reactivated.</div>
+        </div>
+        <p class="mb-3">Void <strong><%= document.invoiceNumber %></strong> for client <strong><%= document.clientName %></strong>?</p>
+        <div class="mb-2">
+          <label class="form-label small fw-semibold text-muted" for="void-reason">Reason for Voiding (Optional):</label>
+          <input type="text" class="form-control" id="void-reason" placeholder="e.g. Order cancelled, duplicate document" maxlength="255" />
+        </div>
+      </div>
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn-custom btn-custom-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn-custom btn-custom-danger" id="btn-confirm-void">
+          <span class="spinner-border spinner-border-sm d-none me-1" id="spinner-void" role="status" aria-hidden="true"></span>
+          Confirm Void
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 4. Delete Modal -->
+<div class="modal fade" id="modal-delete" tabindex="-1" aria-labelledby="modal-delete-title" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="modal-delete-title">
+          <i class="bi bi-trash3 me-1"></i> Soft Delete <%= typeLabel %>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p class="mb-2">Move <strong><%= document.invoiceNumber %></strong> to Deleted?</p>
+        <p class="text-muted small mb-3">This document will be hidden from standard views. It can be restored later if required.</p>
+        <div class="mb-2">
+          <label class="form-label small fw-semibold text-muted" for="delete-reason">Reason for Deletion (Optional):</label>
+          <input type="text" class="form-control" id="delete-reason" placeholder="e.g. Created in error, customer request" maxlength="255" />
+        </div>
+      </div>
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn-custom btn-custom-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn-custom btn-custom-danger" id="btn-confirm-delete">
+          <span class="spinner-border spinner-border-sm d-none me-1" id="spinner-delete" role="status" aria-hidden="true"></span>
+          Move to Deleted
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 5. Restore Modal -->
+<div class="modal fade" id="modal-restore" tabindex="-1" aria-labelledby="modal-restore-title" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="modal-restore-title">
+          <i class="bi bi-arrow-counterclockwise me-1"></i> Restore <%= typeLabel %>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p class="mb-2">Restore <strong><%= document.invoiceNumber %></strong> back to active circulation?</p>
+        <p class="text-muted small mb-0">The document will return to its previous status (<%= document.previousStatusBeforeDelete || 'ACTIVE' %>) and audit history will record the restoration.</p>
+      </div>
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn-custom btn-custom-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn-custom btn-custom-success" id="btn-confirm-restore">
+          <span class="spinner-border spinner-border-sm d-none me-1" id="spinner-restore" role="status" aria-hidden="true"></span>
+          Confirm Restore
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 6. Convert Modal (Quotations Only) -->
+<% if (isQuotation) { %>
+<div class="modal fade" id="modal-convert" tabindex="-1" aria-labelledby="modal-convert-title" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="modal-convert-title">
+          <i class="bi bi-arrow-repeat me-1"></i> Convert Quotation to Invoice
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p class="mb-3">You are about to convert quotation <strong class="font-monospace"><%= document.invoiceNumber %></strong> into an official tax invoice.</p>
+        
+        <div class="p-3 bg-light rounded border mb-3">
+          <div class="d-flex justify-content-between mb-1">
+            <span class="text-muted small">Client:</span>
+            <span class="fw-bold"><%= document.clientName %></span>
+          </div>
+          <div class="d-flex justify-content-between mb-1">
+            <span class="text-muted small">Items Count:</span>
+            <span class="font-monospace"><%= (document.items || []).length %> items</span>
+          </div>
+          <div class="d-flex justify-content-between border-top pt-2">
+            <span class="fw-bold text-forest-dark">Grand Total:</span>
+            <span class="fw-bold font-monospace text-forest-dark fs-5"><%= formatMoney(document.grandTotal) %></span>
+          </div>
+        </div>
+
+        <ul class="text-muted small mb-0 ps-3">
+          <li>A brand new <strong>INV-YYYY-NNNN</strong> document will be created.</li>
+          <li>This quotation will be permanently linked to the new invoice.</li>
+          <li>A quotation can only be converted once.</li>
+        </ul>
+      </div>
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn-custom btn-custom-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn-custom btn-custom-primary" id="btn-confirm-convert">
+          <span class="spinner-border spinner-border-sm d-none me-1" id="spinner-convert" role="status" aria-hidden="true"></span>
+          Convert to Invoice
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<% } %>
+
+<!-- Hydration Context Data for View Controller -->
+<%
+  const clientViewDoc = {
+    id: document.id,
+    documentType: document.documentType,
+    invoiceNumber: document.invoiceNumber,
+    status: document.status,
+    version: document.version,
+    clientName: document.clientName,
+    grandTotal: document.grandTotal
+  };
+%>
+
+<%- include('../layouts/footer', { 
+    extraJs: `
+      <script>
+        window.__DOCUMENT_DATA__ = ${JSON.stringify(clientViewDoc)};
+      </script>
+      <script src="/js/view.js"></script>
+    ` 
+}) %>
+

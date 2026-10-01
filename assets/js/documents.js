@@ -331,16 +331,16 @@
     function handleRowAction(actionKey, docId) {
         switch (actionKey) {
             case 'view':
-                showNoticeToast(`View workflow for document #${docId} will be available in Phase 3.`, 'bi-eye');
+                window.location.href = `/documents/${docId}`;
                 break;
             case 'edit':
                 window.location.href = `/documents/${docId}/edit`;
                 break;
             case 'convert':
-                showNoticeToast(`Quotation conversion workflow for #${docId} will be available in Phase 3.`, 'bi-arrow-repeat');
+                window.location.href = `/documents/${docId}`;
                 break;
             case 'copy':
-                showNoticeToast(`Copy/duplicate workflow for document #${docId} will be available in Phase 3.`, 'bi-files');
+                window.location.href = `/documents/new?copyFrom=${docId}`;
                 break;
             case 'print':
                 showNoticeToast(`Print / PDF generation for #${docId} belongs to later phase.`, 'bi-printer');
@@ -396,7 +396,11 @@
             // 1. Document No
             const tdDocNo = document.createElement('td');
             tdDocNo.className = 'doc-number-cell';
-            tdDocNo.textContent = doc.invoiceNumber || '—';
+            const docLink = document.createElement('a');
+            docLink.href = `/documents/${doc.id}`;
+            docLink.className = 'doc-number-link text-decoration-none fw-semibold font-monospace';
+            docLink.textContent = doc.invoiceNumber || '—';
+            tdDocNo.appendChild(docLink);
             tr.appendChild(tdDocNo);
 
             // 2. Type

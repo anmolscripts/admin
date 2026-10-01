@@ -1,0 +1,314 @@
+/**
+ * ========================================================================
+ * SPARK ADMIN - DOCUMENT VIEW STYLESHEET
+ * Premium Visual Language for Quotation & Invoice Detail View
+ * ========================================================================
+ */
+
+:root {
+  --forest-dark: #1b382b;
+  --pine-green: #234d38;
+  --mint-light: #eaf3ed;
+  --amber-soft: #fbf3d5;
+  --lime-accent: #c4f276;
+  --text-main: #13241b;
+  --text-muted-green: #4f6b5b;
+  --border-subtle: #dce7e1;
+  --card-bg: #ffffff;
+  --surface-alt: #f8faf9;
+}
+
+/* Container */
+.document-view-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0.5rem 1rem 3.5rem;
+}
+
+/* Action Header Bar */
+.view-header-bar {
+  background: var(--card-bg);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  padding: 1.15rem 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 6px rgba(19, 36, 27, 0.04);
+}
+
+.doc-hero-number {
+  font-family: var(--bs-font-monospace, monospace);
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--forest-dark);
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+}
+
+.version-pill {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 50rem;
+  background-color: var(--mint-light);
+  color: var(--pine-green);
+  border: 1px solid rgba(35, 77, 56, 0.15);
+}
+
+/* Action Buttons */
+.view-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* Cards */
+.view-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  box-shadow: 0 2px 6px rgba(19, 36, 27, 0.03);
+  margin-bottom: 1.5rem;
+  padding: 1.5rem;
+}
+
+.view-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 0.85rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid #eef4f1;
+}
+
+.view-card-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--forest-dark);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Meta Data Fields */
+.meta-field {
+  margin-bottom: 0.85rem;
+}
+
+.meta-field-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  color: var(--text-muted-green);
+  margin-bottom: 0.2rem;
+}
+
+.meta-field-value {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-main);
+  word-break: break-word;
+}
+
+/* Address Cards */
+.address-card {
+  background: var(--surface-alt);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 1.15rem;
+  height: 100%;
+}
+
+.address-content {
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--text-main);
+  white-space: pre-line;
+}
+
+/* Items Table */
+.view-table-wrapper {
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.view-items-table {
+  width: 100%;
+  margin-bottom: 0;
+}
+
+.view-items-table thead th {
+  background: #f1f7f3;
+  color: var(--forest-dark);
+  font-weight: 600;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 0.85rem 1rem;
+}
+
+.view-items-table tbody td {
+  padding: 0.85rem 1rem;
+  font-size: 0.92rem;
+  border-bottom: 1px solid #f0f5f2;
+}
+
+.view-items-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Financial Summary Block */
+.view-summary-box {
+  background: var(--surface-alt);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+}
+
+.view-summary-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.35rem 0;
+  font-size: 0.92rem;
+}
+
+.grand-total-box {
+  background: #f0f7f3;
+  border: 1px solid rgba(35, 77, 56, 0.2);
+  border-radius: 10px;
+  padding: 0.9rem 1.2rem;
+  margin-top: 0.75rem;
+}
+
+.grand-total-amount {
+  font-family: var(--bs-font-monospace, monospace);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--forest-dark);
+}
+
+/* History / Activity Timeline */
+.timeline-container {
+  position: relative;
+  padding-left: 2.25rem;
+  margin-top: 1rem;
+}
+
+.timeline-container::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 12px;
+  bottom: 12px;
+  width: 2px;
+  background-color: #dbe8e1;
+}
+
+.timeline-entry {
+  position: relative;
+  margin-bottom: 1.25rem;
+}
+
+.timeline-entry:last-child {
+  margin-bottom: 0;
+}
+
+.timeline-icon {
+  position: absolute;
+  left: -2.25rem;
+  top: 4px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.timeline-card {
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 0.9rem 1.15rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.timeline-action-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.timeline-meta {
+  font-size: 0.8rem;
+  color: var(--text-muted-green);
+}
+
+.timeline-details {
+  font-size: 0.88rem;
+  color: var(--text-main);
+  margin-top: 0.4rem;
+}
+
+/* Action-specific badges */
+.action-badge-created { background: #e8f5e9; color: #2e7d32; }
+.action-badge-updated { background: #e3f2fd; color: #1565c0; }
+.action-badge-activated { background: #e8f5e9; color: #2e7d32; }
+.action-badge-deactivated { background: #fff8e1; color: #f57f17; }
+.action-badge-voided { background: #eceff1; color: #455a64; }
+.action-badge-deleted { background: #ffebee; color: #c62828; }
+.action-badge-restored { background: #e0f2f1; color: #00695c; }
+.action-badge-converted { background: #f3e5f5; color: #6a1b9a; }
+.action-badge-status-changed { background: #e0f7fa; color: #00838f; }
+
+/* Conversion Link Cards */
+.conversion-relation-card {
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid var(--pine-green);
+  background-color: #f4faf6;
+}
+
+/* Responsive Breakpoints */
+@media (max-width: 768px) {
+  .view-header-bar {
+    padding: 1rem;
+  }
+
+  .doc-hero-number {
+    font-size: 1.4rem;
+  }
+
+  .view-actions-group {
+    width: 100%;
+    margin-top: 1rem;
+  }
+
+  .view-actions-group > * {
+    flex: 1 1 auto;
+    text-align: center;
+  }
+}
+

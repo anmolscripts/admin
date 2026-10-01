@@ -33,6 +33,17 @@
     </div>
   </div>
 
+  <% if (locals.copyOfNumber) { %>
+  <!-- Copied Document Notice Banner -->
+  <div class="alert alert-info border-info d-flex align-items-center mb-4 shadow-sm" role="alert">
+    <i class="bi bi-files fs-4 me-3 text-info"></i>
+    <div>
+      <h6 class="alert-heading fw-bold mb-0">Copy of <%= copyOfNumber %></h6>
+      <div class="small text-muted">Creating a new unsaved <%= isQuotation ? 'quotation' : 'invoice' %> prefilled with details from <strong><%= copyOfNumber %></strong>. A new sequence number will be assigned automatically upon saving.</div>
+    </div>
+  </div>
+  <% } %>
+
   <!-- 409 Optimistic Concurrency Conflict Alert Banner -->
   <div class="alert-custom alert-custom-warning d-none mb-4 shadow-sm" id="conflict-alert" role="alert">
     <div class="d-flex align-items-start gap-3">

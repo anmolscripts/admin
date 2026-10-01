@@ -119,6 +119,7 @@ describe('Document Editor (Phase 3) Test Suite', () => {
                 await prisma.invoice.delete({ where: { id } });
             } catch (_) {}
         }
+        if (server && server.closeAllConnections) server.closeAllConnections();
         await new Promise((resolve) => server.close(resolve));
         await prisma.$disconnect();
     });

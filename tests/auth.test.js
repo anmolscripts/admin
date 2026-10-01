@@ -81,7 +81,8 @@ describe('Authentication Module Test Suite', () => {
             // Ignore cleanup failure
         }
 
-        // Close server and disconnect prisma
+        // Close server
+        if (server && server.closeAllConnections) server.closeAllConnections();
         await new Promise((resolve) => server.close(resolve));
         await prisma.$disconnect();
     });

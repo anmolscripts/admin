@@ -991,6 +991,12 @@ async function convertQuotationToInvoice(quotationId, userId, options = {}) {
             throw new ValidationError('Cannot convert a DELETED quotation.');
         }
 
+        if (quotation.status !== 'ACTIVE') {
+            throw new ValidationError(
+                `Cannot convert a quotation in ${quotation.status} status. Only ACTIVE quotations can be converted to an invoice.`
+            );
+        }
+
         if (quotation.convertedInvoice) {
             throw new ConflictError(
                 `Quotation ${quotation.invoiceNumber} has already been converted to invoice ${quotation.convertedInvoice.invoiceNumber}.`
@@ -1010,7 +1016,7 @@ async function convertQuotationToInvoice(quotationId, userId, options = {}) {
             where: {
                 id: quotation.id,
                 documentType: 'QUOTATION',
-                status: { in: ['ACTIVE', 'INACTIVE'] },
+                status: 'ACTIVE',
                 version: expectedVersion
             },
             data: {

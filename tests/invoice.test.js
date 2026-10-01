@@ -69,6 +69,7 @@ describe('Invoice Module Backend Test Suite', () => {
     });
 
     after(async () => {
+        if (server && server.closeAllConnections) server.closeAllConnections();
         await new Promise((resolve) => server.close(resolve));
         await prisma.$disconnect();
     });
@@ -1153,12 +1154,9 @@ describe('Invoice Module Backend Test Suite', () => {
         assert.strictEqual(cappedList.pagination.limit, 100, 'Page size must be capped at 100 maximum');
 
         // Test search by invoiceNumber
-        const first = defaultList.data[0];
-        if (first) {
-            const searchRes = await invoiceService.listInvoices({ search: first.invoiceNumber });
-            assert.ok(searchRes.data.length >= 1);
-            assert.strictEqual(searchRes.data[0].invoiceNumber, first.invoiceNumber);
-        }
+        const searchRes = await invoiceService.listInvoices({ search: 'INV-2026-0001' });
+        assert.ok(searchRes.data.length >= 1);
+        assert.strictEqual(searchRes.data[0].invoiceNumber, 'INV-2026-0001');
 
         // Test empty search results
         const emptyRes = await invoiceService.listInvoices({ search: 'NonexistentClientXYZ999999' });
@@ -1824,6 +1822,27 @@ describe('Invoice Module Backend Test Suite', () => {
         const convDelBody = await convDelRes.json();
         assert.ok(convDelBody.error.includes('Cannot convert a DELETED quotation'));
 
+        // 4b. Converting an INACTIVE quotation returns 400
+        const inactiveQtn = await invoiceService.createQuotation({
+            clientName: 'Inactive Quotation Target',
+            invoiceDate: '2026-05-04',
+            gstEnabled: false,
+            items: [{ name: 'Service', quantity: 1, rate: 450 }]
+        }, testUserId);
+        await invoiceService.updateInvoiceStatus(inactiveQtn.id, 'INACTIVE', testUserId);
+
+        const convInactiveRes = await fetch(`${baseUrl}/api/invoices/${inactiveQtn.id}/convert`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-csrf-token': csrfToken,
+                Cookie: authCookie
+            }
+        });
+        assert.strictEqual(convInactiveRes.status, 400);
+        const convInactiveBody = await convInactiveRes.json();
+        assert.ok(convInactiveBody.error.includes('Cannot convert a quotation in INACTIVE status'));
+
         // 5. Creating a QUOTATION referencing another quotation returns 400
         const validQtn = await invoiceService.createQuotation({
             clientName: 'Valid Quotation Source',
@@ -1852,7 +1871,7 @@ describe('Invoice Module Backend Test Suite', () => {
         assert.ok(qtnWithSrcBody.error.includes('A quotation cannot reference a source quotation'));
 
         // Cleanup
-        await prisma.invoice.deleteMany({ where: { id: { in: [inv.id, voidQtn.id, delQtn.id, validQtn.id] } } });
+        await prisma.invoice.deleteMany({ where: { id: { in: [inv.id, voidQtn.id, delQtn.id, validQtn.id, inactiveQtn.id] } } });
     });
 
     // 49. concurrent quotation conversion race condition

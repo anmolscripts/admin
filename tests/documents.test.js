@@ -69,6 +69,7 @@ describe('Documents Listing (Phase 2) Test Suite', () => {
     });
 
     after(async () => {
+        if (server && server.closeAllConnections) server.closeAllConnections();
         await new Promise((resolve) => server.close(resolve));
         await prisma.$disconnect();
     });
