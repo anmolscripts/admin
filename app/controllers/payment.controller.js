@@ -1,5 +1,12 @@
 const paymentService = require('../services/payment.service');
 
+function getRequestMeta(req) {
+    const forwarded = req.headers['x-forwarded-for'];
+    const ip = forwarded ? forwarded.split(',')[0].trim() : (req.socket ? req.socket.remoteAddress : null);
+    const userAgent = req.headers['user-agent'] ? req.headers['user-agent'].substring(0, 255) : null;
+    return { ipAddress: ip || '127.0.0.1', userAgent };
+}
+
 function handleControllerError(err, res) {
     if (err instanceof paymentService.ValidationError) {
         return res.status(400).json({ success: false, error: err.message });
@@ -35,7 +42,7 @@ async function recordPayment(req, res) {
         if (!userId) {
             return res.status(401).json({ success: false, error: 'Authentication required.' });
         }
-        const result = await paymentService.recordPayment(req.params.id, req.body, userId);
+        const result = await paymentService.recordPayment(req.params.id, req.body, userId, getRequestMeta(req));
         return res.status(201).json({ success: true, data: result });
     } catch (err) {
         return handleControllerError(err, res);
@@ -52,7 +59,7 @@ async function voidPayment(req, res) {
             return res.status(401).json({ success: false, error: 'Authentication required.' });
         }
         const { reason } = req.body || {};
-        const result = await paymentService.voidPayment(req.params.id, userId, reason);
+        const result = await paymentService.voidPayment(req.params.id, userId, reason, getRequestMeta(req));
         return res.status(200).json({ success: true, data: result });
     } catch (err) {
         return handleControllerError(err, res);

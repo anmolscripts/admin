@@ -131,11 +131,17 @@
 
         <!-- Navigation Links -->
         <nav class="d-none d-md-flex align-items-center ms-3 gap-2">
-          <a href="/documents" class="btn btn-sm <%= pageTitle && (pageTitle.includes('Quotations') || pageTitle.includes('Invoice') || pageTitle.includes('Quotation')) && !pageTitle.includes('Client') ? 'btn-primary' : 'btn-light border' %>">
+          <a href="/dashboard" class="btn btn-sm <%= pageTitle && pageTitle.toLowerCase().includes('dashboard') ? 'btn-primary' : 'btn-light border' %>">
+            <i class="bi bi-speedometer2 me-1"></i> Dashboard
+          </a>
+          <a href="/documents" class="btn btn-sm <%= pageTitle && (pageTitle.includes('Quotations') || pageTitle.includes('Invoice') || pageTitle.includes('Quotation')) && !pageTitle.includes('Client') && !pageTitle.includes('Item') ? 'btn-primary' : 'btn-light border' %>">
             <i class="bi bi-file-earmark-text me-1"></i> Documents
           </a>
           <a href="/clients" class="btn btn-sm <%= pageTitle && pageTitle.includes('Client') ? 'btn-primary' : 'btn-light border' %>">
             <i class="bi bi-people me-1"></i> Clients
+          </a>
+          <a href="/items" class="btn btn-sm <%= pageTitle && pageTitle.includes('Item') ? 'btn-primary' : 'btn-light border' %>">
+            <i class="bi bi-box-seam me-1"></i> Items
           </a>
           <a href="/settings" class="btn btn-sm <%= pageTitle && (pageTitle.includes('Settings') || pageTitle.includes('Organization')) ? 'btn-primary' : 'btn-light border' %>">
             <i class="bi bi-gear me-1"></i> Settings

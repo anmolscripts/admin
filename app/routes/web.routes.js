@@ -3,9 +3,15 @@ const requireAuth = require('../middleware/auth.middleware');
 const invoiceService = require('../services/invoice.service');
 const invoiceController = require('../controllers/invoice.controller');
 const clientService = require('../services/client.service');
+const itemService = require('../services/item.service');
 const businessProfileService = require('../services/businessProfile.service');
+const documentViewService = require('../services/documentView.service');
+const dashboardController = require('../controllers/dashboard.controller');
 
 const router = express.Router();
+
+// Business Analytics Dashboard
+router.get('/dashboard', requireAuth, dashboardController.renderDashboard);
 
 // Main authenticated application screen: Quotations & Invoices Listing
 router.get('/', requireAuth, (req, res) => {
@@ -174,8 +180,11 @@ router.get('/documents/:id/print', requireAuth, async (req, res, next) => {
         }
 
         const doc = await invoiceService.getInvoiceById(id);
+        const profile = await businessProfileService.getProfile();
+        const model = documentViewService.buildDocumentViewModel(doc, profile);
         res.render('documents/print', {
-            document: doc
+            document: doc,
+            model
         });
     } catch (err) {
         if (err instanceof invoiceService.NotFoundError) {
@@ -347,6 +356,27 @@ router.post('/settings', requireAuth, async (req, res) => {
             csrfToken: req.session ? req.session.csrfToken : '',
             user: req.session ? req.session.user : null
         });
+    }
+});
+
+// -------------------------------------------------------------
+// ITEM MASTER WEB ROUTES
+// -------------------------------------------------------------
+router.get('/items', requireAuth, async (req, res, next) => {
+    try {
+        const { search, active } = req.query;
+        const result = await itemService.listItems({ search, active, limit: 100 });
+        res.render('items/index', {
+            pageTitle: 'Item Master',
+            pageSubtitle: 'Manage standard product catalog, services, default units, and baseline rates.',
+            items: result.data,
+            search,
+            active,
+            csrfToken: req.session ? req.session.csrfToken : '',
+            user: req.session ? req.session.user : null
+        });
+    } catch (err) {
+        next(err);
     }
 });
 

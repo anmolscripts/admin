@@ -777,6 +777,9 @@
               SOFT_DELETED: 'Deleted',
               RESTORED: 'Restored',
               CONVERTED: 'Converted',
+              COPIED: 'Copied',
+              PAYMENT_RECORDED: 'Payment Recorded',
+              PAYMENT_VOIDED: 'Payment Voided',
               STATUS_CHANGED: 'Status Changed'
             };
             let badgeClass = 'action-badge-created';
@@ -788,6 +791,9 @@
             else if (rev.action === 'DELETED' || rev.action === 'SOFT_DELETED') { badgeClass = 'action-badge-deleted'; iconClass = 'bi-trash3-fill text-danger'; }
             else if (rev.action === 'RESTORED') { badgeClass = 'action-badge-restored'; iconClass = 'bi-arrow-counterclockwise text-info'; }
             else if (rev.action === 'CONVERTED') { badgeClass = 'action-badge-converted'; iconClass = 'bi-arrow-repeat text-purple'; }
+            else if (rev.action === 'COPIED') { badgeClass = 'action-badge-copied'; iconClass = 'bi-copy text-secondary'; }
+            else if (rev.action === 'PAYMENT_RECORDED') { badgeClass = 'action-badge-payment'; iconClass = 'bi-cash-coin text-success'; }
+            else if (rev.action === 'PAYMENT_VOIDED') { badgeClass = 'action-badge-payment-void'; iconClass = 'bi-x-circle text-danger'; }
             else if (rev.action === 'STATUS_CHANGED') { badgeClass = 'action-badge-status-changed'; iconClass = 'bi-arrow-left-right text-info'; }
             const displayAction = ACTION_LABELS[rev.action] || rev.action;
           %>
@@ -797,9 +803,14 @@
             </div>
             <div class="timeline-card">
               <div class="timeline-header">
-                <div class="d-flex align-items-center gap-2">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
                   <span class="timeline-action-badge <%= badgeClass %>"><%= displayAction %></span>
                   <span class="font-monospace small text-muted">Rev <%= rev.revisionNo %></span>
+                  <% if (rev.ipAddress) { %>
+                    <span class="badge bg-light text-muted border font-monospace" style="font-size: 0.72rem;" title="Request IP: <%= rev.ipAddress %>">
+                      <i class="bi bi-geo-alt"></i> <%= rev.ipAddress %>
+                    </span>
+                  <% } %>
                 </div>
                 <div class="timeline-meta">
                   <%= formatDateTime(rev.createdAt) %>
@@ -813,11 +824,24 @@
                   <% if (rev.changes.summary) { %>
                     <div class="text-main fw-medium"><%= rev.changes.summary %></div>
                   <% } else if (rev.changes.fromStatus && rev.changes.toStatus) { %>
-                    <div>Status changed from <span class="badge bg-light text-dark"><%= rev.changes.fromStatus %></span> to <span class="badge bg-light text-dark"><%= rev.changes.toStatus %></span>.</div>
+                    <div>Status changed from <span class="badge bg-light text-dark border"><%= rev.changes.fromStatus %></span> to <span class="badge bg-light text-dark border"><%= rev.changes.toStatus %></span>.</div>
                   <% } else if (rev.changes.deleteReason) { %>
                     <div>Reason: <span class="fst-italic"><%= rev.changes.deleteReason %></span></div>
-                  <% } else if (Object.keys(rev.changes).length > 0) { %>
-                    <div class="text-muted">Modified: <%= Object.keys(rev.changes).filter(k => k !== 'items').join(', ') %></div>
+                  <% } %>
+
+                  <% if (rev.changes.changedFields && typeof rev.changes.changedFields === 'object') { %>
+                    <div class="mt-2 p-2 bg-light rounded border border-light-subtle">
+                      <div class="text-muted fw-bold mb-1" style="font-size: 0.75rem; text-transform: uppercase;">Modified Fields:</div>
+                      <ul class="list-unstyled mb-0 ps-1" style="font-size: 0.8rem;">
+                        <% Object.entries(rev.changes.changedFields).forEach(([field, diff]) => { %>
+                          <% if (field === 'items') { %>
+                            <li><i class="bi bi-dot"></i> Items updated (previous: <%= diff.previousCount %>, new: <%= diff.newCount %>)</li>
+                          <% } else if (diff && typeof diff === 'object' && diff.from !== undefined) { %>
+                            <li><i class="bi bi-dot"></i> <strong><%= field %></strong>: <span class="text-muted text-decoration-line-through"><%= diff.from %></span> &rarr; <span class="text-dark fw-medium"><%= diff.to %></span></li>
+                          <% } %>
+                        <% }); %>
+                      </ul>
+                    </div>
                   <% } %>
                 </div>
               <% } %>

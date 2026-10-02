@@ -92,3 +92,7 @@ desktop.ini
 *.swp
 *.swo
 /app/generated/prisma
+.agents/
+.claude/
+.windsurf/
+skills-lock.json

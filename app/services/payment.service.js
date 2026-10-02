@@ -73,7 +73,7 @@ async function getInvoicePayments(invoiceIdInput) {
 /**
  * Record a payment against an invoice
  */
-async function recordPayment(invoiceIdInput, paymentData, userId) {
+async function recordPayment(invoiceIdInput, paymentData, userId, meta = {}) {
     const invoiceId = parseInt(invoiceIdInput, 10);
     if (isNaN(invoiceId) || invoiceId <= 0) {
         throw new ValidationError('Invalid invoice ID.');
@@ -180,14 +180,19 @@ async function recordPayment(invoiceIdInput, paymentData, userId) {
                 revisionNo: nextRevNo,
                 action: 'PAYMENT_RECORDED',
                 changedById: userId || invoice.createdById,
+                ipAddress: meta ? meta.ipAddress : null,
+                userAgent: meta ? meta.userAgent : null,
                 changes: {
                     action: 'PAYMENT_RECORDED',
                     paymentId: payment.id,
                     amount,
                     method,
                     reference: payment.reference,
+                    previousOutstandingAmount: Number(invoice.outstandingAmount),
+                    newOutstandingAmount: newOutstanding,
                     paidAmount: totalPaid,
-                    outstandingAmount: newOutstanding
+                    outstandingAmount: newOutstanding,
+                    summary: `Payment of ₹${amount.toFixed(2)} recorded via ${method}.${payment.reference ? ' Ref: ' + payment.reference : ''} Outstanding balance: ₹${newOutstanding.toFixed(2)}.`
                 },
                 snapshot: {
                     ...updatedInvoice,
@@ -216,7 +221,7 @@ async function recordPayment(invoiceIdInput, paymentData, userId) {
 /**
  * Void an existing posted payment
  */
-async function voidPayment(paymentIdInput, userId, reason = '') {
+async function voidPayment(paymentIdInput, userId, reason = '', meta = {}) {
     const paymentId = parseInt(paymentIdInput, 10);
     if (isNaN(paymentId) || paymentId <= 0) {
         throw new ValidationError('Invalid payment ID.');
@@ -285,12 +290,17 @@ async function voidPayment(paymentIdInput, userId, reason = '') {
                 revisionNo: nextRevNo,
                 action: 'PAYMENT_VOIDED',
                 changedById: userId || payment.invoice.createdById,
+                ipAddress: meta ? meta.ipAddress : null,
+                userAgent: meta ? meta.userAgent : null,
                 changes: {
                     action: 'PAYMENT_VOIDED',
                     paymentId: payment.id,
                     voidReason: reason || 'Voided by user',
+                    previousOutstandingAmount: Number(payment.invoice.outstandingAmount),
+                    restoredOutstandingAmount: newOutstanding,
                     paidAmount: totalPaid,
-                    outstandingAmount: newOutstanding
+                    outstandingAmount: newOutstanding,
+                    summary: `Payment #${payment.id} of ₹${Number(payment.amount).toFixed(2)} voided.${reason ? ' Reason: ' + reason : ''} Outstanding balance restored to ₹${newOutstanding.toFixed(2)}.`
                 },
                 snapshot: {
                     ...updatedInvoice,

@@ -36,6 +36,7 @@ model User {
   revisionsCreated InvoiceRevision[] @relation("RevisionChangedBy")
   clientsCreated   Client[]          @relation("ClientCreatedBy")
   paymentsCreated  Payment[]         @relation("PaymentCreatedBy")
+  itemsCreated     Item[]            @relation("ItemCreatedBy")
 
   @@map("users")
 }
@@ -162,12 +163,34 @@ model InvoiceItem {
   @@map("invoice_items")
 }
 
+model Item {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(255)
+  description String?  @db.Text
+  unit        String   @default("PCS") @db.VarChar(30)
+  rate        Decimal  @default(0.00) @db.Decimal(12, 2)
+  hsnSac      String?  @db.VarChar(20)
+  gstRate     Decimal  @default(0.00) @db.Decimal(5, 2)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById Int?
+  createdBy   User?    @relation("ItemCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([name])
+  @@index([active])
+  @@index([createdById])
+  @@map("items")
+}
+
 model InvoiceRevision {
   id          Int      @id @default(autoincrement())
   invoiceId   Int
   revisionNo  Int
   action      String   @db.VarChar(50)
   changedById Int
+  ipAddress   String?  @db.VarChar(45)
+  userAgent   String?  @db.VarChar(255)
   changedAt   DateTime @default(now())
   changes     Json
   snapshot    Json

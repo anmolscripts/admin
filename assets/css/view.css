@@ -271,7 +271,6 @@
   margin-top: 0.4rem;
 }
 
-/* Action-specific badges */
 .action-badge-created { background: #e8f5e9; color: #2e7d32; }
 .action-badge-updated { background: #e3f2fd; color: #1565c0; }
 .action-badge-activated { background: #e8f5e9; color: #2e7d32; }
@@ -281,6 +280,9 @@
 .action-badge-restored { background: #e0f2f1; color: #00695c; }
 .action-badge-converted { background: #f3e5f5; color: #6a1b9a; }
 .action-badge-status-changed { background: #e0f7fa; color: #00838f; }
+.action-badge-copied { background: #ede7f6; color: #512da8; }
+.action-badge-payment { background: #e8f5e9; color: #1b5e20; }
+.action-badge-payment-void { background: #ffebee; color: #b71c1c; }
 
 /* Conversion Link Cards */
 .conversion-relation-card {

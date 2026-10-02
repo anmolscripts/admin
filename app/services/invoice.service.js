@@ -1,5 +1,41 @@
 const prisma = require('../config/prisma');
 const businessProfileService = require('./businessProfile.service');
+const itemService = require('./item.service');
+
+function stripSensitiveKeys(obj) {
+    if (!obj || typeof obj !== 'object') return obj;
+    const sensitiveKeys = ['password', 'hash', 'csrftoken', 'token', 'secret', 'cookie', 'session', 'auth'];
+    if (Array.isArray(obj)) {
+        return obj.map(item => stripSensitiveKeys(item));
+    }
+    const clean = {};
+    for (const [key, value] of Object.entries(obj)) {
+        const lowerKey = key.toLowerCase();
+        if (sensitiveKeys.some(sk => lowerKey.includes(sk))) {
+            continue;
+        }
+        if (value && typeof value === 'object') {
+            clean[key] = stripSensitiveKeys(value);
+        } else {
+            clean[key] = value;
+        }
+    }
+    return clean;
+}
+
+/**
+ * Remove sensitive credentials/secrets/tokens from any audit payload or snapshot.
+ * Serializes Prisma models (Decimals, Dates) cleanly to plain JSON.
+ */
+function sanitizeAuditData(data) {
+    if (!data) return data;
+    try {
+        const plain = JSON.parse(JSON.stringify(data));
+        return stripSensitiveKeys(plain);
+    } catch (_) {
+        return stripSensitiveKeys(data);
+    }
+}
 
 const ALLOWED_GST_RATES = [5, 12, 18, 28];
 const ALLOWED_STATUSES = ['ACTIVE', 'INACTIVE', 'VOID', 'DELETED'];
@@ -216,11 +252,24 @@ async function generateDocumentNumber(tx, documentType = 'INVOICE', dateInput) {
     const year = isNaN(d.getFullYear()) ? new Date().getFullYear() : d.getFullYear();
 
     // Ensure sequence row exists atomically in MySQL without throwing duplicate key errors
-    await tx.$executeRawUnsafe(
-        'INSERT INTO invoice_number_sequences (documentType, year, currentNumber, createdAt, updatedAt) VALUES (?, ?, 0, NOW(), NOW()) ON DUPLICATE KEY UPDATE id = id',
-        validDocType,
-        year
-    );
+    let attempts = 0;
+    while (attempts < 3) {
+        try {
+            await tx.$executeRawUnsafe(
+                'INSERT INTO invoice_number_sequences (documentType, year, currentNumber, createdAt, updatedAt) VALUES (?, ?, 0, NOW(), NOW()) ON DUPLICATE KEY UPDATE id = id',
+                validDocType,
+                year
+            );
+            break;
+        } catch (err) {
+            attempts++;
+            if ((err.code === 1213 || (err.message && err.message.includes('Deadlock'))) && attempts < 3) {
+                await new Promise(r => setTimeout(r, attempts * 25));
+            } else {
+                throw err;
+            }
+        }
+    }
 
     // Atomically increment and lock row for this documentType + year
     const sequence = await tx.invoiceNumberSequence.update({
@@ -244,7 +293,7 @@ async function generateInvoiceNumber(tx, dateInput) {
 /**
  * Create a new document (QUOTATION or INVOICE) with line items, server-calculated totals, and revision 1.
  */
-async function createDocument(data, userId) {
+async function createDocument(data, userId, meta = {}) {
     if (!userId) {
         throw new ValidationError('Authenticated user ID is required.');
     }
@@ -342,8 +391,9 @@ async function createDocument(data, userId) {
         placeOfSupplyStateCode
     });
 
-    return prisma.$transaction(async (tx) => {
+    const createdDoc = await prisma.$transaction(async (tx) => {
         let validatedSourceQuotationId = null;
+        let srcDoc = null;
         if (data.sourceQuotationId) {
             if (documentType === 'QUOTATION') {
                 throw new ValidationError('A quotation cannot reference a source quotation.');
@@ -352,7 +402,7 @@ async function createDocument(data, userId) {
             if (isNaN(srcId) || srcId <= 0) {
                 throw new ValidationError('Invalid sourceQuotationId.');
             }
-            const srcDoc = await tx.invoice.findUnique({
+            srcDoc = await tx.invoice.findUnique({
                 where: { id: srcId },
                 include: { convertedInvoice: true }
             });
@@ -434,6 +484,15 @@ async function createDocument(data, userId) {
             }
         });
 
+        const copySourceId = data.copyFromId ? parseInt(data.copyFromId, 10) : null;
+        let copySourceDoc = null;
+        if (copySourceId && !isNaN(copySourceId)) {
+            copySourceDoc = await tx.invoice.findUnique({
+                where: { id: copySourceId },
+                select: { id: true, invoiceNumber: true }
+            });
+        }
+
         // Record creation revision (revision 1)
         await tx.invoiceRevision.create({
             data: {
@@ -441,17 +500,34 @@ async function createDocument(data, userId) {
                 revisionNo: 1,
                 action: 'CREATED',
                 changedById: userId,
+                ipAddress: meta ? meta.ipAddress : null,
+                userAgent: meta ? meta.userAgent : null,
                 changes: {
                     action: 'CREATED',
                     documentType,
-                    summary: `${documentType} ${invoiceNumber} created with ${calculated.itemsWithAmount.length} item(s).`
+                    sourceDocumentId: copySourceDoc ? copySourceDoc.id : (validatedSourceQuotationId || null),
+                    sourceDocumentNumber: copySourceDoc ? copySourceDoc.invoiceNumber : (srcDoc ? srcDoc.invoiceNumber : null),
+                    summary: copySourceDoc
+                        ? `${documentType} ${invoiceNumber} created (copied from ${copySourceDoc.invoiceNumber}) with ${calculated.itemsWithAmount.length} item(s).`
+                        : (validatedSourceQuotationId
+                            ? `${documentType} ${invoiceNumber} created from Quotation ${srcDoc.invoiceNumber}.`
+                            : `${documentType} ${invoiceNumber} created with ${calculated.itemsWithAmount.length} item(s).`)
                 },
-                snapshot: doc
+                snapshot: sanitizeAuditData(doc)
             }
         });
 
         return formatDocumentResponse(doc);
     });
+
+    // During successful document save, persist newly created items into Item Master
+    try {
+        await itemService.ensureItemsExistFromDocument(calculated.itemsWithAmount, userId);
+    } catch (itemErr) {
+        console.warn('[ITEM MASTER] Notice during auto-persist item:', itemErr.message);
+    }
+
+    return createdDoc;
 }
 
 async function createInvoice(data, userId) {
@@ -508,7 +584,7 @@ async function getInvoiceById(id) {
  * Cannot edit VOID or DELETED documents.
  * Document type, document number, and status cannot be modified via update.
  */
-async function updateInvoice(id, data, userId) {
+async function updateInvoice(id, data, userId, meta = {}) {
     const numericId = parseInt(id, 10);
     if (isNaN(numericId) || numericId <= 0) {
         throw new ValidationError('Invalid document ID.');
@@ -552,7 +628,9 @@ async function updateInvoice(id, data, userId) {
         throw new ValidationError('Invalid invoice date format.');
     }
 
-    return prisma.$transaction(async (tx) => {
+    let calculatedItems = null;
+
+    const updatedDoc = await prisma.$transaction(async (tx) => {
         const existing = await tx.invoice.findUnique({
             where: { id: numericId },
             include: { items: true }
@@ -579,6 +657,7 @@ async function updateInvoice(id, data, userId) {
             sellerStateCode,
             placeOfSupplyStateCode
         });
+        calculatedItems = calculated.itemsWithAmount;
 
         const expiryOrDueDate = data.dueDate || data.validUntil;
         if (expiryOrDueDate) {
@@ -735,36 +814,57 @@ async function updateInvoice(id, data, userId) {
                 revisionNo: nextRevNo,
                 action: 'UPDATED',
                 changedById: userId,
+                ipAddress: meta ? meta.ipAddress : null,
+                userAgent: meta ? meta.userAgent : null,
                 changes: {
                     action: 'UPDATED',
                     previousVersion: existing.version,
                     newVersion: updated.version,
                     changedFields
                 },
-                snapshot: updated
+                snapshot: sanitizeAuditData(updated)
             }
         });
 
         return updated;
     });
+
+    try {
+        if (calculatedItems) {
+            await itemService.ensureItemsExistFromDocument(calculatedItems, userId);
+        }
+    } catch (itemErr) {
+        console.warn('[ITEM MASTER] Notice during auto-persist item on update:', itemErr.message);
+    }
+
+    return updatedDoc;
 }
 
 /**
  * Update a document status (ACTIVE, INACTIVE, VOID, DELETED) according to state machine.
  */
-async function updateInvoiceStatus(id, newStatusInput, userIdOrReason, optionsOrVersion = {}, maybeUserId = null) {
+async function updateInvoiceStatus(id, newStatusInput, userIdOrReason, optionsOrVersion = {}, maybeUserId = null, maybeMeta = null) {
     let userId = userIdOrReason;
     let options = typeof optionsOrVersion === 'object' && optionsOrVersion !== null ? optionsOrVersion : {};
+    let meta = options.meta || {};
 
     if (typeof userIdOrReason === 'string' && isNaN(parseInt(userIdOrReason, 10))) {
-        // Called as updateInvoiceStatus(id, newStatus, reason, version, userId)
+        // Called as updateInvoiceStatus(id, newStatus, reason, version, userId, meta)
         userId = maybeUserId || (typeof optionsOrVersion === 'number' ? optionsOrVersion : null);
         options = {
             deleteReason: userIdOrReason,
             version: typeof optionsOrVersion === 'number' ? optionsOrVersion : (optionsOrVersion && optionsOrVersion.version)
         };
+        if (maybeMeta && typeof maybeMeta === 'object') {
+            meta = maybeMeta;
+        }
     } else if (typeof optionsOrVersion === 'number') {
         options = { version: optionsOrVersion };
+        if (maybeUserId && typeof maybeUserId === 'object') {
+            meta = maybeUserId;
+        }
+    } else if (maybeUserId && typeof maybeUserId === 'object') {
+        meta = maybeUserId;
     }
 
     const numericId = parseInt(id, 10);
@@ -785,7 +885,7 @@ async function updateInvoiceStatus(id, newStatusInput, userIdOrReason, optionsOr
 
     // Direct routing for DELETED
     if (newStatus === 'DELETED') {
-        return softDeleteDocument(numericId, options.deleteReason, userId, options);
+        return softDeleteDocument(numericId, options.deleteReason, userId, options, meta);
     }
 
     return prisma.$transaction(async (tx) => {
@@ -878,12 +978,14 @@ async function updateInvoiceStatus(id, newStatusInput, userIdOrReason, optionsOr
                 revisionNo: nextRevNo,
                 action,
                 changedById: userId,
+                ipAddress: meta ? meta.ipAddress : null,
+                userAgent: meta ? meta.userAgent : null,
                 changes: {
                     action,
                     fromStatus: existing.status,
                     toStatus: newStatus
                 },
-                snapshot: updated
+                snapshot: sanitizeAuditData(updated)
             }
         });
 
@@ -896,7 +998,7 @@ async function updateInvoiceStatus(id, newStatusInput, userIdOrReason, optionsOr
  * Only ACTIVE or INACTIVE documents may be soft-deleted. VOID cannot be deleted.
  * Preserves document, line items, revisions, and records delete audit info.
  */
-async function softDeleteDocument(id, deleteReason, userId, options = {}) {
+async function softDeleteDocument(id, deleteReason, userId, options = {}, meta = {}) {
     const numericId = parseInt(id, 10);
     if (isNaN(numericId) || numericId <= 0) {
         throw new ValidationError('Invalid document ID.');
@@ -905,6 +1007,8 @@ async function softDeleteDocument(id, deleteReason, userId, options = {}) {
     if (!userId) {
         throw new ValidationError('Authenticated user ID is required.');
     }
+
+    const effectiveMeta = options.meta || meta || {};
 
     return prisma.$transaction(async (tx) => {
         const existing = await tx.invoice.findUnique({
@@ -984,12 +1088,14 @@ async function softDeleteDocument(id, deleteReason, userId, options = {}) {
                 revisionNo: nextRevNo,
                 action: 'DELETED',
                 changedById: userId,
+                ipAddress: effectiveMeta ? effectiveMeta.ipAddress : null,
+                userAgent: effectiveMeta ? effectiveMeta.userAgent : null,
                 changes: {
                     action: 'DELETED',
                     fromStatus: existing.status,
                     deleteReason: deleteReason || 'Deleted by user'
                 },
-                snapshot: updated
+                snapshot: sanitizeAuditData(updated)
             }
         });
 
@@ -1001,7 +1107,7 @@ async function softDeleteDocument(id, deleteReason, userId, options = {}) {
  * Restore a soft-deleted document back to its previous status (DELETED -> previousStatus).
  * Only DELETED documents can be restored. VOID documents can never be restored.
  */
-async function restoreDocument(id, userId, options = {}) {
+async function restoreDocument(id, userId, options = {}, meta = {}) {
     const numericId = parseInt(id, 10);
     if (isNaN(numericId) || numericId <= 0) {
         throw new ValidationError('Invalid document ID.');
@@ -1010,6 +1116,8 @@ async function restoreDocument(id, userId, options = {}) {
     if (!userId) {
         throw new ValidationError('Authenticated user ID is required.');
     }
+
+    const effectiveMeta = options.meta || meta || {};
 
     return prisma.$transaction(async (tx) => {
         const existing = await tx.invoice.findUnique({
@@ -1085,12 +1193,14 @@ async function restoreDocument(id, userId, options = {}) {
                 revisionNo: nextRevNo,
                 action: 'RESTORED',
                 changedById: userId,
+                ipAddress: effectiveMeta ? effectiveMeta.ipAddress : null,
+                userAgent: effectiveMeta ? effectiveMeta.userAgent : null,
                 changes: {
                     action: 'RESTORED',
                     fromStatus: 'DELETED',
                     toStatus: targetStatus
                 },
-                snapshot: updated
+                snapshot: sanitizeAuditData(updated)
             }
         });
 
@@ -1103,7 +1213,7 @@ async function restoreDocument(id, userId, options = {}) {
  * Enforces quotation-type verification, non-void/non-deleted checks,
  * atomic concurrency lock on quotation, and complete audit tracking.
  */
-async function convertQuotationToInvoice(quotationId, userId, options = {}) {
+async function convertQuotationToInvoice(quotationId, userId, options = {}, meta = {}) {
     const numericId = parseInt(quotationId, 10);
     if (isNaN(numericId) || numericId <= 0) {
         throw new ValidationError('Invalid quotation ID.');
@@ -1112,6 +1222,8 @@ async function convertQuotationToInvoice(quotationId, userId, options = {}) {
     if (!userId) {
         throw new ValidationError('Authenticated user ID is required.');
     }
+
+    const effectiveMeta = options.meta || meta || {};
 
     return prisma.$transaction(async (tx) => {
         const quotation = await tx.invoice.findUnique({
@@ -1256,6 +1368,8 @@ async function convertQuotationToInvoice(quotationId, userId, options = {}) {
                 revisionNo: 1,
                 action: 'CREATED',
                 changedById: userId,
+                ipAddress: effectiveMeta ? effectiveMeta.ipAddress : null,
+                userAgent: effectiveMeta ? effectiveMeta.userAgent : null,
                 changes: {
                     action: 'CREATED',
                     documentType: 'INVOICE',
@@ -1265,7 +1379,7 @@ async function convertQuotationToInvoice(quotationId, userId, options = {}) {
                     convertedById: userId,
                     summary: `Invoice created by converting Quotation ${quotation.invoiceNumber}.`
                 },
-                snapshot: newInvoice
+                snapshot: sanitizeAuditData(newInvoice)
             }
         });
 
@@ -1282,6 +1396,8 @@ async function convertQuotationToInvoice(quotationId, userId, options = {}) {
                 revisionNo: nextRevNo,
                 action: 'CONVERTED',
                 changedById: userId,
+                ipAddress: effectiveMeta ? effectiveMeta.ipAddress : null,
+                userAgent: effectiveMeta ? effectiveMeta.userAgent : null,
                 changes: {
                     action: 'CONVERTED',
                     convertedInvoiceId: newInvoice.id,
@@ -1290,7 +1406,7 @@ async function convertQuotationToInvoice(quotationId, userId, options = {}) {
                     convertedById: userId,
                     summary: `Quotation converted to Invoice ${newInvoice.invoiceNumber}.`
                 },
-                snapshot: quotation
+                snapshot: sanitizeAuditData(quotation)
             }
         });
 
@@ -1300,9 +1416,9 @@ async function convertQuotationToInvoice(quotationId, userId, options = {}) {
 
 /**
  * Prepares an unsaved copy of a document.
- * Strips IDs, invoice number, status, revision history, and conversion relationships.
+ * Records a COPIED revision on the source document and returns template data.
  */
-async function copyDocument(id) {
+async function copyDocument(id, userId = null, meta = {}) {
     const numericId = parseInt(id, 10);
     if (isNaN(numericId) || numericId <= 0) {
         throw new ValidationError('Invalid document ID.');
@@ -1319,7 +1435,33 @@ async function copyDocument(id) {
         throw new NotFoundError(`Document with ID ${numericId} was not found.`);
     }
 
+    if (userId) {
+        const lastRev = await prisma.invoiceRevision.findFirst({
+            where: { invoiceId: numericId },
+            orderBy: { revisionNo: 'desc' }
+        });
+        const nextRevNo = (lastRev ? lastRev.revisionNo : 0) + 1;
+        await prisma.invoiceRevision.create({
+            data: {
+                invoiceId: numericId,
+                revisionNo: nextRevNo,
+                action: 'COPIED',
+                changedById: userId,
+                ipAddress: meta ? meta.ipAddress : null,
+                userAgent: meta ? meta.userAgent : null,
+                changes: {
+                    action: 'COPIED',
+                    copiedAt: new Date().toISOString(),
+                    copiedById: userId,
+                    summary: `${doc.documentType} ${doc.invoiceNumber} was copied as a template for a new document.`
+                },
+                snapshot: sanitizeAuditData(doc)
+            }
+        });
+    }
+
     return {
+        copyFromId: doc.id,
         documentType: doc.documentType,
         clientId: doc.clientId || null,
         clientName: doc.clientName,

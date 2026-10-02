@@ -1,527 +1,645 @@
-<%- include('../layouts/header') %>
+<%- include('../layouts/header', {
+    pageTitle: 'Business Analytics Dashboard',
+    pageSubtitle: 'Real-time financial performance, document operations, and quotation conversion metrics.',
+    extraCss: `
+      <style>
+        .kpi-card {
+          border: none;
+          border-radius: 12px;
+          background: #ffffff;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1);
+          transition: transform 0.15s ease, box-shadow 0.15s ease;
+          overflow: hidden;
+          position: relative;
+        }
+        .kpi-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -2px rgba(0,0,0,0.04);
+        }
+        .kpi-accent-bar {
+          height: 4px;
+          width: 100%;
+          position: absolute;
+          top: 0;
+          left: 0;
+        }
+        .accent-green { background: #16a34a; }
+        .accent-blue { background: #2563eb; }
+        .accent-amber { background: #d97706; }
+        .accent-red { background: #dc2626; }
+        .accent-purple { background: #7c3aed; }
+        .accent-cyan { background: #0891b2; }
 
-<!-- START: Main Layout Grid (2 Columns: Dashboard + Performance Pane) -->
-  <div class="row g-4">
-    <!-- TOP AREA: Quick Info Stat Cards Row (Full Width) -->
-    <div class="col-12">
-      <div class="row g-4">
-        <!-- Stat Card 1: Green Alert Banner -->
-        <div class="col-md-4">
-          
-          <div class="card alert-green-card">
-            <div class="position-relative z-index-2">
-              <span class="alert-green-badge">Update</span>
-              <div class="alert-green-date">Feb 14th 2026</div>
-              <div class="alert-green-text">
-                Sales revenue increased 40% in 1 week
-              </div>
-            </div>
-            <a
-              href="#"
-              class="alert-green-link z-index-2"
-              id="alert-link-statistics"
-            >
-              <span>See Statistics</span>
-              <i class="bi bi-arrow-right"></i>
-            </a>
+        .kpi-label {
+          font-size: 0.75rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          color: #64748b;
+        }
+        .kpi-value {
+          font-size: 1.75rem;
+          font-weight: 800;
+          color: #0f172a;
+          line-height: 1.2;
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+        .kpi-subtext {
+          font-size: 0.8rem;
+          color: #64748b;
+          margin-top: 4px;
+        }
+        .kpi-icon-circle {
+          width: 44px;
+          height: 44px;
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.25rem;
+        }
 
-            <!-- Inline SVG geometric decoration (Lime green 6-pointed star/asterisk with rounded caps) -->
-            <svg
-              class="alert-green-bg-shape"
-              viewBox="0 0 100 100"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <g transform="translate(50,50)">
-                <rect
-                  x="-6"
-                  y="-45"
-                  width="12"
-                  height="90"
-                  rx="6"
-                  ry="6"
-                  fill="#B4F105"
-                />
-                <rect
-                  x="-6"
-                  y="-45"
-                  width="12"
-                  height="90"
-                  rx="6"
-                  ry="6"
-                  fill="#B4F105"
-                  transform="rotate(60)"
-                />
-                <rect
-                  x="-6"
-                  y="-45"
-                  width="12"
-                  height="90"
-                  rx="6"
-                  ry="6"
-                  fill="#B4F105"
-                  transform="rotate(120)"
-                />
-              </g>
-            </svg>
-          </div>
-        </div>
+        .filter-pill-btn {
+          border-radius: 20px;
+          padding: 6px 14px;
+          font-size: 0.82rem;
+          font-weight: 600;
+          border: 1px solid #e2e8f0;
+          background: #ffffff;
+          color: #475569;
+          transition: all 0.15s ease;
+          text-decoration: none;
+        }
+        .filter-pill-btn:hover {
+          background: #f8fafc;
+          border-color: #cbd5e1;
+          color: #1e293b;
+        }
+        .filter-pill-btn.active {
+          background: #1b5e20;
+          color: #ffffff;
+          border-color: #1b5e20;
+          box-shadow: 0 2px 4px rgba(27,94,32,0.25);
+        }
 
-        <!-- Stat Card 2: Net Income -->
-        <div class="col-md-4">
-          <div
-            class="card card-stat d-flex flex-column justify-content-between"
-          >
-            <div>
-              <div class="card-header">
-                <span class="stat-label">Net Income</span>
-                <div class="dropdown">
-                  <button
-                    class="card-more-btn"
-                    type="button"
-                    data-bs-toggle="dropdown"
-                    aria-expanded="false"
-                    aria-label="More Options"
-                    id="btn-more-income"
-                  >
-                    <i class="bi bi-three-dots"></i>
-                  </button>
-                  <ul
-                    class="dropdown-menu dropdown-menu-end dropdown-menu-custom"
-                  >
-                    <li>
-                      <a class="dropdown-item" href="#"
-                        ><i class="bi bi-arrow-repeat"></i> Refresh</a
-                      >
-                    </li>
-                    <li>
-                      <a class="dropdown-item" href="#"
-                        ><i class="bi bi-file-earmark-arrow-down"></i> Export
-                        Report</a
-                      >
-                    </li>
-                    <li>
-                      <hr class="dropdown-divider" />
-                    </li>
-                    <li>
-                      <a class="dropdown-item text-danger" href="#"
-                        ><i class="bi bi-eye-slash"></i> Hide Details</a
-                      >
-                    </li>
-                  </ul>
-                </div>
-              </div>
-              <div class="stat-value">$196.000</div>
-              <div class="trend-badge trend-up">
-                <i class="bi bi-arrow-up-right"></i>
-                <span>+35% from last month</span>
-              </div>
-            </div>
-            <div class="sparkline-container sparkline-card-footer">
-              <div id="income-sparkline"></div>
-            </div>
-          </div>
-        </div>
+        .chart-card {
+          border: none;
+          border-radius: 12px;
+          background: #ffffff;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+          padding: 20px;
+          height: 100%;
+        }
+        .chart-title {
+          font-size: 0.95rem;
+          font-weight: 700;
+          color: #1e293b;
+        }
+        .chart-subtitle {
+          font-size: 0.78rem;
+          color: #64748b;
+        }
 
-        <!-- Stat Card 3: Total Return -->
-        <div class="col-md-4">
-          <div
-            class="card card-stat d-flex flex-column justify-content-between"
-          >
-            <div>
-              <div class="card-header">
-                <span class="stat-label">Total Return</span>
-                <div class="dropdown">
-                  <button
-                    class="card-more-btn"
-                    type="button"
-                    data-bs-toggle="dropdown"
-                    aria-expanded="false"
-                    aria-label="More Options"
-                    id="btn-more-return"
-                  >
-                    <i class="bi bi-three-dots"></i>
-                  </button>
-                  <ul
-                    class="dropdown-menu dropdown-menu-end dropdown-menu-custom"
-                  >
-                    <li>
-                      <a class="dropdown-item" href="#"
-                        ><i class="bi bi-arrow-repeat"></i> Refresh</a
-                      >
-                    </li>
-                    <li>
-                      <a class="dropdown-item" href="#"
-                        ><i class="bi bi-file-earmark-arrow-down"></i> Export
-                        Report</a
-                      >
-                    </li>
-                    <li>
-                      <hr class="dropdown-divider" />
-                    </li>
-                    <li>
-                      <a class="dropdown-item text-danger" href="#"
-                        ><i class="bi bi-eye-slash"></i> Hide Details</a
-                      >
-                    </li>
-                  </ul>
-                </div>
-              </div>
-              <div class="stat-value">$32.000</div>
-              <div class="trend-badge trend-down">
-                <i class="bi bi-arrow-down-left"></i>
-                <span>-24% from last month</span>
-              </div>
-            </div>
-            <div class="sparkline-container sparkline-card-footer">
-              <div id="return-sparkline"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- END: TOP AREA -->
+        .dashboard-loading-overlay {
+          position: absolute;
+          inset: 0;
+          background: rgba(255,255,255,0.7);
+          backdrop-filter: blur(2px);
+          z-index: 50;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 12px;
+        }
+      </style>
+    `
+}) %>
 
-    <!-- LEFT AREA: Primary Dashboard Stats & Tables -->
-    <div class="col-xl-9 col-lg-8">
-      <!-- START: Details Area (Transactions + Performance Charts) -->
-      <div class="row g-4">
-        <!-- Column: Revenue Chart (Full Width / Wider) -->
-        <div class="col-12">
-          <div class="card mb-0">
-            <div class="card-header mb-2">
-              <h2 class="card-title">Revenue</h2>
-              <!-- Custom Static Legends -->
-              <div class="d-flex gap-3 align-items-center">
-                <div class="chart-legend-item">
-                  <span class="legend-dot bg-forest-medium"></span>
-                  <span class="chart-legend-label">Income</span>
-                </div>
-                <div class="chart-legend-item">
-                  <span class="legend-dot bg-lime-accent"></span>
-                  <span class="chart-legend-label">Expenses</span>
-                </div>
-              </div>
-            </div>
-            <div class="d-flex align-items-baseline gap-2 mb-3">
-              <span class="stat-value-amount">$196.000</span>
-              <span class="trend-badge trend-up fs-xs"
-                >+35% from last month</span
-              >
-            </div>
-            <div id="revenue-chart"></div>
-          </div>
-        </div>
-
-        <!-- Column: Transaction List -->
-        <div class="col-md-7 d-flex flex-column">
-          <div class="card h-100 flex-grow-1">
-            <div class="card-header">
-              <h2 class="card-title">Transaction</h2>
-              <div class="dropdown">
-                <button
-                  class="card-more-btn"
-                  type="button"
-                  data-bs-toggle="dropdown"
-                  aria-expanded="false"
-                  aria-label="More Options"
-                  id="btn-more-transaction"
-                >
-                  <i class="bi bi-three-dots"></i>
-                </button>
-                <ul
-                  class="dropdown-menu dropdown-menu-end dropdown-menu-custom"
-                >
-                  <li>
-                    <a class="dropdown-item" href="#"
-                      ><i class="bi bi-funnel"></i> Filter Status</a
-                    >
-                  </li>
-                  <li>
-                    <a class="dropdown-item" href="#"
-                      ><i class="bi bi-file-earmark-arrow-down"></i> Export
-                      CSV</a
-                    >
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <!-- Transaction Items List -->
-            <div class="transaction-list">
-              <div class="transaction-item">
-                <div class="transaction-icon bg-forest-light text-lime">
-                  <i class="bi bi-spotify"></i>
-                </div>
-                <div class="transaction-info">
-                  <div class="transaction-name">Spotify Subscription</div>
-                  <div class="transaction-date">Feb 14, 2026 • 12:40 PM</div>
-                </div>
-                <div class="transaction-amount text-main">-$15.00</div>
-              </div>
-
-              <div class="transaction-item">
-                <div class="transaction-icon bg-forest-light text-lime">
-                  <i class="bi bi-paypal"></i>
-                </div>
-                <div class="transaction-info">
-                  <div class="transaction-name">Paypal Transfer</div>
-                  <div class="transaction-date">Feb 13, 2026 • 08:15 AM</div>
-                </div>
-                <div class="transaction-amount text-success">+$1,250.00</div>
-              </div>
-
-              <div class="transaction-item">
-                <div class="transaction-icon bg-forest-light text-lime">
-                  <i class="bi bi-stripe"></i>
-                </div>
-                <div class="transaction-info">
-                  <div class="transaction-name">Stripe Payout</div>
-                  <div class="transaction-date">Feb 11, 2026 • 04:30 PM</div>
-                </div>
-                <div class="transaction-amount text-success">+$3,400.00</div>
-              </div>
-
-              <div class="transaction-item">
-                <div class="transaction-icon bg-forest-light text-lime">
-                  <i class="bi bi-slack"></i>
-                </div>
-                <div class="transaction-info">
-                  <div class="transaction-name">Slack Pro Workspace</div>
-                  <div class="transaction-date">Feb 09, 2026 • 09:20 AM</div>
-                </div>
-                <div class="transaction-amount text-main">-$45.00</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Column: Product Overview Progress -->
-        <div class="col-md-5 d-flex flex-column">
-          <div class="card h-100 flex-grow-1">
-            <div class="card-header">
-              <h2 class="card-title">Product Overview</h2>
-              <div class="dropdown">
-                <button
-                  class="card-more-btn"
-                  type="button"
-                  data-bs-toggle="dropdown"
-                  aria-expanded="false"
-                  aria-label="More Options"
-                  id="btn-more-products"
-                >
-                  <i class="bi bi-three-dots"></i>
-                </button>
-                <ul
-                  class="dropdown-menu dropdown-menu-end dropdown-menu-custom"
-                >
-                  <li>
-                    <a class="dropdown-item" href="#"
-                      ><i class="bi bi-plus-lg"></i> Add Product</a
-                    >
-                  </li>
-                  <li>
-                    <a class="dropdown-item" href="#"
-                      ><i class="bi bi-gear"></i> Manage</a
-                    >
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <div class="progress-container">
-              <div class="progress-label-row">
-                <span class="progress-label">Product Launched</span>
-                <span class="progress-value">233</span>
-              </div>
-              <div
-                class="progress"
-                role="progressbar"
-                aria-label="Product Launched Progress"
-                aria-valuenow="65"
-                aria-valuemin="0"
-                aria-valuemax="100"
-              >
-                <div class="progress-bar bg-lime-accent w-65"></div>
-              </div>
-            </div>
-
-            <div class="progress-container">
-              <div class="progress-label-row">
-                <span class="progress-label">Ongoing Product</span>
-                <span class="progress-value">23</span>
-              </div>
-              <div
-                class="progress"
-                role="progressbar"
-                aria-label="Ongoing Product Progress"
-                aria-valuenow="20"
-                aria-valuemin="0"
-                aria-valuemax="100"
-              >
-                <div class="progress-bar bg-lime-accent opacity-50 w-50"></div>
-              </div>
-            </div>
-
-            <div class="progress-container">
-              <div class="progress-label-row">
-                <span class="progress-label">Product Sold</span>
-                <span class="progress-value">482</span>
-              </div>
-              <div
-                class="progress"
-                role="progressbar"
-                aria-label="Product Sold Progress"
-                aria-valuenow="85"
-                aria-valuemin="0"
-                aria-valuemax="100"
-              >
-                <div class="progress-bar bg-lime-accent w-85"></div>
-              </div>
-            </div>
-
-            <div class="progress-container">
-              <div class="progress-label-row">
-                <span class="progress-label">Product Returned</span>
-                <span class="progress-value">8</span>
-              </div>
-              <div
-                class="progress"
-                role="progressbar"
-                aria-label="Product Returned Progress"
-                aria-valuenow="10"
-                aria-valuemin="0"
-                aria-valuemax="100"
-              >
-                <div class="progress-bar bg-brand-orange w-38"></div>
-              </div>
-            </div>
-
-            <div class="progress-container">
-              <div class="progress-label-row">
-                <span class="progress-label">Product In Stock</span>
-                <span class="progress-value">1,420</span>
-              </div>
-              <div
-                class="progress"
-                role="progressbar"
-                aria-label="Product In Stock Progress"
-                aria-valuenow="75"
-                aria-valuemin="0"
-                aria-valuemax="100"
-              >
-                <div class="progress-bar bg-lime-accent w-75"></div>
-              </div>
-            </div>
-
-            <div class="progress-container">
-              <div class="progress-label-row">
-                <span class="progress-label">Pending Shipment</span>
-                <span class="progress-value">64</span>
-              </div>
-              <div
-                class="progress"
-                role="progressbar"
-                aria-label="Pending Shipment Progress"
-                aria-valuenow="45"
-                aria-valuemin="0"
-                aria-valuemax="100"
-              >
-                <div class="progress-bar bg-lime-accent opacity-50 w-45"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- END: Details Area -->
+<!-- ===================================================================
+     TOP FILTER BAR: DATE RANGE & CONTROLS
+     =================================================================== -->
+<div class="card border-0 shadow-sm rounded-3 p-3 mb-4 bg-white">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+    <!-- Date Range Quick Select Pills -->
+    <div class="d-flex flex-wrap align-items-center gap-2" id="date-range-pills" role="toolbar" aria-label="Date Range Filters">
+      <span class="small fw-bold text-muted text-uppercase me-1" style="font-size: 0.72rem;">Period:</span>
+      <button type="button" class="filter-pill-btn <%= metrics.range === 'today' ? 'active' : '' %>" data-range="today">Today</button>
+      <button type="button" class="filter-pill-btn <%= metrics.range === 'this_week' ? 'active' : '' %>" data-range="this_week">This Week</button>
+      <button type="button" class="filter-pill-btn <%= metrics.range === 'this_month' ? 'active' : '' %>" data-range="this_month">This Month</button>
+      <button type="button" class="filter-pill-btn <%= metrics.range === 'this_quarter' ? 'active' : '' %>" data-range="this_quarter">This Quarter</button>
+      <button type="button" class="filter-pill-btn <%= metrics.range === 'this_year' ? 'active' : '' %>" data-range="this_year">This Year</button>
+      <button type="button" class="filter-pill-btn <%= metrics.range === 'custom' ? 'active' : '' %>" data-range="custom" id="btn-custom-toggle">Custom Range</button>
     </div>
 
-    <!-- RIGHT AREA: Performance Details Sidebar Panel -->
-    <div class="col-xl-3 col-lg-4">
-      <div class="right-panel-wrapper d-flex flex-column gap-4 h-100">
-        <!-- Performance Donut Chart card -->
-        <div
-          class="card flex-grow-1 d-flex flex-column justify-content-between mb-0"
-        >
-          <div class="card-header mb-1">
-            <h2 class="card-title">Total View Performance</h2>
-          </div>
-
-          <div id="views-chart"></div>
-
-          <!-- Custom Legends below the chart -->
-          <div class="chart-legends-container">
-            <div class="chart-legend-item">
-              <span class="legend-dot bg-lime-accent"></span>
-              <span class="text-muted-green">View Count</span>
-            </div>
-            <div class="chart-legend-item">
-              <span class="legend-dot bg-forest-medium"></span>
-              <span class="text-muted-green">Percentage</span>
-            </div>
-            <div class="chart-legend-item">
-              <span class="legend-dot bg-brand-orange"></span>
-              <span class="text-muted-green">Sales</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Level Up Promotion CTA banner -->
-        <div class="promo-banner-card">
-          <!-- Inline SVG geometric decoration (Lime green 6-pointed star/asterisk with rounded caps) -->
-          <svg
-            class="promo-banner-bg-shape"
-            viewBox="0 0 100 100"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <g transform="translate(50,50)">
-              <rect
-                x="-6"
-                y="-45"
-                width="12"
-                height="90"
-                rx="6"
-                ry="6"
-                fill="#B4F105"
-              />
-              <rect
-                x="-6"
-                y="-45"
-                width="12"
-                height="90"
-                rx="6"
-                ry="6"
-                fill="#B4F105"
-                transform="rotate(60)"
-              />
-              <rect
-                x="-6"
-                y="-45"
-                width="12"
-                height="90"
-                rx="6"
-                ry="6"
-                fill="#B4F105"
-                transform="rotate(120)"
-              />
-            </g>
-          </svg>
-
-          <h3 class="promo-title">
-            Level up your sales managing to the next level.
-          </h3>
-          <p class="promo-desc">
-            An easy way to manage sales with care and precision.
-          </p>
-          <button class="btn-promo" id="btn-promo-action">
-            Check the updates now
-          </button>
-        </div>
-      </div>
+    <!-- Actions: Refresh Button -->
+    <div class="d-flex align-items-center gap-2">
+      <button type="button" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" id="btn-refresh-dashboard">
+        <i class="bi bi-arrow-repeat" id="refresh-icon"></i>
+        <span>Refresh</span>
+      </button>
     </div>
-    <!-- END: RIGHT AREA -->
   </div>
-  <!-- END: Main Layout Grid -->
 
-<%- include('../layouts/footer') %>
+  <!-- Collapsible Custom Date Range Form -->
+  <div class="mt-3 pt-3 border-top <%= metrics.range === 'custom' ? '' : 'd-none' %>" id="custom-range-panel">
+    <form class="row g-2 align-items-end" id="custom-range-form">
+      <div class="col-sm-4 col-md-3">
+        <label for="custom-date-from" class="form-label small text-muted mb-1">From Date</label>
+        <input type="date" class="form-control form-control-sm" id="custom-date-from" value="<%= metrics.dateFilter.startDate ? metrics.dateFilter.startDate.split('T')[0] : '' %>" required>
+      </div>
+      <div class="col-sm-4 col-md-3">
+        <label for="custom-date-to" class="form-label small text-muted mb-1">To Date</label>
+        <input type="date" class="form-control form-control-sm" id="custom-date-to" value="<%= metrics.dateFilter.endDate ? metrics.dateFilter.endDate.split('T')[0] : '' %>" required>
+      </div>
+      <div class="col-sm-4 col-md-3">
+        <button type="submit" class="btn btn-sm btn-success w-100" id="btn-apply-custom-range">
+          <i class="bi bi-check2"></i> Apply Range
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="dashboard-content-container" class="position-relative">
+  <div id="dashboard-loading" class="dashboard-loading-overlay d-none">
+    <div class="spinner-border text-success" role="status">
+      <span class="visually-hidden">Loading metrics...</span>
+    </div>
+  </div>
+
+  <!-- ===================================================================
+       ROW 1: FINANCIAL & CASH-FLOW KPIS
+       =================================================================== -->
+  <div class="row g-3 mb-4">
+    <!-- Total Invoiced -->
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="card kpi-card p-3">
+        <div class="kpi-accent-bar accent-blue"></div>
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="kpi-label">Total Invoiced</span>
+          <div class="kpi-icon-circle bg-primary-subtle text-primary">
+            <i class="bi bi-receipt"></i>
+          </div>
+        </div>
+        <div class="kpi-value" id="kpi-total-invoiced">₹<%= metrics.kpis.financials.totalInvoiced.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></div>
+        <div class="kpi-subtext">Across active & issued invoices</div>
+      </div>
+    </div>
+
+    <!-- Payments Collected -->
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="card kpi-card p-3">
+        <div class="kpi-accent-bar accent-green"></div>
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="kpi-label">Total Collected</span>
+          <div class="kpi-icon-circle bg-success-subtle text-success">
+            <i class="bi bi-cash-stack"></i>
+          </div>
+        </div>
+        <div class="kpi-value text-success" id="kpi-total-collected">₹<%= metrics.kpis.financials.paidAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></div>
+        <div class="kpi-subtext">Paid receipts recorded</div>
+      </div>
+    </div>
+
+    <!-- Outstanding Balance -->
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="card kpi-card p-3">
+        <div class="kpi-accent-bar accent-amber"></div>
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="kpi-label">Outstanding Balance</span>
+          <div class="kpi-icon-circle bg-warning-subtle text-warning">
+            <i class="bi bi-hourglass-split"></i>
+          </div>
+        </div>
+        <div class="kpi-value text-warning" id="kpi-outstanding">₹<%= metrics.kpis.financials.outstandingAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></div>
+        <div class="kpi-subtext">Awaiting client payment</div>
+      </div>
+    </div>
+
+    <!-- Overdue Amount -->
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="card kpi-card p-3">
+        <div class="kpi-accent-bar accent-red"></div>
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="kpi-label">Overdue (>30 Days)</span>
+          <div class="kpi-icon-circle bg-danger-subtle text-danger">
+            <i class="bi bi-exclamation-triangle"></i>
+          </div>
+        </div>
+        <div class="kpi-value text-danger" id="kpi-overdue">₹<%= metrics.kpis.financials.overdueAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></div>
+        <div class="kpi-subtext">
+          <span class="badge bg-danger-subtle text-danger rounded-pill font-monospace" id="kpi-overdue-count"><%= metrics.kpis.financials.overdueCount %> invoice<%= metrics.kpis.financials.overdueCount === 1 ? '' : 's' %></span> overdue
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================
+       ROW 2: DOCUMENT & CONVERSION KPIS
+       =================================================================== -->
+  <div class="row g-3 mb-4">
+    <!-- Quotations KPI -->
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="card kpi-card p-3">
+        <div class="kpi-accent-bar accent-cyan"></div>
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="kpi-label">Total Quotations</span>
+          <div class="kpi-icon-circle bg-info-subtle text-info">
+            <i class="bi bi-file-earmark-text"></i>
+          </div>
+        </div>
+        <div class="kpi-value" id="kpi-total-quotations"><%= metrics.kpis.quotations.total %></div>
+        <div class="kpi-subtext">
+          <span class="fw-semibold text-info" id="kpi-active-quotations"><%= metrics.kpis.quotations.active %></span> Active
+        </div>
+      </div>
+    </div>
+
+    <!-- Quotation Conversion Rate -->
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="card kpi-card p-3">
+        <div class="kpi-accent-bar accent-purple"></div>
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="kpi-label">Quote Conversion</span>
+          <div class="kpi-icon-circle bg-purple-subtle text-purple" style="background:#f3e8ff; color:#7c3aed;">
+            <i class="bi bi-arrow-repeat"></i>
+          </div>
+        </div>
+        <div class="kpi-value text-purple" style="color:#7c3aed;" id="kpi-conversion-rate"><%= metrics.kpis.quotations.conversionRate %>%</div>
+        <div class="kpi-subtext">
+          <span class="fw-semibold text-dark" id="kpi-converted-quotations"><%= metrics.kpis.quotations.converted %></span> converted to invoice
+        </div>
+      </div>
+    </div>
+
+    <!-- Total Invoices -->
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="card kpi-card p-3">
+        <div class="kpi-accent-bar accent-green"></div>
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="kpi-label">Total Invoices</span>
+          <div class="kpi-icon-circle bg-success-subtle text-success">
+            <i class="bi bi-receipt-cutoff"></i>
+          </div>
+        </div>
+        <div class="kpi-value" id="kpi-total-invoices"><%= metrics.kpis.invoices.total %></div>
+        <div class="kpi-subtext">
+          <span class="fw-semibold text-success" id="kpi-active-invoices"><%= metrics.kpis.invoices.active %></span> Active Invoices
+        </div>
+      </div>
+    </div>
+
+    <!-- Void & Inactive Invoices -->
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="card kpi-card p-3">
+        <div class="kpi-accent-bar accent-red"></div>
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="kpi-label">Void Invoices</span>
+          <div class="kpi-icon-circle bg-secondary-subtle text-secondary">
+            <i class="bi bi-slash-circle"></i>
+          </div>
+        </div>
+        <div class="kpi-value text-secondary" id="kpi-void-invoices"><%= metrics.kpis.invoices.void %></div>
+        <div class="kpi-subtext">Canceled or voided</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================
+       ROW 3: TIME-BASED ANALYTICS & TREND CHARTS
+       =================================================================== -->
+  <div class="row g-3 mb-4">
+    <!-- Chart 1: Revenue vs Collection Trend -->
+    <div class="col-12 col-lg-7">
+      <div class="chart-card">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div>
+            <div class="chart-title">Revenue & Payment Collection Trend</div>
+            <div class="chart-subtitle">Comparison of invoiced revenue and collections realized over time</div>
+          </div>
+          <span class="badge bg-light text-muted border font-monospace" style="font-size: 0.72rem;">INR (₹)</span>
+        </div>
+        <div id="chart-revenue-collections" style="min-height: 280px;"></div>
+      </div>
+    </div>
+
+    <!-- Chart 2: Quotations & Conversions Trend -->
+    <div class="col-12 col-lg-5">
+      <div class="chart-card">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div>
+            <div class="chart-title">Quotation Pipeline & Conversions</div>
+            <div class="chart-subtitle">Quotes issued vs converted to invoices</div>
+          </div>
+          <span class="badge bg-light text-muted border font-monospace" style="font-size: 0.72rem;">Volume</span>
+        </div>
+        <div id="chart-quotes-conversion" style="min-height: 280px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================
+       ROW 4: RECENT ACTIVITY TABLE
+       =================================================================== -->
+  <div class="card border-0 shadow-sm rounded-3 overflow-hidden bg-white mb-4">
+    <div class="card-header bg-white py-3 px-4 d-flex align-items-center justify-content-between border-bottom">
+      <div>
+        <h5 class="mb-0 fw-bold text-dark" style="font-size: 1rem;">Recent Document Activity</h5>
+        <span class="text-muted small">Latest generated documents within selected period</span>
+      </div>
+      <a href="/documents" class="btn btn-sm btn-outline-success">View All Documents</a>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" id="table-recent-activity">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-4">Type</th>
+            <th>Document #</th>
+            <th>Client</th>
+            <th>Date</th>
+            <th class="text-end">Grand Total</th>
+            <th class="text-center">Status</th>
+            <th class="text-end pe-4">Action</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-recent-activity">
+          <% if (metrics.recentActivity && metrics.recentActivity.length > 0) { %>
+            <% metrics.recentActivity.forEach((doc) => { %>
+              <tr>
+                <td class="ps-4">
+                  <span class="badge <%= doc.documentType === 'QUOTATION' ? 'bg-info-subtle text-info' : 'bg-primary-subtle text-primary' %> font-monospace">
+                    <%= doc.documentType %>
+                  </span>
+                </td>
+                <td class="fw-bold font-monospace">
+                  <a href="/documents/<%= doc.id %>" class="text-decoration-none text-dark"><%= doc.invoiceNumber %></a>
+                </td>
+                <td><%= doc.clientName %></td>
+                <td class="small text-muted"><%= new Date(doc.invoiceDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) %></td>
+                <td class="text-end font-monospace fw-bold">₹<%= Number(doc.grandTotal).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></td>
+                <td class="text-center">
+                  <span class="badge <%= doc.status === 'ACTIVE' ? 'bg-success-subtle text-success' : (doc.status === 'VOID' ? 'bg-danger-subtle text-danger' : 'bg-secondary-subtle text-secondary') %>">
+                    <%= doc.status %>
+                  </span>
+                </td>
+                <td class="text-end pe-4">
+                  <a href="/documents/<%= doc.id %>" class="btn btn-sm btn-light border" title="View Document">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                </td>
+              </tr>
+            <% }); %>
+          <% } else { %>
+            <tr>
+              <td colspan="7" class="text-center py-4 text-muted">
+                <i class="bi bi-inbox fs-3 d-block mb-1"></i>
+                No documents found for the selected period.
+              </td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<%- include('../layouts/footer', {
+  extraJs: `
+    <script>
+      (function() {
+        let currentRange = '${metrics.range}';
+        let initialTrends = ${JSON.stringify(metrics.trends)};
+
+        let chartRevenue = null;
+        let chartQuotes = null;
+
+        function initCharts(trends) {
+          // 1. Revenue & Collections Area Chart
+          const revenueOptions = {
+            series: [
+              { name: 'Invoiced Revenue', data: trends.revenue },
+              { name: 'Collections Realized', data: trends.collections }
+            ],
+            chart: {
+              type: 'area',
+              height: 280,
+              toolbar: { show: false },
+              animations: { enabled: true }
+            },
+            colors: ['#2563eb', '#16a34a'],
+            fill: {
+              type: 'gradient',
+              gradient: { shadeIntensity: 1, opacityFrom: 0.45, opacityTo: 0.05, stops: [20, 100] }
+            },
+            dataLabels: { enabled: false },
+            stroke: { curve: 'smooth', width: 2 },
+            xaxis: {
+              categories: trends.labels,
+              labels: { style: { fontSize: '11px', colors: '#64748b' } }
+            },
+            yaxis: {
+              labels: {
+                formatter: function(val) {
+                  return '₹' + (val >= 1000 ? (val / 1000).toFixed(0) + 'k' : val.toFixed(0));
+                },
+                style: { fontSize: '11px', colors: '#64748b' }
+              }
+            },
+            tooltip: {
+              y: {
+                formatter: function(val) {
+                  return '₹' + Number(val).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+                }
+              }
+            }
+          };
+
+          const chartRevenueEl = document.getElementById('chart-revenue-collections');
+          if (chartRevenueEl) {
+            chartRevenueEl.innerHTML = '';
+            chartRevenue = new ApexCharts(chartRevenueEl, revenueOptions);
+            chartRevenue.render();
+          }
+
+          // 2. Quotes vs Conversions Bar Chart
+          const quoteOptions = {
+            series: [
+              { name: 'Quotations Created', data: trends.quotations },
+              { name: 'Converted Invoices', data: trends.conversions }
+            ],
+            chart: {
+              type: 'bar',
+              height: 280,
+              toolbar: { show: false }
+            },
+            colors: ['#0891b2', '#7c3aed'],
+            plotOptions: {
+              bar: { horizontal: false, columnWidth: '45%', borderRadius: 4 }
+            },
+            dataLabels: { enabled: false },
+            xaxis: {
+              categories: trends.labels,
+              labels: { style: { fontSize: '11px', colors: '#64748b' } }
+            },
+            yaxis: {
+              labels: { style: { fontSize: '11px', colors: '#64748b' } }
+            }
+          };
+
+          const chartQuotesEl = document.getElementById('chart-quotes-conversion');
+          if (chartQuotesEl) {
+            chartQuotesEl.innerHTML = '';
+            chartQuotes = new ApexCharts(chartQuotesEl, quoteOptions);
+            chartQuotes.render();
+          }
+        }
+
+        // Initialize on load
+        if (window.ApexCharts) {
+          initCharts(initialTrends);
+        }
+
+        // Date Range Pill Click Handler
+        const pillsContainer = document.getElementById('date-range-pills');
+        const customPanel = document.getElementById('custom-range-panel');
+
+        pillsContainer.addEventListener('click', function(e) {
+          const btn = e.target.closest('.filter-pill-btn');
+          if (!btn) return;
+
+          const range = btn.dataset.range;
+          if (range === 'custom') {
+            customPanel.classList.toggle('d-none');
+            pillsContainer.querySelectorAll('.filter-pill-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            return;
+          }
+
+          customPanel.classList.add('d-none');
+          pillsContainer.querySelectorAll('.filter-pill-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+
+          currentRange = range;
+          fetchMetrics({ range });
+        });
+
+        // Custom Range Form Submit
+        const customForm = document.getElementById('custom-range-form');
+        customForm.addEventListener('submit', function(e) {
+          e.preventDefault();
+          const from = document.getElementById('custom-date-from').value;
+          const to = document.getElementById('custom-date-to').value;
+          currentRange = 'custom';
+          fetchMetrics({ range: 'custom', from, to });
+        });
+
+        // Refresh Button
+        const btnRefresh = document.getElementById('btn-refresh-dashboard');
+        const refreshIcon = document.getElementById('refresh-icon');
+        btnRefresh.addEventListener('click', function() {
+          refreshIcon.classList.add('spin-animation');
+          fetchMetrics({ range: currentRange }).finally(() => {
+            setTimeout(() => refreshIcon.classList.remove('spin-animation'), 500);
+          });
+        });
+
+        async function fetchMetrics(params) {
+          const loadingOverlay = document.getElementById('dashboard-loading');
+          loadingOverlay.classList.remove('d-none');
+
+          try {
+            const qs = new URLSearchParams(params).toString();
+            const res = await fetch('/api/dashboard/metrics?' + qs, {
+              headers: { 'Accept': 'application/json' }
+            });
+            const data = await res.json();
+            if (data && data.success) {
+              updateDashboardUI(data.data);
+            }
+          } catch (err) {
+            console.error('Failed to load metrics:', err);
+          } finally {
+            loadingOverlay.classList.add('d-none');
+          }
+        }
+
+        function updateDashboardUI(data) {
+          const k = data.kpis;
+          const fmt = (num) => '₹' + Number(num || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+          document.getElementById('kpi-total-invoiced').textContent = fmt(k.financials.totalInvoiced);
+          document.getElementById('kpi-total-collected').textContent = fmt(k.financials.paidAmount);
+          document.getElementById('kpi-outstanding').textContent = fmt(k.financials.outstandingAmount);
+          document.getElementById('kpi-overdue').textContent = fmt(k.financials.overdueAmount);
+          document.getElementById('kpi-overdue-count').textContent = k.financials.overdueCount + (k.financials.overdueCount === 1 ? ' invoice' : ' invoices');
+
+          document.getElementById('kpi-total-quotations').textContent = k.quotations.total;
+          document.getElementById('kpi-active-quotations').textContent = k.quotations.active;
+          document.getElementById('kpi-conversion-rate').textContent = k.quotations.conversionRate + '%';
+          document.getElementById('kpi-converted-quotations').textContent = k.quotations.converted;
+
+          document.getElementById('kpi-total-invoices').textContent = k.invoices.total;
+          document.getElementById('kpi-active-invoices').textContent = k.invoices.active;
+          document.getElementById('kpi-void-invoices').textContent = k.invoices.void;
+
+          if (chartRevenue && chartQuotes && data.trends) {
+            chartRevenue.updateOptions({
+              xaxis: { categories: data.trends.labels },
+              series: [
+                { name: 'Invoiced Revenue', data: data.trends.revenue },
+                { name: 'Collections Realized', data: data.trends.collections }
+              ]
+            });
+
+            chartQuotes.updateOptions({
+              xaxis: { categories: data.trends.labels },
+              series: [
+                { name: 'Quotations Created', data: data.trends.quotations },
+                { name: 'Converted Invoices', data: data.trends.conversions }
+              ]
+            });
+          }
+
+          // Update recent activity table
+          const tbody = document.getElementById('tbody-recent-activity');
+          if (data.recentActivity && data.recentActivity.length > 0) {
+            tbody.innerHTML = data.recentActivity.map(doc => \`
+              <tr>
+                <td class="ps-4">
+                  <span class="badge \${doc.documentType === 'QUOTATION' ? 'bg-info-subtle text-info' : 'bg-primary-subtle text-primary'} font-monospace">
+                    \${doc.documentType}
+                  </span>
+                </td>
+                <td class="fw-bold font-monospace">
+                  <a href="/documents/\${doc.id}" class="text-decoration-none text-dark">\${doc.invoiceNumber}</a>
+                </td>
+                <td>\${doc.clientName}</td>
+                <td class="small text-muted">\${new Date(doc.invoiceDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                <td class="text-end font-monospace fw-bold">₹\${Number(doc.grandTotal).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td class="text-center">
+                  <span class="badge \${doc.status === 'ACTIVE' ? 'bg-success-subtle text-success' : (doc.status === 'VOID' ? 'bg-danger-subtle text-danger' : 'bg-secondary-subtle text-secondary')}">
+                    \${doc.status}
+                  </span>
+                </td>
+                <td class="text-end pe-4">
+                  <a href="/documents/\${doc.id}" class="btn btn-sm btn-light border" title="View Document">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                </td>
+              </tr>
+            \`).join('');
+          } else {
+            tbody.innerHTML = \`
+              <tr>
+                <td colspan="7" class="text-center py-4 text-muted">
+                  <i class="bi bi-inbox fs-3 d-block mb-1"></i>
+                  No documents found for the selected period.
+                </td>
+              </tr>
+            \`;
+          }
+        }
+      })();
+    </script>
+  `
+}) %>

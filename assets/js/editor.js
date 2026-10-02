@@ -116,6 +116,7 @@
         const quantity = data.quantity !== undefined ? Number(data.quantity) : 1;
         const unit = data.unit || 'PCS';
         const rate = data.rate !== undefined ? Number(data.rate) : 0;
+        const hsnSac = data.hsnSac || '';
         const amount = Math.round(quantity * rate * 100) / 100;
 
         tr.innerHTML = `
@@ -123,25 +124,20 @@
                 <span class="item-index-badge">1</span>
             </td>
             <td>
-                <input 
-                    type="text" 
-                    class="form-control-custom item-name" 
-                    placeholder="Item description or service..." 
-                    value="${escapeHtml(name)}" 
-                    required 
-                    aria-label="Item description"
-                />
-            </td>
-            <td>
-                <input 
-                    type="number" 
-                    class="form-control-custom item-qty text-end font-monospace" 
-                    value="${quantity}" 
-                    min="0.01" 
-                    step="0.01" 
-                    required 
-                    aria-label="Item quantity"
-                />
+                <div class="item-autocomplete-container position-relative">
+                    <input
+                        type="text"
+                        class="form-control-custom item-name"
+                        placeholder="Item description or service..."
+                        value="${escapeHtml(name)}"
+                        required
+                        autocomplete="off"
+                        aria-autocomplete="list"
+                        aria-expanded="false"
+                        aria-label="Item description"
+                    />
+                    <div class="item-autocomplete-dropdown d-none" role="listbox" aria-label="Item suggestions"></div>
+                </div>
             </td>
             <td>
                 <select class="form-select-custom item-unit" aria-label="Item unit">
@@ -159,14 +155,35 @@
                 </select>
             </td>
             <td>
-                <input 
-                    type="number" 
-                    class="form-control-custom item-rate text-end font-monospace" 
-                    value="${rate.toFixed(2)}" 
-                    min="0" 
-                    step="0.01" 
-                    required 
+                <input
+                    type="number"
+                    class="form-control-custom item-rate text-end font-monospace"
+                    value="${rate.toFixed(2)}"
+                    min="0"
+                    step="0.01"
+                    required
                     aria-label="Item rate in rupees"
+                />
+            </td>
+            <td>
+                <input
+                    type="number"
+                    class="form-control-custom item-qty text-end font-monospace"
+                    value="${quantity}"
+                    min="0.01"
+                    step="0.01"
+                    required
+                    aria-label="Item quantity"
+                />
+            </td>
+            <td>
+                <input
+                    type="text"
+                    class="form-control-custom item-hsn font-monospace"
+                    value="${escapeHtml(hsnSac)}"
+                    maxlength="20"
+                    placeholder="HSN/SAC"
+                    aria-label="HSN or SAC code"
                 />
             </td>
             <td class="text-end">
@@ -179,18 +196,259 @@
             </td>
         `;
 
-        // Attach Row Listeners
+        // Row Element References
         const nameInput = tr.querySelector('.item-name');
-        const qtyInput = tr.querySelector('.item-qty');
+        const dropdownEl = tr.querySelector('.item-autocomplete-dropdown');
         const unitSelect = tr.querySelector('.item-unit');
         const rateInput = tr.querySelector('.item-rate');
+        const qtyInput = tr.querySelector('.item-qty');
+        const hsnInput = tr.querySelector('.item-hsn');
         const removeBtn = tr.querySelector('.btn-remove-item');
 
+        // Autocomplete State
+        let searchTimer = null;
+        let searchSeq = 0;
+        let suggestions = [];
+        let highlightedIdx = -1;
+
+        function hideDropdown() {
+            dropdownEl.classList.add('d-none');
+            dropdownEl.innerHTML = '';
+            nameInput.setAttribute('aria-expanded', 'false');
+            suggestions = [];
+            highlightedIdx = -1;
+        }
+
+        function renderSuggestions(items) {
+            dropdownEl.innerHTML = '';
+            suggestions = items || [];
+            highlightedIdx = -1;
+
+            if (suggestions.length === 0) {
+                hideDropdown();
+                return;
+            }
+
+            suggestions.forEach((item, idx) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'item-autocomplete-item';
+                itemDiv.setAttribute('role', 'option');
+                itemDiv.setAttribute('id', `item-opt-${idx}`);
+                itemDiv.setAttribute('aria-selected', 'false');
+
+                // Text node for name to strictly avoid raw innerHTML
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'item-autocomplete-item-name';
+                nameSpan.textContent = item.name;
+
+                const metaSpan = document.createElement('span');
+                metaSpan.className = 'item-autocomplete-item-meta';
+
+                const badgeSpan = document.createElement('span');
+                badgeSpan.className = 'item-autocomplete-price-badge font-monospace';
+                const rateFormatted = Number(item.rate).toFixed(2);
+                badgeSpan.textContent = `₹${rateFormatted} / ${item.unit || 'PCS'}`;
+                metaSpan.appendChild(badgeSpan);
+
+                itemDiv.appendChild(nameSpan);
+                itemDiv.appendChild(metaSpan);
+
+                // Mouse selection
+                itemDiv.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    selectItem(item);
+                });
+
+                itemDiv.addEventListener('mouseenter', () => {
+                    setHighlightedIndex(idx);
+                });
+
+                dropdownEl.appendChild(itemDiv);
+            });
+
+            dropdownEl.classList.remove('d-none');
+            nameInput.setAttribute('aria-expanded', 'true');
+        }
+
+        function setHighlightedIndex(newIdx) {
+            const items = dropdownEl.querySelectorAll('.item-autocomplete-item');
+            items.forEach((el) => {
+                el.classList.remove('active');
+                el.setAttribute('aria-selected', 'false');
+            });
+
+            if (newIdx >= 0 && newIdx < items.length) {
+                highlightedIdx = newIdx;
+                items[highlightedIdx].classList.add('active');
+                items[highlightedIdx].setAttribute('aria-selected', 'true');
+                items[highlightedIdx].scrollIntoView({ block: 'nearest' });
+                nameInput.setAttribute('aria-activedescendant', `item-opt-${highlightedIdx}`);
+            } else {
+                highlightedIdx = -1;
+                nameInput.removeAttribute('aria-activedescendant');
+            }
+        }
+
+        function selectItem(item) {
+            nameInput.value = item.name;
+            if (item.unit) {
+                let found = false;
+                for (let i = 0; i < unitSelect.options.length; i++) {
+                    if (unitSelect.options[i].value.toLowerCase() === item.unit.toLowerCase()) {
+                        unitSelect.selectedIndex = i;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    const opt = document.createElement('option');
+                    opt.value = item.unit;
+                    opt.textContent = item.unit;
+                    opt.selected = true;
+                    unitSelect.appendChild(opt);
+                }
+            }
+            if (item.rate !== undefined && !isNaN(Number(item.rate))) {
+                rateInput.value = Number(item.rate).toFixed(2);
+            }
+            if (item.hsnSac && hsnInput) {
+                hsnInput.value = item.hsnSac;
+            }
+
+            hideDropdown();
+            updateRowAmount(tr);
+            markDirty();
+            recalculateTotals();
+
+            // Next logical field in sequence: Unit
+            unitSelect.focus();
+        }
+
+        // Search Autocomplete on Input
         nameInput.addEventListener('input', () => {
             nameInput.classList.remove('is-invalid-custom');
             markDirty();
+
+            clearTimeout(searchTimer);
+            const query = nameInput.value.trim();
+            if (query.length === 0) {
+                hideDropdown();
+                return;
+            }
+
+            searchTimer = setTimeout(async () => {
+                const curId = ++searchSeq;
+                try {
+                    const res = await fetch(`/api/items/search?q=${encodeURIComponent(query)}`);
+                    if (curId !== searchSeq) return; // Prevent stale autocomplete replacement
+                    if (res.ok) {
+                        const json = await res.json();
+                        if (curId === searchSeq && json.success) {
+                            renderSuggestions(json.data);
+                        }
+                    }
+                } catch (_) {
+                    // Ignore network abort/fetch errors
+                }
+            }, 200);
         });
 
+        // Close on blur (timeout allows click event to register)
+        nameInput.addEventListener('blur', () => {
+            setTimeout(hideDropdown, 200);
+        });
+
+        // Keyboard sequence and autocomplete navigation on item-name
+        nameInput.addEventListener('keydown', (e) => {
+            const isDropdownVisible = !dropdownEl.classList.contains('d-none');
+
+            if (e.key === 'ArrowDown') {
+                if (isDropdownVisible) {
+                    e.preventDefault();
+                    const next = (highlightedIdx + 1) % suggestions.length;
+                    setHighlightedIndex(next);
+                }
+            } else if (e.key === 'ArrowUp') {
+                if (isDropdownVisible) {
+                    e.preventDefault();
+                    const prev = (highlightedIdx - 1 + suggestions.length) % suggestions.length;
+                    setHighlightedIndex(prev);
+                }
+            } else if (e.key === 'Escape') {
+                if (isDropdownVisible) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    hideDropdown();
+                }
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                if (isDropdownVisible && highlightedIdx >= 0 && suggestions[highlightedIdx]) {
+                    selectItem(suggestions[highlightedIdx]);
+                } else {
+                    hideDropdown();
+                    unitSelect.focus();
+                }
+            }
+        });
+
+        // Sequence: Unit → Rate
+        unitSelect.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                rateInput.focus();
+                rateInput.select();
+            }
+        });
+
+        // Sequence: Rate → Quantity
+        rateInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                qtyInput.focus();
+                qtyInput.select();
+            }
+        });
+
+        // Helper to focus next row or add row if at end
+        function advanceToNextRow() {
+            const nextRow = tr.nextElementSibling;
+            if (nextRow && nextRow.classList.contains('line-item-row')) {
+                const nextName = nextRow.querySelector('.item-name');
+                if (nextName) {
+                    nextName.focus();
+                    nextName.select();
+                }
+            } else {
+                // If this is the last row and has a description, create next row
+                const currentName = nameInput.value.trim();
+                if (currentName) {
+                    const newRow = addNewItemRow();
+                    if (newRow) {
+                        const newName = newRow.querySelector('.item-name');
+                        if (newName) newName.focus();
+                    }
+                }
+            }
+        }
+
+        // Sequence: Quantity → next logical field / end of row → next row Item Name
+        qtyInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                advanceToNextRow();
+            }
+        });
+
+        // Optional HSN field navigation
+        hsnInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                advanceToNextRow();
+            }
+        });
+
+        // Value change handlers
         qtyInput.addEventListener('input', () => {
             qtyInput.classList.remove('is-invalid-custom');
             updateRowAmount(tr);
@@ -207,6 +465,10 @@
             updateRowAmount(tr);
             markDirty();
             recalculateTotals();
+        });
+
+        hsnInput.addEventListener('input', () => {
+            markDirty();
         });
 
         removeBtn.addEventListener('click', () => {
@@ -514,11 +776,13 @@
         const items = [];
 
         rows.forEach((row) => {
+            const hsnEl = row.querySelector('.item-hsn');
             items.push({
                 name: row.querySelector('.item-name').value.trim(),
                 quantity: parseFloat(row.querySelector('.item-qty').value) || 0,
                 unit: row.querySelector('.item-unit').value || 'PCS',
-                rate: parseFloat(row.querySelector('.item-rate').value) || 0
+                rate: parseFloat(row.querySelector('.item-rate').value) || 0,
+                hsnSac: hsnEl ? (hsnEl.value.trim() || null) : null
             });
         });
 
@@ -549,6 +813,9 @@
 
         if (editorMode === 'create') {
             payload.documentType = docType;
+            if (initialDoc && initialDoc.id) {
+                payload.copyFromId = initialDoc.id;
+            }
         } else {
             payload.version = parseInt(docVersionInput.value, 10);
         }
@@ -975,6 +1242,18 @@
 
         // Form Submit
         formEl.addEventListener('submit', handleFormSubmit);
+
+        // Prevent accidental form submission on Enter in text inputs
+        formEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const target = e.target;
+                if (target && target.tagName === 'INPUT' && target.type !== 'submit') {
+                    if (!target.closest('#items-tbody')) {
+                        e.preventDefault();
+                    }
+                }
+            }
+        });
 
         // Cancel / Back
         btnCancel.addEventListener('click', handleCancel);

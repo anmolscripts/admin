@@ -1,0 +1,494 @@
+<!--
+  Unified Document Template (Print + PDF Shared Architecture)
+  Single source of truth for Quotations and Invoices.
+  Consumed identically by Browser Print view and PDF generation engine.
+-->
+<div class="spark-unified-document <%= model.isQuotation ? 'doc-theme-quotation' : 'doc-theme-invoice' %>" id="unified-document-root">
+  <style>
+    .spark-unified-document {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: #1f2937;
+      background: #ffffff;
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 36px 40px;
+      box-sizing: border-box;
+      position: relative;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .spark-unified-document * {
+      box-sizing: border-box;
+    }
+
+    /* Watermark for VOID and DELETED */
+    .doc-watermark {
+      position: absolute;
+      top: 48%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-30deg);
+      font-size: 72px;
+      font-weight: 900;
+      letter-spacing: 8px;
+      opacity: 0.12;
+      pointer-events: none;
+      user-select: none;
+      z-index: 10;
+      text-transform: uppercase;
+    }
+    .watermark-void { color: #dc2626; }
+    .watermark-deleted { color: #6b7280; }
+
+    /* Header */
+    .unified-doc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 18px;
+      margin-bottom: 22px;
+    }
+    .seller-brand-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: <%= model.themeColor %>;
+      margin: 0 0 4px 0;
+      line-height: 1.2;
+    }
+    .seller-meta-text {
+      font-size: 11.5px;
+      color: #4b5563;
+      line-height: 1.45;
+    }
+    .doc-headline-panel {
+      text-align: right;
+    }
+    .doc-main-type {
+      font-size: 22px;
+      font-weight: 800;
+      color: #111827;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin: 0 0 4px 0;
+    }
+    .doc-main-number {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 14px;
+      font-weight: 700;
+      color: <%= model.themeColor %>;
+      margin-bottom: 6px;
+    }
+    .doc-status-badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 9999px;
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .badge-active { background: #dcfce7; color: #166534; }
+    .badge-inactive { background: #fef3c7; color: #92400e; }
+    .badge-void { background: #fee2e2; color: #991b1b; }
+    .badge-deleted { background: #f3f4f6; color: #374151; }
+
+    /* Metadata / Parties Grid */
+    .unified-meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    .unified-card {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 14px 16px;
+    }
+    .unified-card-title {
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #6b7280;
+      margin-bottom: 6px;
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 4px;
+    }
+    .client-name-heading {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 4px;
+    }
+    .meta-detail-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      padding: 2px 0;
+      border-bottom: 1px dotted #f1f5f9;
+    }
+    .meta-detail-row:last-child {
+      border-bottom: none;
+    }
+    .meta-label {
+      color: #6b7280;
+    }
+    .meta-val {
+      font-weight: 600;
+      color: #1f2937;
+      text-align: right;
+    }
+
+    /* Items Table */
+    .unified-items-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 22px;
+    }
+    .unified-items-table th {
+      background: <%= model.themeColor %>;
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 11.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 8px 10px;
+      border: none;
+      text-align: left;
+    }
+    .unified-items-table th.col-num { width: 35px; text-align: center; }
+    .unified-items-table th.col-qty { width: 65px; text-align: right; }
+    .unified-items-table th.col-unit { width: 60px; text-align: center; }
+    .unified-items-table th.col-rate { width: 95px; text-align: right; }
+    .unified-items-table th.col-amount { width: 110px; text-align: right; }
+    .unified-items-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 12.5px;
+      color: #374151;
+    }
+    .unified-items-table tr:nth-child(even) td {
+      background: #fcfdfd;
+    }
+    .col-num { text-align: center; color: #9ca3af; }
+    .col-qty { text-align: right; font-weight: 600; }
+    .col-unit { text-align: center; color: #6b7280; font-size: 11.5px; }
+    .col-rate { text-align: right; font-family: ui-monospace, monospace; }
+    .col-amount { text-align: right; font-family: ui-monospace, monospace; font-weight: 600; }
+
+    /* Bottom Summary / Totals Layout */
+    .unified-bottom-section {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 20px;
+      margin-bottom: 22px;
+      page-break-inside: avoid;
+    }
+    .payment-bank-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 12px 14px;
+      font-size: 11.5px;
+    }
+    .payment-bank-card-title {
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #475569;
+      margin-bottom: 6px;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 3px;
+    }
+    .totals-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    .totals-table td {
+      padding: 5px 8px;
+    }
+    .totals-table .totals-label {
+      color: #4b5563;
+    }
+    .totals-table .totals-val {
+      text-align: right;
+      font-family: ui-monospace, monospace;
+      font-weight: 600;
+      color: #111827;
+    }
+    .totals-grand-row td {
+      border-top: 2px solid <%= model.themeColor %>;
+      border-bottom: 2px solid <%= model.themeColor %>;
+      font-size: 14.5px;
+      font-weight: 800;
+      color: <%= model.themeColor %>;
+      padding: 8px;
+      background: <%= model.themeBg %>;
+    }
+    .totals-outstanding-row td {
+      font-weight: 700;
+      color: #dc2626;
+      background: #fef2f2;
+    }
+
+    /* Notes & Terms */
+    .unified-terms-block {
+      border-top: 1px solid #e5e7eb;
+      padding-top: 14px;
+      margin-bottom: 20px;
+      font-size: 11px;
+      color: #6b7280;
+      line-height: 1.5;
+    }
+    .terms-heading {
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #374151;
+      margin-bottom: 4px;
+    }
+
+    /* Sign-off & Footer */
+    .unified-sign-off {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding-top: 12px;
+      margin-top: 12px;
+      border-top: 1px dashed #e5e7eb;
+      page-break-inside: avoid;
+    }
+    .doc-footer-meta {
+      font-size: 10.5px;
+      color: #9ca3af;
+    }
+    .signature-area {
+      text-align: right;
+      min-width: 180px;
+    }
+    .signature-line {
+      height: 40px;
+      border-bottom: 1px solid #9ca3af;
+      margin-bottom: 4px;
+    }
+    .signature-caption {
+      font-size: 10.5px;
+      color: #4b5563;
+      font-weight: 600;
+    }
+
+    @media print {
+      body {
+        background: #ffffff !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      .spark-unified-document {
+        padding: 0 !important;
+        max-width: 100% !important;
+        box-shadow: none !important;
+      }
+    }
+  </style>
+
+  <% if (model.watermark) { %>
+    <div class="print-watermark <%= model.watermark === 'VOID' ? 'watermark-void' : 'watermark-deleted' %> doc-watermark">
+      <%= model.watermark %>
+    </div>
+  <% } %>
+
+  <!-- HEADER -->
+  <div class="unified-doc-header">
+    <div class="seller-identity">
+      <h1 class="seller-brand-title"><%= model.seller.name %></h1>
+      <div class="seller-meta-text">
+        <div><strong>GSTIN:</strong> <%= model.seller.gstin %></div>
+        <div><%= model.seller.address %></div>
+        <div><strong>Email:</strong> <%= model.seller.email %> | <strong>Phone:</strong> <%= model.seller.phone %></div>
+      </div>
+    </div>
+    <div class="doc-headline-panel">
+      <div class="doc-main-type"><%= model.documentTitle %></div>
+      <div class="doc-main-number"><%= model.invoiceNumber %></div>
+      <span class="doc-status-badge <%= model.statusClass %>"><%= model.status %></span>
+    </div>
+  </div>
+
+  <!-- METADATA & PARTIES -->
+  <div class="unified-meta-grid">
+    <!-- Client Details -->
+    <div class="unified-card">
+      <div class="unified-card-title">Bill To / Client Details</div>
+      <div class="client-name-heading"><%= model.client.name %></div>
+      <div class="seller-meta-text">
+        <% if (model.client.gstin && model.client.gstin !== 'Unregistered') { %>
+          <div><strong>GSTIN:</strong> <%= model.client.gstin %></div>
+        <% } %>
+        <div><%= model.client.billingAddress %></div>
+        <div><strong>Email:</strong> <%= model.client.email %></div>
+        <div><strong>Phone:</strong> <%= model.client.phone %></div>
+      </div>
+    </div>
+
+    <!-- Document Info -->
+    <div class="unified-card">
+      <div class="unified-card-title">Document Details</div>
+      <div class="meta-detail-row">
+        <span class="meta-label">Date:</span>
+        <span class="meta-val"><%= model.dates.invoiceDate %></span>
+      </div>
+      <div class="meta-detail-row">
+        <span class="meta-label"><%= model.dates.dueOrExpiryLabel %>:</span>
+        <span class="meta-val"><%= model.dates.dueOrExpiryDate %></span>
+      </div>
+      <div class="meta-detail-row">
+        <span class="meta-label">Place of Supply:</span>
+        <span class="meta-val"><%= model.client.placeOfSupply %></span>
+      </div>
+      <% if (model.reference.sourceQuotation) { %>
+        <div class="meta-detail-row">
+          <span class="meta-label">Source Quotation:</span>
+          <span class="meta-val" style="color: <%= model.themeColor %>;"><%= model.reference.sourceQuotation.invoiceNumber %></span>
+        </div>
+      <% } else if (model.reference.convertedInvoice) { %>
+        <div class="meta-detail-row">
+          <span class="meta-label">Converted To:</span>
+          <span class="meta-val" style="color: <%= model.themeColor %>;"><%= model.reference.convertedInvoice.invoiceNumber %></span>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- ITEMS TABLE -->
+  <table class="unified-items-table">
+    <thead>
+      <tr>
+        <th class="col-num">#</th>
+        <th>Item Description</th>
+        <th class="col-unit">HSN/SAC</th>
+        <th class="col-qty">Qty</th>
+        <th class="col-unit">Unit</th>
+        <th class="col-rate">Rate</th>
+        <th class="col-amount">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (model.items && model.items.length > 0) { %>
+        <% model.items.forEach((item) => { %>
+          <tr>
+            <td class="col-num"><%= item.lineNumber %></td>
+            <td><strong><%= item.name %></strong></td>
+            <td class="col-unit"><%= item.hsnSac %></td>
+            <td class="col-qty"><%= item.quantity %></td>
+            <td class="col-unit"><%= item.unit %></td>
+            <td class="col-rate"><%= item.formattedRate %></td>
+            <td class="col-amount"><%= item.formattedAmount %></td>
+          </tr>
+        <% }); %>
+      <% } else { %>
+        <tr>
+          <td colspan="7" style="text-align: center; padding: 20px; color: #9ca3af;">No line items found.</td>
+        </tr>
+      <% } %>
+    </tbody>
+  </table>
+
+  <!-- BOTTOM SECTION: FINANCIAL TOTALS + PAYMENT / BANK DETAILS -->
+  <div class="unified-bottom-section">
+    <!-- Left: Payment / Banking info or Notes -->
+    <div class="payment-bank-card">
+      <% if (!model.isQuotation) { %>
+        <div class="payment-bank-card-title">Bank & Remittance Details</div>
+        <div><strong>Bank Name:</strong> <%= model.seller.bankName %></div>
+        <div><strong>Account Number:</strong> <%= model.seller.accountNumber %></div>
+        <div><strong>IFSC Code:</strong> <%= model.seller.ifscCode %></div>
+        <div><strong>Branch:</strong> <%= model.seller.branch %></div>
+        <% if (model.seller.upiId) { %>
+          <div style="margin-top: 4px;"><strong>UPI ID:</strong> <%= model.seller.upiId %></div>
+        <% } %>
+      <% } else { %>
+        <div class="payment-bank-card-title">Quotation Terms</div>
+        <div>Prices quoted are inclusive of standard terms and valid until <strong><%= model.dates.dueOrExpiryDate %></strong>.</div>
+        <div style="margin-top: 6px;">Upon acceptance, this quotation will be converted to a formal Tax Invoice.</div>
+      <% } %>
+
+      <% if (model.notes) { %>
+        <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dotted #cbd5e1;">
+          <strong>Remarks:</strong> <%= model.notes %>
+        </div>
+      <% } %>
+    </div>
+
+    <!-- Right: Calculation Totals -->
+    <div>
+      <table class="totals-table">
+        <tr>
+          <td class="totals-label">Subtotal:</td>
+          <td class="totals-val"><%= model.financials.formattedSubtotal %></td>
+        </tr>
+        <% if (model.financials.gstEnabled) { %>
+          <% if (model.financials.isInterState) { %>
+            <tr>
+              <td class="totals-label">IGST (<%= model.financials.gstRate %>%):</td>
+              <td class="totals-val"><%= model.financials.formattedIgstAmount %></td>
+            </tr>
+          <% } else { %>
+            <tr>
+              <td class="totals-label">CGST (<%= (Number(model.financials.gstRate) / 2).toFixed(2) %>%):</td>
+              <td class="totals-val"><%= model.financials.formattedCgstAmount %></td>
+            </tr>
+            <tr>
+              <td class="totals-label">SGST (<%= (Number(model.financials.gstRate) / 2).toFixed(2) %>%):</td>
+              <td class="totals-val"><%= model.financials.formattedSgstAmount %></td>
+            </tr>
+          <% } %>
+        <% } %>
+        <% if (Number(model.financials.roundOff) !== 0) { %>
+          <tr>
+            <td class="totals-label">Round Off:</td>
+            <td class="totals-val"><%= model.financials.formattedRoundOff %></td>
+          </tr>
+        <% } %>
+        <tr class="totals-grand-row">
+          <td>Grand Total:</td>
+          <td class="totals-val"><%= model.financials.formattedGrandTotal %></td>
+        </tr>
+        <% if (!model.isQuotation) { %>
+          <tr>
+            <td class="totals-label">Paid Amount:</td>
+            <td class="totals-val" style="color: #166534;"><%= model.financials.formattedPaidAmount %></td>
+          </tr>
+          <tr class="totals-outstanding-row">
+            <td>Outstanding Balance:</td>
+            <td class="totals-val"><%= model.financials.formattedOutstandingAmount %></td>
+          </tr>
+        <% } %>
+      </table>
+    </div>
+  </div>
+
+  <!-- TERMS & CONDITIONS -->
+  <% if (model.terms) { %>
+    <div class="unified-terms-block">
+      <div class="terms-heading">Terms & Conditions</div>
+      <div><%= model.terms %></div>
+    </div>
+  <% } %>
+
+  <!-- SIGN-OFF & FOOTER -->
+  <div class="unified-sign-off">
+    <div class="doc-footer-meta">
+      <div>Generated via Spark ERP • System-authenticated document</div>
+      <div><%= model.invoiceNumber %> • Page 1 of 1</div>
+    </div>
+    <div class="signature-area">
+      <div class="signature-line"></div>
+      <div class="signature-caption">Authorized Signatory for <%= model.seller.name %></div>
+    </div>
+  </div>
+</div>

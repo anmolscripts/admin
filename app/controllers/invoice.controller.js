@@ -2,6 +2,13 @@ const invoiceService = require('../services/invoice.service');
 const pdfService = require('../services/pdf.service');
 const excelService = require('../services/excel.service');
 
+function getRequestMeta(req) {
+    const forwarded = req.headers['x-forwarded-for'];
+    const ip = forwarded ? forwarded.split(',')[0].trim() : (req.socket ? req.socket.remoteAddress : null);
+    const userAgent = req.headers['user-agent'] ? req.headers['user-agent'].substring(0, 255) : null;
+    return { ipAddress: ip || '127.0.0.1', userAgent };
+}
+
 function handleControllerError(err, res, next) {
     if (err instanceof invoiceService.ValidationError) {
         return res.status(400).json({
@@ -88,7 +95,7 @@ async function createInvoice(req, res, next) {
             });
         }
 
-        const invoice = await invoiceService.createDocument(req.body, userId);
+        const invoice = await invoiceService.createDocument(req.body, userId, getRequestMeta(req));
         return res.status(201).json({
             success: true,
             data: invoice
@@ -112,7 +119,7 @@ async function updateInvoice(req, res, next) {
             });
         }
 
-        const invoice = await invoiceService.updateInvoice(req.params.id, req.body, userId);
+        const invoice = await invoiceService.updateInvoice(req.params.id, req.body, userId, getRequestMeta(req));
         return res.status(200).json({
             success: true,
             data: invoice
@@ -160,7 +167,7 @@ async function updateInvoiceStatus(req, res, next) {
             });
         }
 
-        const invoice = await invoiceService.updateInvoiceStatus(req.params.id, status, userId, { deleteReason, version });
+        const invoice = await invoiceService.updateInvoiceStatus(req.params.id, status, userId, { deleteReason, version }, getRequestMeta(req));
         return res.status(200).json({
             success: true,
             data: invoice
@@ -185,7 +192,7 @@ async function softDeleteInvoice(req, res, next) {
         }
 
         const { deleteReason, version } = req.body || {};
-        const invoice = await invoiceService.softDeleteDocument(req.params.id, deleteReason, userId, { version });
+        const invoice = await invoiceService.softDeleteDocument(req.params.id, deleteReason, userId, { version }, getRequestMeta(req));
         return res.status(200).json({
             success: true,
             data: invoice
@@ -210,7 +217,7 @@ async function restoreInvoice(req, res, next) {
         }
 
         const { version } = req.body || {};
-        const invoice = await invoiceService.restoreDocument(req.params.id, userId, { version });
+        const invoice = await invoiceService.restoreDocument(req.params.id, userId, { version }, getRequestMeta(req));
         return res.status(200).json({
             success: true,
             data: invoice
@@ -235,7 +242,7 @@ async function convertQuotation(req, res, next) {
         }
 
         const { version } = req.body || {};
-        const newInvoice = await invoiceService.convertQuotationToInvoice(req.params.id, userId, { version });
+        const newInvoice = await invoiceService.convertQuotationToInvoice(req.params.id, userId, { version }, getRequestMeta(req));
         return res.status(201).json({
             success: true,
             data: newInvoice
@@ -251,7 +258,8 @@ async function convertQuotation(req, res, next) {
  */
 async function copyInvoice(req, res, next) {
     try {
-        const copyData = await invoiceService.copyDocument(req.params.id);
+        const userId = req.session && req.session.user ? req.session.user.id : null;
+        const copyData = await invoiceService.copyDocument(req.params.id, userId, getRequestMeta(req));
         return res.status(200).json({
             success: true,
             data: copyData

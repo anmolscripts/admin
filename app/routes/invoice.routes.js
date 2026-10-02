@@ -2,13 +2,25 @@ const express = require('express');
 const requireAuth = require('../middleware/auth.middleware');
 const invoiceController = require('../controllers/invoice.controller');
 const clientController = require('../controllers/client.controller');
+const itemController = require('../controllers/item.controller');
 const paymentController = require('../controllers/payment.controller');
 const businessProfileController = require('../controllers/businessProfile.controller');
+const dashboardController = require('../controllers/dashboard.controller');
 
 const router = express.Router();
 
 // Enforce authentication on all document/invoice API routes
 router.use(requireAuth);
+
+// Dashboard metrics API route
+router.get('/dashboard/metrics', dashboardController.getMetrics);
+
+// Item Master API routes (must precede parameterized routes)
+router.get('/items/search', itemController.searchItems);
+router.get('/items', itemController.listItems);
+router.get('/items/:id', itemController.getItem);
+router.post('/items', itemController.createItem);
+router.put('/items/:id', itemController.updateItem);
 
 // Dashboard KPIs (must precede /invoices/:id)
 router.get('/invoices/kpis', invoiceController.getDashboardKPIs);
