@@ -8,11 +8,25 @@ function createPrismaClient() {
         return prismaInstance;
     }
 
-    const host = process.env.DATABASE_HOST || 'localhost';
-    const port = Number(process.env.DATABASE_PORT || 3306);
-    const user = process.env.DATABASE_USER;
-    const password = process.env.DATABASE_PASSWORD;
-    const database = process.env.DATABASE_NAME;
+    let host = process.env.DATABASE_HOST || 'localhost';
+    let port = Number(process.env.DATABASE_PORT || 3306);
+    let user = process.env.DATABASE_USER;
+    let password = process.env.DATABASE_PASSWORD;
+    let database = process.env.DATABASE_NAME;
+
+    // Fallback: parse from DATABASE_URL if granular parameters are not supplied
+    if (process.env.DATABASE_URL && (!user || !database)) {
+        try {
+            const parsed = new URL(process.env.DATABASE_URL);
+            host = parsed.hostname || host;
+            port = Number(parsed.port) || port;
+            user = decodeURIComponent(parsed.username) || user;
+            password = decodeURIComponent(parsed.password) || password;
+            database = (parsed.pathname ? parsed.pathname.replace(/^\//, '') : '') || database;
+        } catch (_) {
+            // Ignore URL parsing errors, fallback to default params
+        }
+    }
 
     const adapter = new PrismaMariaDb({
         host,
@@ -40,22 +54,13 @@ async function disconnectPrisma() {
     try {
         await prismaInstance.$disconnect();
     } catch (error) {
-        console.error('Error during Prisma disconnect:', error);
+        console.error('Error during Prisma disconnect:', error.message || error);
     }
 }
-
-process.on('SIGINT', async () => {
-    await disconnectPrisma();
-    process.exit(0);
-});
-
-process.on('SIGTERM', async () => {
-    await disconnectPrisma();
-    process.exit(0);
-});
 
 process.on('beforeExit', async () => {
     await disconnectPrisma();
 });
 
 module.exports = prisma;
+module.exports.disconnectPrisma = disconnectPrisma;

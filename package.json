@@ -2,10 +2,10 @@
   "name": "spark-admin-1.0.0",
   "version": "1.0.0",
   "description": "Spark Admin",
-  "main": "app/app.js",
+  "main": "app/server.js",
   "scripts": {
-    "dev": "nodemon app/app.js",
-    "start": "node app/app.js",
+    "dev": "nodemon app/server.js",
+    "start": "node app/server.js",
     "test": "node --test tests/**/*.test.js"
   },
   "keywords": [],
