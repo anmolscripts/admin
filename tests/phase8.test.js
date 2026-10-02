@@ -269,6 +269,34 @@ describe('Phase 8 Comprehensive Test Suite', () => {
             });
             assert.strictEqual(items.length, 1);
         });
+
+        it('1.6 should enforce database-level unique constraint and prevent concurrent duplicate item creations', async () => {
+            const uniqueItem = `Concurrent DB Unique Item ${Date.now()}`;
+
+            // Launch 5 simultaneous direct creation attempts
+            const attempts = await Promise.allSettled([
+                itemService.createItem({ name: uniqueItem, rate: 500, unit: 'PCS' }, testUserId),
+                itemService.createItem({ name: uniqueItem, rate: 500, unit: 'PCS' }, testUserId),
+                itemService.createItem({ name: uniqueItem, rate: 500, unit: 'PCS' }, testUserId),
+                itemService.createItem({ name: uniqueItem, rate: 500, unit: 'PCS' }, testUserId),
+                itemService.createItem({ name: uniqueItem, rate: 500, unit: 'PCS' }, testUserId)
+            ]);
+
+            const fulfilled = attempts.filter(a => a.status === 'fulfilled');
+            const rejected = attempts.filter(a => a.status === 'rejected');
+
+            assert.strictEqual(fulfilled.length, 1, 'Exactly one concurrent creation should succeed');
+            assert.strictEqual(rejected.length, 4, 'Remaining concurrent creations must be rejected');
+            for (const r of rejected) {
+                assert.ok(r.reason.message.includes('already exists'));
+            }
+
+            // Verify exactly one record exists in DB
+            const dbCount = await prisma.item.count({
+                where: { name: uniqueItem }
+            });
+            assert.strictEqual(dbCount, 1, 'Exactly one item record must exist in DB');
+        });
     });
 
     // =========================================================================
@@ -459,6 +487,64 @@ describe('Phase 8 Comprehensive Test Suite', () => {
             assert.strictEqual(customFilter.endDate.getFullYear(), 2026);
             assert.strictEqual(customFilter.endDate.getMonth(), 5); // June
             assert.strictEqual(customFilter.endDate.getDate(), 30);
+        });
+
+        it('3.3b should calculate quarter boundaries accurately across January, April, July, October, year boundaries, and custom ranges', () => {
+            // January -> Q1 (Jan 1 to Mar 31)
+            const q1 = dashboardService.getDateRangeFilter('this_quarter', null, null, new Date('2026-01-15T10:00:00Z'));
+            assert.strictEqual(q1.startDate.getFullYear(), 2026);
+            assert.strictEqual(q1.startDate.getMonth(), 0); // Jan
+            assert.strictEqual(q1.startDate.getDate(), 1);
+            assert.strictEqual(q1.endDate.getMonth(), 2); // Mar
+            assert.strictEqual(q1.endDate.getDate(), 31);
+
+            // April -> Q2 (Apr 1 to Jun 30)
+            const q2 = dashboardService.getDateRangeFilter('this_quarter', null, null, new Date('2026-04-10T10:00:00Z'));
+            assert.strictEqual(q2.startDate.getFullYear(), 2026);
+            assert.strictEqual(q2.startDate.getMonth(), 3); // Apr
+            assert.strictEqual(q2.startDate.getDate(), 1);
+            assert.strictEqual(q2.endDate.getMonth(), 5); // Jun
+            assert.strictEqual(q2.endDate.getDate(), 30);
+
+            // July -> Q3 (Jul 1 to Sep 30)
+            const q3 = dashboardService.getDateRangeFilter('this_quarter', null, null, new Date('2026-07-20T10:00:00Z'));
+            assert.strictEqual(q3.startDate.getFullYear(), 2026);
+            assert.strictEqual(q3.startDate.getMonth(), 6); // Jul
+            assert.strictEqual(q3.startDate.getDate(), 1);
+            assert.strictEqual(q3.endDate.getMonth(), 8); // Sep
+            assert.strictEqual(q3.endDate.getDate(), 30);
+
+            // October -> Q4 (Oct 1 to Dec 31)
+            const q4 = dashboardService.getDateRangeFilter('this_quarter', null, null, new Date('2026-10-02T10:00:00Z'));
+            assert.strictEqual(q4.startDate.getFullYear(), 2026);
+            assert.strictEqual(q4.startDate.getMonth(), 9); // Oct
+            assert.strictEqual(q4.startDate.getDate(), 1);
+            assert.strictEqual(q4.endDate.getMonth(), 11); // Dec
+            assert.strictEqual(q4.endDate.getDate(), 31);
+
+            // Year boundary: Dec 31 (Q4) to Jan 1 (Q1 next year)
+            const yearEnd = dashboardService.getDateRangeFilter('this_quarter', null, null, new Date(2026, 11, 31, 12, 0, 0));
+            assert.strictEqual(yearEnd.startDate.getFullYear(), 2026);
+            assert.strictEqual(yearEnd.startDate.getMonth(), 9);
+            assert.strictEqual(yearEnd.endDate.getFullYear(), 2026);
+            assert.strictEqual(yearEnd.endDate.getMonth(), 11);
+            assert.strictEqual(yearEnd.endDate.getDate(), 31);
+
+            const nextYearStart = dashboardService.getDateRangeFilter('this_quarter', null, null, new Date(2027, 0, 1, 12, 0, 0));
+            assert.strictEqual(nextYearStart.startDate.getFullYear(), 2027);
+            assert.strictEqual(nextYearStart.startDate.getMonth(), 0);
+            assert.strictEqual(nextYearStart.endDate.getFullYear(), 2027);
+            assert.strictEqual(nextYearStart.endDate.getMonth(), 2);
+            assert.strictEqual(nextYearStart.endDate.getDate(), 31);
+
+            // Custom range boundaries
+            const custom = dashboardService.getDateRangeFilter('custom', '2026-03-15', '2026-09-15');
+            assert.strictEqual(custom.startDate.getFullYear(), 2026);
+            assert.strictEqual(custom.startDate.getMonth(), 2); // Mar
+            assert.strictEqual(custom.startDate.getDate(), 15);
+            assert.strictEqual(custom.endDate.getFullYear(), 2026);
+            assert.strictEqual(custom.endDate.getMonth(), 8); // Sep
+            assert.strictEqual(custom.endDate.getDate(), 15);
         });
 
         it('3.4 should serve GET /api/dashboard/metrics with authentication enforcement', async () => {

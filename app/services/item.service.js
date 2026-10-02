@@ -207,31 +207,38 @@ async function createItem(data, userId) {
         throw new ConflictError(`Item with name "${name}" already exists.`);
     }
 
-    const item = await prisma.item.create({
-        data: {
-            name,
-            description,
-            unit,
-            rate,
-            hsnSac,
-            gstRate,
-            active,
-            createdById: userId || null
-        }
-    });
+    try {
+        const item = await prisma.item.create({
+            data: {
+                name,
+                description,
+                unit,
+                rate,
+                hsnSac,
+                gstRate,
+                active,
+                createdById: userId || null
+            }
+        });
 
-    return {
-        id: item.id,
-        name: item.name,
-        description: item.description,
-        unit: item.unit,
-        rate: Number(item.rate),
-        hsnSac: item.hsnSac,
-        gstRate: Number(item.gstRate),
-        active: item.active,
-        createdAt: item.createdAt,
-        updatedAt: item.updatedAt
-    };
+        return {
+            id: item.id,
+            name: item.name,
+            description: item.description,
+            unit: item.unit,
+            rate: Number(item.rate),
+            hsnSac: item.hsnSac,
+            gstRate: Number(item.gstRate),
+            active: item.active,
+            createdAt: item.createdAt,
+            updatedAt: item.updatedAt
+        };
+    } catch (err) {
+        if (err.code === 'P2002' || (err.message && err.message.includes('Unique constraint'))) {
+            throw new ConflictError(`Item with name "${name}" already exists.`);
+        }
+        throw err;
+    }
 }
 
 /**
@@ -309,23 +316,30 @@ async function updateItem(id, data, userId) {
         updateData.active = data.active === 'true' || data.active === true;
     }
 
-    const updated = await prisma.item.update({
-        where: { id: numericId },
-        data: updateData
-    });
+    try {
+        const updated = await prisma.item.update({
+            where: { id: numericId },
+            data: updateData
+        });
 
-    return {
-        id: updated.id,
-        name: updated.name,
-        description: updated.description,
-        unit: updated.unit,
-        rate: Number(updated.rate),
-        hsnSac: updated.hsnSac,
-        gstRate: Number(updated.gstRate),
-        active: updated.active,
-        createdAt: updated.createdAt,
-        updatedAt: updated.updatedAt
-    };
+        return {
+            id: updated.id,
+            name: updated.name,
+            description: updated.description,
+            unit: updated.unit,
+            rate: Number(updated.rate),
+            hsnSac: updated.hsnSac,
+            gstRate: Number(updated.gstRate),
+            active: updated.active,
+            createdAt: updated.createdAt,
+            updatedAt: updated.updatedAt
+        };
+    } catch (err) {
+        if (err.code === 'P2002' || (err.message && err.message.includes('Unique constraint'))) {
+            throw new ConflictError(`Another item with name "${updateData.name || ''}" already exists.`);
+        }
+        throw err;
+    }
 }
 
 /**
@@ -347,10 +361,8 @@ async function ensureItemsExistFromDocument(items, userId, tx = prisma) {
 
         try {
             // Check if item already exists with matching name
-            const existing = await tx.item.findFirst({
-                where: {
-                    name: { equals: name }
-                }
+            const existing = await tx.item.findUnique({
+                where: { name }
             });
 
             if (!existing) {
@@ -372,7 +384,7 @@ async function ensureItemsExistFromDocument(items, userId, tx = prisma) {
                 });
             }
         } catch (err) {
-            // Concurrent request might have created the item; ignore duplicate conflicts safely
+            // Concurrent request might have created the item; MySQL unique constraint (P2002) is caught and handled safely
             if (err.code !== 'P2002') {
                 console.warn('[ITEM MASTER] Notice during auto-persist item:', err.message);
             }

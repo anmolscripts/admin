@@ -165,7 +165,7 @@ model InvoiceItem {
 
 model Item {
   id          Int      @id @default(autoincrement())
-  name        String   @db.VarChar(255)
+  name        String   @unique @db.VarChar(255)
   description String?  @db.Text
   unit        String   @default("PCS") @db.VarChar(30)
   rate        Decimal  @default(0.00) @db.Decimal(12, 2)
@@ -177,7 +177,6 @@ model Item {
   createdById Int?
   createdBy   User?    @relation("ItemCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
-  @@index([name])
   @@index([active])
   @@index([createdById])
   @@map("items")

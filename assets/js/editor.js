@@ -423,7 +423,7 @@
                 // If this is the last row and has a description, create next row
                 const currentName = nameInput.value.trim();
                 if (currentName) {
-                    const newRow = addNewItemRow();
+                    const newRow = addItemRow();
                     if (newRow) {
                         const newName = newRow.querySelector('.item-name');
                         if (newName) newName.focus();
@@ -563,6 +563,8 @@
             const nameInput = row.querySelector('.item-name');
             if (nameInput) nameInput.focus();
         }
+
+        return row;
     }
 
     /**
