@@ -103,6 +103,8 @@ model Invoice {
   termsAndConditions         String?           @db.Text
   remarks                    String?           @db.Text
   invoiceDate                DateTime          @db.Date
+  dueDate                    DateTime?         @db.Date
+  validUntil                 DateTime?         @db.Date
   gstEnabled                 Boolean           @default(false)
   gstRate                    Decimal           @default(0.00) @db.Decimal(5, 2)
   subtotal                   Decimal           @db.Decimal(12, 2)

@@ -1050,15 +1050,23 @@
             // Edit Mode Hydration
             docDateInput.value = formatDateToInputString(initialDoc.invoiceDate);
 
-            // Calculate display due date
-            if (initialDoc.documentType === 'QUOTATION' && initialDoc.invoiceDate) {
-                const expDate = new Date(initialDoc.invoiceDate);
-                expDate.setDate(expDate.getDate() + 15);
-                docDueDateInput.value = formatDateToInputString(expDate);
-            } else if (initialDoc.documentType === 'INVOICE' && initialDoc.invoiceDate) {
-                const dueDate = new Date(initialDoc.invoiceDate);
-                dueDate.setDate(dueDate.getDate() + 30);
-                docDueDateInput.value = formatDateToInputString(dueDate);
+            // Hydrate Due / Expiry Date
+            if (initialDoc.documentType === 'QUOTATION') {
+                if (initialDoc.validUntil) {
+                    docDueDateInput.value = formatDateToInputString(initialDoc.validUntil);
+                } else if (initialDoc.invoiceDate) {
+                    const expDate = new Date(initialDoc.invoiceDate);
+                    expDate.setDate(expDate.getDate() + 15);
+                    docDueDateInput.value = formatDateToInputString(expDate);
+                }
+            } else if (initialDoc.documentType === 'INVOICE') {
+                if (initialDoc.dueDate) {
+                    docDueDateInput.value = formatDateToInputString(initialDoc.dueDate);
+                } else if (initialDoc.invoiceDate) {
+                    const dueDate = new Date(initialDoc.invoiceDate);
+                    dueDate.setDate(dueDate.getDate() + 30);
+                    docDueDateInput.value = formatDateToInputString(dueDate);
+                }
             }
 
             // Snapshot fields hydration
@@ -1093,13 +1101,23 @@
             const today = new Date();
             docDateInput.value = formatDateToInputString(today);
 
-            const futureDate = new Date(today);
             if (docType === 'QUOTATION') {
-                futureDate.setDate(futureDate.getDate() + 15);
+                if (initialDoc.validUntil && new Date(initialDoc.validUntil) >= today) {
+                    docDueDateInput.value = formatDateToInputString(initialDoc.validUntil);
+                } else {
+                    const futureDate = new Date(today);
+                    futureDate.setDate(futureDate.getDate() + 15);
+                    docDueDateInput.value = formatDateToInputString(futureDate);
+                }
             } else {
-                futureDate.setDate(futureDate.getDate() + 30);
+                if (initialDoc.dueDate && new Date(initialDoc.dueDate) >= today) {
+                    docDueDateInput.value = formatDateToInputString(initialDoc.dueDate);
+                } else {
+                    const futureDate = new Date(today);
+                    futureDate.setDate(futureDate.getDate() + 30);
+                    docDueDateInput.value = formatDateToInputString(futureDate);
+                }
             }
-            docDueDateInput.value = formatDateToInputString(futureDate);
 
             if (clientNameInput && initialDoc.clientName) clientNameInput.value = initialDoc.clientName;
             if (clientEmailInput && initialDoc.clientEmail) clientEmailInput.value = initialDoc.clientEmail;

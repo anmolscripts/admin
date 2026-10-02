@@ -45,7 +45,11 @@
 
   // Calculate display due/validity date
   let displayDueDate = '—';
-  if (document.invoiceDate) {
+  if (isQuotation && document.validUntil) {
+    displayDueDate = formatDate(document.validUntil);
+  } else if (!isQuotation && document.dueDate) {
+    displayDueDate = formatDate(document.dueDate);
+  } else if (document.invoiceDate) {
     const d = new Date(document.invoiceDate);
     if (!isNaN(d.getTime())) {
       d.setDate(d.getDate() + (isQuotation ? 15 : 30));

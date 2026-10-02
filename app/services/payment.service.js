@@ -36,7 +36,12 @@ function getPaymentStatus(invoice) {
         return 'PARTIALLY_PAID';
     }
 
-    if (invoice.invoiceDate) {
+    if (invoice.dueDate) {
+        const dueDate = new Date(invoice.dueDate);
+        if (!isNaN(dueDate.getTime()) && dueDate < new Date()) {
+            return 'OVERDUE';
+        }
+    } else if (invoice.invoiceDate) {
         const dueDate = new Date(invoice.invoiceDate);
         dueDate.setDate(dueDate.getDate() + 30);
         if (dueDate < new Date()) {

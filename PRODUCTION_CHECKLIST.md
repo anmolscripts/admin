@@ -13,7 +13,7 @@
 ## 1. PRE-DEPLOYMENT CHECKLIST
 
 ### 1.1. Infrastructure & OS
-- [ ] Server running Ubuntu 22.04 LTS or Debian 12 with latest security patches applied (`apt update && apt upgrade`).
+- [ ] Server running Ubuntu 24.04 LTS, Ubuntu 22.04 LTS, or Debian 12 with latest security patches applied (`apt update && apt upgrade`).
 - [ ] Dedicated non-root system user `sparkadmin` created (`/opt/spark-admin`).
 - [ ] Node.js 24 LTS and npm 10+ installed and verified (`node -v`, `npm -v`).
 - [ ] MySQL 8 installed, secured (`mysql_secure_installation`), and running (`systemctl status mysql`).
@@ -34,9 +34,9 @@
 - [ ] Git repository verified: no `.env`, passwords, tokens, or credentials committed.
 
 ### 1.4. Automated Verification & Quality Assurance
-- [ ] Full automated test suite passes: `npm test` ($\ge 236$ tests, 0 failures).
+- [ ] Full automated test suite passes: `npm test` ($\ge 270$ tests, 0 failures).
 - [ ] Prisma schema validated: `npx prisma validate`.
-- [ ] Prisma migration status clean: `npx prisma migrate status`.
+- [ ] Prisma migration status clean: `npx prisma migrate status` (all 8 migrations applied).
 
 ---
 

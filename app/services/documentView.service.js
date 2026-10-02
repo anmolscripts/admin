@@ -76,7 +76,11 @@ function buildDocumentViewModel(doc, businessProfile = {}) {
     const invoiceDateFormatted = formatDate(doc.invoiceDate);
     const invoiceDateObj = new Date(doc.invoiceDate);
     let dueOrExpiryDateObj;
-    if (doc.dueDate || doc.validUntil) {
+    if (isQuotation && doc.validUntil) {
+        dueOrExpiryDateObj = new Date(doc.validUntil);
+    } else if (!isQuotation && doc.dueDate) {
+        dueOrExpiryDateObj = new Date(doc.dueDate);
+    } else if (doc.dueDate || doc.validUntil) {
         dueOrExpiryDateObj = new Date(doc.dueDate || doc.validUntil);
     } else {
         dueOrExpiryDateObj = new Date(invoiceDateObj);

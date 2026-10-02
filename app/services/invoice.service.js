@@ -334,23 +334,35 @@ async function createDocument(data, userId, meta = {}) {
         throw new ValidationError('Invalid invoice date format.');
     }
 
-    const expiryOrDueDate = data.dueDate || data.validUntil;
-    if (expiryOrDueDate) {
-        const dueDateObj = new Date(expiryOrDueDate);
-        if (isNaN(dueDateObj.getTime())) {
-            throw new ValidationError(
-                documentType === 'QUOTATION'
-                    ? 'Invalid quotation expiry date format.'
-                    : 'Invalid invoice due date format.'
-            );
+    let persistedDueDate = null;
+    let persistedValidUntil = null;
+
+    if (documentType === 'QUOTATION') {
+        const rawExpiry = data.validUntil !== undefined ? data.validUntil : data.dueDate;
+        if (rawExpiry) {
+            const expDateObj = new Date(rawExpiry);
+            if (isNaN(expDateObj.getTime())) {
+                throw new ValidationError('Invalid quotation expiry date format.');
+            }
+            if (expDateObj < invoiceDate) {
+                throw new ValidationError('Quotation expiry date cannot be earlier than quotation date.');
+            }
+            persistedValidUntil = expDateObj;
         }
-        if (dueDateObj < invoiceDate) {
-            throw new ValidationError(
-                documentType === 'QUOTATION'
-                    ? 'Quotation expiry date cannot be earlier than quotation date.'
-                    : 'Invoice due date cannot be earlier than invoice date.'
-            );
+        persistedDueDate = null;
+    } else {
+        const rawDue = data.dueDate !== undefined ? data.dueDate : data.validUntil;
+        if (rawDue) {
+            const dueDateObj = new Date(rawDue);
+            if (isNaN(dueDateObj.getTime())) {
+                throw new ValidationError('Invalid invoice due date format.');
+            }
+            if (dueDateObj < invoiceDate) {
+                throw new ValidationError('Invoice due date cannot be earlier than invoice date.');
+            }
+            persistedDueDate = dueDateObj;
         }
+        persistedValidUntil = null;
     }
 
     let clientId = null;
@@ -447,6 +459,8 @@ async function createDocument(data, userId, meta = {}) {
                 termsAndConditions,
                 remarks,
                 invoiceDate,
+                dueDate: persistedDueDate,
+                validUntil: persistedValidUntil,
                 gstEnabled: calculated.gstEnabled,
                 gstRate: calculated.gstRate.toFixed(2),
                 subtotal: calculated.subtotal.toFixed(2),
@@ -659,23 +673,43 @@ async function updateInvoice(id, data, userId, meta = {}) {
         });
         calculatedItems = calculated.itemsWithAmount;
 
-        const expiryOrDueDate = data.dueDate || data.validUntil;
-        if (expiryOrDueDate) {
-            const dueDateObj = new Date(expiryOrDueDate);
-            if (isNaN(dueDateObj.getTime())) {
-                throw new ValidationError(
-                    existing.documentType === 'QUOTATION'
-                        ? 'Invalid quotation expiry date format.'
-                        : 'Invalid invoice due date format.'
-                );
+        let updateDueDate = existing.dueDate;
+        let updateValidUntil = existing.validUntil;
+
+        if (existing.documentType === 'QUOTATION') {
+            const rawExpiry = data.validUntil !== undefined ? data.validUntil : (data.dueDate !== undefined ? data.dueDate : undefined);
+            if (rawExpiry !== undefined) {
+                if (rawExpiry === null || rawExpiry === '') {
+                    updateValidUntil = null;
+                } else {
+                    const expDateObj = new Date(rawExpiry);
+                    if (isNaN(expDateObj.getTime())) {
+                        throw new ValidationError('Invalid quotation expiry date format.');
+                    }
+                    if (expDateObj < invoiceDate) {
+                        throw new ValidationError('Quotation expiry date cannot be earlier than quotation date.');
+                    }
+                    updateValidUntil = expDateObj;
+                }
             }
-            if (dueDateObj < invoiceDate) {
-                throw new ValidationError(
-                    existing.documentType === 'QUOTATION'
-                        ? 'Quotation expiry date cannot be earlier than quotation date.'
-                        : 'Invoice due date cannot be earlier than invoice date.'
-                );
+            updateDueDate = null;
+        } else {
+            const rawDue = data.dueDate !== undefined ? data.dueDate : (data.validUntil !== undefined ? data.validUntil : undefined);
+            if (rawDue !== undefined) {
+                if (rawDue === null || rawDue === '') {
+                    updateDueDate = null;
+                } else {
+                    const dueDateObj = new Date(rawDue);
+                    if (isNaN(dueDateObj.getTime())) {
+                        throw new ValidationError('Invalid invoice due date format.');
+                    }
+                    if (dueDateObj < invoiceDate) {
+                        throw new ValidationError('Invoice due date cannot be earlier than invoice date.');
+                    }
+                    updateDueDate = dueDateObj;
+                }
             }
+            updateValidUntil = null;
         }
 
         if (data.documentType && String(data.documentType).trim().toUpperCase() !== existing.documentType) {
@@ -722,6 +756,8 @@ async function updateInvoice(id, data, userId, meta = {}) {
                 termsAndConditions,
                 remarks,
                 invoiceDate,
+                dueDate: updateDueDate,
+                validUntil: updateValidUntil,
                 gstEnabled: calculated.gstEnabled,
                 gstRate: calculated.gstRate.toFixed(2),
                 subtotal: calculated.subtotal.toFixed(2),
@@ -1294,6 +1330,22 @@ async function convertQuotationToInvoice(quotationId, userId, options = {}, meta
         const invoiceNumber = await generateDocumentNumber(tx, 'INVOICE', quotation.invoiceDate);
         const conversionTimestamp = new Date().toISOString();
 
+        // Conversion due date rule: explicit options.dueDate if supplied, otherwise standard 30 days from quotation invoiceDate
+        let convertedDueDate = null;
+        if (options && options.dueDate) {
+            const parsedDueDate = new Date(options.dueDate);
+            if (isNaN(parsedDueDate.getTime())) {
+                throw new ValidationError('Invalid invoice due date format.');
+            }
+            if (parsedDueDate < quotation.invoiceDate) {
+                throw new ValidationError('Invoice due date cannot be earlier than quotation date.');
+            }
+            convertedDueDate = parsedDueDate;
+        } else {
+            convertedDueDate = new Date(quotation.invoiceDate);
+            convertedDueDate.setDate(convertedDueDate.getDate() + 30);
+        }
+
         let newInvoice;
         try {
             newInvoice = await tx.invoice.create({
@@ -1317,6 +1369,8 @@ async function convertQuotationToInvoice(quotationId, userId, options = {}, meta
                     termsAndConditions: quotation.termsAndConditions,
                     remarks: quotation.remarks,
                     invoiceDate: quotation.invoiceDate,
+                    dueDate: convertedDueDate,
+                    validUntil: null,
                     gstEnabled: quotation.gstEnabled,
                     gstRate: quotation.gstRate,
                     subtotal: quotation.subtotal,
@@ -1480,6 +1534,8 @@ async function copyDocument(id, userId = null, meta = {}) {
         termsAndConditions: doc.termsAndConditions,
         remarks: doc.remarks,
         invoiceDate: new Date().toISOString().split('T')[0],
+        dueDate: doc.documentType === 'INVOICE' && doc.dueDate ? new Date(doc.dueDate).toISOString().split('T')[0] : null,
+        validUntil: doc.documentType === 'QUOTATION' && doc.validUntil ? new Date(doc.validUntil).toISOString().split('T')[0] : null,
         gstEnabled: doc.gstEnabled,
         gstRate: Number(doc.gstRate),
         items: doc.items.map((item) => ({
@@ -1679,6 +1735,7 @@ module.exports = {
     createInvoice,
     createQuotation,
     getInvoiceById,
+    updateDocument: updateInvoice,
     updateInvoice,
     updateInvoiceStatus,
     softDeleteDocument,

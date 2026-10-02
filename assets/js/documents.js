@@ -129,12 +129,23 @@
      * Calculate display due date or validity notice
      */
     function formatDueDate(doc) {
-        // In Phase 1/2 domain, quotations have a typical 15-day validity from invoiceDate
-        if (doc.documentType === 'QUOTATION' && doc.invoiceDate) {
-            const d = new Date(doc.invoiceDate);
-            if (!isNaN(d.getTime())) {
-                d.setDate(d.getDate() + 15);
-                return formatDate(d);
+        if (doc.documentType === 'QUOTATION') {
+            if (doc.validUntil) return formatDate(doc.validUntil);
+            if (doc.invoiceDate) {
+                const d = new Date(doc.invoiceDate);
+                if (!isNaN(d.getTime())) {
+                    d.setDate(d.getDate() + 15);
+                    return formatDate(d);
+                }
+            }
+        } else {
+            if (doc.dueDate) return formatDate(doc.dueDate);
+            if (doc.invoiceDate) {
+                const d = new Date(doc.invoiceDate);
+                if (!isNaN(d.getTime())) {
+                    d.setDate(d.getDate() + 30);
+                    return formatDate(d);
+                }
             }
         }
         return '—';
@@ -454,9 +465,8 @@
                     payPill.className += ' bg-warning-subtle text-warning border border-warning-subtle';
                     payPill.textContent = 'PARTIAL';
                 } else {
-                    const dueDate = new Date(doc.invoiceDate);
-                    dueDate.setDate(dueDate.getDate() + 30);
-                    if (dueDate < new Date()) {
+                    const dueDate = doc.dueDate ? new Date(doc.dueDate) : (doc.invoiceDate ? new Date(new Date(doc.invoiceDate).getTime() + 30 * 24 * 60 * 60 * 1000) : null);
+                    if (dueDate && !isNaN(dueDate.getTime()) && dueDate < new Date()) {
                         payPill.className += ' bg-danger-subtle text-danger border border-danger-subtle';
                         payPill.textContent = 'OVERDUE';
                     } else {

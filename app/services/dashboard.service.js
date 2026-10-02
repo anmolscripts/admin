@@ -130,13 +130,16 @@ async function getDashboardMetrics({ range = 'this_month', from = null, to = nul
             }
         }),
 
-        // 8. Overdue Invoices Aggregation (ACTIVE, outstanding > 0, invoiceDate < now - 30d)
+        // 8. Overdue Invoices Aggregation (ACTIVE, outstanding > 0, dueDate < now OR (dueDate is null AND invoiceDate < now - 30d))
         prisma.invoice.aggregate({
             where: {
                 documentType: 'INVOICE',
                 status: 'ACTIVE',
                 outstandingAmount: { gt: 0 },
-                invoiceDate: { lt: overdueCutoff }
+                OR: [
+                    { dueDate: { not: null, lt: now } },
+                    { dueDate: null, invoiceDate: { lt: overdueCutoff } }
+                ]
             },
             _sum: {
                 outstandingAmount: true
