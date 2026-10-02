@@ -217,6 +217,12 @@
           <i class="bi bi-printer me-1"></i> Print
         </a>
 
+        <% if (!isQuotation && Number(document.outstandingAmount !== undefined ? document.outstandingAmount : document.grandTotal) > 0) { %>
+          <button type="button" class="btn-custom btn-custom-success" id="btn-action-record-payment" data-bs-toggle="modal" data-bs-target="#modal-record-payment">
+            <i class="bi bi-wallet2 me-1"></i> Record Payment
+          </button>
+        <% } %>
+
         <a href="/documents/new?copyFrom=<%= document.id %>" class="btn-custom btn-custom-secondary" id="btn-action-copy">
           <i class="bi bi-files me-1"></i> Copy
         </a>
@@ -249,6 +255,12 @@
         <button type="button" class="btn-custom btn-custom-success" id="btn-action-activate" data-bs-toggle="modal" data-bs-target="#modal-activate">
           <i class="bi bi-play-circle me-1"></i> Activate
         </button>
+
+        <% if (!isQuotation && Number(document.outstandingAmount !== undefined ? document.outstandingAmount : document.grandTotal) > 0) { %>
+          <button type="button" class="btn-custom btn-custom-success" id="btn-action-record-payment-inactive" data-bs-toggle="modal" data-bs-target="#modal-record-payment">
+            <i class="bi bi-wallet2 me-1"></i> Record Payment
+          </button>
+        <% } %>
 
         <a href="/documents/<%= document.id %>/edit" class="btn-custom btn-custom-outline-primary" id="btn-action-edit">
           <i class="bi bi-pencil me-1"></i> Edit
@@ -437,6 +449,22 @@
           </div>
         </div>
       </div>
+      <% if (document.clientGSTIN) { %>
+      <div class="col-6 col-md-3">
+        <div class="meta-field">
+          <div class="meta-field-label">Client GSTIN</div>
+          <div class="meta-field-value font-monospace text-uppercase fw-semibold"><%= document.clientGSTIN %></div>
+        </div>
+      </div>
+      <% } %>
+      <% if (document.placeOfSupplyStateCode) { %>
+      <div class="col-6 col-md-3">
+        <div class="meta-field">
+          <div class="meta-field-label">Place of Supply (State)</div>
+          <div class="meta-field-value font-monospace">State Code: <%= document.placeOfSupplyStateCode %></div>
+        </div>
+      </div>
+      <% } %>
     </div>
 
     <!-- Billing & Shipping Addresses -->
@@ -480,6 +508,7 @@
           <tr>
             <th scope="col" class="text-center" style="width: 50px;">#</th>
             <th scope="col">Description</th>
+            <th scope="col" style="width: 110px;">HSN/SAC</th>
             <th scope="col" class="text-end" style="width: 120px;">Quantity</th>
             <th scope="col" style="width: 100px;">Unit</th>
             <th scope="col" class="text-end" style="width: 140px;">Rate (₹)</th>
@@ -492,6 +521,7 @@
               <tr>
                 <td class="text-center font-monospace text-muted"><%= item.lineNumber || (index + 1) %></td>
                 <td class="fw-medium text-main"><%= item.name %></td>
+                <td class="font-monospace small text-muted"><%= item.hsnSac || '—' %></td>
                 <td class="text-end font-monospace"><%= Number(item.quantity).toFixed(2) %></td>
                 <td><span class="badge bg-light text-dark border"><%= item.unit || 'PCS' %></span></td>
                 <td class="text-end font-monospace"><%= formatMoney(item.rate) %></td>
@@ -500,7 +530,7 @@
             <% }); %>
           <% } else { %>
             <tr>
-              <td colspan="6" class="text-center py-4 text-muted">No line items in this document.</td>
+              <td colspan="7" class="text-center py-4 text-muted">No line items in this document.</td>
             </tr>
           <% } %>
         </tbody>
@@ -561,14 +591,21 @@
               const halfGst = Math.round((totalGst / 2) * 100) / 100;
               const remainingGst = Math.round((totalGst - halfGst) * 100) / 100;
             %>
-            <div class="view-summary-line ps-2 text-muted small">
-              <span>CGST (<%= halfRate %>%):</span>
-              <span class="font-monospace"><%= formatMoney(halfGst) %></span>
-            </div>
-            <div class="view-summary-line ps-2 text-muted small">
-              <span>SGST (<%= halfRate %>%):</span>
-              <span class="font-monospace"><%= formatMoney(remainingGst) %></span>
-            </div>
+            <% if (Number(document.igstAmount) > 0) { %>
+              <div class="view-summary-line ps-2 text-muted small">
+                <span>IGST (<%= numericRate.toFixed(2) %>%):</span>
+                <span class="font-monospace"><%= formatMoney(document.igstAmount) %></span>
+              </div>
+            <% } else { %>
+              <div class="view-summary-line ps-2 text-muted small">
+                <span>CGST (<%= halfRate %>%):</span>
+                <span class="font-monospace"><%= formatMoney(document.cgstAmount !== null && document.cgstAmount !== undefined ? document.cgstAmount : halfGst) %></span>
+              </div>
+              <div class="view-summary-line ps-2 text-muted small">
+                <span>SGST (<%= halfRate %>%):</span>
+                <span class="font-monospace"><%= formatMoney(document.sgstAmount !== null && document.sgstAmount !== undefined ? document.sgstAmount : remainingGst) %></span>
+              </div>
+            <% } %>
             <div class="view-summary-line border-top pt-1 mt-1">
               <span class="fw-semibold text-primary">Total GST (<%= numericRate.toFixed(2) %>%):</span>
               <span class="font-monospace fw-bold text-primary"><%= formatMoney(document.gstAmount) %></span>
@@ -590,6 +627,129 @@
       </div>
     </div>
   </div>
+
+  <% if (!isQuotation) { %>
+  <!-- ===================================================================
+       PAYMENT TRACKING & HISTORY CARD (INVOICES ONLY)
+       =================================================================== -->
+  <%
+    const grandTotal = Number(document.grandTotal) || 0;
+    const paidAmount = Number(document.paidAmount) || 0;
+    const outstanding = Number(document.outstandingAmount !== undefined ? document.outstandingAmount : (grandTotal - paidAmount));
+    let payBadgeClass = 'bg-secondary-subtle text-secondary';
+    let payStatusText = 'UNPAID';
+    if (paidAmount >= grandTotal && grandTotal > 0) {
+      payBadgeClass = 'bg-success-subtle text-success border border-success-subtle';
+      payStatusText = 'PAID';
+    } else if (paidAmount > 0) {
+      payBadgeClass = 'bg-warning-subtle text-warning border border-warning-subtle';
+      payStatusText = 'PARTIALLY PAID';
+    } else {
+      const dDate = new Date(document.invoiceDate);
+      dDate.setDate(dDate.getDate() + 30);
+      if (dDate < new Date()) {
+        payBadgeClass = 'bg-danger-subtle text-danger border border-danger-subtle';
+        payStatusText = 'OVERDUE';
+      }
+    }
+  %>
+  <div class="view-card" id="payment-section">
+    <div class="view-card-header">
+      <h3 class="view-card-title">
+        <i class="bi bi-wallet2 text-success"></i>
+        <span>Payment Tracking & Reconciliation</span>
+      </h3>
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge <%= payBadgeClass %> px-2 py-1"><%= payStatusText %></span>
+        <% if (outstanding > 0 && ['ACTIVE', 'INACTIVE'].includes(document.status)) { %>
+          <button type="button" class="btn-custom btn-custom-primary btn-custom-sm" data-bs-toggle="modal" data-bs-target="#modal-record-payment" id="btn-open-payment-modal">
+            <i class="bi bi-plus-circle me-1"></i> Record Payment
+          </button>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Payment Metrics Strip -->
+    <div class="row g-3 mb-4">
+      <div class="col-12 col-md-4">
+        <div class="p-3 bg-light rounded border text-center">
+          <div class="small text-muted text-uppercase fw-semibold mb-1">Invoice Total</div>
+          <div class="fs-4 fw-bold font-monospace text-dark"><%= formatMoney(grandTotal) %></div>
+        </div>
+      </div>
+      <div class="col-12 col-md-4">
+        <div class="p-3 bg-light rounded border text-center">
+          <div class="small text-muted text-uppercase fw-semibold mb-1">Total Paid</div>
+          <div class="fs-4 fw-bold font-monospace text-success"><%= formatMoney(paidAmount) %></div>
+        </div>
+      </div>
+      <div class="col-12 col-md-4">
+        <div class="p-3 bg-light rounded border text-center">
+          <div class="small text-muted text-uppercase fw-semibold mb-1">Outstanding Balance</div>
+          <div class="fs-4 fw-bold font-monospace <%= outstanding > 0 ? 'text-danger' : 'text-success' %>"><%= formatMoney(outstanding) %></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payments Table -->
+    <div class="table-responsive">
+      <table class="table align-middle view-items-table mb-0" id="payments-table">
+        <thead>
+          <tr>
+            <th scope="col" style="width: 130px;">Date</th>
+            <th scope="col" style="width: 140px;">Method</th>
+            <th scope="col">Reference / Transaction ID</th>
+            <th scope="col" class="text-end" style="width: 140px;">Amount</th>
+            <th scope="col" class="text-center" style="width: 110px;">Status</th>
+            <th scope="col" class="text-end" style="width: 110px;">Action</th>
+          </tr>
+        </thead>
+        <tbody id="payments-tbody">
+          <% if (document.payments && document.payments.length > 0) { %>
+            <% document.payments.forEach(p => { %>
+              <tr class="<%= p.status === 'VOID' ? 'text-muted bg-light' : '' %>" id="payment-row-<%= p.id %>">
+                <td><%= formatDate(p.paymentDate) %></td>
+                <td><span class="badge bg-light text-dark border font-monospace"><%= p.method %></span></td>
+                <td>
+                  <span class="font-monospace small"><%= p.reference || '—' %></span>
+                  <% if (p.notes) { %>
+                    <div class="small text-muted"><%= p.notes %></div>
+                  <% } %>
+                </td>
+                <td class="text-end font-monospace fw-bold <%= p.status === 'VOID' ? 'text-decoration-line-through text-muted' : 'text-success' %>">
+                  <%= formatMoney(p.amount) %>
+                </td>
+                <td class="text-center">
+                  <% if (p.status === 'POSTED') { %>
+                    <span class="badge bg-success-subtle text-success">POSTED</span>
+                  <% } else { %>
+                    <span class="badge bg-secondary-subtle text-secondary">VOID</span>
+                  <% } %>
+                </td>
+                <td class="text-end">
+                  <% if (p.status === 'POSTED' && !['VOID', 'DELETED'].includes(document.status)) { %>
+                    <button type="button" class="btn btn-sm btn-outline-danger btn-void-payment" data-id="<%= p.id %>" data-amount="<%= p.amount %>" title="Void this payment">
+                      <i class="bi bi-slash-circle me-1"></i> Void
+                    </button>
+                  <% } else { %>
+                    <span class="text-muted small">—</span>
+                  <% } %>
+                </td>
+              </tr>
+            <% }); %>
+          <% } else { %>
+            <tr>
+              <td colspan="6" class="text-center py-4 text-muted">
+                <i class="bi bi-wallet2 fs-4 d-block mb-1 text-muted"></i>
+                No payments have been recorded for this invoice yet.
+              </td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <% } %>
 
   <!-- ===================================================================
        ACTIVITY TIMELINE / REVISION HISTORY CARD
@@ -859,6 +1019,92 @@
 </div>
 <% } %>
 
+<% if (!isQuotation) { %>
+<!-- 7. Record Payment Modal (Invoices Only) -->
+<div class="modal fade" id="modal-record-payment" tabindex="-1" aria-labelledby="modal-record-payment-title" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="modal-record-payment-title">
+          <i class="bi bi-wallet2 me-1"></i> Record Payment
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="form-record-payment">
+        <div class="modal-body p-4">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-muted" for="payment-amount">Payment Amount (₹) *</label>
+            <input type="number" class="form-control font-monospace fw-bold" id="payment-amount" name="amount" step="0.01" min="0.01" max="<%= Number(document.outstandingAmount !== undefined ? document.outstandingAmount : document.grandTotal) %>" value="<%= Number(document.outstandingAmount !== undefined ? document.outstandingAmount : document.grandTotal).toFixed(2) %>" required />
+            <div class="small text-muted mt-1">Outstanding balance: <strong class="font-monospace"><%= formatMoney(document.outstandingAmount !== undefined ? document.outstandingAmount : document.grandTotal) %></strong></div>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label small fw-semibold text-muted" for="payment-date">Payment Date *</label>
+              <input type="date" class="form-control" id="payment-date" name="paymentDate" required />
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold text-muted" for="payment-method">Payment Method *</label>
+              <select class="form-select" id="payment-method" name="method">
+                <option value="BANK_TRANSFER" selected>Bank Transfer (NEFT/RTGS/IMPS)</option>
+                <option value="UPI">UPI / QR</option>
+                <option value="CASH">Cash</option>
+                <option value="CHEQUE">Cheque</option>
+                <option value="CARD">Credit/Debit Card</option>
+              </select>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold text-muted" for="payment-reference">Transaction / Reference Number</label>
+            <input type="text" class="form-control font-monospace" id="payment-reference" name="reference" placeholder="e.g. UTR12345678, CHQ-0045" maxlength="100" />
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-semibold text-muted" for="payment-notes">Notes / Remarks</label>
+            <input type="text" class="form-control" id="payment-notes" name="notes" placeholder="Optional payment note" maxlength="255" />
+          </div>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn-custom btn-custom-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn-custom btn-custom-success" id="btn-submit-payment">
+            <span class="spinner-border spinner-border-sm d-none me-1" id="spinner-payment" role="status" aria-hidden="true"></span>
+            Save Payment
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- 8. Void Payment Modal (Invoices Only) -->
+<div class="modal fade" id="modal-void-payment" tabindex="-1" aria-labelledby="modal-void-payment-title" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="modal-void-payment-title">
+          <i class="bi bi-slash-circle me-1"></i> Void Payment
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p class="mb-2">Are you sure you want to void this payment?</p>
+        <p class="text-danger small mb-3">Voiding will cancel this receipt and restore the invoice's outstanding balance.</p>
+        <input type="hidden" id="void-payment-id" />
+        <div class="mb-2">
+          <label class="form-label small fw-semibold text-muted" for="void-payment-reason">Reason for Voiding (Optional):</label>
+          <input type="text" class="form-control" id="void-payment-reason" placeholder="e.g. Bounced cheque, erroneous entry" maxlength="255" />
+        </div>
+      </div>
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn-custom btn-custom-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn-custom btn-custom-danger" id="btn-confirm-void-payment">
+          <span class="spinner-border spinner-border-sm d-none me-1" id="spinner-void-payment" role="status" aria-hidden="true"></span>
+          Confirm Void
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<% } %>
+
 <!-- Hydration Context Data for View Controller -->
 <%
   const clientViewDoc = {
@@ -868,7 +1114,9 @@
     status: document.status,
     version: document.version,
     clientName: document.clientName,
-    grandTotal: document.grandTotal
+    grandTotal: document.grandTotal,
+    paidAmount: document.paidAmount || 0,
+    outstandingAmount: document.outstandingAmount !== undefined ? document.outstandingAmount : document.grandTotal
   };
 %>
 

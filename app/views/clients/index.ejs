@@ -1,0 +1,123 @@
+<%
+  const headerActionHtml = `
+    <a href="/clients/new" class="btn btn-primary" id="btn-new-client">
+      <i class="bi bi-plus-lg me-1"></i>
+      <span>New Client</span>
+    </a>
+  `;
+%>
+
+<%- include('../layouts/header', {
+    pageTitle: 'Clients Directory',
+    pageSubtitle: 'Manage customer accounts, tax registrations, and contact information.',
+    headerAction: headerActionHtml
+}) %>
+
+<!-- Search and Filter Bar -->
+<section class="card border-0 shadow-sm rounded-3 p-3 mb-4 bg-white" aria-label="Client Filters">
+  <form method="GET" action="/clients" class="row g-2 align-items-center">
+    <div class="col-12 col-md-6 col-lg-5">
+      <div class="input-group">
+        <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+        <input
+          type="search"
+          name="search"
+          class="form-control bg-light border-start-0"
+          placeholder="Search by client name, email, phone, or GSTIN..."
+          value="<%= locals.search || '' %>"
+          aria-label="Search clients"
+        />
+      </div>
+    </div>
+    <div class="col-6 col-md-3 col-lg-3">
+      <select name="active" class="form-select" aria-label="Filter by status">
+        <option value="" <%= locals.active === undefined || locals.active === '' ? 'selected' : '' %>>All Statuses</option>
+        <option value="true" <%= locals.active === 'true' ? 'selected' : '' %>>Active Only</option>
+        <option value="false" <%= locals.active === 'false' ? 'selected' : '' %>>Inactive Only</option>
+      </select>
+    </div>
+    <div class="col-6 col-md-3 col-lg-2">
+      <button type="submit" class="btn btn-secondary w-100">
+        <i class="bi bi-funnel me-1"></i> Filter
+      </button>
+    </div>
+    <% if (locals.search || locals.active !== undefined && locals.active !== '') { %>
+      <div class="col-12 col-lg-2">
+        <a href="/clients" class="btn btn-link text-decoration-none text-muted p-0">Clear Filters</a>
+      </div>
+    <% } %>
+  </form>
+</section>
+
+<!-- Client Table -->
+<section class="card border-0 shadow-sm rounded-3 overflow-hidden bg-white mb-4" aria-label="Clients Table">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th scope="col" class="ps-4">Client Name</th>
+          <th scope="col">GSTIN</th>
+          <th scope="col">State</th>
+          <th scope="col">Contact</th>
+          <th scope="col">Status</th>
+          <th scope="col" class="text-end pe-4">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (!clients || clients.length === 0) { %>
+          <tr>
+            <td colspan="6" class="text-center py-5">
+              <div class="text-muted">
+                <i class="bi bi-people display-6 d-block mb-2 text-secondary"></i>
+                <p class="mb-1 fw-semibold">No clients found</p>
+                <small class="text-secondary">Try adjusting your filters or add a new client to get started.</small>
+              </div>
+            </td>
+          </tr>
+        <% } else { %>
+          <% clients.forEach(client => { %>
+            <tr>
+              <td class="ps-4">
+                <div class="fw-semibold text-dark"><%= client.name %></div>
+                <% if (client.email) { %>
+                  <small class="text-muted d-block"><%= client.email %></small>
+                <% } %>
+              </td>
+              <td>
+                <% if (client.gstin) { %>
+                  <code class="text-uppercase bg-light px-2 py-1 rounded"><%= client.gstin %></code>
+                <% } else { %>
+                  <span class="text-muted small">—</span>
+                <% } %>
+              </td>
+              <td>
+                <%= client.stateCode ? client.stateCode : '—' %>
+              </td>
+              <td>
+                <% if (client.phone) { %>
+                  <div><small class="text-dark"><i class="bi bi-telephone text-muted me-1"></i><%= client.phone %></small></div>
+                <% } else { %>
+                  <span class="text-muted small">—</span>
+                <% } %>
+              </td>
+              <td>
+                <% if (client.active) { %>
+                  <span class="badge bg-success-subtle text-success">Active</span>
+                <% } else { %>
+                  <span class="badge bg-secondary-subtle text-secondary">Inactive</span>
+                <% } %>
+              </td>
+              <td class="text-end pe-4">
+                <a href="/clients/<%= client.id %>/edit" class="btn btn-sm btn-outline-primary" title="Edit Client">
+                  <i class="bi bi-pencil me-1"></i> Edit
+                </a>
+              </td>
+            </tr>
+          <% }); %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<%- include('../layouts/footer') %>

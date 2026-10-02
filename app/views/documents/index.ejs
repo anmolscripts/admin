@@ -30,11 +30,52 @@
     headerAction: headerActionHtml 
 }) %>
 
+<!-- START: KPI Summary Metric Cards -->
+<section class="row g-3 mb-4" id="kpi-strip" aria-label="Key Performance Indicators">
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm rounded-3 p-3 bg-white">
+      <div class="d-flex align-items-center justify-content-between mb-1">
+        <span class="small text-muted text-uppercase fw-bold">Active Quotations</span>
+        <span class="badge bg-info-subtle text-info"><i class="bi bi-file-earmark-text"></i></span>
+      </div>
+      <div class="fs-4 fw-bold text-forest-dark" id="kpi-active-quotations">—</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm rounded-3 p-3 bg-white">
+      <div class="d-flex align-items-center justify-content-between mb-1">
+        <span class="small text-muted text-uppercase fw-bold">Active Invoices</span>
+        <span class="badge bg-success-subtle text-success"><i class="bi bi-receipt"></i></span>
+      </div>
+      <div class="fs-4 fw-bold text-forest-dark" id="kpi-active-invoices">—</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm rounded-3 p-3 bg-white">
+      <div class="d-flex align-items-center justify-content-between mb-1">
+        <span class="small text-muted text-uppercase fw-bold">Total Outstanding</span>
+        <span class="badge bg-warning-subtle text-warning"><i class="bi bi-wallet2"></i></span>
+      </div>
+      <div class="fs-4 fw-bold text-warning" id="kpi-total-outstanding">—</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm rounded-3 p-3 bg-white">
+      <div class="d-flex align-items-center justify-content-between mb-1">
+        <span class="small text-muted text-uppercase fw-bold">Overdue Invoices</span>
+        <span class="badge bg-danger-subtle text-danger"><i class="bi bi-exclamation-octagon"></i></span>
+      </div>
+      <div class="fs-4 fw-bold text-danger" id="kpi-overdue-invoices">—</div>
+    </div>
+  </div>
+</section>
+<!-- END: KPI Summary Metric Cards -->
+
 <!-- START: Filter & Search Toolbar Card -->
 <section class="documents-toolbar-card" aria-label="Document filters and search">
   <div class="row g-3 align-items-end toolbar-row">
     <!-- Search Query Input -->
-    <div class="col-12 col-lg-4">
+    <div class="col-12 col-lg-3">
       <label for="search-input" class="toolbar-control-label">Search</label>
       <div class="toolbar-search-group">
         <i class="bi bi-search toolbar-search-icon" aria-hidden="true"></i>
@@ -68,6 +109,18 @@
         <option value="INACTIVE">Inactive</option>
         <option value="VOID">Void</option>
         <option value="DELETED">Deleted (Trash)</option>
+      </select>
+    </div>
+
+    <!-- Payment Status Filter -->
+    <div class="col-6 col-md-3 col-lg-2">
+      <label for="filter-payment-status" class="toolbar-control-label">Payment Status</label>
+      <select class="form-select toolbar-select" id="filter-payment-status" aria-label="Filter by payment status">
+        <option value="">All Payments</option>
+        <option value="PAID">Paid</option>
+        <option value="PARTIALLY_PAID">Partially Paid</option>
+        <option value="UNPAID">Unpaid</option>
+        <option value="OVERDUE">Overdue</option>
       </select>
     </div>
 

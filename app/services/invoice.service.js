@@ -1,4 +1,5 @@
 const prisma = require('../config/prisma');
+const businessProfileService = require('./businessProfile.service');
 
 const ALLOWED_GST_RATES = [5, 12, 18, 28];
 const ALLOWED_STATUSES = ['ACTIVE', 'INACTIVE', 'VOID', 'DELETED'];
@@ -69,6 +70,31 @@ function validateText(text, fieldName, maxLength = 65535) {
     return str;
 }
 
+function formatDocumentResponse(doc) {
+    if (!doc) return null;
+    return {
+        ...doc,
+        subtotal: doc.subtotal !== undefined && doc.subtotal !== null ? Number(doc.subtotal) : doc.subtotal,
+        gstRate: doc.gstRate !== undefined && doc.gstRate !== null ? Number(doc.gstRate) : doc.gstRate,
+        gstAmount: doc.gstAmount !== undefined && doc.gstAmount !== null ? Number(doc.gstAmount) : doc.gstAmount,
+        cgstAmount: doc.cgstAmount !== undefined && doc.cgstAmount !== null ? Number(doc.cgstAmount) : doc.cgstAmount,
+        sgstAmount: doc.sgstAmount !== undefined && doc.sgstAmount !== null ? Number(doc.sgstAmount) : doc.sgstAmount,
+        igstAmount: doc.igstAmount !== undefined && doc.igstAmount !== null ? Number(doc.igstAmount) : doc.igstAmount,
+        roundOff: doc.roundOff !== undefined && doc.roundOff !== null ? Number(doc.roundOff) : doc.roundOff,
+        grandTotal: doc.grandTotal !== undefined && doc.grandTotal !== null ? Number(doc.grandTotal) : doc.grandTotal,
+        paidAmount: doc.paidAmount !== undefined && doc.paidAmount !== null ? Number(doc.paidAmount) : doc.paidAmount,
+        outstandingAmount: doc.outstandingAmount !== undefined && doc.outstandingAmount !== null ? Number(doc.outstandingAmount) : doc.outstandingAmount,
+        items: Array.isArray(doc.items)
+            ? doc.items.map(item => ({
+                ...item,
+                quantity: item.quantity !== undefined && item.quantity !== null ? Number(item.quantity) : item.quantity,
+                rate: item.rate !== undefined && item.rate !== null ? Number(item.rate) : item.rate,
+                amount: item.amount !== undefined && item.amount !== null ? Number(item.amount) : item.amount
+            }))
+            : doc.items
+    };
+}
+
 /**
  * Server-side calculation of invoice item amounts and overall totals.
  * Client-submitted totals and amounts are strictly ignored.
@@ -82,7 +108,7 @@ function validateText(text, fieldName, maxLength = 65535) {
  * grandTotal = Math.round(totalBeforeRound)
  * roundOff = grandTotal - totalBeforeRound
  */
-function calculateInvoiceTotals({ items, gstEnabled, gstRate }) {
+function calculateInvoiceTotals({ items, gstEnabled, gstRate, sellerStateCode, placeOfSupplyStateCode }) {
     if (!Array.isArray(items) || items.length === 0) {
         throw new ValidationError('Document must contain at least one line item.');
     }
@@ -117,6 +143,7 @@ function calculateInvoiceTotals({ items, gstEnabled, gstRate }) {
         }
 
         const unit = typeof item.unit === 'string' && item.unit.trim() ? item.unit.trim() : 'PCS';
+        const hsnSac = item.hsnSac && typeof item.hsnSac === 'string' ? item.hsnSac.trim() : null;
 
         // Precision round to 2 decimal places
         const amount = Math.round(quantity * rate * 100) / 100;
@@ -125,6 +152,7 @@ function calculateInvoiceTotals({ items, gstEnabled, gstRate }) {
         return {
             lineNumber: idx + 1,
             name,
+            hsnSac,
             quantity: Math.round(quantity * 100) / 100,
             unit,
             rate: Math.round(rate * 100) / 100,
@@ -135,8 +163,27 @@ function calculateInvoiceTotals({ items, gstEnabled, gstRate }) {
     const subtotal = subtotalCents / 100;
 
     let gstAmount = 0;
+    let cgstAmount = 0;
+    let sgstAmount = 0;
+    let igstAmount = 0;
+
     if (isGstEnabled) {
         gstAmount = Math.round((subtotal * numericGstRate / 100) * 100) / 100;
+
+        const sState = sellerStateCode ? String(sellerStateCode).trim() : '';
+        const pState = placeOfSupplyStateCode ? String(placeOfSupplyStateCode).trim() : '';
+
+        if (sState && pState && sState !== pState) {
+            // Inter-State supply -> IGST
+            igstAmount = gstAmount;
+            cgstAmount = 0;
+            sgstAmount = 0;
+        } else {
+            // Intra-State supply (or default) -> CGST + SGST
+            cgstAmount = Math.round((gstAmount / 2) * 100) / 100;
+            sgstAmount = Math.round((gstAmount - cgstAmount) * 100) / 100;
+            igstAmount = 0;
+        }
     }
 
     const totalBeforeRound = Math.round((subtotal + gstAmount) * 100) / 100;
@@ -144,11 +191,15 @@ function calculateInvoiceTotals({ items, gstEnabled, gstRate }) {
     const roundOff = Math.round((grandTotal - totalBeforeRound) * 100) / 100;
 
     return {
+        items: itemsWithAmount,
         itemsWithAmount,
         subtotal,
         gstEnabled: isGstEnabled,
         gstRate: numericGstRate,
         gstAmount,
+        cgstAmount,
+        sgstAmount,
+        igstAmount,
         roundOff,
         grandTotal
     };
@@ -253,10 +304,42 @@ async function createDocument(data, userId) {
         }
     }
 
+    let clientId = null;
+    let clientGSTIN = data.clientGSTIN ? data.clientGSTIN.trim().toUpperCase() : null;
+    let placeOfSupplyStateCode = data.placeOfSupplyStateCode ? data.placeOfSupplyStateCode.trim() : null;
+
+    if (data.clientId) {
+        const parsedClientId = parseInt(data.clientId, 10);
+        if (!isNaN(parsedClientId) && parsedClientId > 0) {
+            const clientRecord = await prisma.client.findUnique({ where: { id: parsedClientId } });
+            if (clientRecord) {
+                clientId = clientRecord.id;
+                if (!clientName) clientName = clientRecord.name;
+                if (!clientEmail) clientEmail = clientRecord.email;
+                if (!clientPhone) clientPhone = clientRecord.phone;
+                if (!clientGSTIN) clientGSTIN = clientRecord.gstin;
+                if (!placeOfSupplyStateCode) placeOfSupplyStateCode = clientRecord.stateCode;
+                if (!billingAddress) billingAddress = clientRecord.billingAddress;
+                if (!shippingAddress) shippingAddress = clientRecord.shippingAddress;
+            }
+        }
+    }
+
+    // Default business profile for seller snapshot
+    const profile = await businessProfileService.getProfile();
+    const sellerName = (data.sellerName || profile.legalName || 'Spark ERP Technologies Pvt Ltd').trim();
+    const sellerGSTIN = (data.sellerGSTIN || profile.gstin || '29AAAAA0000A1Z5').trim().toUpperCase();
+    const sellerStateCode = (data.sellerStateCode || profile.stateCode || '29').trim();
+    const sellerEmail = (data.sellerEmail || profile.email || 'billing@sparkadmin.com').trim();
+    const sellerPhone = (data.sellerPhone || profile.phone || '+91 80 4000 1234').trim();
+    const sellerAddress = (data.sellerAddress || profile.address || 'Tech Park Tower, 4th Floor, MG Road, Bengaluru, Karnataka 560001').trim();
+
     const calculated = calculateInvoiceTotals({
         items: data.items,
         gstEnabled: data.gstEnabled,
-        gstRate: data.gstRate
+        gstRate: data.gstRate,
+        sellerStateCode,
+        placeOfSupplyStateCode
     });
 
     return prisma.$transaction(async (tx) => {
@@ -297,9 +380,18 @@ async function createDocument(data, userId) {
             data: {
                 documentType,
                 invoiceNumber,
+                clientId,
                 clientName,
                 clientEmail,
                 clientPhone,
+                clientGSTIN,
+                placeOfSupplyStateCode,
+                sellerName,
+                sellerGSTIN,
+                sellerStateCode,
+                sellerEmail,
+                sellerPhone,
+                sellerAddress,
                 billingAddress,
                 shippingAddress,
                 termsAndConditions,
@@ -309,8 +401,13 @@ async function createDocument(data, userId) {
                 gstRate: calculated.gstRate.toFixed(2),
                 subtotal: calculated.subtotal.toFixed(2),
                 gstAmount: calculated.gstAmount.toFixed(2),
+                cgstAmount: calculated.cgstAmount.toFixed(2),
+                sgstAmount: calculated.sgstAmount.toFixed(2),
+                igstAmount: calculated.igstAmount.toFixed(2),
                 roundOff: calculated.roundOff.toFixed(2),
                 grandTotal: calculated.grandTotal.toFixed(2),
+                paidAmount: '0.00',
+                outstandingAmount: documentType === 'INVOICE' ? calculated.grandTotal.toFixed(2) : '0.00',
                 status: 'ACTIVE',
                 version: 1,
                 sourceQuotationId: validatedSourceQuotationId,
@@ -320,6 +417,7 @@ async function createDocument(data, userId) {
                     create: calculated.itemsWithAmount.map((item) => ({
                         lineNumber: item.lineNumber,
                         name: item.name,
+                        hsnSac: item.hsnSac || null,
                         quantity: item.quantity.toFixed(2),
                         unit: item.unit,
                         rate: item.rate.toFixed(2),
@@ -352,7 +450,7 @@ async function createDocument(data, userId) {
             }
         });
 
-        return doc;
+        return formatDocumentResponse(doc);
     });
 }
 
@@ -376,12 +474,19 @@ async function getInvoiceById(id) {
     const doc = await prisma.invoice.findUnique({
         where: { id: numericId },
         include: {
+            client: true,
             items: { orderBy: { lineNumber: 'asc' } },
             createdBy: { select: { id: true, name: true, email: true } },
             updatedBy: { select: { id: true, name: true, email: true } },
             deletedBy: { select: { id: true, name: true, email: true } },
             sourceQuotation: { select: { id: true, invoiceNumber: true, clientName: true } },
             convertedInvoice: { select: { id: true, invoiceNumber: true, clientName: true } },
+            payments: {
+                orderBy: [{ paymentDate: 'desc' }, { createdAt: 'desc' }],
+                include: {
+                    createdBy: { select: { id: true, name: true, email: true } }
+                }
+            },
             revisions: {
                 orderBy: { revisionNo: 'desc' },
                 include: {
@@ -447,12 +552,6 @@ async function updateInvoice(id, data, userId) {
         throw new ValidationError('Invalid invoice date format.');
     }
 
-    const calculated = calculateInvoiceTotals({
-        items: data.items,
-        gstEnabled: data.gstEnabled,
-        gstRate: data.gstRate
-    });
-
     return prisma.$transaction(async (tx) => {
         const existing = await tx.invoice.findUnique({
             where: { id: numericId },
@@ -462,6 +561,24 @@ async function updateInvoice(id, data, userId) {
         if (!existing) {
             throw new NotFoundError(`Document with ID ${numericId} was not found.`);
         }
+
+        const clientId = data.clientId !== undefined ? (data.clientId ? parseInt(data.clientId, 10) : null) : existing.clientId;
+        const clientGSTIN = data.clientGSTIN !== undefined ? (data.clientGSTIN ? data.clientGSTIN.trim().toUpperCase() : null) : existing.clientGSTIN;
+        const placeOfSupplyStateCode = data.placeOfSupplyStateCode !== undefined ? (data.placeOfSupplyStateCode ? data.placeOfSupplyStateCode.trim() : null) : existing.placeOfSupplyStateCode;
+        const sellerName = data.sellerName !== undefined ? data.sellerName.trim() : existing.sellerName;
+        const sellerGSTIN = data.sellerGSTIN !== undefined ? (data.sellerGSTIN ? data.sellerGSTIN.trim().toUpperCase() : null) : existing.sellerGSTIN;
+        const sellerStateCode = data.sellerStateCode !== undefined ? (data.sellerStateCode ? data.sellerStateCode.trim() : null) : existing.sellerStateCode;
+        const sellerEmail = data.sellerEmail !== undefined ? (data.sellerEmail ? data.sellerEmail.trim() : null) : existing.sellerEmail;
+        const sellerPhone = data.sellerPhone !== undefined ? (data.sellerPhone ? data.sellerPhone.trim() : null) : existing.sellerPhone;
+        const sellerAddress = data.sellerAddress !== undefined ? (data.sellerAddress ? data.sellerAddress.trim() : null) : existing.sellerAddress;
+
+        const calculated = calculateInvoiceTotals({
+            items: data.items,
+            gstEnabled: data.gstEnabled !== undefined ? data.gstEnabled : existing.gstEnabled,
+            gstRate: data.gstRate !== undefined ? data.gstRate : existing.gstRate,
+            sellerStateCode,
+            placeOfSupplyStateCode
+        });
 
         const expiryOrDueDate = data.dueDate || data.validUntil;
         if (expiryOrDueDate) {
@@ -509,9 +626,18 @@ async function updateInvoice(id, data, userId) {
                 version: expectedVersion
             },
             data: {
+                clientId,
                 clientName,
                 clientEmail,
                 clientPhone,
+                clientGSTIN,
+                placeOfSupplyStateCode,
+                sellerName,
+                sellerGSTIN,
+                sellerStateCode,
+                sellerEmail,
+                sellerPhone,
+                sellerAddress,
                 billingAddress,
                 shippingAddress,
                 termsAndConditions,
@@ -521,8 +647,14 @@ async function updateInvoice(id, data, userId) {
                 gstRate: calculated.gstRate.toFixed(2),
                 subtotal: calculated.subtotal.toFixed(2),
                 gstAmount: calculated.gstAmount.toFixed(2),
+                cgstAmount: calculated.cgstAmount.toFixed(2),
+                sgstAmount: calculated.sgstAmount.toFixed(2),
+                igstAmount: calculated.igstAmount.toFixed(2),
                 roundOff: calculated.roundOff.toFixed(2),
                 grandTotal: calculated.grandTotal.toFixed(2),
+                outstandingAmount: existing.documentType === 'INVOICE'
+                    ? Math.max(0, calculated.grandTotal - Number(existing.paidAmount)).toFixed(2)
+                    : '0.00',
                 version: { increment: 1 },
                 updatedById: userId
             }
@@ -546,6 +678,7 @@ async function updateInvoice(id, data, userId) {
                 invoiceId: existing.id,
                 lineNumber: item.lineNumber,
                 name: item.name,
+                hsnSac: item.hsnSac || null,
                 quantity: item.quantity.toFixed(2),
                 unit: item.unit,
                 rate: item.rate.toFixed(2),
@@ -619,7 +752,21 @@ async function updateInvoice(id, data, userId) {
 /**
  * Update a document status (ACTIVE, INACTIVE, VOID, DELETED) according to state machine.
  */
-async function updateInvoiceStatus(id, newStatusInput, userId, options = {}) {
+async function updateInvoiceStatus(id, newStatusInput, userIdOrReason, optionsOrVersion = {}, maybeUserId = null) {
+    let userId = userIdOrReason;
+    let options = typeof optionsOrVersion === 'object' && optionsOrVersion !== null ? optionsOrVersion : {};
+
+    if (typeof userIdOrReason === 'string' && isNaN(parseInt(userIdOrReason, 10))) {
+        // Called as updateInvoiceStatus(id, newStatus, reason, version, userId)
+        userId = maybeUserId || (typeof optionsOrVersion === 'number' ? optionsOrVersion : null);
+        options = {
+            deleteReason: userIdOrReason,
+            version: typeof optionsOrVersion === 'number' ? optionsOrVersion : (optionsOrVersion && optionsOrVersion.version)
+        };
+    } else if (typeof optionsOrVersion === 'number') {
+        options = { version: optionsOrVersion };
+    }
+
     const numericId = parseInt(id, 10);
     if (isNaN(numericId) || numericId <= 0) {
         throw new ValidationError('Invalid document ID.');
@@ -1041,9 +1188,18 @@ async function convertQuotationToInvoice(quotationId, userId, options = {}) {
                 data: {
                     documentType: 'INVOICE',
                     invoiceNumber,
+                    clientId: quotation.clientId,
                     clientName: quotation.clientName,
                     clientEmail: quotation.clientEmail,
                     clientPhone: quotation.clientPhone,
+                    clientGSTIN: quotation.clientGSTIN,
+                    placeOfSupplyStateCode: quotation.placeOfSupplyStateCode,
+                    sellerName: quotation.sellerName,
+                    sellerGSTIN: quotation.sellerGSTIN,
+                    sellerStateCode: quotation.sellerStateCode,
+                    sellerEmail: quotation.sellerEmail,
+                    sellerPhone: quotation.sellerPhone,
+                    sellerAddress: quotation.sellerAddress,
                     billingAddress: quotation.billingAddress,
                     shippingAddress: quotation.shippingAddress,
                     termsAndConditions: quotation.termsAndConditions,
@@ -1053,8 +1209,13 @@ async function convertQuotationToInvoice(quotationId, userId, options = {}) {
                     gstRate: quotation.gstRate,
                     subtotal: quotation.subtotal,
                     gstAmount: quotation.gstAmount,
+                    cgstAmount: quotation.cgstAmount,
+                    sgstAmount: quotation.sgstAmount,
+                    igstAmount: quotation.igstAmount,
                     roundOff: quotation.roundOff,
                     grandTotal: quotation.grandTotal,
+                    paidAmount: '0.00',
+                    outstandingAmount: quotation.grandTotal,
                     status: 'ACTIVE',
                     version: 1,
                     sourceQuotationId: quotation.id,
@@ -1064,6 +1225,7 @@ async function convertQuotationToInvoice(quotationId, userId, options = {}) {
                         create: quotation.items.map((item) => ({
                             lineNumber: item.lineNumber,
                             name: item.name,
+                            hsnSac: item.hsnSac || null,
                             quantity: item.quantity,
                             unit: item.unit,
                             rate: item.rate,
@@ -1181,7 +1343,7 @@ async function copyDocument(id) {
 /**
  * List documents with search, documentType filtering, status filtering, and pagination.
  */
-async function listInvoices({ documentType, search, status, dateFrom, dateTo, page = 1, limit = 10 } = {}) {
+async function listInvoices({ documentType, search, status, paymentStatus, dateFrom, dateTo, page = 1, limit = 10 } = {}) {
     const parsedPage = Math.max(1, parseInt(page, 10) || 1);
     const parsedLimit = Math.min(100, Math.max(1, parseInt(limit, 10) || 10));
     const skip = (parsedPage - 1) * parsedLimit;
@@ -1207,8 +1369,31 @@ async function listInvoices({ documentType, search, status, dateFrom, dateTo, pa
         }
     }
 
+    if (paymentStatus && typeof paymentStatus === 'string') {
+        const ps = paymentStatus.trim().toUpperCase();
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        if (ps === 'PAID') {
+            where.documentType = 'INVOICE';
+            where.outstandingAmount = 0;
+            where.paidAmount = { gt: 0 };
+        } else if (ps === 'PARTIALLY_PAID') {
+            where.documentType = 'INVOICE';
+            where.paidAmount = { gt: 0 };
+            where.outstandingAmount = { gt: 0 };
+        } else if (ps === 'OVERDUE') {
+            where.documentType = 'INVOICE';
+            where.outstandingAmount = { gt: 0 };
+            where.invoiceDate = { ...(where.invoiceDate || {}), lt: thirtyDaysAgo };
+        } else if (ps === 'UNPAID') {
+            where.documentType = 'INVOICE';
+            where.paidAmount = 0;
+        }
+    }
+
     if (dateFrom || dateTo) {
-        where.invoiceDate = {};
+        where.invoiceDate = where.invoiceDate || {};
         if (dateFrom) {
             const dFrom = new Date(dateFrom);
             if (!isNaN(dFrom.getTime())) {
@@ -1231,7 +1416,8 @@ async function listInvoices({ documentType, search, status, dateFrom, dateTo, pa
             skip,
             take: parsedLimit,
             include: {
-                _count: { select: { items: true, revisions: true } },
+                client: { select: { id: true, name: true } },
+                _count: { select: { items: true, revisions: true, payments: true } },
                 createdBy: { select: { id: true, name: true, email: true } },
                 updatedBy: { select: { id: true, name: true, email: true } },
                 sourceQuotation: { select: { id: true, invoiceNumber: true } },
@@ -1250,6 +1436,45 @@ async function listInvoices({ documentType, search, status, dateFrom, dateTo, pa
             limit: parsedLimit,
             totalPages
         }
+    };
+}
+
+/**
+ * Retrieve high-level KPI metrics for quotations and invoices dashboard
+ */
+async function getDashboardKPIs() {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const [activeQuotations, activeInvoices, outstandingAgg, overdueCount] = await Promise.all([
+        prisma.invoice.count({
+            where: { documentType: 'QUOTATION', status: 'ACTIVE' }
+        }),
+        prisma.invoice.count({
+            where: { documentType: 'INVOICE', status: 'ACTIVE' }
+        }),
+        prisma.invoice.aggregate({
+            _sum: { outstandingAmount: true },
+            where: {
+                documentType: 'INVOICE',
+                status: { in: ['ACTIVE', 'INACTIVE'] }
+            }
+        }),
+        prisma.invoice.count({
+            where: {
+                documentType: 'INVOICE',
+                status: { in: ['ACTIVE', 'INACTIVE'] },
+                outstandingAmount: { gt: 0 },
+                invoiceDate: { lt: thirtyDaysAgo }
+            }
+        })
+    ]);
+
+    return {
+        activeQuotations,
+        activeInvoices,
+        totalOutstanding: Number(outstandingAgg._sum.outstandingAmount) || 0,
+        overdueInvoices: overdueCount
     };
 }
 
@@ -1309,5 +1534,6 @@ module.exports = {
     convertQuotationToInvoice,
     copyDocument,
     listInvoices,
-    getInvoiceHistory
+    getInvoiceHistory,
+    getDashboardKPIs
 };

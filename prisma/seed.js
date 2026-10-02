@@ -321,6 +321,57 @@ async function main() {
         });
     }
 
+    // Seed Business Profile if not present
+    let profile = await prisma.businessProfile.findFirst();
+    if (!profile) {
+        await prisma.businessProfile.create({
+            data: {
+                legalName: 'Spark Admin Technologies Pvt Ltd',
+                displayName: 'Spark Admin',
+                gstin: '27AABCS1429B1ZB',
+                stateCode: '27',
+                email: 'billing@sparkadmin.io',
+                phone: '+91 98765 43210',
+                address: 'Level 5, Spark Tower, BKC, Bandra East, Mumbai 400051',
+                defaultTerms: '1. Payment is due within 15 days of invoice issue.\n2. Interest @ 18% p.a. will be charged on overdue payments.',
+                defaultRemarks: 'Thank you for your business!'
+            }
+        });
+        console.log('Default business profile seeded.');
+    }
+
+    // Seed Sample Clients if not present
+    const clientsCount = await prisma.client.count();
+    if (clientsCount === 0) {
+        await prisma.client.createMany({
+            data: [
+                {
+                    name: 'Tata Consultancy Services',
+                    email: 'billing@tcs.example.com',
+                    phone: '+91 22 6778 9999',
+                    gstin: '27AAACT2727Q1ZW',
+                    stateCode: '27',
+                    billingAddress: 'TCS House, Raveline Street, Fort, Mumbai 400001',
+                    shippingAddress: 'TCS Olympus, Thane West, Mumbai 400607',
+                    active: true,
+                    createdById: admin.id
+                },
+                {
+                    name: 'Infosys Limited',
+                    email: 'accounts@infosys.example.com',
+                    phone: '+91 80 2852 0261',
+                    gstin: '29AAACI4818H1ZP',
+                    stateCode: '29',
+                    billingAddress: 'Electronics City, Hosur Road, Bengaluru 560100',
+                    shippingAddress: 'Electronics City, Hosur Road, Bengaluru 560100',
+                    active: true,
+                    createdById: admin.id
+                }
+            ]
+        });
+        console.log('Sample clients seeded.');
+    }
+
     console.log('Seed completed successfully.');
 }
 

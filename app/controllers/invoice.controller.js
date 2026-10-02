@@ -37,11 +37,12 @@ function handleControllerError(err, res, next) {
  */
 async function listInvoices(req, res, next) {
     try {
-        const { search, status, type, documentType, dateFrom, dateTo, page, limit } = req.query;
+        const { search, status, paymentStatus, type, documentType, dateFrom, dateTo, page, limit } = req.query;
         const result = await invoiceService.listInvoices({
             documentType: type || documentType,
             search,
             status,
+            paymentStatus,
             dateFrom,
             dateTo,
             page,
@@ -311,6 +312,19 @@ async function exportExcel(req, res, next) {
     }
 }
 
+/**
+ * GET /api/invoices/kpis
+ * Retrieve dashboard KPI strip metrics
+ */
+async function getDashboardKPIs(req, res, next) {
+    try {
+        const kpis = await invoiceService.getDashboardKPIs();
+        return res.status(200).json({ success: true, data: kpis, ...kpis });
+    } catch (err) {
+        return handleControllerError(err, res, next);
+    }
+}
+
 module.exports = {
     listInvoices,
     getInvoice,
@@ -323,5 +337,6 @@ module.exports = {
     convertQuotation,
     copyInvoice,
     exportPdf,
-    exportExcel
+    exportExcel,
+    getDashboardKPIs
 };

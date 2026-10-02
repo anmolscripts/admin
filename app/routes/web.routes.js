@@ -2,6 +2,8 @@ const express = require('express');
 const requireAuth = require('../middleware/auth.middleware');
 const invoiceService = require('../services/invoice.service');
 const invoiceController = require('../controllers/invoice.controller');
+const clientService = require('../services/client.service');
+const businessProfileService = require('../services/businessProfile.service');
 
 const router = express.Router();
 
@@ -42,7 +44,45 @@ router.get('/documents/new', requireAuth, async (req, res, next) => {
             documentType = rawType === 'QUOTATION' ? 'QUOTATION' : 'INVOICE';
         }
 
+        const clientList = await clientService.searchClients();
+        const profile = await businessProfileService.getProfile();
+        let clientData = null;
+        if (req.query.clientId) {
+            const cid = parseInt(req.query.clientId, 10);
+            if (!isNaN(cid) && cid > 0) {
+                try {
+                    const c = await clientService.getClientById(cid);
+                    clientData = {
+                        clientId: c.id,
+                        clientName: c.name,
+                        clientEmail: c.email,
+                        clientPhone: c.phone,
+                        clientGSTIN: c.gstin,
+                        placeOfSupplyStateCode: c.stateCode,
+                        billingAddress: c.billingAddress,
+                        shippingAddress: c.shippingAddress
+                    };
+                } catch (_) {}
+            }
+        }
+
         const isQuotation = documentType === 'QUOTATION';
+
+        let initialDoc = null;
+        if (copyData) {
+            initialDoc = { ...copyData, copyOfNumber };
+        } else if (clientData) {
+            initialDoc = {
+                ...clientData,
+                termsAndConditions: profile.defaultTerms,
+                remarks: profile.defaultRemarks
+            };
+        } else {
+            initialDoc = {
+                termsAndConditions: profile.defaultTerms,
+                remarks: profile.defaultRemarks
+            };
+        }
 
         res.render('documents/editor', {
             pageTitle: copyOfNumber
@@ -55,7 +95,8 @@ router.get('/documents/new', requireAuth, async (req, res, next) => {
                     : 'Create and issue a new client invoice with precision.'),
             mode: 'create',
             documentType,
-            document: copyData ? { ...copyData, copyOfNumber } : null,
+            document: initialDoc,
+            clientList,
             copyOfNumber,
             csrfToken: req.session ? req.session.csrfToken : ''
         });
@@ -97,6 +138,7 @@ router.get('/documents/:id/edit', requireAuth, async (req, res, next) => {
         }
 
         const isQuotation = doc.documentType === 'QUOTATION';
+        const clientList = await clientService.searchClients();
 
         res.render('documents/editor', {
             pageTitle: `Edit ${doc.invoiceNumber}`,
@@ -104,6 +146,7 @@ router.get('/documents/:id/edit', requireAuth, async (req, res, next) => {
             mode: 'edit',
             documentType: doc.documentType,
             document: doc,
+            clientList,
             csrfToken: req.session ? req.session.csrfToken : ''
         });
     } catch (err) {
@@ -178,10 +221,133 @@ router.get('/documents/:id', requireAuth, async (req, res, next) => {
     }
 });
 
-router.get('/dashboard', requireAuth, (req, res) => {
-    res.render('dashboard/index', {
-        pageTitle: 'Dashboard'
+// -------------------------------------------------------------
+// -------------------------------------------------------------
+// CLIENTS WEB ROUTES
+// -------------------------------------------------------------
+router.get('/clients', requireAuth, async (req, res, next) => {
+    try {
+        const { search, active } = req.query;
+        const result = await clientService.listClients({ search, active, limit: 100 });
+        res.render('clients/index', {
+            pageTitle: 'Clients Directory',
+            pageSubtitle: 'Manage customer accounts, tax registrations, and contact information.',
+            clients: result.data,
+            search,
+            active,
+            csrfToken: req.session ? req.session.csrfToken : '',
+            user: req.session ? req.session.user : null
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.get('/clients/new', requireAuth, (req, res) => {
+    res.render('clients/form', {
+        pageTitle: 'New Client',
+        pageSubtitle: 'Add a new client profile with GSTIN and billing/shipping addresses.',
+        mode: 'create',
+        client: {},
+        csrfToken: req.session ? req.session.csrfToken : '',
+        user: req.session ? req.session.user : null
     });
+});
+
+router.post('/clients', requireAuth, async (req, res) => {
+    try {
+        const userId = req.session && req.session.user ? req.session.user.id : null;
+        await clientService.createClient(req.body, userId);
+        res.redirect('/clients');
+    } catch (err) {
+        res.status(400).render('clients/form', {
+            pageTitle: 'New Client',
+            pageSubtitle: 'Add a new client profile with GSTIN and billing/shipping addresses.',
+            mode: 'create',
+            client: req.body,
+            error: err.message,
+            csrfToken: req.session ? req.session.csrfToken : '',
+            user: req.session ? req.session.user : null
+        });
+    }
+});
+
+router.get('/clients/:id/edit', requireAuth, async (req, res, next) => {
+    try {
+        const client = await clientService.getClientById(req.params.id);
+        res.render('clients/form', {
+            pageTitle: 'Edit Client',
+            pageSubtitle: 'Update client contact and tax registration information.',
+            mode: 'edit',
+            client,
+            csrfToken: req.session ? req.session.csrfToken : '',
+            user: req.session ? req.session.user : null
+        });
+    } catch (err) {
+        if (err instanceof clientService.NotFoundError) {
+            return res.status(404).render('errors/404', { pageTitle: 'Client Not Found' });
+        }
+        next(err);
+    }
+});
+
+router.post('/clients/:id', requireAuth, async (req, res) => {
+    try {
+        const userId = req.session && req.session.user ? req.session.user.id : null;
+        await clientService.updateClient(req.params.id, req.body, userId);
+        res.redirect('/clients');
+    } catch (err) {
+        res.status(400).render('clients/form', {
+            pageTitle: 'Edit Client',
+            pageSubtitle: 'Update client contact and tax registration information.',
+            mode: 'edit',
+            client: { ...req.body, id: req.params.id },
+            error: err.message,
+            csrfToken: req.session ? req.session.csrfToken : '',
+            user: req.session ? req.session.user : null
+        });
+    }
+});
+
+// -------------------------------------------------------------
+// SETTINGS WEB ROUTES
+// -------------------------------------------------------------
+router.get('/settings', requireAuth, async (req, res, next) => {
+    try {
+        const profile = await businessProfileService.getProfile();
+        res.render('settings/index', {
+            pageTitle: 'Organization Profile & Defaults',
+            pageSubtitle: 'Manage business identity, GST registration, bank details, and default terms.',
+            profile,
+            csrfToken: req.session ? req.session.csrfToken : '',
+            user: req.session ? req.session.user : null
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.post('/settings', requireAuth, async (req, res) => {
+    try {
+        const profile = await businessProfileService.updateProfile(req.body);
+        res.render('settings/index', {
+            pageTitle: 'Organization Profile & Defaults',
+            pageSubtitle: 'Manage business identity, GST registration, bank details, and default terms.',
+            profile,
+            success: true,
+            csrfToken: req.session ? req.session.csrfToken : '',
+            user: req.session ? req.session.user : null
+        });
+    } catch (err) {
+        res.status(400).render('settings/index', {
+            pageTitle: 'Organization Profile & Defaults',
+            pageSubtitle: 'Manage business identity, GST registration, bank details, and default terms.',
+            profile: req.body,
+            error: err.message,
+            csrfToken: req.session ? req.session.csrfToken : '',
+            user: req.session ? req.session.user : null
+        });
+    }
 });
 
 module.exports = router;

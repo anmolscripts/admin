@@ -11,6 +11,7 @@
     const state = {
         type: '',
         status: '',
+        paymentStatus: '',
         search: '',
         dateFrom: '',
         dateTo: '',
@@ -26,6 +27,7 @@
     let searchInput;
     let typeSelect;
     let statusSelect;
+    let paymentStatusSelect;
     let dateFromInput;
     let dateToInput;
     let clearFiltersBtn;
@@ -51,6 +53,7 @@
         
         state.type = params.get('type') || params.get('documentType') || '';
         state.status = params.get('status') || '';
+        state.paymentStatus = params.get('paymentStatus') || '';
         state.search = params.get('search') || '';
         state.dateFrom = params.get('dateFrom') || '';
         state.dateTo = params.get('dateTo') || '';
@@ -66,6 +69,7 @@
         
         if (state.type) params.set('type', state.type);
         if (state.status) params.set('status', state.status);
+        if (state.paymentStatus) params.set('paymentStatus', state.paymentStatus);
         if (state.search) params.set('search', state.search);
         if (state.dateFrom) params.set('dateFrom', state.dateFrom);
         if (state.dateTo) params.set('dateTo', state.dateTo);
@@ -87,6 +91,7 @@
         if (searchInput) searchInput.value = state.search;
         if (typeSelect) typeSelect.value = state.type;
         if (statusSelect) statusSelect.value = state.status;
+        if (paymentStatusSelect) paymentStatusSelect.value = state.paymentStatus;
         if (dateFromInput) dateFromInput.value = state.dateFrom;
         if (dateToInput) dateToInput.value = state.dateTo;
         if (pageSizeSelect) pageSizeSelect.value = String(state.limit);
@@ -343,16 +348,15 @@
                 window.location.href = `/documents/new?copyFrom=${docId}`;
                 break;
             case 'print':
-                showNoticeToast(`Print / PDF generation for #${docId} belongs to later phase.`, 'bi-printer');
+                window.open(`/documents/${docId}/print`, '_blank');
+                break;
+            case 'pdf':
+                window.open(`/api/invoices/${docId}/pdf`, '_blank');
                 break;
             case 'void':
-                showNoticeToast(`Void transition confirmation for #${docId} will be enabled in Phase 3.`, 'bi-slash-circle');
-                break;
             case 'delete':
-                showNoticeToast(`Soft-delete confirmation for #${docId} will be enabled in Phase 3.`, 'bi-trash3');
-                break;
             case 'restore':
-                showNoticeToast(`Restore confirmation for #${docId} will be enabled in Phase 3.`, 'bi-arrow-counterclockwise');
+                window.location.href = `/documents/${docId}`;
                 break;
             default:
                 break;
@@ -427,10 +431,41 @@
             tdDue.textContent = formatDueDate(doc);
             tr.appendChild(tdDue);
 
-            // 6. Amount
+            // 6. Amount & Payment Status
             const tdAmount = document.createElement('td');
-            tdAmount.className = 'doc-amount-cell';
-            tdAmount.textContent = formatIndianCurrency(doc.grandTotal);
+            tdAmount.className = 'doc-amount-cell text-end';
+            const amountDiv = document.createElement('div');
+            amountDiv.className = 'fw-bold';
+            amountDiv.textContent = formatIndianCurrency(doc.grandTotal);
+            tdAmount.appendChild(amountDiv);
+
+            if (doc.documentType === 'INVOICE') {
+                const paid = Number(doc.paidAmount) || 0;
+                const grand = Number(doc.grandTotal) || 0;
+                const payPill = document.createElement('span');
+                payPill.className = 'badge font-monospace mt-1';
+                payPill.style.fontSize = '10px';
+                payPill.style.padding = '2px 6px';
+
+                if (paid >= grand && grand > 0) {
+                    payPill.className += ' bg-success-subtle text-success border border-success-subtle';
+                    payPill.textContent = 'PAID';
+                } else if (paid > 0) {
+                    payPill.className += ' bg-warning-subtle text-warning border border-warning-subtle';
+                    payPill.textContent = 'PARTIAL';
+                } else {
+                    const dueDate = new Date(doc.invoiceDate);
+                    dueDate.setDate(dueDate.getDate() + 30);
+                    if (dueDate < new Date()) {
+                        payPill.className += ' bg-danger-subtle text-danger border border-danger-subtle';
+                        payPill.textContent = 'OVERDUE';
+                    } else {
+                        payPill.className += ' bg-secondary-subtle text-secondary border border-secondary-subtle';
+                        payPill.textContent = 'UNPAID';
+                    }
+                }
+                tdAmount.appendChild(payPill);
+            }
             tr.appendChild(tdAmount);
 
             // 7. Status
@@ -544,6 +579,7 @@
         const queryParams = new URLSearchParams();
         if (state.type) queryParams.set('type', state.type);
         if (state.status) queryParams.set('status', state.status);
+        if (state.paymentStatus) queryParams.set('paymentStatus', state.paymentStatus);
         if (state.search) queryParams.set('search', state.search);
         if (state.dateFrom) queryParams.set('dateFrom', state.dateFrom);
         if (state.dateTo) queryParams.set('dateTo', state.dateTo);
@@ -577,12 +613,13 @@
             syncStateToUrl();
 
             if (documents.length === 0) {
-                const isFiltered = Boolean(state.type || state.status || state.search || state.dateFrom || state.dateTo);
+                const isFiltered = Boolean(state.type || state.status || state.paymentStatus || state.search || state.dateFrom || state.dateTo);
                 renderEmptyState(isFiltered);
             } else {
                 renderTableRows(documents);
                 updatePaginationControls(pagination);
             }
+            loadKPIs();
         } catch (err) {
             if (err.name === 'AbortError') {
                 return; // Request was cleanly cancelled by subsequent user action
@@ -600,6 +637,7 @@
     function resetFilters() {
         state.type = '';
         state.status = '';
+        state.paymentStatus = '';
         state.search = '';
         state.dateFrom = '';
         state.dateTo = '';
@@ -638,6 +676,15 @@
         if (statusSelect) {
             statusSelect.addEventListener('change', function (e) {
                 state.status = e.target.value;
+                state.page = 1;
+                loadDocuments();
+            });
+        }
+
+        // Payment Status Filter Select
+        if (paymentStatusSelect) {
+            paymentStatusSelect.addEventListener('change', function (e) {
+                state.paymentStatus = e.target.value;
                 state.page = 1;
                 loadDocuments();
             });
@@ -727,12 +774,37 @@
     }
 
     /**
+     * Fetch and update KPI summary metrics from /api/invoices/kpis
+     */
+    async function loadKPIs() {
+        try {
+            const res = await fetch('/api/invoices/kpis', {
+                headers: { 'Accept': 'application/json' }
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            const activeQuotationsEl = document.getElementById('kpi-active-quotations');
+            const activeInvoicesEl = document.getElementById('kpi-active-invoices');
+            const totalOutstandingEl = document.getElementById('kpi-total-outstanding');
+            const overdueInvoicesEl = document.getElementById('kpi-overdue-invoices');
+
+            if (activeQuotationsEl) activeQuotationsEl.textContent = data.activeQuotations ?? '0';
+            if (activeInvoicesEl) activeInvoicesEl.textContent = data.activeInvoices ?? '0';
+            if (totalOutstandingEl) totalOutstandingEl.textContent = formatIndianCurrency(data.totalOutstanding || 0);
+            if (overdueInvoicesEl) overdueInvoicesEl.textContent = data.overdueInvoices ?? '0';
+        } catch (err) {
+            console.error('[KPI LOAD ERROR]:', err);
+        }
+    }
+
+    /**
      * Module Entry Point
      */
     document.addEventListener('DOMContentLoaded', function () {
         searchInput = document.getElementById('search-input');
         typeSelect = document.getElementById('filter-type');
         statusSelect = document.getElementById('filter-status');
+        paymentStatusSelect = document.getElementById('filter-payment-status');
         dateFromInput = document.getElementById('filter-date-from');
         dateToInput = document.getElementById('filter-date-to');
         clearFiltersBtn = document.getElementById('btn-clear-filters');
@@ -752,6 +824,7 @@
         parseUrlState();
         applyStateToControls();
         initEventHandlers();
+        loadKPIs();
         loadDocuments();
     });
 })();

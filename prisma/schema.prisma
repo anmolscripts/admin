@@ -34,17 +34,69 @@ model User {
   invoicesUpdated  Invoice[]         @relation("InvoiceUpdatedBy")
   invoicesDeleted  Invoice[]         @relation("InvoiceDeletedBy")
   revisionsCreated InvoiceRevision[] @relation("RevisionChangedBy")
+  clientsCreated   Client[]          @relation("ClientCreatedBy")
+  paymentsCreated  Payment[]         @relation("PaymentCreatedBy")
 
   @@map("users")
+}
+
+model Client {
+  id              Int       @id @default(autoincrement())
+  name            String    @db.VarChar(191)
+  email           String?   @db.VarChar(191)
+  phone           String?   @db.VarChar(50)
+  gstin           String?   @db.VarChar(20)
+  stateCode       String?   @db.VarChar(5)
+  billingAddress  String?   @db.Text
+  shippingAddress String?   @db.Text
+  active          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  createdById     Int?
+  createdBy       User?     @relation("ClientCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  invoices        Invoice[]
+
+  @@index([name])
+  @@index([email])
+  @@index([active])
+  @@index([createdById])
+  @@map("clients")
+}
+
+model BusinessProfile {
+  id             Int      @id @default(autoincrement())
+  legalName      String   @db.VarChar(191)
+  displayName    String?  @db.VarChar(191)
+  gstin          String?  @db.VarChar(20)
+  stateCode      String?  @db.VarChar(5)
+  email          String?  @db.VarChar(191)
+  phone          String?  @db.VarChar(50)
+  address        String?  @db.Text
+  defaultTerms   String?  @db.Text
+  defaultRemarks String?  @db.Text
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("business_profiles")
 }
 
 model Invoice {
   id                         Int               @id @default(autoincrement())
   documentType               DocumentType      @default(INVOICE)
   invoiceNumber              String            @unique @db.VarChar(50)
+  clientId                   Int?
+  client                     Client?           @relation(fields: [clientId], references: [id], onDelete: SetNull)
   clientName                 String            @db.VarChar(255)
   clientEmail                String?           @db.VarChar(255)
   clientPhone                String?           @db.VarChar(50)
+  clientGSTIN                String?           @db.VarChar(20)
+  placeOfSupplyStateCode     String?           @db.VarChar(5)
+  sellerName                 String?           @db.VarChar(191)
+  sellerGSTIN                String?           @db.VarChar(20)
+  sellerStateCode            String?           @db.VarChar(5)
+  sellerEmail                String?           @db.VarChar(191)
+  sellerPhone                String?           @db.VarChar(50)
+  sellerAddress              String?           @db.Text
   billingAddress             String?           @db.Text
   shippingAddress            String?           @db.Text
   termsAndConditions         String?           @db.Text
@@ -54,8 +106,13 @@ model Invoice {
   gstRate                    Decimal           @default(0.00) @db.Decimal(5, 2)
   subtotal                   Decimal           @db.Decimal(12, 2)
   gstAmount                  Decimal           @db.Decimal(12, 2)
+  cgstAmount                 Decimal           @default(0.00) @db.Decimal(12, 2)
+  sgstAmount                 Decimal           @default(0.00) @db.Decimal(12, 2)
+  igstAmount                 Decimal           @default(0.00) @db.Decimal(12, 2)
   roundOff                   Decimal           @db.Decimal(12, 2)
   grandTotal                 Decimal           @db.Decimal(12, 2)
+  paidAmount                 Decimal           @default(0.00) @db.Decimal(12, 2)
+  outstandingAmount          Decimal           @default(0.00) @db.Decimal(12, 2)
   status                     InvoiceStatus     @default(ACTIVE)
   previousStatusBeforeDelete InvoiceStatus?
   deletedAt                  DateTime?
@@ -74,8 +131,10 @@ model Invoice {
   convertedInvoice           Invoice?          @relation("QuotationToInvoice")
   items                      InvoiceItem[]
   revisions                  InvoiceRevision[]
+  payments                   Payment[]
 
   @@index([documentType])
+  @@index([clientId])
   @@index([clientName])
   @@index([status])
   @@index([invoiceDate])
@@ -90,6 +149,7 @@ model InvoiceItem {
   invoiceId  Int
   lineNumber Int
   name       String   @db.VarChar(255)
+  hsnSac     String?  @db.VarChar(20)
   quantity   Decimal  @db.Decimal(10, 2)
   unit       String   @default("PCS") @db.VarChar(30)
   rate       Decimal  @db.Decimal(12, 2)
@@ -118,6 +178,28 @@ model InvoiceRevision {
   @@index([invoiceId])
   @@index([changedById])
   @@map("invoice_revisions")
+}
+
+model Payment {
+  id          Int      @id @default(autoincrement())
+  invoiceId   Int
+  paymentDate DateTime @db.Date
+  amount      Decimal  @db.Decimal(12, 2)
+  method      String   @default("BANK_TRANSFER") @db.VarChar(50)
+  reference   String?  @db.VarChar(191)
+  notes       String?  @db.Text
+  status      String   @default("POSTED") @db.VarChar(20)
+  createdById Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  createdBy   User?    @relation("PaymentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([invoiceId])
+  @@index([status])
+  @@index([paymentDate])
+  @@index([createdById])
+  @@map("payments")
 }
 
 model InvoiceNumberSequence {

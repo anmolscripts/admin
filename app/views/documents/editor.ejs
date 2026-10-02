@@ -196,6 +196,31 @@
       </div>
 
       <div class="row g-3">
+        <!-- Hidden Client ID -->
+        <input type="hidden" id="client-id" name="clientId" value="<%= document ? (document.clientId || '') : '' %>">
+
+        <!-- Select Existing Client Dropdown -->
+        <div class="col-12">
+          <label class="form-label-custom" for="client-select">Choose Saved Client</label>
+          <select class="form-select-custom" id="client-select" aria-label="Select saved client">
+            <option value="">-- Choose Existing Client (or enter details below) --</option>
+            <% if (locals.clientList && clientList.length > 0) { %>
+              <% clientList.forEach(c => { %>
+                <option value="<%= c.id %>" <%= (document && Number(document.clientId) === c.id) ? 'selected' : '' %>
+                  data-name="<%= c.name %>"
+                  data-email="<%= c.email || '' %>"
+                  data-phone="<%= c.phone || '' %>"
+                  data-gstin="<%= c.gstin || '' %>"
+                  data-state="<%= c.stateCode || '' %>"
+                  data-billing="<%= c.billingAddress || '' %>"
+                  data-shipping="<%= c.shippingAddress || '' %>">
+                  <%= c.name %> <%= c.gstin ? `(${c.gstin})` : '' %>
+                </option>
+              <% }); %>
+            <% } %>
+          </select>
+        </div>
+
         <!-- Client Name (Required, database backed) -->
         <div class="col-12 col-lg-6">
           <label class="form-label-custom" for="client-name">
@@ -250,6 +275,34 @@
             value="<%= document ? (document.clientPhone || '') : '' %>"
             placeholder="+91 98765 43210" 
             autocomplete="tel"
+          />
+        </div>
+
+        <!-- Client GSTIN -->
+        <div class="col-12 col-sm-6 col-lg-3">
+          <label class="form-label-custom" for="client-gstin">Client GSTIN (15 Digits)</label>
+          <input
+            type="text"
+            class="form-control-custom text-uppercase font-monospace"
+            id="client-gstin"
+            name="clientGSTIN"
+            value="<%= document ? (document.clientGSTIN || '') : '' %>"
+            placeholder="27AAAAA0000A1Z5"
+            maxlength="15"
+          />
+        </div>
+
+        <!-- Place of Supply (State Code) -->
+        <div class="col-12 col-sm-6 col-lg-3">
+          <label class="form-label-custom" for="place-of-supply">Place of Supply (State Code)</label>
+          <input
+            type="text"
+            class="form-control-custom font-monospace"
+            id="place-of-supply"
+            name="placeOfSupplyStateCode"
+            value="<%= document ? (document.placeOfSupplyStateCode || '') : '' %>"
+            placeholder="e.g. 27"
+            maxlength="2"
           />
         </div>
       </div>
@@ -324,6 +377,7 @@
             <tr>
               <th scope="col" class="th-num text-center">#</th>
               <th scope="col" class="th-desc">Item Description *</th>
+              <th scope="col" class="th-hsn" style="width: 110px;">HSN/SAC</th>
               <th scope="col" class="th-qty text-end">Quantity *</th>
               <th scope="col" class="th-unit">Unit</th>
               <th scope="col" class="th-rate text-end">Rate (₹) *</th>

@@ -30,6 +30,8 @@
     const modalDeleteEl = document.getElementById('modal-delete');
     const modalRestoreEl = document.getElementById('modal-restore');
     const modalConvertEl = document.getElementById('modal-convert');
+    const modalRecordPaymentEl = document.getElementById('modal-record-payment');
+    const modalVoidPaymentEl = document.getElementById('modal-void-payment');
 
     const modalActivate = modalActivateEl ? new bootstrap.Modal(modalActivateEl) : null;
     const modalDeactivate = modalDeactivateEl ? new bootstrap.Modal(modalDeactivateEl) : null;
@@ -37,6 +39,8 @@
     const modalDelete = modalDeleteEl ? new bootstrap.Modal(modalDeleteEl) : null;
     const modalRestore = modalRestoreEl ? new bootstrap.Modal(modalRestoreEl) : null;
     const modalConvert = modalConvertEl ? new bootstrap.Modal(modalConvertEl) : null;
+    const modalRecordPayment = modalRecordPaymentEl ? new bootstrap.Modal(modalRecordPaymentEl) : null;
+    const modalVoidPayment = modalVoidPaymentEl ? new bootstrap.Modal(modalVoidPaymentEl) : null;
 
     // Confirmation Buttons
     const btnConfirmActivate = document.getElementById('btn-confirm-activate');
@@ -283,6 +287,133 @@
         if (btnReloadConflict) {
             btnReloadConflict.addEventListener('click', () => {
                 window.location.reload();
+            });
+        }
+
+        // 8. Record Payment Form
+        const formRecordPayment = document.getElementById('form-record-payment');
+        const paymentDateInput = document.getElementById('payment-date');
+        if (paymentDateInput && !paymentDateInput.value) {
+            const now = new Date();
+            const yyyy = now.getFullYear();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            paymentDateInput.value = `${yyyy}-${mm}-${dd}`;
+        }
+
+        if (formRecordPayment) {
+            formRecordPayment.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btnSubmitPayment = document.getElementById('btn-submit-payment');
+                const spinnerPayment = document.getElementById('spinner-payment');
+                const amountInput = document.getElementById('payment-amount');
+                const methodSelect = document.getElementById('payment-method');
+                const referenceInput = document.getElementById('payment-reference');
+                const notesInput = document.getElementById('payment-notes');
+
+                const amount = parseFloat(amountInput.value);
+                if (isNaN(amount) || amount <= 0) {
+                    showErrorFeedback('Please enter a valid positive payment amount.');
+                    return;
+                }
+
+                if (btnSubmitPayment) btnSubmitPayment.disabled = true;
+                if (spinnerPayment) spinnerPayment.classList.remove('d-none');
+
+                try {
+                    const csrfToken = csrfTokenInput ? csrfTokenInput.value : '';
+                    const res = await fetch(`/api/invoices/${docId}/payments`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'x-csrf-token': csrfToken
+                        },
+                        body: JSON.stringify({
+                            amount,
+                            paymentDate: paymentDateInput ? paymentDateInput.value : new Date().toISOString(),
+                            method: methodSelect ? methodSelect.value : 'BANK_TRANSFER',
+                            reference: referenceInput ? referenceInput.value.trim() : null,
+                            notes: notesInput ? notesInput.value.trim() : null
+                        })
+                    });
+
+                    if (res.status === 401) {
+                        window.location.href = '/login?expired=1';
+                        return;
+                    }
+
+                    if (!res.ok) {
+                        const errData = await res.json().catch(() => ({}));
+                        throw new Error(errData.error || `Payment recording failed with status ${res.status}`);
+                    }
+
+                    if (modalRecordPayment) modalRecordPayment.hide();
+                    window.location.reload();
+                } catch (err) {
+                    if (modalRecordPayment) modalRecordPayment.hide();
+                    showErrorFeedback(err.message);
+                } finally {
+                    if (btnSubmitPayment) btnSubmitPayment.disabled = false;
+                    if (spinnerPayment) spinnerPayment.classList.add('d-none');
+                }
+            });
+        }
+
+        // 9. Void Payment Buttons
+        const voidPaymentIdInput = document.getElementById('void-payment-id');
+        const voidButtons = document.querySelectorAll('.btn-void-payment');
+        voidButtons.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const paymentId = btn.getAttribute('data-id');
+                if (voidPaymentIdInput) voidPaymentIdInput.value = paymentId;
+                if (modalVoidPayment) modalVoidPayment.show();
+            });
+        });
+
+        // 10. Confirm Void Payment
+        const btnConfirmVoidPayment = document.getElementById('btn-confirm-void-payment');
+        if (btnConfirmVoidPayment) {
+            btnConfirmVoidPayment.addEventListener('click', async () => {
+                const paymentId = voidPaymentIdInput ? voidPaymentIdInput.value : null;
+                if (!paymentId) return;
+
+                const reasonInput = document.getElementById('void-payment-reason');
+                const reason = reasonInput ? reasonInput.value.trim() : '';
+                const spinnerVoidPayment = document.getElementById('spinner-void-payment');
+
+                btnConfirmVoidPayment.disabled = true;
+                if (spinnerVoidPayment) spinnerVoidPayment.classList.remove('d-none');
+
+                try {
+                    const csrfToken = csrfTokenInput ? csrfTokenInput.value : '';
+                    const res = await fetch(`/api/payments/${paymentId}/void`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'x-csrf-token': csrfToken
+                        },
+                        body: JSON.stringify({ reason })
+                    });
+
+                    if (res.status === 401) {
+                        window.location.href = '/login?expired=1';
+                        return;
+                    }
+
+                    if (!res.ok) {
+                        const errData = await res.json().catch(() => ({}));
+                        throw new Error(errData.error || `Failed to void payment with status ${res.status}`);
+                    }
+
+                    if (modalVoidPayment) modalVoidPayment.hide();
+                    window.location.reload();
+                } catch (err) {
+                    if (modalVoidPayment) modalVoidPayment.hide();
+                    showErrorFeedback(err.message);
+                } finally {
+                    btnConfirmVoidPayment.disabled = false;
+                    if (spinnerVoidPayment) spinnerVoidPayment.classList.add('d-none');
+                }
             });
         }
     }

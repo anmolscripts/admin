@@ -1,0 +1,163 @@
+<%- include('../layouts/header', {
+    pageTitle: mode === 'edit' ? 'Edit Client' : 'New Client',
+    pageSubtitle: mode === 'edit' ? 'Update client contact and tax registration information.' : 'Add a new client with tax registration and address details.'
+}) %>
+
+<div class="row justify-content-center">
+  <div class="col-12 col-xl-9">
+    <% if (locals.error) { %>
+      <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <strong>Error:</strong> <%= error %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    <% } %>
+
+    <div class="card border-0 shadow-sm rounded-3 p-4 bg-white mb-4">
+      <form method="POST" action="<%= mode === 'edit' ? `/clients/${client.id}` : '/clients' %>">
+        <% if (locals.csrfToken) { %>
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <% } %>
+
+        <div class="row g-3 mb-4">
+          <div class="col-12">
+            <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">Basic Information</h5>
+          </div>
+
+          <!-- Name -->
+          <div class="col-12 col-md-6">
+            <label for="client-name" class="form-label fw-semibold">Client / Business Name <span class="text-danger">*</span></label>
+            <input
+              type="text"
+              class="form-control"
+              id="client-name"
+              name="name"
+              value="<%= client.name || '' %>"
+              placeholder="e.g. Acme Corporation"
+              required
+            />
+          </div>
+
+          <!-- Email -->
+          <div class="col-12 col-md-6">
+            <label for="client-email" class="form-label fw-semibold">Email Address</label>
+            <input
+              type="email"
+              class="form-control"
+              id="client-email"
+              name="email"
+              value="<%= client.email || '' %>"
+              placeholder="e.g. billing@acme.com"
+            />
+          </div>
+
+          <!-- Phone -->
+          <div class="col-12 col-md-6">
+            <label for="client-phone" class="form-label fw-semibold">Phone Number</label>
+            <input
+              type="text"
+              class="form-control"
+              id="client-phone"
+              name="phone"
+              value="<%= client.phone || '' %>"
+              placeholder="e.g. +91 98765 43210"
+            />
+          </div>
+
+          <!-- Active status -->
+          <% if (mode === 'edit') { %>
+            <div class="col-12 col-md-6 d-flex align-items-center pt-md-4">
+              <div class="form-check form-switch mt-2">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="client-active"
+                  name="active"
+                  value="true"
+                  <%= (client.active === undefined || client.active) ? 'checked' : '' %>
+                />
+                <label class="form-check-label fw-semibold ms-2" for="client-active">Active Client</label>
+              </div>
+            </div>
+          <% } %>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-12">
+            <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">GST & Tax Registration</h5>
+          </div>
+
+          <!-- GSTIN -->
+          <div class="col-12 col-md-6">
+            <label for="client-gstin" class="form-label fw-semibold">GSTIN (15 Alphanumeric Characters)</label>
+            <input
+              type="text"
+              class="form-control text-uppercase font-monospace"
+              id="client-gstin"
+              name="gstin"
+              value="<%= client.gstin || '' %>"
+              placeholder="27AAAAA0000A1Z5"
+              maxlength="15"
+            />
+            <div class="form-text">State code is auto-derived from the first 2 digits of valid GSTIN.</div>
+          </div>
+
+          <!-- State Code -->
+          <div class="col-12 col-md-6">
+            <label for="client-stateCode" class="form-label fw-semibold">State Code (2 Digits)</label>
+            <input
+              type="text"
+              class="form-control font-monospace"
+              id="client-stateCode"
+              name="stateCode"
+              value="<%= client.stateCode || '' %>"
+              placeholder="e.g. 27"
+              maxlength="2"
+            />
+          </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-12">
+            <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">Addresses</h5>
+          </div>
+
+          <!-- Billing Address -->
+          <div class="col-12 col-md-6">
+            <label for="client-billingAddress" class="form-label fw-semibold">Billing Address</label>
+            <textarea
+              class="form-control"
+              id="client-billingAddress"
+              name="billingAddress"
+              rows="3"
+              placeholder="Full registered billing address..."
+            ><%= client.billingAddress || '' %></textarea>
+          </div>
+
+          <!-- Shipping Address -->
+          <div class="col-12 col-md-6">
+            <label for="client-shippingAddress" class="form-label fw-semibold">Shipping Address</label>
+            <textarea
+              class="form-control"
+              id="client-shippingAddress"
+              name="shippingAddress"
+              rows="3"
+              placeholder="Delivery / warehouse address..."
+            ><%= client.shippingAddress || '' %></textarea>
+          </div>
+        </div>
+
+        <div class="d-flex align-items-center justify-content-between pt-3 border-top">
+          <a href="/clients" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Cancel
+          </a>
+          <button type="submit" class="btn btn-primary px-4">
+            <i class="bi bi-check-lg me-1"></i> <%= mode === 'edit' ? 'Update Client' : 'Save Client' %>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<%- include('../layouts/footer') %>

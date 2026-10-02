@@ -113,8 +113,8 @@
       <img src="assets/images/avatar.png" alt="Administrator" class="sidebar-profile-img"
         onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=256&auto=format&fit=crop'">
       <div class="sidebar-profile-info">
-        <div class="sidebar-profile-name"><%= user ? user.name : 'Guest' %></div>
-        <div class="sidebar-profile-email"><%= user ? user.email : '' %></div>
+        <div class="sidebar-profile-name"><%= locals.user ? locals.user.name : 'Guest' %></div>
+        <div class="sidebar-profile-email"><%= locals.user ? locals.user.email : '' %></div>
       </div>
     </div>
   </div>
@@ -129,46 +129,39 @@
           <i class="bi bi-list"></i>
         </button>
 
-        <!-- Quick Actions -->
+        <!-- Navigation Links -->
+        <nav class="d-none d-md-flex align-items-center ms-3 gap-2">
+          <a href="/documents" class="btn btn-sm <%= pageTitle && (pageTitle.includes('Quotations') || pageTitle.includes('Invoice') || pageTitle.includes('Quotation')) && !pageTitle.includes('Client') ? 'btn-primary' : 'btn-light border' %>">
+            <i class="bi bi-file-earmark-text me-1"></i> Documents
+          </a>
+          <a href="/clients" class="btn btn-sm <%= pageTitle && pageTitle.includes('Client') ? 'btn-primary' : 'btn-light border' %>">
+            <i class="bi bi-people me-1"></i> Clients
+          </a>
+          <a href="/settings" class="btn btn-sm <%= pageTitle && (pageTitle.includes('Settings') || pageTitle.includes('Organization')) ? 'btn-primary' : 'btn-light border' %>">
+            <i class="bi bi-gear me-1"></i> Settings
+          </a>
+        </nav>
+
+        <!-- Create Dropdown -->
         <div class="dropdown ms-2">
-          <button class="btn-quick-action dropdown-toggle" type="button" data-bs-toggle="dropdown"
-            aria-expanded="false">
-            <i class="bi bi-plus-lg"></i>
-            <span>Create</span>
+          <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-plus-lg me-1"></i> New
           </button>
-
-          <ul class="dropdown-menu dropdown-menu-quick-action">
-            <li class="dropdown-header">Quick Action Shortcuts</li>
-
+          <ul class="dropdown-menu dropdown-menu-quick-action shadow-sm">
             <li>
-              <a class="dropdown-item" href="#">
-                <i class="bi bi-file-earmark-plus"></i>
-                New Invoice
+              <a class="dropdown-item" href="/documents/new?type=INVOICE">
+                <i class="bi bi-receipt text-primary me-2"></i> New Invoice
               </a>
             </li>
-
             <li>
-              <a class="dropdown-item" href="#">
-                <i class="bi bi-person-plus"></i>
-                New User
+              <a class="dropdown-item" href="/documents/new?type=QUOTATION">
+                <i class="bi bi-file-earmark-text text-info me-2"></i> New Quotation
               </a>
             </li>
-
+            <li><hr class="dropdown-divider" /></li>
             <li>
-              <a class="dropdown-item" href="#">
-                <i class="bi bi-box-seam"></i>
-                New Product
-              </a>
-            </li>
-
-            <li>
-              <hr class="dropdown-divider" />
-            </li>
-
-            <li>
-              <a class="dropdown-item" href="#">
-                <i class="bi bi-gear"></i>
-                System Settings
+              <a class="dropdown-item" href="/clients/new">
+                <i class="bi bi-person-plus text-success me-2"></i> New Client
               </a>
             </li>
           </ul>
@@ -276,7 +269,7 @@
 
             <span class="navbar-profile-name d-none d-md-inline">
               <span class="profile-name">
-                <%= user ? user.name : 'Guest' %>
+                <%= locals.user ? locals.user.name : 'Guest' %>
               </span>
             </span>
 
@@ -290,13 +283,13 @@
               <a class="dropdown-item" href="#">
                 <i class="bi bi-person"></i>
                 <span class="profile-email">
-                  <%= user ? user.email : '' %>
+                  <%= locals.user ? locals.user.email : '' %>
                 </span>
               </a>
             </li>
 
             <li>
-              <a class="dropdown-item" href="#">
+              <a class="dropdown-item" href="/settings">
                 <i class="bi bi-gear"></i>
                 Settings
               </a>

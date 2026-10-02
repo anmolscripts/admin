@@ -1,0 +1,178 @@
+<%- include('../layouts/header', {
+    pageTitle: 'Organization Profile & Defaults',
+    pageSubtitle: 'Manage business identity, GST registration, bank details, and default terms.'
+}) %>
+
+<div class="row justify-content-center">
+  <div class="col-12 col-xl-9">
+    <% if (locals.success) { %>
+      <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        <strong>Success:</strong> Business profile and defaults updated successfully!
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    <% } %>
+
+    <% if (locals.error) { %>
+      <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <strong>Error:</strong> <%= error %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    <% } %>
+
+    <div class="card border-0 shadow-sm rounded-3 p-4 bg-white mb-4">
+      <div class="visually-hidden">Organization Profile & Defaults</div>
+      <form method="POST" action="/settings">
+        <% if (locals.csrfToken) { %>
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <% } %>
+
+        <div class="row g-3 mb-4">
+          <div class="col-12">
+            <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">Organization Identity</h5>
+          </div>
+
+          <!-- Legal Name -->
+          <div class="col-12 col-md-6">
+            <label for="profile-legalName" class="form-label fw-semibold">Legal Entity Name <span class="text-danger">*</span></label>
+            <input
+              type="text"
+              class="form-control"
+              id="profile-legalName"
+              name="legalName"
+              value="<%= (profile && profile.legalName) || '' %>"
+              placeholder="e.g. Acme Technologies Private Limited"
+              required
+            />
+          </div>
+
+          <!-- Display Name -->
+          <div class="col-12 col-md-6">
+            <label for="profile-displayName" class="form-label fw-semibold">Brand / Trade Name</label>
+            <input
+              type="text"
+              class="form-control"
+              id="profile-displayName"
+              name="displayName"
+              value="<%= (profile && profile.displayName) || '' %>"
+              placeholder="e.g. Acme Tech"
+            />
+          </div>
+
+          <!-- Email -->
+          <div class="col-12 col-md-6">
+            <label for="profile-email" class="form-label fw-semibold">Billing Email</label>
+            <input
+              type="email"
+              class="form-control"
+              id="profile-email"
+              name="email"
+              value="<%= (profile && profile.email) || '' %>"
+              placeholder="e.g. accounts@acmetech.com"
+            />
+          </div>
+
+          <!-- Phone -->
+          <div class="col-12 col-md-6">
+            <label for="profile-phone" class="form-label fw-semibold">Phone Number</label>
+            <input
+              type="text"
+              class="form-control"
+              id="profile-phone"
+              name="phone"
+              value="<%= (profile && profile.phone) || '' %>"
+              placeholder="e.g. +91 22 2345 6789"
+            />
+          </div>
+
+          <!-- Address -->
+          <div class="col-12">
+            <label for="profile-address" class="form-label fw-semibold">Registered Business Address</label>
+            <textarea
+              class="form-control"
+              id="profile-address"
+              name="address"
+              rows="3"
+              placeholder="Registered office address for invoice headers..."
+            ><%= (profile && profile.address) || '' %></textarea>
+          </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-12">
+            <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">GST Tax Registration</h5>
+          </div>
+
+          <!-- GSTIN -->
+          <div class="col-12 col-md-6">
+            <label for="profile-gstin" class="form-label fw-semibold">GSTIN (15 Digits)</label>
+            <input
+              type="text"
+              class="form-control text-uppercase font-monospace"
+              id="profile-gstin"
+              name="gstin"
+              value="<%= (profile && profile.gstin) || '' %>"
+              placeholder="27ABCDE1234F1Z5"
+              maxlength="15"
+            />
+            <div class="form-text">Your organization's registered GST identification number.</div>
+          </div>
+
+          <!-- State Code -->
+          <div class="col-12 col-md-6">
+            <label for="profile-stateCode" class="form-label fw-semibold">Home State Code (2 Digits)</label>
+            <input
+              type="text"
+              class="form-control font-monospace"
+              id="profile-stateCode"
+              name="stateCode"
+              value="<%= (profile && profile.stateCode) || '' %>"
+              placeholder="e.g. 27"
+              maxlength="2"
+            />
+            <div class="form-text">Used to determine Inter-State (IGST) vs Intra-State (CGST + SGST) taxes.</div>
+          </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-12">
+            <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">Default Document Terms & Remarks</h5>
+          </div>
+
+          <!-- Default Terms -->
+          <div class="col-12">
+            <label for="profile-defaultTerms" class="form-label fw-semibold">Default Terms & Conditions</label>
+            <textarea
+              class="form-control"
+              id="profile-defaultTerms"
+              name="defaultTerms"
+              rows="3"
+              placeholder="Standard payment terms, warranty, dispute jurisdiction..."
+            ><%= (profile && profile.defaultTerms) || '' %></textarea>
+          </div>
+
+          <!-- Default Remarks -->
+          <div class="col-12">
+            <label for="profile-defaultRemarks" class="form-label fw-semibold">Default Remarks / Bank Details</label>
+            <textarea
+              class="form-control"
+              id="profile-defaultRemarks"
+              name="defaultRemarks"
+              rows="3"
+              placeholder="Bank account details, NEFT/RTGS instructions, thank you notes..."
+            ><%= (profile && profile.defaultRemarks) || '' %></textarea>
+          </div>
+        </div>
+
+        <div class="d-flex align-items-center justify-content-end pt-3 border-top">
+          <button type="submit" class="btn btn-primary px-4">
+            <i class="bi bi-save me-1"></i> Save Organization Settings
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<%- include('../layouts/footer') %>
