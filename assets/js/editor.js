@@ -360,7 +360,7 @@
      */
     function showErrorAlert(message, title = 'Validation Error') {
         formErrorAlert.classList.remove('d-none');
-        formErrorMessageEl.innerHTML = message;
+        formErrorMessageEl.textContent = message;
         const heading = formErrorAlert.querySelector('#form-error-title');
         if (heading) heading.textContent = title;
         formErrorAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });

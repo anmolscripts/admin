@@ -256,7 +256,7 @@ async function createDocument(data, userId) {
     }
     const documentType = data.documentType === 'QUOTATION' ? 'QUOTATION' : 'INVOICE';
 
-    const clientName = typeof data.clientName === 'string' ? data.clientName.trim() : '';
+    let clientName = typeof data.clientName === 'string' ? data.clientName.trim() : '';
     if (!clientName) {
         throw new ValidationError('Client name is required.');
     }
@@ -264,10 +264,10 @@ async function createDocument(data, userId) {
         throw new ValidationError('Client name must not exceed 255 characters.');
     }
 
-    const clientEmail = validateEmail(data.clientEmail);
-    const clientPhone = validatePhone(data.clientPhone);
-    const billingAddress = validateText(data.billingAddress, 'Billing address');
-    const shippingAddress = validateText(data.shippingAddress, 'Shipping address');
+    let clientEmail = validateEmail(data.clientEmail);
+    let clientPhone = validatePhone(data.clientPhone);
+    let billingAddress = validateText(data.billingAddress, 'Billing address');
+    let shippingAddress = validateText(data.shippingAddress, 'Shipping address');
     const termsAndConditions = validateText(
         data.termsAndConditions !== undefined ? data.termsAndConditions : data.terms,
         'Terms and conditions'
@@ -1321,9 +1321,18 @@ async function copyDocument(id) {
 
     return {
         documentType: doc.documentType,
+        clientId: doc.clientId || null,
         clientName: doc.clientName,
         clientEmail: doc.clientEmail,
         clientPhone: doc.clientPhone,
+        clientGSTIN: doc.clientGSTIN || null,
+        placeOfSupplyStateCode: doc.placeOfSupplyStateCode || null,
+        sellerName: doc.sellerName || null,
+        sellerGSTIN: doc.sellerGSTIN || null,
+        sellerStateCode: doc.sellerStateCode || null,
+        sellerEmail: doc.sellerEmail || null,
+        sellerPhone: doc.sellerPhone || null,
+        sellerAddress: doc.sellerAddress || null,
         billingAddress: doc.billingAddress,
         shippingAddress: doc.shippingAddress,
         termsAndConditions: doc.termsAndConditions,
@@ -1333,6 +1342,7 @@ async function copyDocument(id) {
         gstRate: Number(doc.gstRate),
         items: doc.items.map((item) => ({
             name: item.name,
+            hsnSac: item.hsnSac || null,
             quantity: Number(item.quantity),
             unit: item.unit,
             rate: Number(item.rate)

@@ -41,7 +41,18 @@ function csrfProtection(req, res, next) {
         req.headers['x-csrf-token'] ||
         req.headers['csrf-token'];
 
+    const isApi = Boolean(
+        (req.path && req.path.startsWith('/api')) ||
+        (req.baseUrl && req.baseUrl.startsWith('/api')) ||
+        (req.originalUrl && req.originalUrl.startsWith('/api')) ||
+        req.xhr ||
+        (req.headers && req.headers.accept && req.headers.accept.includes('application/json'))
+    );
+
     if (!submittedToken || typeof submittedToken !== 'string') {
+        if (isApi && typeof res.json === 'function') {
+            return res.status(403).json({ success: false, message: 'CSRF token missing or invalid.' });
+        }
         return res.status(403).render('errors/500', {
             pageTitle: 'Forbidden',
             error: process.env.NODE_ENV === 'development'
@@ -58,6 +69,9 @@ function csrfProtection(req, res, next) {
         sessionTokenBuf.length !== submittedTokenBuf.length ||
         !crypto.timingSafeEqual(sessionTokenBuf, submittedTokenBuf)
     ) {
+        if (isApi && typeof res.json === 'function') {
+            return res.status(403).json({ success: false, message: 'Invalid CSRF token.' });
+        }
         return res.status(403).render('errors/500', {
             pageTitle: 'Forbidden',
             error: process.env.NODE_ENV === 'development'

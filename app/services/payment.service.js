@@ -83,10 +83,11 @@ async function recordPayment(invoiceIdInput, paymentData, userId) {
         throw new ValidationError('Payment details are required.');
     }
 
-    const amount = Number(paymentData.amount);
-    if (isNaN(amount) || amount <= 0) {
+    const rawAmount = Number(paymentData.amount);
+    if (isNaN(rawAmount) || rawAmount <= 0) {
         throw new ValidationError('Payment amount must be a positive number greater than 0.');
     }
+    const amount = Math.round(rawAmount * 100) / 100;
 
     let method = (paymentData.method || 'BANK_TRANSFER').toString().trim().toUpperCase();
     if (method === 'CREDIT_CARD') method = 'CARD';
@@ -100,6 +101,9 @@ async function recordPayment(invoiceIdInput, paymentData, userId) {
     }
 
     return prisma.$transaction(async (tx) => {
+        // Acquire row lock on invoice in MySQL to serialize concurrent payment operations
+        await tx.$executeRawUnsafe('SELECT id FROM invoices WHERE id = ? FOR UPDATE', invoiceId);
+
         const invoice = await tx.invoice.findUnique({
             where: { id: invoiceId },
             include: {
@@ -124,7 +128,7 @@ async function recordPayment(invoiceIdInput, paymentData, userId) {
         }
 
         const currentOutstanding = Number(invoice.outstandingAmount);
-        if (amount > currentOutstanding + 0.01) {
+        if (amount > currentOutstanding + 0.001) {
             throw new ValidationError(
                 `Payment amount (₹${amount.toFixed(2)}) exceeds the invoice outstanding balance (₹${currentOutstanding.toFixed(2)}).`
             );
@@ -147,8 +151,15 @@ async function recordPayment(invoiceIdInput, paymentData, userId) {
         const postedPayments = await tx.payment.findMany({
             where: { invoiceId: invoice.id, status: 'POSTED' }
         });
-        const totalPaid = postedPayments.reduce((acc, p) => acc + Number(p.amount), 0);
+        const totalPaid = Math.round(postedPayments.reduce((acc, p) => acc + Number(p.amount), 0) * 100) / 100;
         const grandTotal = Number(invoice.grandTotal);
+
+        if (totalPaid > grandTotal + 0.001) {
+            throw new ValidationError(
+                `Payment cannot be recorded: total paid (₹${totalPaid.toFixed(2)}) would exceed grand total (₹${grandTotal.toFixed(2)}).`
+            );
+        }
+
         const newOutstanding = Math.max(0, Math.round((grandTotal - totalPaid) * 100) / 100);
 
         const updatedInvoice = await tx.invoice.update({
@@ -212,6 +223,9 @@ async function voidPayment(paymentIdInput, userId, reason = '') {
     }
 
     return prisma.$transaction(async (tx) => {
+        // Acquire row lock on payment and invoice in MySQL
+        await tx.$executeRawUnsafe('SELECT id FROM payments WHERE id = ? FOR UPDATE', paymentId);
+
         const payment = await tx.payment.findUnique({
             where: { id: paymentId },
             include: { invoice: true }
@@ -223,6 +237,14 @@ async function voidPayment(paymentIdInput, userId, reason = '') {
 
         if (payment.status === 'VOID') {
             throw new ValidationError('Payment has already been voided.');
+        }
+
+        if (payment.invoice.status === 'VOID') {
+            throw new ValidationError('Cannot void payment for a VOID invoice.');
+        }
+
+        if (payment.invoice.status === 'DELETED') {
+            throw new ValidationError('Cannot void payment for a DELETED invoice.');
         }
 
         const voidNote = `Voided: ${reason ? reason.trim() : 'No reason provided'}`;

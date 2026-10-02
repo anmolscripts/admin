@@ -2,6 +2,8 @@ const bcrypt = require('bcrypt');
 const prisma = require('../config/prisma');
 
 const DEFAULT_SALT_ROUNDS = 12;
+// Pre-computed dummy bcrypt hash to ensure constant-time response for nonexistent users
+const DUMMY_HASH = '$2b$12$e8xL47r7Jz5hO6M2gI3eouW70e4708sH3u2iJ8jM7y7O/W1W9H8iq';
 
 function getSaltRounds() {
     const rounds = parseInt(process.env.BCRYPT_SALT_ROUNDS, 10);
@@ -52,8 +54,8 @@ async function authenticateUser(email, password) {
     });
 
     if (!user) {
-        // Constant-time mitigation against timing attacks could be considered,
-        // but for now return generic credential failure
+        // Equalize execution time with dummy bcrypt compare to prevent timing side-channel attacks
+        await bcrypt.compare(password, DUMMY_HASH);
         return {
             success: false,
             reason: 'USER_NOT_FOUND'
