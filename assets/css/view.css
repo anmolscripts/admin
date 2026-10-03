@@ -20,9 +20,11 @@
 
 /* Container */
 .document-view-container {
+  width: 100%;
   max-width: 1200px;
   margin: 0 auto;
   padding: 0.5rem 1rem 3.5rem;
+  box-sizing: border-box;
 }
 
 /* Action Header Bar */
