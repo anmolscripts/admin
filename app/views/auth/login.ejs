@@ -45,13 +45,16 @@
             <!-- Login Form -->
             <form action="/login" method="POST" id="loginForm" class="needs-validation" novalidate>
                 <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>">
+                <% if (locals.success) { %>
+                    <div class="alert alert-success" role="alert">
+                        <%= locals.success %>
+                    </div>
+                <% } %>
                 <% if (error) { %>
-
                     <div class="alert alert-danger" role="alert">
                         <%= error %>
                     </div>
-
-                    <% } %>
+                <% } %>
                         <!-- Email Input Group -->
                         <div class="login-form-group">
                             <label for="email" class="login-form-label">Email Address</label>

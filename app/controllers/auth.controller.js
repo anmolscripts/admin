@@ -11,9 +11,14 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  * Render Login Page
  */
 function showLoginForm(req, res) {
+    let success = null;
+    if (req.query && req.query.setup === 'success') {
+        success = 'Password successfully configured! Please sign in with your credentials.';
+    }
     res.render('auth/login', {
         pageTitle: 'Login',
         error: null,
+        success,
         email: ''
     });
 }

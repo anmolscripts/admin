@@ -5,23 +5,17 @@
 
 <!-- Sub-Navigation Tabs -->
 <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
-  <ul class="nav nav-pills gap-2">
-    <li class="nav-item">
-      <a class="nav-link bg-white text-dark border fw-medium px-3 py-2 rounded-3" href="/team">
-        <i class="bi bi-people me-1"></i> Team Members
-      </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link bg-white text-dark border fw-medium px-3 py-2 rounded-3" href="/team/activity">
-        <i class="bi bi-clock-history me-1"></i> Activity Log
-      </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link active bg-primary text-white fw-medium px-3 py-2 rounded-3" href="/team/analytics">
-        <i class="bi bi-graph-up me-1"></i> Team Analytics
-      </a>
-    </li>
-  </ul>
+  <div class="btn-group" role="group" aria-label="Team Navigation">
+    <a href="/team" class="btn btn-sm btn-secondary">
+      <i class="bi bi-people me-1"></i> Team Members
+    </a>
+    <a href="/team/activity" class="btn btn-sm btn-secondary">
+      <i class="bi bi-clock-history me-1"></i> Activity Log
+    </a>
+    <a href="/team/analytics" class="btn btn-sm btn-primary">
+      <i class="bi bi-graph-up me-1"></i> Team Analytics
+    </a>
+  </div>
 
   <!-- Range Presets Form -->
   <form method="GET" action="/team/analytics" class="d-flex align-items-center gap-2">
@@ -48,7 +42,7 @@
   <div class="col-6 col-md-3">
     <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100">
       <span class="text-muted small text-uppercase fw-semibold">Documents Edited</span>
-      <h3 class="fw-bold mb-0 text-primary mt-1"><%= analytics.metrics.documentsEdited %></h3>
+      <h3 class="fw-bold mb-0 text-dark mt-1"><%= analytics.metrics.documentsEdited %></h3>
       <span class="text-muted small mt-1">Revision adjustments</span>
     </div>
   </div>
@@ -56,7 +50,7 @@
   <div class="col-6 col-md-3">
     <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100">
       <span class="text-muted small text-uppercase fw-semibold">Prints & Exports</span>
-      <h3 class="fw-bold mb-0 text-info mt-1"><%= analytics.metrics.documentsPrinted + analytics.metrics.documentsExported %></h3>
+      <h3 class="fw-bold mb-0 text-dark mt-1"><%= analytics.metrics.documentsPrinted + analytics.metrics.documentsExported %></h3>
       <span class="text-muted small mt-1"><%= analytics.metrics.documentsPrinted %> Printed • <%= analytics.metrics.documentsExported %> Exported</span>
     </div>
   </div>
@@ -76,7 +70,7 @@
     <div class="card border-0 shadow-sm rounded-3 bg-white h-100">
       <div class="card-header bg-white border-bottom py-3 px-4">
         <h5 class="card-title fw-bold mb-0 text-dark">
-          <i class="bi bi-person-check text-primary me-2"></i>Most Active Members
+          <i class="bi bi-person-check text-dark me-2"></i>Most Active Members
         </h5>
       </div>
       <div class="table-responsive">
@@ -105,7 +99,7 @@
                   <td>
                     <span class="badge bg-light text-dark border"><%= u.roleName %></span>
                   </td>
-                  <td class="text-end pe-4 fw-bold text-primary">
+                  <td class="text-end pe-4 fw-bold text-dark">
                     <%= u.activityCount %>
                   </td>
                 </tr>
@@ -122,7 +116,7 @@
     <div class="card border-0 shadow-sm rounded-3 bg-white h-100">
       <div class="card-header bg-white border-bottom py-3 px-4">
         <h5 class="card-title fw-bold mb-0 text-dark">
-          <i class="bi bi-pie-chart text-primary me-2"></i>Activity by Module
+          <i class="bi bi-pie-chart text-dark me-2"></i>Activity by Module
         </h5>
       </div>
       <div class="card-body p-4">
@@ -141,7 +135,7 @@
                   <span class="text-muted"><%= m.count %> events</span>
                 </div>
                 <div class="progress" style="height: 6px;">
-                  <div class="progress-bar bg-primary" role="progressbar" style="width: <%= percent %>%;" aria-valuenow="<%= percent %>" aria-valuemin="0" aria-valuemax="100"></div>
+                  <div class="progress-bar" role="progressbar" style="background-color: var(--brand-forest-dark, #051C12); width: <%= percent %>%;" aria-valuenow="<%= percent %>" aria-valuemin="0" aria-valuemax="100"></div>
                 </div>
               </div>
             <% }); %>
@@ -151,3 +145,5 @@
     </div>
   </div>
 </div>
+
+<%- include('../layouts/footer') %>

@@ -5,15 +5,27 @@ const rbacService = require('../services/rbac.service');
 const activityService = require('../services/activity.service');
 
 /**
+ * Resolve application base URL from configuration or request headers
+ */
+function getBaseUrl(req) {
+    if (process.env.APP_URL) return process.env.APP_URL.replace(/\/+$/, '');
+    if (process.env.BASE_URL) return process.env.BASE_URL.replace(/\/+$/, '');
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+    const host = req.get('host') || `localhost:${process.env.PORT || 3000}`;
+    return `${protocol}://${host}`;
+}
+
+/**
  * Render Team Management Dashboard & Members List
  */
 async function renderTeamPage(req, res, next) {
     try {
         const { search, status, roleId, page } = req.query;
-        const [membersResult, roles, analytics] = await Promise.all([
+        const [membersResult, roles, analytics, allPermissions] = await Promise.all([
             teamService.listTeamMembers({ search, status, roleId, page, limit: 15 }),
             rbacService.listRoles(),
-            activityService.getActivityAnalytics({ range: 'this_month' })
+            activityService.getActivityAnalytics({ range: 'this_month' }),
+            rbacService.listPermissions()
         ]);
 
         res.render('team/index', {
@@ -21,6 +33,10 @@ async function renderTeamPage(req, res, next) {
             users: membersResult.users,
             pagination: membersResult.pagination,
             roles,
+            allPermissions,
+            modules: rbacService.MODULES,
+            actions: rbacService.ACTIONS,
+            moduleActionMatrix: rbacService.MODULE_ACTION_MATRIX,
             analytics,
             filters: { search: search || '', status: status || 'ALL', roleId: roleId || 'ALL' }
         });
@@ -149,7 +165,7 @@ async function apiCreateTeamMember(req, res) {
             permissionIds
         }, meta);
 
-        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const baseUrl = getBaseUrl(req);
         const inviteUrl = `${baseUrl}/invite/${result.rawToken}`;
 
         res.status(201).json({
@@ -212,7 +228,7 @@ async function apiResendInvitation(req, res) {
         const meta = { ipAddress: req.ip, userAgent: req.headers ? req.headers['user-agent'] : null };
 
         const result = await invitationService.resendInvitation(adminUserId, targetUserId, meta);
-        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const baseUrl = getBaseUrl(req);
         const inviteUrl = `${baseUrl}/invite/${result.rawToken}`;
 
         res.json({

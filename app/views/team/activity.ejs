@@ -5,23 +5,17 @@
 
 <!-- Sub-Navigation Tabs -->
 <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
-  <ul class="nav nav-pills gap-2">
-    <li class="nav-item">
-      <a class="nav-link bg-white text-dark border fw-medium px-3 py-2 rounded-3" href="/team">
-        <i class="bi bi-people me-1"></i> Team Members
-      </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link active bg-primary text-white fw-medium px-3 py-2 rounded-3" href="/team/activity">
-        <i class="bi bi-clock-history me-1"></i> Activity Log
-      </a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link bg-white text-dark border fw-medium px-3 py-2 rounded-3" href="/team/analytics">
-        <i class="bi bi-graph-up me-1"></i> Team Analytics
-      </a>
-    </li>
-  </ul>
+  <div class="btn-group" role="group" aria-label="Team Navigation">
+    <a href="/team" class="btn btn-sm btn-secondary">
+      <i class="bi bi-people me-1"></i> Team Members
+    </a>
+    <a href="/team/activity" class="btn btn-sm btn-primary">
+      <i class="bi bi-clock-history me-1"></i> Activity Log
+    </a>
+    <a href="/team/analytics" class="btn btn-sm btn-secondary">
+      <i class="bi bi-graph-up me-1"></i> Team Analytics
+    </a>
+  </div>
 </div>
 
 <!-- Filters Card -->
@@ -67,11 +61,11 @@
     </div>
 
     <div class="col-12 col-md-1 d-flex gap-1">
-      <button type="submit" class="btn btn-spark btn-spark-secondary w-100" title="Filter">
+      <button type="submit" class="btn btn-primary w-100" title="Filter">
         <i class="bi bi-funnel"></i>
       </button>
       <% if (filters.search || filters.actorUserId || filters.module || filters.fromDate || filters.toDate) { %>
-        <a href="/team/activity" class="btn btn-spark btn-spark-outline" title="Clear Filters">
+        <a href="/team/activity" class="btn btn-outline-secondary" title="Clear Filters">
           <i class="bi bi-x-lg"></i>
         </a>
       <% } %>
@@ -120,7 +114,7 @@
                else if (act.action.includes('EDIT')) actionBadge = 'bg-warning text-dark';
                else if (act.action.includes('DELETE') || act.action.includes('VOID') || act.action.includes('DENIED')) actionBadge = 'bg-danger';
                else if (act.action.includes('PRINT') || act.action.includes('EXPORT')) actionBadge = 'bg-info text-dark';
-               else if (act.action === 'LOGIN') actionBadge = 'bg-primary';
+               else if (act.action === 'LOGIN') actionBadge = 'bg-dark';
           %>
             <tr>
               <td class="ps-4 small text-muted font-monospace">
@@ -188,3 +182,5 @@
     </div>
   <% } %>
 </section>
+
+<%- include('../layouts/footer') %>

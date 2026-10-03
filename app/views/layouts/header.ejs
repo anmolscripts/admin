@@ -132,33 +132,6 @@
           <i class="bi bi-list"></i>
         </button>
 
-        <!-- Navigation Links -->
-        <nav class="d-none d-md-flex align-items-center ms-3 gap-2">
-          <a href="/dashboard" class="btn btn-sm <%= isDashboard ? 'btn-primary' : 'btn-light border' %>">
-            <i class="bi bi-speedometer2 me-1"></i> Dashboard
-          </a>
-          <a href="/documents" class="btn btn-sm <%= isDocuments ? 'btn-primary' : 'btn-light border' %>">
-            <i class="bi bi-file-earmark-text me-1"></i> Documents
-          </a>
-          <a href="/clients" class="btn btn-sm <%= isClients ? 'btn-primary' : 'btn-light border' %>">
-            <i class="bi bi-people me-1"></i> Clients
-          </a>
-          <a href="/items" class="btn btn-sm <%= isItems ? 'btn-primary' : 'btn-light border' %>">
-            <i class="bi bi-box-seam me-1"></i> Items
-          </a>
-          <a href="/units" class="btn btn-sm <%= isUnits ? 'btn-primary' : 'btn-light border' %>">
-            <i class="bi bi-rulers me-1"></i> Units
-          </a>
-          <% if (canViewTeam) { %>
-          <a href="/team" class="btn btn-sm <%= isTeam ? 'btn-primary' : 'btn-light border' %>" id="topnav-team">
-            <i class="bi bi-person-badge me-1"></i> Team
-          </a>
-          <% } %>
-          <a href="/settings" class="btn btn-sm <%= isSettings ? 'btn-primary' : 'btn-light border' %>">
-            <i class="bi bi-gear me-1"></i> Settings
-          </a>
-        </nav>
-
         <!-- Create Dropdown -->
         <div class="dropdown ms-2">
           <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">

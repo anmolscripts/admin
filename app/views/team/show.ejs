@@ -25,7 +25,7 @@
 <!-- Back Link & Action Bar -->
 <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
   <div class="d-flex align-items-center gap-3">
-    <a href="/team" class="btn btn-spark btn-spark-outline btn-sm">
+    <a href="/team" class="btn btn-outline-secondary btn-sm">
       <i class="bi bi-arrow-left me-1"></i> Back to Team
     </a>
     <h4 class="fw-bold mb-0 text-dark"><%= member.name %></h4>
@@ -35,20 +35,20 @@
   <% if (canManage) { %>
   <div class="d-flex gap-2">
     <% if (member.status === 'INVITED') { %>
-      <button type="button" class="btn btn-spark btn-spark-primary btn-sm" onclick="resendInvitation(<%= member.id %>)">
+      <button type="button" class="btn btn-primary btn-sm" onclick="resendInvitation(<%= member.id %>)">
         <i class="bi bi-send me-1"></i> Resend Invitation
       </button>
-      <button type="button" class="btn btn-spark btn-spark-outline btn-sm text-danger" onclick="revokeInvitation(<%= member.id %>)">
+      <button type="button" class="btn btn-outline-danger btn-sm" onclick="revokeInvitation(<%= member.id %>)">
         <i class="bi bi-x-circle me-1"></i> Revoke
       </button>
     <% } %>
 
     <% if (member.status === 'ACTIVE') { %>
-      <button type="button" class="btn btn-spark btn-spark-outline btn-sm text-warning" onclick="toggleStatus(<%= member.id %>, 'INACTIVE')">
+      <button type="button" class="btn btn-outline-warning btn-sm" onclick="toggleStatus(<%= member.id %>, 'INACTIVE')">
         <i class="bi bi-pause-circle me-1"></i> Deactivate
       </button>
     <% } else if (member.status === 'INACTIVE') { %>
-      <button type="button" class="btn btn-spark btn-spark-success btn-sm" onclick="toggleStatus(<%= member.id %>, 'ACTIVE')">
+      <button type="button" class="btn btn-success btn-sm" onclick="toggleStatus(<%= member.id %>, 'ACTIVE')">
         <i class="bi bi-play-circle me-1"></i> Activate
       </button>
     <% } %>
@@ -74,7 +74,7 @@
       <div class="d-flex flex-column gap-2 small">
         <div class="d-flex justify-content-between">
           <span class="text-muted">Assigned Role:</span>
-          <span class="badge bg-primary text-white"><%= roleName %></span>
+          <span class="badge bg-dark text-white"><%= roleName %></span>
         </div>
         <div class="d-flex justify-content-between">
           <span class="text-muted">Status:</span>
@@ -187,7 +187,7 @@
                 </select>
               </div>
               <div class="col-12 col-md-6 text-md-end mt-md-4">
-                <button type="submit" class="btn btn-spark btn-spark-primary btn-sm" id="btn-save-perm">
+                <button type="submit" class="btn btn-primary btn-sm" id="btn-save-perm">
                   <i class="bi bi-check-lg me-1"></i> Save Access Changes
                 </button>
               </div>
@@ -251,7 +251,7 @@
             <% if (canManage && !isOwner) { %>
             <div class="d-flex justify-content-between align-items-center mt-3">
               <span class="small text-muted"><i class="bi bi-info-circle me-1"></i> Permissions are enforced immediately upon save. No re-login required.</span>
-              <button type="submit" class="btn btn-spark btn-spark-primary" id="btn-save-perm-bottom">
+              <button type="submit" class="btn btn-primary" id="btn-save-perm-bottom">
                 <i class="bi bi-check-lg me-1"></i> Save Changes
               </button>
             </div>
@@ -263,7 +263,7 @@
         <div class="tab-pane fade" id="activity-pane" role="tabpanel" aria-labelledby="activity-tab">
           <div class="d-flex justify-content-between align-items-center mb-3">
             <h6 class="fw-bold mb-0 text-dark">Recent Operations</h6>
-            <a href="/team/activity?actorUserId=<%= member.id %>" class="btn btn-spark btn-spark-outline btn-sm">
+            <a href="/team/activity?actorUserId=<%= member.id %>" class="btn btn-outline-secondary btn-sm">
               <i class="bi bi-box-arrow-up-right me-1"></i> Full Log
             </a>
           </div>
@@ -391,3 +391,5 @@
     }
   }
 </script>
+
+<%- include('../layouts/footer') %>
