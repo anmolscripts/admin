@@ -1,7 +1,15 @@
 'use strict';
 
+const crypto = require('node:crypto');
 const bcrypt = require('bcrypt');
 const { seedCommon } = require('../common');
+
+const DEFAULT_SALT_ROUNDS = 12;
+
+function getSaltRounds() {
+    const rounds = parseInt(process.env.BCRYPT_SALT_ROUNDS, 10);
+    return Number.isInteger(rounds) && rounds >= 10 ? rounds : DEFAULT_SALT_ROUNDS;
+}
 
 /**
  * Standard business terms used for local development setup.
@@ -33,12 +41,8 @@ const STANDARD_TERMS = [
 async function seedDevelopment(prisma, options = {}) {
     console.log('[SEED] Running development seed...');
 
-    const email = options.adminEmail || process.env.SEED_ADMIN_EMAIL || 'admin@email.com';
-    const password = options.adminPassword || process.env.SEED_ADMIN_PASSWORD;
-
-    if (!password) {
-        throw new Error('SEED_ADMIN_PASSWORD is required for development seed.');
-    }
+    const email = options.adminEmail !== undefined ? options.adminEmail : (process.env.SEED_ADMIN_EMAIL || 'admin@email.com');
+    let password = options.adminPassword !== undefined ? options.adminPassword : process.env.SEED_ADMIN_PASSWORD;
 
     // 1. Seed RBAC and Master Data
     await seedCommon(prisma, null);
@@ -51,7 +55,10 @@ async function seedDevelopment(prisma, options = {}) {
     // 2. Initial / Development Administrator
     let admin = await prisma.user.findUnique({ where: { email } });
     if (!admin) {
-        const passwordHash = await bcrypt.hash(password, 12);
+        if (!password) {
+            password = crypto.randomBytes(16).toString('base64url').slice(0, 16);
+        }
+        const passwordHash = await bcrypt.hash(password, getSaltRounds());
         admin = await prisma.user.create({
             data: {
                 name: 'Administrator',
@@ -431,6 +438,7 @@ async function seedDevelopment(prisma, options = {}) {
         seedDemoData,
         adminEmail: admin ? admin.email : null,
         adminId: admin ? admin.id : null,
+        adminPassword: password,
         unitsCount: await prisma.unit.count(),
         itemsCount: await prisma.item.count(),
         businessProfileCount: await prisma.businessProfile.count(),

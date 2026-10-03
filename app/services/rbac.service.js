@@ -115,9 +115,24 @@ async function seedPermissionsAndRoles() {
                 .map(p => p.id)
         },
         {
-            name: 'STAFF',
-            description: 'Commercial operations: documents, clients, and payments',
-            isSystem: false,
+            name: 'MANAGER',
+            description: 'Operational supervisor: documents, clients, catalog, and payments',
+            isSystem: true,
+            permissionKeys: [
+                'DASHBOARD:VIEW',
+                'DOCUMENTS:VIEW', 'DOCUMENTS:CREATE', 'DOCUMENTS:EDIT', 'DOCUMENTS:PRINT', 'DOCUMENTS:CONVERT', 'DOCUMENTS:EXPORT',
+                'CLIENTS:VIEW', 'CLIENTS:CREATE', 'CLIENTS:EDIT', 'CLIENTS:MANAGE',
+                'ITEMS:VIEW', 'ITEMS:CREATE', 'ITEMS:EDIT', 'ITEMS:MANAGE',
+                'UNITS:VIEW', 'UNITS:CREATE', 'UNITS:EDIT', 'UNITS:MANAGE',
+                'PAYMENTS:VIEW', 'PAYMENTS:CREATE', 'PAYMENTS:EDIT',
+                'AUDIT_LOGS:VIEW',
+                'TEAM:VIEW'
+            ]
+        },
+        {
+            name: 'MEMBER',
+            description: 'Standard operational user: document and client operations',
+            isSystem: true,
             permissionKeys: [
                 'DASHBOARD:VIEW',
                 'DOCUMENTS:VIEW', 'DOCUMENTS:CREATE', 'DOCUMENTS:EDIT', 'DOCUMENTS:PRINT', 'DOCUMENTS:CONVERT',
@@ -130,13 +145,26 @@ async function seedPermissionsAndRoles() {
         {
             name: 'VIEWER',
             description: 'Read-only access across business documents and catalogs',
-            isSystem: false,
+            isSystem: true,
             permissionKeys: [
                 'DASHBOARD:VIEW',
                 'DOCUMENTS:VIEW', 'DOCUMENTS:PRINT',
                 'CLIENTS:VIEW',
                 'ITEMS:VIEW',
                 'UNITS:VIEW'
+            ]
+        },
+        {
+            name: 'STAFF',
+            description: 'Commercial operations: documents, clients, and payments',
+            isSystem: false,
+            permissionKeys: [
+                'DASHBOARD:VIEW',
+                'DOCUMENTS:VIEW', 'DOCUMENTS:CREATE', 'DOCUMENTS:EDIT', 'DOCUMENTS:PRINT', 'DOCUMENTS:CONVERT',
+                'CLIENTS:VIEW', 'CLIENTS:CREATE', 'CLIENTS:EDIT',
+                'ITEMS:VIEW',
+                'UNITS:VIEW',
+                'PAYMENTS:VIEW', 'PAYMENTS:CREATE'
             ]
         }
     ];

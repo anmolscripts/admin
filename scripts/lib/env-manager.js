@@ -213,32 +213,52 @@ async function collectConfiguration(opts) {
         }
 
         // Admin Credentials
-        let adminEmail = cliArgs['admin-email']
-            || process.env.SEED_ADMIN_EMAIL
-            || existingEnv.SEED_ADMIN_EMAIL
-            || 'admin@email.com';
-
-        let adminPassword = cliArgs['admin-password']
-            || process.env.SEED_ADMIN_PASSWORD
-            || existingEnv.SEED_ADMIN_PASSWORD;
+        let adminEmail;
+        let adminPassword;
 
         if (isProduction) {
-            if (isInteractive && !adminPassword) {
-                adminEmail = await askQuestion(rl, 'Initial Production Admin Email', adminEmail);
-                adminPassword = await askQuestion(rl, 'Initial Production Admin Password (min 8 chars)', '', true);
-                const confirmPassword = await askQuestion(rl, 'Confirm Production Admin Password', '', true);
+            adminEmail = cliArgs['admin-email'] || process.env.SEED_ADMIN_EMAIL;
+            adminPassword = cliArgs['admin-password'] || process.env.SEED_ADMIN_PASSWORD;
 
-                if (!adminPassword || adminPassword.length < 8) {
+            if (isInteractive) {
+                if (!adminEmail) {
+                    adminEmail = await askQuestion(rl, 'Initial Production Admin Email');
+                }
+                if (!adminEmail || !adminEmail.includes('@')) {
+                    throw new Error('Valid production admin email is required.');
+                }
+                if (!adminPassword) {
+                    adminPassword = await askQuestion(rl, 'Initial Production Admin Password (min 8 chars)', '', true);
+                    const confirmPassword = await askQuestion(rl, 'Confirm Production Admin Password', '', true);
+
+                    if (!adminPassword || adminPassword.length < 8) {
+                        throw new Error('Production admin password must be at least 8 characters long.');
+                    }
+                    if (adminPassword !== confirmPassword) {
+                        throw new Error('Passwords do not match.');
+                    }
+                }
+            } else {
+                if (!adminEmail) {
+                    throw new Error('Production installation requires explicit admin email via --admin-email or SEED_ADMIN_EMAIL env variable.');
+                }
+                if (!adminPassword) {
+                    throw new Error('Production installation requires explicit admin password via --admin-password or SEED_ADMIN_PASSWORD env variable.');
+                }
+                if (adminPassword.length < 8) {
                     throw new Error('Production admin password must be at least 8 characters long.');
                 }
-                if (adminPassword !== confirmPassword) {
-                    throw new Error('Passwords do not match.');
-                }
-            } else if (!adminPassword) {
-                throw new Error('Production installation requires explicit admin password via --admin-password or SEED_ADMIN_PASSWORD env variable.');
             }
         } else {
             // Development mode
+            adminEmail = cliArgs['admin-email']
+                || process.env.SEED_ADMIN_EMAIL
+                || existingEnv.SEED_ADMIN_EMAIL
+                || 'admin@email.com';
+
+            adminPassword = cliArgs['admin-password']
+                || process.env.SEED_ADMIN_PASSWORD;
+
             if (!adminPassword) {
                 if (isInteractive) {
                     const supplied = await askQuestion(rl, 'Development Admin Password (leave blank to auto-generate)', '', true);

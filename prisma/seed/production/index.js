@@ -3,6 +3,13 @@
 const bcrypt = require('bcrypt');
 const { seedCommon } = require('../common');
 
+const DEFAULT_SALT_ROUNDS = 12;
+
+function getSaltRounds() {
+    const rounds = parseInt(process.env.BCRYPT_SALT_ROUNDS, 10);
+    return Number.isInteger(rounds) && rounds >= 10 ? rounds : DEFAULT_SALT_ROUNDS;
+}
+
 /**
  * Executes production seed.
  *
@@ -42,15 +49,28 @@ async function seedProduction(prisma, options = {}) {
     }
 
     // 2. Initial OWNER Administrator
-    const email = options.adminEmail || process.env.SEED_ADMIN_EMAIL || 'admin@email.com';
-    let admin = await prisma.user.findUnique({ where: { email } });
+    const email = options.adminEmail !== undefined
+        ? options.adminEmail
+        : (process.env.SEED_ADMIN_EMAIL || 'admin@email.com');
+
+    let admin = email ? await prisma.user.findUnique({ where: { email } }) : null;
 
     if (!admin) {
-        const password = options.adminPassword || process.env.SEED_ADMIN_PASSWORD;
-        if (!password) {
-            console.log('[SEED POLICY] SEED_ADMIN_PASSWORD not set. Skipping initial admin user creation in production.');
-        } else {
-            const passwordHash = await bcrypt.hash(password, 12);
+        const password = options.adminPassword !== undefined
+            ? options.adminPassword
+            : process.env.SEED_ADMIN_PASSWORD;
+
+        if (options.requireAdmin === true || (options.adminEmail && !password)) {
+            if (!email) {
+                throw new Error('[SEED POLICY] Production seed requires explicit admin email (adminEmail or SEED_ADMIN_EMAIL).');
+            }
+            if (!password) {
+                throw new Error('[SEED POLICY] Production seed requires explicit admin password (adminPassword or SEED_ADMIN_PASSWORD).');
+            }
+        }
+
+        if (password) {
+            const passwordHash = await bcrypt.hash(password, getSaltRounds());
             admin = await prisma.user.create({
                 data: {
                     name: 'Administrator',
@@ -63,6 +83,8 @@ async function seedProduction(prisma, options = {}) {
                 }
             });
             console.log(`[SEED POLICY] Initial production OWNER administrator provisioned: ${email}`);
+        } else {
+            console.log('[SEED POLICY] No password provided for initial admin; skipping admin creation.');
         }
     } else {
         if (admin.roleId !== ownerRole.id) {

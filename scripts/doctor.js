@@ -57,12 +57,12 @@ async function runDoctor() {
     addCheck('Config', '.env File', envExists ? 'PASS' : 'FAIL', envExists ? 'File exists and is readable' : '.env file is missing');
 
     const envVars = envExists ? parseEnvFile(envPath) : {};
-    const nodeEnv = envVars.NODE_ENV || process.env.NODE_ENV || 'development';
+    const nodeEnv = process.env.NODE_ENV || envVars.NODE_ENV || 'development';
     const isProduction = nodeEnv === 'production';
     addCheck('Config', 'Environment Mode', 'PASS', `Running in ${nodeEnv} mode`);
 
-    const hasSessionSecret = Boolean(envVars.SESSION_SECRET || process.env.SESSION_SECRET);
-    const sessionSecret = (envVars.SESSION_SECRET || process.env.SESSION_SECRET || '').trim();
+    const hasSessionSecret = Boolean(process.env.SESSION_SECRET || envVars.SESSION_SECRET);
+    const sessionSecret = (process.env.SESSION_SECRET || envVars.SESSION_SECRET || '').trim();
     if (!hasSessionSecret) {
         addCheck('Config', 'SESSION_SECRET', 'FAIL', 'SESSION_SECRET is missing');
     } else if (sessionSecret.length < 32) {
@@ -72,10 +72,10 @@ async function runDoctor() {
     }
 
     // 3. MySQL Connectivity & Database Resolution
-    const dbHost = envVars.DATABASE_HOST || process.env.DATABASE_HOST || 'localhost';
-    const dbPort = Number(envVars.DATABASE_PORT || process.env.DATABASE_PORT || 3306);
-    const dbUser = envVars.DATABASE_USER || process.env.DATABASE_USER || 'root';
-    const dbName = envVars.DATABASE_NAME || process.env.DATABASE_NAME || 'admin';
+    const dbHost = process.env.DATABASE_HOST || envVars.DATABASE_HOST || 'localhost';
+    const dbPort = Number(process.env.DATABASE_PORT || envVars.DATABASE_PORT || 3306);
+    const dbUser = process.env.DATABASE_USER || envVars.DATABASE_USER || 'root';
+    const dbName = process.env.DATABASE_NAME || envVars.DATABASE_NAME || 'admin';
 
     const tcpRes = await checkMySqlTcpConnectivity(dbHost, dbPort);
     addCheck('Database', 'MySQL TCP Network Port', tcpRes.ok ? 'PASS' : 'FAIL', tcpRes.message);
@@ -86,7 +86,11 @@ async function runDoctor() {
     // Load Prisma Client safely
     try {
         require('dotenv').config({ path: envPath });
-        const { createPrismaClient } = require('../app/config/prisma');
+        if (process.env.DATABASE_NAME && process.env.DATABASE_NAME !== envVars.DATABASE_NAME) {
+            const encodedUser = encodeURIComponent(dbUser);
+            const encodedPass = encodeURIComponent(process.env.DATABASE_PASSWORD || envVars.DATABASE_PASSWORD || '');
+            process.env.DATABASE_URL = `mysql://${encodedUser}:${encodedPass}@${dbHost}:${dbPort}/${dbName}`;
+        }
         prisma = require('../app/config/prisma');
         // Read-only ping query
         await prisma.$queryRaw`SELECT 1 as ping`;
@@ -145,11 +149,17 @@ async function runDoctor() {
         try {
             const roles = await prisma.role.findMany();
             const roleNames = new Set(roles.map(r => r.name));
-            const hasRoles = roleNames.has('OWNER') && roleNames.has('ADMIN') && roleNames.has('STAFF');
-            const permCount = await prisma.permission.count();
+            const REQUIRED_ROLES = ['OWNER', 'ADMIN', 'MANAGER', 'MEMBER', 'VIEWER'];
+            for (const rName of REQUIRED_ROLES) {
+                const hasRole = roleNames.has(rName);
+                addCheck('RBAC', `Role: ${rName}`, hasRole ? 'PASS' : 'FAIL', hasRole ? `System role '${rName}' is provisioned` : `System role '${rName}' is missing`);
+            }
 
-            addCheck('RBAC', 'System Roles (OWNER/ADMIN/STAFF)', hasRoles ? 'PASS' : 'FAIL', `Found ${roles.length} roles (${Array.from(roleNames).join(', ')})`);
-            addCheck('RBAC', 'Permissions Catalog', permCount >= 20 ? 'PASS' : 'FAIL', `Found ${permCount} permissions cataloged`);
+            const permCount = await prisma.permission.count();
+            addCheck('RBAC', 'Permissions Catalog', permCount >= 56 ? 'PASS' : 'FAIL', `Found ${permCount} permissions cataloged`);
+
+            const rolePermCount = await prisma.rolePermission.count();
+            addCheck('RBAC', 'Role Permission Mappings', rolePermCount > 0 ? 'PASS' : 'FAIL', `Found ${rolePermCount} role permission mappings`);
         } catch (err) {
             addCheck('RBAC', 'System RBAC Data', 'FAIL', logger.formatError(err));
         }
@@ -157,10 +167,12 @@ async function runDoctor() {
         // 8. Master Data: Units & Items
         try {
             const unitsCount = await prisma.unit.count();
-            addCheck('Master Data', 'Predefined Unit Master', unitsCount >= 13 ? 'PASS' : 'FAIL', `Found ${unitsCount} units (standard requirement: 13)`);
+            const unitsPass = isProduction ? (unitsCount === 13) : (unitsCount >= 13);
+            addCheck('Master Data', 'Predefined Unit Master', unitsPass ? 'PASS' : 'FAIL', `Found ${unitsCount} units (${isProduction ? 'exact requirement: 13' : 'standard requirement: >= 13'})`);
 
             const itemsCount = await prisma.item.count();
-            addCheck('Master Data', 'Predefined Item Master', itemsCount >= 21 ? 'PASS' : 'FAIL', `Found ${itemsCount} items (standard requirement: 21)`);
+            const itemsPass = isProduction ? (itemsCount === 21) : (itemsCount >= 21);
+            addCheck('Master Data', 'Predefined Item Master', itemsPass ? 'PASS' : 'FAIL', `Found ${itemsCount} items (${isProduction ? 'exact requirement: 21' : 'standard requirement: >= 21'})`);
         } catch (err) {
             addCheck('Master Data', 'Master Data Seeding', 'FAIL', logger.formatError(err));
         }
@@ -188,25 +200,31 @@ async function runDoctor() {
         // 10. Production Security Invariants
         if (isProduction) {
             if (dbUser === 'root') {
-                addCheck('Prod Security', 'Database User Isolation', 'WARN', 'Using MySQL root user in production is not recommended');
+                addCheck('Prod Invariant', 'Database User Isolation', 'WARN', 'Using MySQL root user in production is not recommended');
             } else {
-                addCheck('Prod Security', 'Database User Isolation', 'PASS', `Dedicated DB user: '${dbUser}'`);
+                addCheck('Prod Invariant', 'Database User Isolation', 'PASS', `Dedicated DB user: '${dbUser}'`);
             }
 
             try {
                 const clients = await prisma.client.count();
-                const invoices = await prisma.invoice.count();
-                const businessProfiles = await prisma.businessProfile.count();
+                addCheck('Prod Invariant', 'Zero Clients Invariant', clients === 0 ? 'PASS' : 'FAIL', `Found ${clients} clients (must be 0)`);
 
-                const isClean = clients === 0 && invoices === 0 && businessProfiles === 0;
-                addCheck(
-                    'Prod Security',
-                    'Zero Demo Data Invariant',
-                    isClean ? 'PASS' : 'FAIL',
-                    isClean ? 'Strict zero-demo invariant satisfied' : `Detected demo data (clients: ${clients}, invoices: ${invoices}, businessProfile: ${businessProfiles})`
-                );
+                const invoices = await prisma.invoice.count();
+                addCheck('Prod Invariant', 'Zero Invoices Invariant', invoices === 0 ? 'PASS' : 'FAIL', `Found ${invoices} invoices (must be 0)`);
+
+                const payments = await prisma.payment.count();
+                addCheck('Prod Invariant', 'Zero Payments Invariant', payments === 0 ? 'PASS' : 'FAIL', `Found ${payments} payments (must be 0)`);
+
+                const revisions = await prisma.invoiceRevision.count();
+                addCheck('Prod Invariant', 'Zero Invoice Revisions', revisions === 0 ? 'PASS' : 'FAIL', `Found ${revisions} revisions (must be 0)`);
+
+                const activityLogs = await prisma.userActivityLog.count();
+                addCheck('Prod Invariant', 'Zero Activity Logs Invariant', activityLogs === 0 ? 'PASS' : 'FAIL', `Found ${activityLogs} activity logs (must be 0)`);
+
+                const profiles = await prisma.businessProfile.count();
+                addCheck('Prod Invariant', 'Zero Business Profile', profiles === 0 ? 'PASS' : 'FAIL', `Found ${profiles} business profiles (must be 0)`);
             } catch (err) {
-                addCheck('Prod Security', 'Zero Demo Data Invariant', 'FAIL', logger.formatError(err));
+                addCheck('Prod Invariant', 'Production Invariants Query', 'FAIL', logger.formatError(err));
             }
         }
     }

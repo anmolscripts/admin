@@ -29,34 +29,44 @@ async function verifyDatabaseState(prisma, mode) {
     // 2. RBAC System Roles & Permissions
     const roles = await prisma.role.findMany();
     const roleNames = new Set(roles.map(r => r.name));
-    const hasRequiredRoles = roleNames.has('OWNER') && roleNames.has('ADMIN') && roleNames.has('STAFF');
-    checks.push({
-        name: 'RBAC System Roles',
-        pass: hasRequiredRoles,
-        detail: `Found ${roles.length} roles (OWNER, ADMIN, STAFF: ${hasRequiredRoles ? 'YES' : 'NO'})`
-    });
+    const REQUIRED_ROLES = ['OWNER', 'ADMIN', 'MANAGER', 'MEMBER', 'VIEWER'];
+    for (const reqRole of REQUIRED_ROLES) {
+        const hasRole = roleNames.has(reqRole);
+        checks.push({
+            name: `RBAC Role: ${reqRole}`,
+            pass: hasRole,
+            detail: hasRole ? `System role '${reqRole}' is present` : `System role '${reqRole}' is missing`
+        });
+    }
 
     const permissionsCount = await prisma.permission.count();
     checks.push({
         name: 'RBAC Permissions',
-        pass: permissionsCount >= 20,
-        detail: `Found ${permissionsCount} permissions seeded`
+        pass: permissionsCount >= 56,
+        detail: `Found ${permissionsCount} permissions seeded (required: >= 56)`
+    });
+
+    const rolePermissionsCount = await prisma.rolePermission.count();
+    checks.push({
+        name: 'Role Permission Mappings',
+        pass: rolePermissionsCount > 0,
+        detail: `Found ${rolePermissionsCount} role permission mappings`
     });
 
     // 3. Units Master (13 predefined units)
     const unitsCount = await prisma.unit.count();
     checks.push({
         name: 'Unit Master Data',
-        pass: unitsCount >= 13,
-        detail: `Found ${unitsCount} units (required: 13)`
+        pass: isProduction ? (unitsCount === 13) : (unitsCount >= 13),
+        detail: `Found ${unitsCount} units (required: ${isProduction ? 'exact 13' : '>= 13'})`
     });
 
     // 4. Items Master (21 predefined items)
     const itemsCount = await prisma.item.count();
     checks.push({
         name: 'Item Master Data',
-        pass: itemsCount >= 21,
-        detail: `Found ${itemsCount} items (required: 21)`
+        pass: isProduction ? (itemsCount === 21) : (itemsCount >= 21),
+        detail: `Found ${itemsCount} items (required: ${isProduction ? 'exact 21' : '>= 21'})`
     });
 
     // 5. Initial Administrator (OWNER role)
