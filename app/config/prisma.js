@@ -36,9 +36,19 @@ function createPrismaClient() {
         database
     });
 
+    const isTest = process.env.NODE_ENV === 'test' || process.argv.some(arg => arg.includes('--test'));
+    const isDev = process.env.NODE_ENV === 'development';
+    
+    let logLevels = ['error'];
+    if (isDev && !isTest) {
+        logLevels = ['warn', 'error'];
+    } else if (isTest) {
+        logLevels = [];
+    }
+
     prismaInstance = new PrismaClient({
         adapter,
-        log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error']
+        log: logLevels
     });
 
     return prismaInstance;
