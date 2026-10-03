@@ -45,7 +45,7 @@ function handleControllerError(err, res, next) {
  */
 async function listInvoices(req, res, next) {
     try {
-        const { search, status, paymentStatus, type, documentType, dateFrom, dateTo, page, limit } = req.query;
+        const { search, status, paymentStatus, type, documentType, dateFrom, dateTo, page, limit, sortBy, sortDirection } = req.query;
         const result = await invoiceService.listInvoices({
             documentType: type || documentType,
             search,
@@ -54,7 +54,9 @@ async function listInvoices(req, res, next) {
             dateFrom,
             dateTo,
             page,
-            limit
+            limit,
+            sortBy,
+            sortDirection
         });
 
         return res.status(200).json({

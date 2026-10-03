@@ -145,17 +145,17 @@
   </div>
 
   <div class="table-responsive">
-    <table class="table table-hover align-middle mb-0" id="team-table">
+    <table class="table table-hover align-middle mb-0" id="team-table" data-spark-datatable="true" data-title="Team Members">
       <thead class="table-light">
         <tr>
-          <th scope="col" style="width: 50px;" class="ps-4 text-center">#</th>
+          <th scope="col" style="width: 50px;" class="ps-4 text-center" data-sortable="false">#</th>
           <th scope="col">Member</th>
           <th scope="col">Role</th>
           <th scope="col">Status</th>
           <th scope="col">Last Login</th>
           <th scope="col">Last Activity</th>
           <th scope="col">Access Summary</th>
-          <th scope="col" class="text-end pe-4" style="width: 200px;">Actions</th>
+          <th scope="col" class="text-end pe-4" style="width: 200px;" data-sortable="false">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -194,7 +194,7 @@
           %>
             <tr id="user-row-<%= m.id %>">
               <td class="ps-4 text-center text-muted small"><%= (pagination.page - 1) * pagination.limit + idx + 1 %></td>
-              <td>
+              <td data-sort="<%= m.name %>">
                 <div class="d-flex align-items-center">
                   <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center text-dark fw-bold me-2" style="width: 36px; height: 36px;">
                     <%= m.name ? m.name.charAt(0).toUpperCase() : 'U' %>
@@ -207,19 +207,19 @@
                   </div>
                 </div>
               </td>
-              <td>
+              <td data-sort="<%= roleName %>">
                 <span class="badge <%= roleBadgeClass %> px-2 py-1"><%= roleName %></span>
               </td>
-              <td>
+              <td data-sort="<%= m.status %>">
                 <%- statusBadge %>
               </td>
-              <td class="small text-muted">
+              <td class="small text-muted" data-sort="<%= m.lastLoginAt ? new Date(m.lastLoginAt).toISOString() : '' %>">
                 <%= m.lastLoginAt ? new Date(m.lastLoginAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Never' %>
               </td>
-              <td class="small text-muted">
+              <td class="small text-muted" data-sort="<%= m.lastActivityAt ? new Date(m.lastActivityAt).toISOString() : '' %>">
                 <%= m.lastActivityAt ? new Date(m.lastActivityAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'None' %>
               </td>
-              <td class="small">
+              <td class="small" data-sort="<%= isOwner ? 'Full Access' : roleName %>">
                 <% if (isOwner) { %>
                   <span class="text-dark fw-semibold"><i class="bi bi-shield-lock-fill me-1"></i> Full Access</span>
                 <% } else if (m._count && m._count.userPermissions > 0) { %>

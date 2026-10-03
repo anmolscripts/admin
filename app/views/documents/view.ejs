@@ -697,7 +697,7 @@
 
     <!-- Payments Table -->
     <div class="table-responsive">
-      <table class="table align-middle view-items-table mb-0" id="payments-table">
+      <table class="table align-middle view-items-table mb-0" id="payments-table" data-spark-datatable="true" data-title="Recorded Payments">
         <thead>
           <tr>
             <th scope="col" style="width: 130px;">Date</th>
@@ -705,25 +705,25 @@
             <th scope="col">Reference / Transaction ID</th>
             <th scope="col" class="text-end" style="width: 140px;">Amount</th>
             <th scope="col" class="text-center" style="width: 110px;">Status</th>
-            <th scope="col" class="text-end" style="width: 110px;">Action</th>
+            <th scope="col" class="text-end" style="width: 110px;" data-sortable="false">Action</th>
           </tr>
         </thead>
         <tbody id="payments-tbody">
           <% if (document.payments && document.payments.length > 0) { %>
             <% document.payments.forEach(p => { %>
               <tr class="<%= p.status === 'VOID' ? 'text-muted bg-light' : '' %>" id="payment-row-<%= p.id %>">
-                <td><%= formatDate(p.paymentDate) %></td>
-                <td><span class="badge bg-light text-dark border font-monospace"><%= p.method %></span></td>
-                <td>
+                <td data-sort="<%= p.paymentDate ? new Date(p.paymentDate).toISOString() : '' %>"><%= formatDate(p.paymentDate) %></td>
+                <td data-sort="<%= p.method %>"><span class="badge bg-light text-dark border font-monospace"><%= p.method %></span></td>
+                <td data-sort="<%= p.reference || '' %>">
                   <span class="font-monospace small"><%= p.reference || '—' %></span>
                   <% if (p.notes) { %>
                     <div class="small text-muted"><%= p.notes %></div>
                   <% } %>
                 </td>
-                <td class="text-end font-monospace fw-bold <%= p.status === 'VOID' ? 'text-decoration-line-through text-muted' : 'text-success' %>">
+                <td class="text-end font-monospace fw-bold <%= p.status === 'VOID' ? 'text-decoration-line-through text-muted' : 'text-success' %>" data-sort="<%= p.amount %>">
                   <%= formatMoney(p.amount) %>
                 </td>
-                <td class="text-center">
+                <td class="text-center" data-sort="<%= p.status %>">
                   <% if (p.status === 'POSTED') { %>
                     <span class="badge bg-success-subtle text-success">POSTED</span>
                   <% } else { %>

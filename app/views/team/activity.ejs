@@ -18,9 +18,42 @@
   </div>
 </div>
 
+<%
+  function getQueryUrl(paramsToMerge) {
+    const q = {
+      page: filters.page || 1,
+      limit: filters.limit || 25,
+      search: filters.search || '',
+      actorUserId: filters.actorUserId || '',
+      module: filters.module || '',
+      action: filters.action || '',
+      fromDate: filters.fromDate || '',
+      toDate: filters.toDate || '',
+      sortBy: filters.sortBy || 'createdAt',
+      sortDirection: filters.sortDirection || 'desc',
+      ...paramsToMerge
+    };
+    const sp = new URLSearchParams();
+    for (const [k, v] of Object.entries(q)) {
+      if (v !== '' && v !== null && v !== undefined) sp.set(k, String(v));
+    }
+    return '/team/activity?' + sp.toString();
+  }
+
+  function getSortUrl(colKey) {
+    const isCurrent = filters.sortBy === colKey;
+    const nextDir = (isCurrent && filters.sortDirection === 'asc') ? 'desc' : 'asc';
+    return getQueryUrl({ sortBy: colKey, sortDirection: nextDir, page: 1 });
+  }
+%>
+
 <!-- Filters Card -->
 <section class="card border-0 shadow-sm rounded-3 p-3 mb-4 bg-white" aria-label="Activity Filters">
   <form method="GET" action="/team/activity" class="row g-2 align-items-center">
+    <input type="hidden" name="sortBy" value="<%= filters.sortBy %>">
+    <input type="hidden" name="sortDirection" value="<%= filters.sortDirection %>">
+    <input type="hidden" name="limit" value="<%= filters.limit %>">
+
     <div class="col-12 col-md-3">
       <div class="input-group">
         <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
@@ -75,11 +108,21 @@
 
 <!-- Activity Table Card -->
 <section class="card border-0 shadow-sm rounded-3 overflow-hidden bg-white mb-4" aria-label="Activity Table">
-  <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+  <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
     <div class="d-flex align-items-center gap-2">
       <i class="bi bi-clock-history text-primary fs-5"></i>
       <h5 class="card-title fw-bold mb-0 text-dark">Audit Events</h5>
       <span class="badge bg-light text-muted border ms-2"><%= pagination.total %> Total Events</span>
+    </div>
+
+    <!-- Page Size Selector -->
+    <div class="d-flex align-items-center gap-2">
+      <span class="small text-muted">Show:</span>
+      <select class="form-select form-select-sm" style="width: auto;" onchange="window.location.href=this.value" aria-label="Events per page">
+        <% [10, 25, 50, 100].forEach(sz => { %>
+          <option value="<%= getQueryUrl({ limit: sz, page: 1 }) %>" <%= pagination.limit === sz ? 'selected' : '' %>><%= sz %></option>
+        <% }); %>
+      </select>
     </div>
   </div>
 
@@ -87,10 +130,37 @@
     <table class="table table-hover align-middle mb-0" id="activity-table">
       <thead class="table-light text-muted small text-uppercase">
         <tr>
-          <th scope="col" class="ps-4" style="width: 170px;">Timestamp</th>
+          <th scope="col" class="ps-4" style="width: 190px;">
+            <a href="<%= getSortUrl('createdAt') %>" class="text-decoration-none text-muted d-inline-flex align-items-center gap-1" title="Sort by Timestamp">
+              <span>Timestamp</span>
+              <% if (filters.sortBy === 'createdAt') { %>
+                <i class="bi <%= filters.sortDirection === 'asc' ? 'bi-arrow-up' : 'bi-arrow-down' %> text-dark fw-bold"></i>
+              <% } else { %>
+                <i class="bi bi-arrow-down-up opacity-50"></i>
+              <% } %>
+            </a>
+          </th>
           <th scope="col" style="width: 180px;">User</th>
-          <th scope="col" style="width: 140px;">Module</th>
-          <th scope="col" style="width: 170px;">Action</th>
+          <th scope="col" style="width: 140px;">
+            <a href="<%= getSortUrl('module') %>" class="text-decoration-none text-muted d-inline-flex align-items-center gap-1" title="Sort by Module">
+              <span>Module</span>
+              <% if (filters.sortBy === 'module') { %>
+                <i class="bi <%= filters.sortDirection === 'asc' ? 'bi-arrow-up' : 'bi-arrow-down' %> text-dark fw-bold"></i>
+              <% } else { %>
+                <i class="bi bi-arrow-down-up opacity-50"></i>
+              <% } %>
+            </a>
+          </th>
+          <th scope="col" style="width: 170px;">
+            <a href="<%= getSortUrl('action') %>" class="text-decoration-none text-muted d-inline-flex align-items-center gap-1" title="Sort by Action">
+              <span>Action</span>
+              <% if (filters.sortBy === 'action') { %>
+                <i class="bi <%= filters.sortDirection === 'asc' ? 'bi-arrow-up' : 'bi-arrow-down' %> text-dark fw-bold"></i>
+              <% } else { %>
+                <i class="bi bi-arrow-down-up opacity-50"></i>
+              <% } %>
+            </a>
+          </th>
           <th scope="col">Description</th>
           <th scope="col" style="width: 150px;">Target Reference</th>
           <th scope="col" class="text-end pe-4" style="width: 130px;">IP Address</th>
@@ -159,23 +229,68 @@
   </div>
 
   <!-- Pagination -->
-  <% if (pagination && pagination.pages > 1) { %>
-    <div class="card-footer bg-white border-top py-3 px-4 d-flex justify-content-between align-items-center">
+  <% if (pagination && pagination.pages > 1) {
+       const totalP = pagination.pages;
+       const curP = pagination.page;
+       const winSize = 2;
+       const startP = Math.max(1, curP - winSize);
+       const endP = Math.min(totalP, curP + winSize);
+  %>
+    <div class="card-footer bg-white border-top py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
       <span class="small text-muted">
-        Showing <%= (pagination.page - 1) * pagination.limit + 1 %> to <%= Math.min(pagination.total, pagination.page * pagination.limit) %> of <%= pagination.total %> events
+        Showing <%= (curP - 1) * pagination.limit + 1 %> to <%= Math.min(pagination.total, curP * pagination.limit) %> of <%= pagination.total %> events
       </span>
       <nav aria-label="Activity page navigation">
-        <ul class="pagination pagination-sm mb-0">
-          <li class="page-item <%= pagination.page <= 1 ? 'disabled' : '' %>">
-            <a class="page-link" href="/team/activity?page=<%= pagination.page - 1 %>&search=<%= filters.search %>&actorUserId=<%= filters.actorUserId %>&module=<%= filters.module %>&fromDate=<%= filters.fromDate %>&toDate=<%= filters.toDate %>">Previous</a>
+        <ul class="pagination pagination-sm mb-0 align-items-center gap-1">
+          <!-- First -->
+          <li class="page-item <%= curP <= 1 ? 'disabled' : '' %>">
+            <a class="page-link" href="<%= getQueryUrl({ page: 1 }) %>" title="First Page" aria-label="First page">
+              <i class="bi bi-chevron-double-left"></i>
+            </a>
           </li>
-          <% for (let p = 1; p <= pagination.pages; p++) { %>
-            <li class="page-item <%= pagination.page === p ? 'active' : '' %>">
-              <a class="page-link" href="/team/activity?page=<%= p %>&search=<%= filters.search %>&actorUserId=<%= filters.actorUserId %>&module=<%= filters.module %>&fromDate=<%= filters.fromDate %>&toDate=<%= filters.toDate %>"><%= p %></a>
+          <!-- Prev -->
+          <li class="page-item <%= curP <= 1 ? 'disabled' : '' %>">
+            <a class="page-link" href="<%= getQueryUrl({ page: curP - 1 }) %>" title="Previous Page" aria-label="Previous page">
+              <i class="bi bi-chevron-left"></i>
+            </a>
+          </li>
+
+          <!-- Windowed Numbers -->
+          <% if (startP > 1) { %>
+            <li class="page-item">
+              <a class="page-link" href="<%= getQueryUrl({ page: 1 }) %>">1</a>
+            </li>
+            <% if (startP > 2) { %>
+              <li class="page-item disabled"><span class="page-link">…</span></li>
+            <% } %>
+          <% } %>
+
+          <% for (let p = startP; p <= endP; p++) { %>
+            <li class="page-item <%= curP === p ? 'active' : '' %>">
+              <a class="page-link" href="<%= getQueryUrl({ page: p }) %>"><%= p %></a>
             </li>
           <% } %>
-          <li class="page-item <%= pagination.page >= pagination.pages ? 'disabled' : '' %>">
-            <a class="page-link" href="/team/activity?page=<%= pagination.page + 1 %>&search=<%= filters.search %>&actorUserId=<%= filters.actorUserId %>&module=<%= filters.module %>&fromDate=<%= filters.fromDate %>&toDate=<%= filters.toDate %>">Next</a>
+
+          <% if (endP < totalP) { %>
+            <% if (endP < totalP - 1) { %>
+              <li class="page-item disabled"><span class="page-link">…</span></li>
+            <% } %>
+            <li class="page-item">
+              <a class="page-link" href="<%= getQueryUrl({ page: totalP }) %>"><%= totalP %></a>
+            </li>
+          <% } %>
+
+          <!-- Next -->
+          <li class="page-item <%= curP >= totalP ? 'disabled' : '' %>">
+            <a class="page-link" href="<%= getQueryUrl({ page: curP + 1 }) %>" title="Next Page" aria-label="Next page">
+              <i class="bi bi-chevron-right"></i>
+            </a>
+          </li>
+          <!-- Last -->
+          <li class="page-item <%= curP >= totalP ? 'disabled' : '' %>">
+            <a class="page-link" href="<%= getQueryUrl({ page: totalP }) %>" title="Last Page" aria-label="Last page">
+              <i class="bi bi-chevron-double-right"></i>
+            </a>
           </li>
         </ul>
       </nav>

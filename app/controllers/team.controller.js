@@ -86,9 +86,20 @@ async function renderTeamMemberDetail(req, res, next) {
  */
 async function renderActivityLogPage(req, res, next) {
     try {
-        const { page, search, actorUserId, module: mod, action, fromDate, toDate } = req.query;
+        const { page, limit, search, actorUserId, module: mod, action, fromDate, toDate, sortBy, sortDirection } = req.query;
         const [activitiesResult, teamResult] = await Promise.all([
-            activityService.listActivities({ page, search, actorUserId, module: mod, action, fromDate, toDate, limit: 30 }),
+            activityService.listActivities({
+                page,
+                limit: limit ? parseInt(limit, 10) : 25,
+                search,
+                actorUserId,
+                module: mod,
+                action,
+                fromDate,
+                toDate,
+                sortBy,
+                sortDirection
+            }),
             teamService.listTeamMembers({ limit: 100 })
         ]);
 
@@ -101,12 +112,15 @@ async function renderActivityLogPage(req, res, next) {
             actions: rbacService.ACTIONS,
             filters: {
                 page: page || 1,
+                limit: activitiesResult.pagination.limit,
                 search: search || '',
                 actorUserId: actorUserId || '',
                 module: mod || '',
                 action: action || '',
                 fromDate: fromDate || '',
-                toDate: toDate || ''
+                toDate: toDate || '',
+                sortBy: sortBy || 'createdAt',
+                sortDirection: sortDirection || 'desc'
             }
         });
     } catch (err) {

@@ -62,15 +62,15 @@
     </button>
   </div>
   <div class="table-responsive">
-    <table class="table table-hover align-middle mb-0" id="unit-master-table">
+    <table class="table table-hover align-middle mb-0" id="unit-master-table" data-spark-datatable="true" data-title="Units Master">
       <thead class="table-light">
         <tr>
-          <th scope="col" class="ps-4 text-center" style="width: 60px;">#</th>
+          <th scope="col" class="ps-4 text-center" style="width: 60px;" data-sortable="false">#</th>
           <th scope="col">Unit Name</th>
           <th scope="col">Symbol</th>
           <th scope="col">Description</th>
           <th scope="col" class="text-center" style="width: 120px;">Active</th>
-          <th scope="col" class="text-end pe-4" style="width: 140px;">Actions</th>
+          <th scope="col" class="text-end pe-4" style="width: 140px;" data-sortable="false">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -88,16 +88,16 @@
               <td class="ps-4 text-center font-monospace text-muted">
                 <%= idx + 1 %>
               </td>
-              <td>
+              <td data-sort="<%= unit.name %>">
                 <span class="fw-semibold text-dark"><%= unit.name %></span>
               </td>
-              <td>
+              <td data-sort="<%= unit.symbol %>">
                 <span class="badge bg-light text-dark border font-monospace px-2 py-1 fs-6"><%= unit.symbol %></span>
               </td>
-              <td>
+              <td data-sort="<%= unit.description || '' %>">
                 <%= unit.description ? unit.description : '<span class="text-muted">—</span>' %>
               </td>
-              <td class="text-center">
+              <td class="text-center" data-sort="<%= unit.active ? 'Active' : 'Inactive' %>">
                 <div class="form-check form-switch d-inline-block">
                   <input
                     class="form-check-input unit-status-toggle"

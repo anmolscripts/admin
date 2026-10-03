@@ -182,13 +182,13 @@
     <table class="table table-hover align-middle mb-0 document-table" id="documents-table" aria-label="Quotations and Invoices list">
       <thead>
         <tr>
-          <th scope="col" class="th-doc-no">Document No</th>
-          <th scope="col" class="th-type">Type</th>
-          <th scope="col" class="th-client">Client</th>
-          <th scope="col" class="th-date">Document Date</th>
-          <th scope="col" class="th-due">Due/Expiry Date</th>
-          <th scope="col" class="th-amount text-end">Amount</th>
-          <th scope="col" class="th-status text-center">Status</th>
+          <th scope="col" class="th-doc-no sortable" data-sort-key="documentNumber" tabindex="0" role="columnheader" title="Sort by Document Number">Document No</th>
+          <th scope="col" class="th-type sortable" data-sort-key="type" tabindex="0" role="columnheader" title="Sort by Type">Type</th>
+          <th scope="col" class="th-client sortable" data-sort-key="client" tabindex="0" role="columnheader" title="Sort by Client">Client</th>
+          <th scope="col" class="th-date sortable" data-sort-key="date" tabindex="0" role="columnheader" title="Sort by Document Date">Document Date</th>
+          <th scope="col" class="th-due sortable" data-sort-key="due" tabindex="0" role="columnheader" title="Sort by Due/Expiry Date">Due/Expiry Date</th>
+          <th scope="col" class="th-amount text-end sortable" data-sort-key="amount" tabindex="0" role="columnheader" title="Sort by Amount">Amount</th>
+          <th scope="col" class="th-status text-center sortable" data-sort-key="status" tabindex="0" role="columnheader" title="Sort by Status">Status</th>
           <th scope="col" class="th-actions text-end">Actions</th>
         </tr>
       </thead>
@@ -216,31 +216,55 @@
         </select>
       </div>
 
-      <nav class="pagination-buttons-nav" aria-label="Pagination page navigation">
-        <button 
-          type="button" 
-          class="btn-page-nav" 
-          id="btn-prev-page" 
-          disabled 
+      <nav class="pagination-buttons-nav d-flex align-items-center gap-1" aria-label="Pagination page navigation">
+        <button
+          type="button"
+          class="btn-page-nav"
+          id="btn-first-page"
+          disabled
+          aria-label="Go to first page"
+          title="First page"
+        >
+          <i class="bi bi-chevron-double-left" aria-hidden="true"></i>
+        </button>
+
+        <button
+          type="button"
+          class="btn-page-nav"
+          id="btn-prev-page"
+          disabled
           aria-label="Go to previous page"
         >
           <i class="bi bi-chevron-left" aria-hidden="true"></i>
           <span>Previous</span>
         </button>
 
-        <span class="page-indicator-badge" id="page-indicator" aria-current="page">
-          Page 1 of 1
-        </span>
+        <div class="d-inline-flex align-items-center gap-1" id="pagination-numbers-container">
+          <span class="page-indicator-badge" id="page-indicator" aria-current="page">
+            Page 1 of 1
+          </span>
+        </div>
 
-        <button 
-          type="button" 
-          class="btn-page-nav" 
-          id="btn-next-page" 
-          disabled 
+        <button
+          type="button"
+          class="btn-page-nav"
+          id="btn-next-page"
+          disabled
           aria-label="Go to next page"
         >
           <span>Next</span>
           <i class="bi bi-chevron-right" aria-hidden="true"></i>
+        </button>
+
+        <button
+          type="button"
+          class="btn-page-nav"
+          id="btn-last-page"
+          disabled
+          aria-label="Go to last page"
+          title="Last page"
+        >
+          <i class="bi bi-chevron-double-right" aria-hidden="true"></i>
         </button>
       </nav>
     </div>

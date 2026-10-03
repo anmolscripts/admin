@@ -182,6 +182,38 @@
     white-space: nowrap;
 }
 
+.document-table thead th.sortable {
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.document-table thead th.sortable:hover {
+    background-color: #EFF4F2;
+    color: var(--brand-forest-dark, #051C12);
+}
+
+.document-table thead th.sortable:focus-visible {
+    outline: 2px solid var(--brand-forest-dark, #051C12);
+    outline-offset: -2px;
+}
+
+.document-table thead th .sort-indicator {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 0.35rem;
+    font-size: 0.8rem;
+    color: #A3B3AB;
+    vertical-align: middle;
+    transition: color 0.15s ease;
+}
+
+.document-table thead th.sortable:hover .sort-indicator,
+.document-table thead th[aria-sort="ascending"] .sort-indicator,
+.document-table thead th[aria-sort="descending"] .sort-indicator {
+    color: var(--brand-forest-dark, #051C12);
+}
+
 .document-table tbody td {
     padding: 1rem 1.25rem;
     vertical-align: middle;
@@ -470,6 +502,12 @@
 .btn-page-nav:hover:not(:disabled) {
     background-color: #F8FAF9;
     border-color: var(--text-muted-green, #6C7E75);
+}
+
+.btn-page-nav.active {
+    background-color: var(--brand-forest-dark, #051C12);
+    color: #FFFFFF;
+    border-color: var(--brand-forest-dark, #051C12);
 }
 
 .btn-page-nav:disabled {

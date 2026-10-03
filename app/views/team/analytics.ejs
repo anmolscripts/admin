@@ -74,7 +74,7 @@
         </h5>
       </div>
       <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
+        <table class="table table-hover align-middle mb-0" id="top-active-members-table" data-spark-datatable="true" data-title="Active Members">
           <thead class="table-light small text-uppercase text-muted">
             <tr>
               <th scope="col" class="ps-4">Member</th>
@@ -90,16 +90,16 @@
             <% } else { %>
               <% analytics.topActiveUsers.forEach(u => { %>
                 <tr>
-                  <td class="ps-4">
+                  <td class="ps-4" data-sort="<%= u.name %>">
                     <a href="/team/<%= u.userId %>" class="fw-semibold text-dark text-decoration-none">
                       <%= u.name %>
                     </a>
                     <div class="text-muted small"><%= u.email %></div>
                   </td>
-                  <td>
+                  <td data-sort="<%= u.roleName %>">
                     <span class="badge bg-light text-dark border"><%= u.roleName %></span>
                   </td>
-                  <td class="text-end pe-4 fw-bold text-dark">
+                  <td class="text-end pe-4 fw-bold text-dark" data-sort="<%= u.activityCount %>">
                     <%= u.activityCount %>
                   </td>
                 </tr>

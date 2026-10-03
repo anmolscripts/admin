@@ -144,7 +144,9 @@ async function listActivities({
     module: mod = null,
     action = null,
     fromDate = null,
-    toDate = null
+    toDate = null,
+    sortBy = null,
+    sortDirection = 'desc'
 } = {}) {
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 25));
@@ -189,6 +191,21 @@ async function listActivities({
         }
     }
 
+    const SORT_ALLOWLIST = {
+        timestamp: 'createdAt',
+        createdAt: 'createdAt',
+        action: 'action',
+        module: 'module',
+        id: 'id'
+    };
+
+    let orderBy = { createdAt: 'desc' };
+    if (sortBy && SORT_ALLOWLIST[sortBy]) {
+        const field = SORT_ALLOWLIST[sortBy];
+        const dir = String(sortDirection).toLowerCase() === 'asc' ? 'asc' : 'desc';
+        orderBy = { [field]: dir };
+    }
+
     const [total, items] = await Promise.all([
         prisma.userActivityLog.count({ where }),
         prisma.userActivityLog.findMany({
@@ -198,7 +215,7 @@ async function listActivities({
                     select: { id: true, name: true, email: true, role: true }
                 }
             },
-            orderBy: { createdAt: 'desc' },
+            orderBy,
             skip,
             take: limitNum
         })

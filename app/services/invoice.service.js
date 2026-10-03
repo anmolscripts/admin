@@ -1635,7 +1635,7 @@ async function copyDocument(id, userId = null, meta = {}) {
 /**
  * List documents with search, documentType filtering, status filtering, and pagination.
  */
-async function listInvoices({ documentType, search, status, paymentStatus, dateFrom, dateTo, page = 1, limit = 10 } = {}) {
+async function listInvoices({ documentType, search, status, paymentStatus, dateFrom, dateTo, page = 1, limit = 10, sortBy = null, sortDirection = 'desc' } = {}) {
     const parsedPage = Math.max(1, parseInt(page, 10) || 1);
     const parsedLimit = Math.min(100, Math.max(1, parseInt(limit, 10) || 10));
     const skip = (parsedPage - 1) * parsedLimit;
@@ -1700,11 +1700,36 @@ async function listInvoices({ documentType, search, status, paymentStatus, dateF
         }
     }
 
+    const SORT_ALLOWLIST = {
+        documentNumber: 'invoiceNumber',
+        invoiceNumber: 'invoiceNumber',
+        type: 'documentType',
+        documentType: 'documentType',
+        client: 'clientName',
+        clientName: 'clientName',
+        date: 'invoiceDate',
+        invoiceDate: 'invoiceDate',
+        due: 'dueDate',
+        dueDate: 'dueDate',
+        amount: 'grandTotal',
+        grandTotal: 'grandTotal',
+        status: 'status',
+        createdAt: 'createdAt',
+        id: 'id'
+    };
+
+    let orderBy = { id: 'desc' };
+    if (sortBy && SORT_ALLOWLIST[sortBy]) {
+        const field = SORT_ALLOWLIST[sortBy];
+        const dir = String(sortDirection).toLowerCase() === 'asc' ? 'asc' : 'desc';
+        orderBy = { [field]: dir };
+    }
+
     const [total, invoices] = await Promise.all([
         prisma.invoice.count({ where }),
         prisma.invoice.findMany({
             where,
-            orderBy: { id: 'desc' },
+            orderBy,
             skip,
             take: parsedLimit,
             include: {

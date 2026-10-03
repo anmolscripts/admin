@@ -17,6 +17,8 @@
         dateTo: '',
         page: 1,
         limit: 10,
+        sortBy: '',
+        sortDirection: 'desc',
         totalPages: 1,
         total: 0,
         isLoading: false,
@@ -40,9 +42,12 @@
     let paginationBar;
     let paginationInfo;
     let pageSizeSelect;
+    let firstPageBtn;
     let prevPageBtn;
     let nextPageBtn;
+    let lastPageBtn;
     let pageIndicator;
+    let paginationNumbersContainer;
     let searchDebounceTimer = null;
 
     /**
@@ -58,7 +63,13 @@
         state.dateFrom = params.get('dateFrom') || '';
         state.dateTo = params.get('dateTo') || '';
         state.page = Math.max(1, parseInt(params.get('page'), 10) || 1);
-        state.limit = Math.min(100, Math.max(1, parseInt(params.get('limit'), 10) || 10));
+
+        const savedLimit = localStorage.getItem('spark_dt_page_size');
+        const paramLimit = params.get('limit');
+        state.limit = Math.min(100, Math.max(1, parseInt(paramLimit || savedLimit, 10) || 10));
+
+        state.sortBy = params.get('sortBy') || '';
+        state.sortDirection = params.get('sortDirection') || 'desc';
     }
 
     /**
@@ -75,6 +86,8 @@
         if (state.dateTo) params.set('dateTo', state.dateTo);
         if (state.page > 1) params.set('page', String(state.page));
         if (state.limit !== 10) params.set('limit', String(state.limit));
+        if (state.sortBy) params.set('sortBy', state.sortBy);
+        if (state.sortDirection && state.sortDirection !== 'desc') params.set('sortDirection', state.sortDirection);
 
         const newQuery = params.toString();
         const newUrl = newQuery ? `${window.location.pathname}?${newQuery}` : window.location.pathname;
@@ -88,7 +101,9 @@
                 dateFrom: state.dateFrom,
                 dateTo: state.dateTo,
                 page: state.page,
-                limit: state.limit
+                limit: state.limit,
+                sortBy: state.sortBy,
+                sortDirection: state.sortDirection
             };
             window.history.pushState(serializableState, '', newUrl);
         }
@@ -567,6 +582,10 @@
             pageIndicator.textContent = `Page ${state.page} of ${state.totalPages}`;
         }
 
+        if (firstPageBtn) {
+            firstPageBtn.disabled = state.page <= 1;
+        }
+
         if (prevPageBtn) {
             prevPageBtn.disabled = state.page <= 1;
         }
@@ -575,9 +594,130 @@
             nextPageBtn.disabled = state.page >= state.totalPages;
         }
 
+        if (lastPageBtn) {
+            lastPageBtn.disabled = state.page >= state.totalPages;
+        }
+
         if (pageSizeSelect) {
             pageSizeSelect.value = String(state.limit);
         }
+
+        // Render numbered page buttons
+        if (paginationNumbersContainer) {
+            paginationNumbersContainer.innerHTML = '';
+
+            const createPageBtn = (pageNum, isActive) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `btn-page-nav ${isActive ? 'active' : ''}`;
+                btn.textContent = String(pageNum);
+                btn.setAttribute('aria-label', `Page ${pageNum}`);
+                if (isActive) btn.setAttribute('aria-current', 'page');
+                btn.addEventListener('click', function () {
+                    if (state.page !== pageNum) {
+                        state.page = pageNum;
+                        loadDocuments();
+                    }
+                });
+                return btn;
+            };
+
+            const windowSize = 2;
+            let startPage = Math.max(1, state.page - windowSize);
+            let endPage = Math.min(state.totalPages, state.page + windowSize);
+
+            if (startPage > 1) {
+                paginationNumbersContainer.appendChild(createPageBtn(1, state.page === 1));
+                if (startPage > 2) {
+                    const span = document.createElement('span');
+                    span.className = 'px-1 text-muted';
+                    span.textContent = '…';
+                    paginationNumbersContainer.appendChild(span);
+                }
+            }
+
+            for (let p = startPage; p <= endPage; p++) {
+                paginationNumbersContainer.appendChild(createPageBtn(p, state.page === p));
+            }
+
+            if (endPage < state.totalPages) {
+                if (endPage < state.totalPages - 1) {
+                    const span = document.createElement('span');
+                    span.className = 'px-1 text-muted';
+                    span.textContent = '…';
+                    paginationNumbersContainer.appendChild(span);
+                }
+                paginationNumbersContainer.appendChild(createPageBtn(state.totalPages, state.page === state.totalPages));
+            }
+        }
+    }
+
+    /**
+     * Update sort indicator icons and aria-sort on headers based on state
+     */
+    function updateSortHeaderUI() {
+        const headers = document.querySelectorAll('#documents-table thead th.sortable');
+        headers.forEach(th => {
+            const sortKey = th.getAttribute('data-sort-key');
+            let indicator = th.querySelector('.sort-indicator');
+            if (!indicator) {
+                indicator = document.createElement('span');
+                indicator.className = 'sort-indicator';
+                th.appendChild(indicator);
+            }
+
+            if (state.sortBy && state.sortBy === sortKey) {
+                if (state.sortDirection === 'asc') {
+                    th.setAttribute('aria-sort', 'ascending');
+                    indicator.innerHTML = '<i class="bi bi-arrow-up" aria-hidden="true"></i>';
+                } else {
+                    th.setAttribute('aria-sort', 'descending');
+                    indicator.innerHTML = '<i class="bi bi-arrow-down" aria-hidden="true"></i>';
+                }
+            } else {
+                th.setAttribute('aria-sort', 'none');
+                indicator.innerHTML = '<i class="bi bi-arrow-down-up" aria-hidden="true"></i>';
+            }
+        });
+    }
+
+    /**
+     * Bind sort handlers to headers
+     */
+    function initSortingHeaders() {
+        const headers = document.querySelectorAll('#documents-table thead th.sortable');
+        headers.forEach(th => {
+            const sortKey = th.getAttribute('data-sort-key');
+            if (!sortKey) return;
+
+            const handleSort = () => {
+                if (state.sortBy === sortKey) {
+                    if (state.sortDirection === 'asc') {
+                        state.sortDirection = 'desc';
+                    } else if (state.sortDirection === 'desc') {
+                        state.sortBy = '';
+                        state.sortDirection = 'desc';
+                    } else {
+                        state.sortDirection = 'asc';
+                    }
+                } else {
+                    state.sortBy = sortKey;
+                    state.sortDirection = 'asc';
+                }
+                state.page = 1;
+                updateSortHeaderUI();
+                loadDocuments();
+            };
+
+            th.addEventListener('click', handleSort);
+            th.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleSort();
+                }
+            });
+        });
+        updateSortHeaderUI();
     }
 
     /**
@@ -605,6 +745,8 @@
         if (state.dateTo) queryParams.set('dateTo', state.dateTo);
         queryParams.set('page', String(state.page));
         queryParams.set('limit', String(state.limit));
+        if (state.sortBy) queryParams.set('sortBy', state.sortBy);
+        if (state.sortDirection) queryParams.set('sortDirection', state.sortDirection);
 
         try {
             const res = await fetch(`/api/invoices?${queryParams.toString()}`, {
@@ -761,12 +903,22 @@
         if (pageSizeSelect) {
             pageSizeSelect.addEventListener('change', function (e) {
                 state.limit = parseInt(e.target.value, 10) || 10;
+                localStorage.setItem('spark_dt_page_size', state.limit);
                 state.page = 1;
                 loadDocuments();
             });
         }
 
         // Pagination Buttons
+        if (firstPageBtn) {
+            firstPageBtn.addEventListener('click', function () {
+                if (state.page > 1) {
+                    state.page = 1;
+                    loadDocuments();
+                }
+            });
+        }
+
         if (prevPageBtn) {
             prevPageBtn.addEventListener('click', function () {
                 if (state.page > 1) {
@@ -785,12 +937,24 @@
             });
         }
 
+        if (lastPageBtn) {
+            lastPageBtn.addEventListener('click', function () {
+                if (state.page < state.totalPages) {
+                    state.page = state.totalPages;
+                    loadDocuments();
+                }
+            });
+        }
+
         // Browser History Popstate (Back/Forward)
         window.addEventListener('popstate', function () {
             parseUrlState();
             applyStateToControls();
+            updateSortHeaderUI();
             loadDocuments();
         });
+
+        initSortingHeaders();
     }
 
     /**
@@ -837,9 +1001,12 @@
         paginationBar = document.getElementById('documents-pagination-bar');
         paginationInfo = document.getElementById('pagination-info');
         pageSizeSelect = document.getElementById('page-size-select');
+        firstPageBtn = document.getElementById('btn-first-page');
         prevPageBtn = document.getElementById('btn-prev-page');
         nextPageBtn = document.getElementById('btn-next-page');
+        lastPageBtn = document.getElementById('btn-last-page');
         pageIndicator = document.getElementById('page-indicator');
+        paginationNumbersContainer = document.getElementById('pagination-numbers-container');
 
         parseUrlState();
         applyStateToControls();

@@ -52,7 +52,7 @@
 <!-- Items Table -->
 <section class="card border-0 shadow-sm rounded-3 overflow-hidden bg-white mb-4" aria-label="Items Table">
   <div class="table-responsive">
-    <table class="table table-hover align-middle mb-0" id="item-master-table">
+    <table class="table table-hover align-middle mb-0" id="item-master-table" data-spark-datatable="true" data-title="Item Master">
       <thead class="table-light">
         <tr>
           <th scope="col" class="ps-4">Item Name</th>
@@ -60,7 +60,7 @@
           <th scope="col">Unit</th>
           <th scope="col" class="text-end">Default Rate</th>
           <th scope="col" class="text-center">Status</th>
-          <th scope="col" class="text-end pe-4">Actions</th>
+          <th scope="col" class="text-end pe-4" data-sortable="false">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -74,22 +74,22 @@
         <% } else { %>
           <% items.forEach(function(item) { %>
             <tr>
-              <td class="ps-4">
-                <div class="fw-bold text-dark"><%= item.name %></div>
+              <td class="ps-4" data-sort="<%= item.name %>">
+                <div class="fw-bold text-dark text-truncate" style="max-width: 280px;" title="<%= item.name %>"><%= item.name %></div>
                 <% if (item.description) { %>
-                  <div class="text-muted small text-truncate" style="max-width: 320px;"><%= item.description %></div>
+                  <div class="text-muted small text-truncate" style="max-width: 280px;" title="<%= item.description %>"><%= item.description %></div>
                 <% } %>
               </td>
-              <td>
+              <td data-sort="<%= item.hsnSac || '' %>">
                 <%= item.hsnSac ? item.hsnSac : '—' %>
               </td>
-              <td>
+              <td data-sort="<%= item.unit || 'PCS' %>">
                 <span class="badge bg-light text-dark border"><%= item.unit || 'PCS' %></span>
               </td>
-              <td class="text-end font-monospace fw-semibold">
+              <td class="text-end font-monospace fw-semibold" data-sort="<%= item.rate %>">
                 ₹ <%= Number(item.rate).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %>
               </td>
-              <td class="text-center">
+              <td class="text-center" data-sort="<%= item.active ? 'Active' : 'Inactive' %>">
                 <div class="form-check form-switch d-inline-block">
                   <input
                     class="form-check-input"
