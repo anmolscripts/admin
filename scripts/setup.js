@@ -215,7 +215,12 @@ async function main() {
 
     if (!isProduction) {
         logger.step('Executing prisma migrate reset for a clean development database...');
-        const migrateEnv = { ...process.env, DATABASE_URL: envConfig.DATABASE_URL, PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION: 'yes' };
+        const migrateEnv = {
+            ...process.env,
+            DATABASE_URL: envConfig.DATABASE_URL,
+            SEED_ADMIN_PASSWORD: adminCredentials.password,
+            PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION: 'yes'
+        };
         const migrateRes = runPrismaCommand(['migrate', 'reset', '--force'], migrateEnv);
         if (!migrateRes.ok) {
             logger.fail(`Development database reset failed:\n${logger.formatError(migrateRes.error || migrateRes.stderr)}`);

@@ -388,6 +388,9 @@ describe('UX Polish, Unit Master & Master Data Tests', () => {
         let baseUrl;
         let authCookie;
 
+        const adminPassword = process.env.SEED_ADMIN_PASSWORD;
+        if (!adminPassword) throw new Error('SEED_ADMIN_PASSWORD environment variable is required to run tests');
+
         before(async () => {
             server = http.createServer(app);
             await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
@@ -410,7 +413,7 @@ describe('UX Polish, Unit Master & Master Data Tests', () => {
                 body: new URLSearchParams({
                     _csrf: csrfToken,
                     email: 'admin@email.com',
-                    password: process.env.SEED_ADMIN_PASSWORD
+                    password: adminPassword
                 }),
                 redirect: 'manual'
             });

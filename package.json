@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "nodemon app/server.js",
     "start": "node app/server.js",
-    "test": "node --test --test-concurrency=1 tests/*.test.js",
+    "test": "node scripts/test-runner.js",
     "dev:install": "node scripts/setup.js --mode=development",
     "prod:install": "node scripts/setup.js --mode=production",
     "doctor": "node scripts/doctor.js"
