@@ -321,4 +321,59 @@ describe('Frozen Core Architecture Contracts Test Suite', () => {
             assert.strictEqual(Number(doc.grandTotal), 11800);
         });
     });
+
+    // =========================================================================
+    // 5. PRODUCTION SEED POLICY CONTRACTS
+    // =========================================================================
+    describe('5. Production Seed Policy Contracts', () => {
+        const seedModule = require('../prisma/seed');
+
+        it('5.1. Seed module defines exactly 13 standard units and 21 master items', () => {
+            assert.strictEqual(Array.isArray(seedModule.DEFAULT_UNITS), true);
+            assert.strictEqual(seedModule.DEFAULT_UNITS.length, 13, 'Must define exactly 13 default units');
+
+            const unitSymbols = new Set(seedModule.DEFAULT_UNITS.map(u => u.symbol));
+            assert.strictEqual(unitSymbols.size, 13, 'All 13 unit symbols must be unique');
+            assert.ok(unitSymbols.has('PCS'));
+            assert.ok(unitSymbols.has('m'));
+            assert.ok(unitSymbols.has('unit'));
+
+            assert.strictEqual(Array.isArray(seedModule.MASTER_ITEMS), true);
+            assert.strictEqual(seedModule.MASTER_ITEMS.length, 21, 'Must define exactly 21 master items');
+
+            const itemNames = new Set(seedModule.MASTER_ITEMS.map(i => i.name.trim()));
+            assert.strictEqual(itemNames.size, 21, 'All 21 item names must be unique');
+            seedModule.MASTER_ITEMS.forEach(i => {
+                assert.ok(i.name && i.name.length > 0);
+                assert.ok(i.unit && i.unit.length > 0);
+                assert.ok(typeof i.rate === 'number' && i.rate >= 0);
+            });
+        });
+
+        it('5.2. Production seed policy strictly forbids seeding business profile and demo data', async () => {
+            const result = await seedModule.main({ isProduction: true, seedDemoData: false });
+            assert.strictEqual(result.isProduction, true);
+            assert.strictEqual(result.seedDemoData, false);
+            assert.strictEqual(result.unitsCount >= 13, true);
+            assert.strictEqual(result.itemsCount >= 21, true);
+            assert.strictEqual(result.rolesCount >= 4, true);
+            assert.strictEqual(result.permissionsCount >= 40, true);
+        });
+
+        it('5.3. Idempotent seed execution produces zero duplicate records and zero errors', async () => {
+            const countBeforeUnits = await prisma.unit.count();
+            const countBeforeItems = await prisma.item.count();
+            const countBeforeRoles = await prisma.role.count();
+
+            await seedModule.main({ isProduction: true, seedDemoData: false });
+
+            const countAfterUnits = await prisma.unit.count();
+            const countAfterItems = await prisma.item.count();
+            const countAfterRoles = await prisma.role.count();
+
+            assert.strictEqual(countAfterUnits, countBeforeUnits, 'Unit count must remain unchanged');
+            assert.strictEqual(countAfterItems, countBeforeItems, 'Item count must remain unchanged');
+            assert.strictEqual(countAfterRoles, countBeforeRoles, 'Role count must remain unchanged');
+        });
+    });
 });

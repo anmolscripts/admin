@@ -4,7 +4,7 @@
 
 Spark Admin utilizes Node's built-in test runner (`node:test`) and assertion module (`node:assert`). This provides fast, native test execution without external runners (such as Jest or Mocha) or compilation overhead.
 
-The entire test suite discovers **13 test files**, **59 suites**, and **353 automated tests**:
+The entire test suite discovers **13 test files**, **60 suites**, and **356 automated tests**:
 ```bash
 npm test
 ```
@@ -27,7 +27,7 @@ All tests execute deterministically and terminate cleanly with process exit code
 | **Item Master & QA** | `tests/phase8.test.js` | Autocomplete search, concurrency unique constraints, dashboard KPI queries. |
 | **UX Polish & Unit Master** | `tests/ux_polish.test.js` | Unit Master CRUD, client optional email/phone, saved client autofill, portal DOM verification, seed idempotency. |
 | **Integration Baseline** | `tests/phase6.test.js` | Full end-to-end integration workflows. |
-| **Core Contracts** | `tests/contracts.test.js` | Invariant contracts verification across financial math, models, and boundaries. |
+| **Core Contracts** | `tests/contracts.test.js` | Invariant contracts verification across financial math, models, boundaries, and production seed policy. |
 | **RBAC, Team & Activity** | `tests/rbac_team_activity.test.js` | 56 tests across 13 suites: Role hierarchy, self-escalation protection, delegation boundaries, last admin safeguards, direct API security, and semantic audit trails. |
 
 ---

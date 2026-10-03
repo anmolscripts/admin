@@ -165,11 +165,17 @@ sudo -u sparkadmin npx prisma migrate status
 ```
 
 ### 5.5. Initial Database Seed (First Deployment Only)
-If this is a fresh deployment and the admin user does not yet exist:
+Run the seed process to provision system metadata and master data:
 ```bash
 sudo -u sparkadmin node prisma/seed.js
 ```
-*After initial bootstrap, you can remove `SEED_ADMIN_PASSWORD` from `.env` or leave it inert.*
+
+**Production Seed Policy (`NODE_ENV=production`):**
+- **System RBAC Bootstrap:** Seeds all 56 permissions and default roles (`OWNER`, `ADMIN`, `STAFF`, `VIEWER`).
+- **Initial Administrator:** Creates the initial admin account (`admin@email.com` or `SEED_ADMIN_EMAIL`) assigned the `OWNER` role, using the strong password provided in `SEED_ADMIN_PASSWORD`. (If admin already exists, preserves credentials and updates role to `OWNER`).
+- **Master Data:** Seeds the 13 predefined unit entries (`PCS`, `m`, `unit`, `Hours`, etc.) and 21 standard catalog items.
+- **Strictly Excluded:** Zero business profile, zero clients, zero quotations, zero invoices, zero payments, zero revisions, zero activity logs, zero demo users.
+*Note: The business profile is created/configured by the owner directly through the web UI on first access. After initial bootstrap, you can remove `SEED_ADMIN_PASSWORD` from `.env` or leave it inert.*
 
 ---
 

@@ -145,3 +145,45 @@ npx prisma migrate status
 > **CRITICAL RULE FOR PRODUCTION:**
 > **NEVER run `npx prisma migrate reset` or `npx prisma db push` on a production or staging database.**
 > `prisma migrate reset` will drop all tables and destroy business data. Only `npx prisma migrate deploy` is permitted in staging and production.
+
+---
+
+## 5. Database Seed Policy Specification
+
+Database seeding (`node prisma/seed.js` or `npm run prisma:seed`) enforces a strict boundary between production bootstrapping and development demo fixtures:
+
+### 5.1. Production Mode (`NODE_ENV=production`)
+Only system metadata and business master data are seeded:
+1. **System RBAC Bootstrap:**
+   - 56 atomic permissions (`Permission` table) mapped across 10 system modules.
+   - 4 baseline system roles (`OWNER`, `ADMIN`, `STAFF`, `VIEWER`).
+   - Role-permission join records (`RolePermission` table).
+2. **First Administrator Account:**
+   - Evaluates `SEED_ADMIN_EMAIL` (default: `admin@email.com`) and `SEED_ADMIN_PASSWORD`.
+   - If user exists: preserves credentials and links `OWNER` role (`roleId`).
+   - If user does not exist: creates initial admin with `OWNER` role and bcrypt-hashed password (cost 12).
+   - If `SEED_ADMIN_PASSWORD` is not set: logs notification and skips admin creation safely without failure.
+   - Zero hardcoded passwords, zero plaintext password logging.
+3. **Business Master Data:**
+   - **Unit Master (`Unit`):** 13 standard units (`PCS`, `m`, `unit`, `Project`, `Hours`, `Months`, `Units`, `License`, `Year`, `Package`, `Set`, `KG`, `Service`).
+   - **Item Master (`Item`):** 21 standard industrial catalog items.
+4. **Strict Prohibitions in Production:**
+   - ❌ `BusinessProfile`: 0 seeded (configured on-demand via UI).
+   - ❌ `Client`: 0 seeded.
+   - ❌ `Invoice`: 0 seeded.
+   - ❌ `InvoiceItem`: 0 seeded.
+   - ❌ `InvoiceRevision`: 0 seeded.
+   - ❌ `Payment`: 0 seeded.
+   - ❌ `UserActivityLog`: 0 seeded.
+   - ❌ `InvoiceNumberSequence`: 0 demo sequences preset.
+
+### 5.2. Development Mode (`NODE_ENV=development`)
+When running in non-production environments with `SEED_DEMO_DATA !== 'false'`, the seeder additionally provisions:
+- Default `BusinessProfile` with standard terms and Mumbai address.
+- 2 sample clients (`Tata Consultancy Services`, `Infosys Limited`).
+- 3 sample invoices (`INV-2026-0001`, `INV-2026-0002`, `INV-2026-0003`) across `ACTIVE`, `INACTIVE`, and `VOID` statuses with revision snapshots.
+- 2 sample quotations (`QTN-2026-0001`, `QTN-2026-0002`) with revision snapshots.
+- Synchronized initial sequence numbers (`INVOICE: 3`, `QUOTATION: 2`).
+
+### 5.3. Idempotency Guarantee
+The seed process is fully idempotent. Running the script multiple times produces zero duplicate records, leaves existing entries intact, and exits cleanly with return code 0.

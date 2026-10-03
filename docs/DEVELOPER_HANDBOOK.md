@@ -99,17 +99,17 @@ npx prisma migrate status
 ```
 
 ### 9. Seed Development Data
-Seed the local admin account, company settings, RBAC roles, permissions, predefined units, master items, and sample documents:
+Seed the local admin account, RBAC roles, permissions, predefined units, master items, and (in development mode) sample documents:
 ```bash
 npm run prisma:seed
 ```
 *Output will confirm:*
 - Admin account: `admin@email.com` (assigned `OWNER` role)
-- System roles (`OWNER`, `ADMIN`, `MANAGER`, `MEMBER`, `VIEWER`) and permission dictionary
-- Organization defaults & GST settings
+- System roles (`OWNER`, `ADMIN`, `STAFF`, `VIEWER`) and 56-permission dictionary
 - 13 Predefined measurement units (`PCS`, `m`, `unit`, `Hours`, `Project`, etc.)
 - 21 Standard industrial catalog items
-- Sample quotations, active invoices, and payments.
+- Sample quotations, active invoices, sample clients, and development business profile (when in development mode).
+*(In production, `NODE_ENV=production` strictly seeds only system RBAC and master data; business profile and demo documents are completely omitted).*
 
 ### 10. Start the Development Server
 ```bash

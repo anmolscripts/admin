@@ -222,16 +222,22 @@ SEED_ADMIN_PASSWORD=your-secure-development-password
 
 ## Seed & Initial Setup
 
-To seed the initial administrator account and realistic development documents, run:
+Database seeding is strictly governed by environment policy (`NODE_ENV`):
 
 ```bash
 npm run prisma:seed
+# or: npx prisma db seed
 ```
 
-This provisions:
-- Admin user: `admin@email.com` with the password specified in `SEED_ADMIN_PASSWORD`.
-- Default business profile (Company details, GSTIN, Bank details).
-- Seed clients, items, sample invoices, and sample quotations.
+### Production Mode (`NODE_ENV=production`)
+Provisions **only** system configuration and master data:
+- **System Bootstrap:** RBAC permission dictionary (56 atomic permissions) and standard system roles (`OWNER`, `ADMIN`, `STAFF`, `VIEWER`).
+- **Initial Administrator:** Provisions root admin with `OWNER` role using credentials defined in `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD`. If admin exists, preserves credentials and updates role to `OWNER`. If `SEED_ADMIN_PASSWORD` is omitted, admin creation is skipped safely.
+- **Business Master Data:** 13 Predefined Unit Master entries (`PCS`, `m`, `unit`, `Hours`, `Project`, etc.) and 21 standard Item Master catalog items.
+- **Strictly Prohibited in Production:** Zero business profile, zero clients, zero quotations, zero invoices, zero payments, zero revisions, zero activity logs, zero demo users. The business profile is configured on-demand through the web interface on first access.
+
+### Development Mode (`NODE_ENV=development`)
+Additionally seeds sample business profile, sample clients (TCS, Infosys), 3 development invoices, and 2 development quotations for local UI evaluation and automated testing.
 
 ---
 
