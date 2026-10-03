@@ -1,6 +1,22 @@
 # Engineering Development & Git Workflow
 
-## 1. Branching Model
+## 1. Local Environment Setup & Diagnostics
+
+To bootstrap a clean local development environment reliably:
+
+```bash
+# Automated zero-friction development setup
+npm run dev:install
+
+# Verify environment health and database connectivity
+npm run doctor
+```
+
+See [docs/INSTALLATION.md](file:///c:/Users/User/Documents/project/admin/docs/INSTALLATION.md) and [docs/DEVELOPER_HANDBOOK.md](file:///c:/Users/User/Documents/project/admin/docs/DEVELOPER_HANDBOOK.md) for full setup guides.
+
+---
+
+## 2. Branching Model
 
 Spark Admin follows a trunk-based branch workflow with protected `main`:
 
@@ -22,7 +38,7 @@ main (Production Baseline)
 
 ---
 
-## 2. Core Development Rules
+## 3. Core Development Rules
 
 1. **Never Commit Directly to `main`:** All functional changes must be submitted via feature branches and code review.
 2. **One Logical Change per Commit:** Avoid grouping unrelated edits into massive monolithic commits. Write clear, imperative commit messages (e.g., `feat: implement client export`, `fix: handle leap year due dates`).
@@ -35,9 +51,12 @@ main (Production Baseline)
 
 ---
 
-## 3. Pull Request Checklist
+## 4. Pull Request Checklist
 
 Before submitting a Pull Request for review, verify every item:
+
+### Environment & Pre-Flight
+- [ ] System health and diagnostic checks pass: `npm run doctor`.
 
 ### Code Quality & Design
 - [ ] Code follows [docs/CODING_STANDARDS.md](file:///c:/Users/User/Documents/project/admin/docs/CODING_STANDARDS.md).

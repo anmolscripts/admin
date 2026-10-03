@@ -360,6 +360,7 @@
         |-- documents.css
         |-- editor.css
         |-- main.css
+        |-- spark-datatable.css
         |-- view.css
     |-- images
         |-- avatar.png
@@ -378,6 +379,7 @@
         |-- dashboard.js
         |-- documents.js
         |-- editor.js
+        |-- spark-datatable.js
         |-- view.js
     |-- libs
         |-- apexcharts
@@ -417,6 +419,7 @@
     |-- DEVELOPER_HANDBOOK.md
     |-- DEVELOPMENT_WORKFLOW.md
     |-- DOCUMENT_LIFECYCLE.md
+    |-- INSTALLATION.md
     |-- RBAC.md
     |-- README.md
     |-- RELEASE_CHECKLIST.md
@@ -461,13 +464,28 @@
             |-- migration.sql
         |-- migration_lock.toml
     |-- schema.prisma
+    |-- seed
+        |-- common
+            |-- index.js
+        |-- development
+            |-- index.js
+        |-- production
+            |-- index.js
     |-- seed.js
 |-- prisma7.config.ts
 |-- PRODUCTION_CHECKLIST.md
 |-- README.md
 |-- scratch
 |-- scripts
+    |-- doctor.js
+    |-- lib
+        |-- db-manager.js
+        |-- env-manager.js
+        |-- logger.js
+        |-- prerequisites.js
+        |-- verifier.js
     |-- qa_browser_e2e.js
+    |-- setup.js
 |-- skills-lock.json
 |-- tables-basic.html
 |-- tests
@@ -477,6 +495,7 @@
     |-- editor.test.js
     |-- export.test.js
     |-- hardening.test.js
+    |-- installer.test.js
     |-- invoice.test.js
     |-- phase6.test.js
     |-- phase8.test.js

@@ -97,6 +97,22 @@ EXIT;
 
 ## 5. APPLICATION DEPLOYMENT PROCEDURE
 
+> [!NOTE]
+> **Build Architecture:** Spark Admin does not require a frontend compilation/build step.
+> Production readiness is achieved through dependency installation, Prisma migration, Prisma client generation, production seed, configuration validation and smoke verification.
+
+### 5.0. Automated Deployment via Production Installer (Recommended)
+You can perform steps 5.2 through 5.5 in a single command using the automated production installer:
+
+```bash
+cd /opt/spark-admin/app
+sudo -u sparkadmin npm run prod:install
+```
+
+The automated installer prompts for production database credentials and initial OWNER admin credentials, configures `.env`, creates the production database if needed, runs migrations, generates Prisma Client, seeds ONLY production system/master data, verifies all zero-demo invariants, and executes read-only smoke verification.
+
+---
+
 ### 5.1. Clone Repository & Permissions
 Switch to the application directory as root, clone the project, and assign ownership:
 ```bash
@@ -105,7 +121,7 @@ sudo -u sparkadmin git clone <YOUR_GIT_REPOSITORY_URL> app
 cd /opt/spark-admin/app
 ```
 
-### 5.2. Install Production Dependencies
+### 5.2. Install Production Dependencies (Manual)
 Run `npm ci` with `--omit=dev` to ensure clean, reproducible dependency installation:
 ```bash
 sudo -u sparkadmin npm ci --omit=dev

@@ -220,19 +220,57 @@ SEED_ADMIN_PASSWORD=your-secure-development-password
 
 ---
 
-## Seed & Initial Setup
+## Zero-Friction Installation & Quick Start
+
+Spark Admin features cross-platform, zero-friction automated installers for both development and production environments.
+
+> [!NOTE]
+> **Spark Admin does not require a frontend compilation/build step.**
+> Production readiness is achieved through dependency installation, Prisma migration, Prisma client generation, production seed, configuration validation and smoke verification.
+
+### BEGINNER MODE
+
+#### Local Development
+```bash
+# 1. Automated zero-friction development installer
+npm run dev:install
+
+# 2. Start development server
+npm run dev
+```
+
+#### Production Deployment
+```bash
+# 1. Automated zero-friction production installer
+npm run prod:install
+
+# 2. Start production server
+npm start
+```
+
+#### Environment Diagnostic (Doctor)
+Run read-only system health diagnostics without mutating database state:
+```bash
+npm run doctor
+```
+
+For complete details, options, and troubleshooting, consult [docs/INSTALLATION.md](docs/INSTALLATION.md).
+
+---
+
+## Seed & Initial Setup Policy
 
 Database seeding is strictly governed by environment policy (`NODE_ENV`):
 
 ```bash
-npm run prisma:seed
-# or: npx prisma db seed
+# Executed automatically by npm run dev:install / npm run prod:install
+node prisma/seed.js
 ```
 
 ### Production Mode (`NODE_ENV=production`)
 Provisions **only** system configuration and master data:
 - **System Bootstrap:** RBAC permission dictionary (56 atomic permissions) and standard system roles (`OWNER`, `ADMIN`, `STAFF`, `VIEWER`).
-- **Initial Administrator:** Provisions root admin with `OWNER` role using credentials defined in `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD`. If admin exists, preserves credentials and updates role to `OWNER`. If `SEED_ADMIN_PASSWORD` is omitted, admin creation is skipped safely.
+- **Initial Administrator:** Provisions root admin with `OWNER` role using credentials defined in `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD`. If admin exists, preserves credentials and updates role to `OWNER`.
 - **Business Master Data:** 13 Predefined Unit Master entries (`PCS`, `m`, `unit`, `Hours`, `Project`, etc.) and 21 standard Item Master catalog items.
 - **Strictly Prohibited in Production:** Zero business profile, zero clients, zero quotations, zero invoices, zero payments, zero revisions, zero activity logs, zero demo users. The business profile is configured on-demand through the web interface on first access.
 
@@ -241,40 +279,28 @@ Additionally seeds sample business profile, sample clients (TCS, Infosys), 3 dev
 
 ---
 
-## Development Startup
+## Manual Startup (Advanced)
 
-Start the local server with nodemon auto-reload:
+If performing manual lifecycle management outside `dev:install` or `prod:install`:
 
+### Development Manual Start:
 ```bash
+npx prisma migrate deploy
+npx prisma generate
+node prisma/seed.js
 npm run dev
 ```
 
-Access the application in your browser:
-- **Application URL:** [http://localhost:3000](http://localhost:3000)
-- **Login Screen:** [http://localhost:3000/login](http://localhost:3000/login)
-- **Health Check:** [http://localhost:3000/health](http://localhost:3000/health)
-
----
-
-## Production Startup
-
-For production deployment (single-process baseline):
-
+### Production Manual Start:
 ```bash
-# 1. Install production dependencies
 npm ci --omit=dev
-
-# 2. Deploy database migrations
 npx prisma migrate deploy
-
-# 3. Generate client
 npx prisma generate
-
-# 4. Start production process
-NODE_ENV=production npm start
+node prisma/seed.js
+npm start
 ```
 
-Refer to [docs/DEPLOYMENT.md](file:///c:/Users/User/Documents/project/admin/docs/DEPLOYMENT.md) for full systemd, Nginx reverse proxy, and SSL configuration.
+Refer to [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for full systemd, Nginx reverse proxy, and SSL configuration.
 
 ---
 

@@ -14,88 +14,63 @@ Welcome to the **Spark Admin** engineering team. This handbook provides the exac
 
 ---
 
-## Step-by-Step Onboarding Procedure
+## Zero-Friction Automated Onboarding (Recommended)
 
-### 1. Clone the Repository
+Anyone can set up Spark Admin in seconds with a single command:
+
 ```bash
+# 1. Clone & enter repository
 git clone <repository-url>
 cd admin
+
+# 2. Run automated development installer
+npm run dev:install
+
+# 3. Start development server
+npm run dev
 ```
 
-### 2. Verify Active Branch
+The installer automatically checks Node/npm/MySQL prerequisites, configures `.env`, provisions the database, applies migrations, generates the Prisma client, seeds development master data, and executes regression verification.
+
+To run a system health diagnostic at any time:
 ```bash
-git checkout main
-git pull origin main
+npm run doctor
 ```
 
-### 3. Verify Node 24 Runtime
-If using `nvm` (Node Version Manager):
-```bash
-# Linux / macOS
-nvm install 24
-nvm use 24
+---
 
-# Windows (nvm-windows)
-nvm install 24.0.0
-nvm use 24.0.0
-```
-Verify versions:
+## Manual Step-by-Step Onboarding (Alternative)
+
+If you prefer to configure components manually:
+
+### 1. Verify Node 24 Runtime
 ```bash
 node -v   # Expected: v24.x.x
-npm -v    # Expected: 10.x.x
+npm -v    # Expected: 10.x.x or higher
 ```
 
-### 4. Install Dependencies
+### 2. Install Dependencies
 ```bash
 npm install
 ```
-*Note: This installs Express 5, Prisma ORM 7, bcrypt, EJS, and dev tools without modifying package-lock.json.*
 
-### 5. Create `.env` Configuration File
+### 3. Configure `.env`
+Copy `.env.example` to `.env` and supply your database credentials:
 ```bash
-# Linux / macOS
 cp .env.example .env
-
-# Windows PowerShell
-Copy-Item .env.example .env
 ```
 
-### 6. Configure Local MySQL Database
-Open your MySQL terminal or client and provision a dedicated database:
-```sql
-CREATE DATABASE IF NOT EXISTS spark_admin CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
-
-### 7. Populate `.env` with Your Credentials
-Open `.env` in your editor and configure the connection parameters:
-```ini
-PORT=3000
-NODE_ENV=development
-
-DATABASE_HOST=localhost
-DATABASE_PORT=3306
-DATABASE_USER=root
-DATABASE_PASSWORD=your_actual_mysql_password
-DATABASE_NAME=spark_admin
-DATABASE_URL="mysql://root:your_actual_mysql_password@localhost:3306/spark_admin"
-
-SESSION_SECRET=dev-session-secret-change-in-production-min32chars
-SEED_ADMIN_PASSWORD=local-dev-password-123
-TEST_ADMIN_PASSWORD=local-dev-password-123
-```
-*Note: `TEST_ADMIN_PASSWORD` (or `SEED_ADMIN_PASSWORD`) is strictly required by automated test scripts and browser QA verification suites. The runner will throw an error if no admin password is provided in environment variables.*
-
-### 8. Run Prisma Migrations & Client Generation
-Apply all forward-only migrations and generate the Prisma Client:
+### 4. Create MySQL Database & Run Migrations
 ```bash
-# 1. Apply migrations
 npx prisma migrate deploy
-
-# 2. Generate client
 npx prisma generate
+node prisma/seed.js
+```
 
-# 3. Verify status
-npx prisma migrate status
+### 5. Run Verification & Start Server
+```bash
+npm run doctor
+npm run dev
 ```
 
 ### 9. Seed Development Data

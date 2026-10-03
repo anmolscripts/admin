@@ -6,6 +6,7 @@ Every production release must undergo this sequential verification before taggin
 
 ## 1. Automated Verification
 - [ ] **Full Test Suite:** Run `npm test`. All tests must pass with 0 failures and exit naturally without hanging.
+- [ ] **System Doctor Diagnostic:** Run `npm run doctor`. Must report 100% PASS for runtime, config, DB, RBAC, master data, and invariants.
 - [ ] **Prisma Schema Validation:** Run `npx prisma validate`. Schema syntax and relations must be valid.
 - [ ] **Prisma Format Check:** Run `npx prisma format`.
 - [ ] **Migration Cleanliness:** Run `npx prisma migrate status`. All migrations must be applied; zero unapplied migrations or schema drift.
