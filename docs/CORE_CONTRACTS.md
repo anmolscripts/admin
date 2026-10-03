@@ -132,3 +132,15 @@
 - **Why It Exists:** Guarantees fast, O(1) memory usage regardless of whether the database contains 100 or 100,000 documents.
 - **Side Effects If Changed:** Node.js process out-of-memory crashes, severe dashboard latency under production loads.
 - **Tests Protecting It:** [tests/phase8.test.js](file:///c:/Users/User/Documents/project/admin/tests/phase8.test.js).
+
+### 21. Unit Master Snapshot & Relational Isolation
+- **Contract:** Measurement units are governed by the `Unit` master entity (`symbol` unique constraint) and served dynamically via `/api/units/active`. Line items (`InvoiceItem.unit`) store an immutable string snapshot. Editing or deactivating an entry in Unit Master never modifies historical quotations or invoices.
+- **Why It Exists:** Businesses need customizable measurement units without risking retroactive corruption of issued tax documents.
+- **Side Effects If Changed:** Historical invoices displaying altered units or failing schema validations upon later retrieval.
+- **Tests Protecting It:** [tests/ux_polish.test.js](file:///c:/Users/User/Documents/project/admin/tests/ux_polish.test.js).
+
+### 22. Client Optional Contact Fields & Document-Level Snapshotting
+- **Contract:** Client/Company Name is required. Email and Phone are optional; when supplied, strict format validation applies. Selecting a saved client auto-populates the editor into an editable document-level snapshot (`clientName`, `clientEmail`, `clientPhone`, `billingAddress`, `shippingAddress`). Changes to the document snapshot never alter Client Master, and modifying Client Master never corrupts historical documents.
+- **Why It Exists:** Enables fast, frictionless counter invoicing when complete customer contact information is unavailable, while strictly preserving accounting audit immutability.
+- **Side Effects If Changed:** Validation rejecting valid cash/counter clients; or dynamic joins corrupting historical client addresses on past tax invoices.
+- **Tests Protecting It:** [tests/ux_polish.test.js](file:///c:/Users/User/Documents/project/admin/tests/ux_polish.test.js).

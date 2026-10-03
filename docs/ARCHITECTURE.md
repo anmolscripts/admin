@@ -34,6 +34,7 @@ Spark Admin follows an enterprise layered architecture with strict separation of
   ├─ invoice.service.js       -> Domain calculations, lifecycle rules, transactions
   ├─ documentView.service.js  -> Single normalized view model generation
   ├─ item.service.js          -> Catalog search, uniqueness, autocomplete
+  ├─ unit.service.js          -> Measurement unit master, validation, active lists
   ├─ payment.service.js       -> Payment ledger, balance resolution, receipts
   ├─ dashboard.service.js     -> Parallel SQL KPI aggregations
   ├─ pdf.service.js           -> Headless Chromium PDF generation from shared HTML

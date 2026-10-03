@@ -80,7 +80,17 @@
         const newUrl = newQuery ? `${window.location.pathname}?${newQuery}` : window.location.pathname;
         
         if (window.location.search !== (newQuery ? `?${newQuery}` : '')) {
-            window.history.pushState({ ...state }, '', newUrl);
+            const serializableState = {
+                type: state.type,
+                status: state.status,
+                paymentStatus: state.paymentStatus,
+                search: state.search,
+                dateFrom: state.dateFrom,
+                dateTo: state.dateTo,
+                page: state.page,
+                limit: state.limit
+            };
+            window.history.pushState(serializableState, '', newUrl);
         }
     }
 

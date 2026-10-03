@@ -4,6 +4,51 @@ All notable changes to the **Spark Admin** Quotation & Invoice Management system
 
 ---
 
+## [Phase 8.2 / UX Polish & Master Data] — 2026-10-03
+`fix: improve invoice editor ux and master data management`
+
+### Added
+- **Unit Master Domain (`Unit` model & management):**
+  - Added `Unit` model with unique `symbol`, `name`, `description`, `isActive`, `createdAt`, `updatedAt` via forward-only migration `20261003060017_add_unit_master`.
+  - Added `app/services/unit.service.js` with full CRUD, validation, activation toggling, duplicate symbol/name protection, and seeding.
+  - Added `app/controllers/unit.controller.js` and registered web route `/units` and REST API endpoints `/api/units` and `/api/units/active`.
+  - Created complete Unit Master management view `app/views/units/index.ejs` with search, active status toggle, add/edit modal, and delete confirmation.
+  - Updated document editor (`app/views/documents/editor.ejs`) and item master (`app/views/items/index.ejs`) to dynamically load active units from the Unit Master catalog via `window.__AVAILABLE_UNITS__`.
+- **Item Master Preloaded Catalog (21 Master Items):**
+  - Updated `prisma/seed.js` to idempotently seed 21 master industrial pipeline and instrumentation items with exact business names, units (`m`, `unit`), and rates.
+- **Top-Level Autocomplete Portal Architecture:**
+  - Implemented `#item-autocomplete-portal` mounted directly under `document.body` with `position: fixed` and `z-index: 10050`.
+  - Autocomplete dropdown dynamically calculates target input bounding client rect and clamps viewport positioning to eliminate parent overflow clipping (`overflow-x: auto`) and stacking context traps.
+  - Implemented debounced API search (150ms, 1-char min), keyboard navigation (`↑`, `↓`, `Enter`, `Escape`), active option tracking, and ARIA listbox/option compliance.
+- **Rapid Keyboard Invoice Entry Workflow:**
+  - Implemented Enter-key navigation chaining: Item Name selection $\to$ Unit $\to$ Rate $\to$ Quantity $\to$ Next Row Item Name.
+  - Pressing Enter in the Quantity input on the final row automatically appends a new line item and focuses its Item Name input.
+  - Escape closes autocomplete suggestion portal; Tab navigation remains natural.
+- **Document-Level Client Snapshotting & Autofill:**
+  - Added instant client autofill from "Choose Saved Client" dropdown, populating Client Name, Email, Phone, GSTIN, Place of Supply, Billing Address, and Shipping Address.
+  - Added "Clear Client" button (`#btn-clear-client`) to reset client inputs without page reloads.
+  - Added non-intrusive `Document-level client snapshot` badge indicating document-level isolation from future master client updates.
+- **Unified Button System:**
+  - Standardized `.btn-spark` design system with consistent border radius (8px), padding, typography, icon alignment, focus rings, and states across `.btn-spark-primary`, `.btn-spark-secondary`, `.btn-spark-outline`, `.btn-spark-danger`, `.btn-spark-success`, and `.btn-spark-sm`.
+- **Authoritative Side Navigation:**
+  - Streamlined `app/views/layouts/header.ejs` into 6 authoritative sections: Dashboard, Documents, Clients, Items, Units, Settings.
+  - Removed all stale template `.html` demo links, badges, and dummy components.
+  - Bound active navigation state dynamically to `res.locals.currentPath`.
+- **Standard Terms & Conditions:**
+  - Configured 4 user-provided standard terms into default business profile terms in `prisma/seed.js`.
+- **Architecture Decision Record:**
+  - Added `docs/ADR/0006-unit-master-and-client-snapshot.md`.
+
+### Changed
+- **Client Optional Email and Phone:**
+  - Relaxed client email and phone validation in `app/services/client.service.js` and `app/services/invoice.service.js` to be strictly optional.
+  - When non-empty values are supplied, rigorous RFC email and 10-15 digit phone validation remains strictly enforced.
+  - Removed misleading required indicators (`*`) from client forms and editor templates.
+- **Documents List History PushState Bug Fix:**
+  - Fixed `DataCloneError` in `assets/js/documents.js` where non-serializable `AbortController` was passed to `history.pushState()`.
+
+---
+
 ## [Core Baseline Freeze] — 2026-10-02
 
 ### Added

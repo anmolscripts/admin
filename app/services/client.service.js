@@ -17,6 +17,34 @@ class NotFoundError extends Error {
 }
 
 const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_REGEX = /^[+]?[(]?[0-9]{1,4}[)]?[-\s./0-9]{4,30}$/;
+
+function validateClientEmail(email) {
+    if (email === undefined || email === null) return null;
+    const str = String(email).trim();
+    if (!str) return null;
+    if (str.length > 191) {
+        throw new ValidationError('Client email must not exceed 191 characters.');
+    }
+    if (!EMAIL_REGEX.test(str)) {
+        throw new ValidationError('Invalid client email format.');
+    }
+    return str;
+}
+
+function validateClientPhone(phone) {
+    if (phone === undefined || phone === null) return null;
+    const str = String(phone).trim();
+    if (!str) return null;
+    if (str.length > 50) {
+        throw new ValidationError('Client phone number must not exceed 50 characters.');
+    }
+    if (!PHONE_REGEX.test(str)) {
+        throw new ValidationError('Invalid client phone number format.');
+    }
+    return str;
+}
 
 function formatClientResponse(client) {
     if (!client) return null;
@@ -48,8 +76,8 @@ async function createClient(data = {}, userId = null) {
         stateCode = gstin.substring(0, 2);
     }
 
-    const email = data.email ? data.email.trim() : null;
-    const phone = data.phone ? data.phone.trim() : null;
+    const email = validateClientEmail(data.email);
+    const phone = validateClientPhone(data.phone);
     const billingAddress = data.billingAddress ? data.billingAddress.trim() : null;
     const shippingAddress = data.shippingAddress ? data.shippingAddress.trim() : null;
 
@@ -130,8 +158,8 @@ async function updateClient(idInput, data = {}) {
     }
 
     if (data.stateCode !== undefined) updateData.stateCode = data.stateCode ? data.stateCode.trim() : null;
-    if (data.email !== undefined) updateData.email = data.email ? data.email.trim() : null;
-    if (data.phone !== undefined) updateData.phone = data.phone ? data.phone.trim() : null;
+    if (data.email !== undefined) updateData.email = validateClientEmail(data.email);
+    if (data.phone !== undefined) updateData.phone = validateClientPhone(data.phone);
     if (data.billingAddress !== undefined) updateData.billingAddress = data.billingAddress ? data.billingAddress.trim() : null;
     if (data.shippingAddress !== undefined) updateData.shippingAddress = data.shippingAddress ? data.shippingAddress.trim() : null;
     if (data.active !== undefined) updateData.active = Boolean(data.active);

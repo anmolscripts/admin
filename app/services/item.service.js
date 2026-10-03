@@ -191,7 +191,7 @@ async function createItem(data, userId) {
         throw new ValidationError('Item GST rate must be a non-negative number.');
     }
 
-    const unit = (data.unit || 'PCS').toString().trim().toUpperCase() || 'PCS';
+    const unit = (data.unit || 'PCS').toString().trim() || 'PCS';
     const description = data.description ? data.description.toString().trim() : null;
     const hsnSac = data.hsnSac ? data.hsnSac.toString().trim() : null;
     const active = data.active !== undefined ? (data.active === 'true' || data.active === true) : true;
@@ -301,7 +301,7 @@ async function updateItem(id, data, userId) {
     }
 
     if (data.unit !== undefined) {
-        updateData.unit = (data.unit || 'PCS').toString().trim().toUpperCase() || 'PCS';
+        updateData.unit = (data.unit || 'PCS').toString().trim() || 'PCS';
     }
 
     if (data.description !== undefined) {
@@ -369,7 +369,7 @@ async function ensureItemsExistFromDocument(items, userId, tx = prisma) {
                 const rate = item.rate !== undefined && !isNaN(parseFloat(item.rate))
                     ? Math.max(parseFloat(item.rate), 0)
                     : 0;
-                const unit = (item.unit || 'PCS').toString().trim().toUpperCase() || 'PCS';
+                const unit = (item.unit || 'PCS').toString().trim() || 'PCS';
                 const hsnSac = item.hsnSac ? item.hsnSac.toString().trim() : null;
 
                 await tx.item.create({

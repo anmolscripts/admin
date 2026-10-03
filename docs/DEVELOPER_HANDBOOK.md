@@ -97,11 +97,16 @@ npx prisma migrate status
 ```
 
 ### 9. Seed Development Data
-Seed the local admin account, company settings, and sample documents:
+Seed the local admin account, company settings, predefined units, master items, and sample documents:
 ```bash
 npm run prisma:seed
 ```
-*Output will confirm creation of admin account `admin@email.com`.*
+*Output will confirm:*
+- Admin account: `admin@email.com`
+- Organization defaults & GST settings
+- 13 Predefined measurement units (`PCS`, `m`, `unit`, `Hours`, `Project`, etc.)
+- 21 Standard industrial catalog items
+- Sample quotations, active invoices, and payments.
 
 ### 10. Start the Development Server
 ```bash

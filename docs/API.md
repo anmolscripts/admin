@@ -240,18 +240,53 @@ All API endpoints are mounted under `/api/` (except authentication and web prese
 - `GET /api/clients`: Paginated directory.
 - `GET /api/clients/search?q=query`: Fast client autocomplete.
 - `GET /api/clients/:id`: Single client details.
-- `POST /api/clients`: Create client.
+- `POST /api/clients`: Create client (`name` required; `email` and `phone` optional).
 - `PUT /api/clients/:id`: Update client.
 - `PATCH /api/clients/:id/status`: Toggle active status.
 
 ---
 
-## 8. Dashboard & System Endpoints
+## 8. Unit Master API (`/api/units`)
 
-### 8.1. `GET /api/dashboard/metrics`
+### 8.1. `GET /api/units/active`
+- **Description:** Retrieve list of active measurement units for document editor dropdowns.
+- **Response:** `200 OK`
+  ```json
+  {
+    "success": true,
+    "data": [
+      { "id": 1, "name": "Piece", "symbol": "PCS", "active": true },
+      { "id": 2, "name": "Meter", "symbol": "m", "active": true },
+      { "id": 3, "name": "Unit", "symbol": "unit", "active": true }
+    ]
+  }
+  ```
+
+### 8.2. `GET /api/units`
+- **Description:** Paginated list of all measurement units with search and active status filters.
+
+### 8.3. `POST /api/units`
+- **Description:** Create new measurement unit.
+- **Payload:** `{ "name": "Kilowatt Hour", "symbol": "kWh", "description": "Energy consumption" }`
+
+### 8.4. `PUT /api/units/:id`
+- **Description:** Update measurement unit details or toggle status.
+
+### 8.5. `PATCH /api/units/:id/status`
+- **Description:** Toggle active/inactive status.
+- **Payload:** `{ "active": true }`
+
+### 8.6. `DELETE /api/units/:id`
+- **Description:** Delete a measurement unit.
+
+---
+
+## 9. Dashboard & System Endpoints
+
+### 9.1. `GET /api/dashboard/metrics`
 - **Query Parameters:** `range` (`today` | `this_week` | `this_month` | `this_quarter` | `this_year` | `custom`), `from`, `to`.
 - **Response:** `200 OK` with counts, sums, overdue totals, and 6-point chart series.
 
-### 8.2. `GET /health`
+### 9.2. `GET /health`
 - **Auth Required:** No
 - **Response:** `200 OK` `{ "status": "ok", "timestamp": "...", "uptime": 1234, "database": "connected" }`

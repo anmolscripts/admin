@@ -34,74 +34,65 @@
   <% } %>
 </head>
 
+<%
+  const currentNavPath = locals.currentPath || '';
+  const currentNavTitle = (locals.pageTitle || '').toLowerCase();
+
+  const isDashboard = currentNavPath === '/dashboard' || currentNavTitle.includes('dashboard');
+  const isDocuments = (currentNavPath.startsWith('/documents') || currentNavPath === '/' || currentNavTitle.includes('quotation') || currentNavTitle.includes('invoice')) && !currentNavTitle.includes('client') && !currentNavTitle.includes('item') && !currentNavTitle.includes('unit');
+  const isClients = currentNavPath.startsWith('/clients') || currentNavTitle.includes('client');
+  const isItems = currentNavPath.startsWith('/items') || currentNavTitle.includes('item');
+  const isUnits = currentNavPath.startsWith('/units') || currentNavTitle.includes('unit');
+  const isSettings = currentNavPath.startsWith('/settings') || currentNavTitle.includes('setting') || currentNavTitle.includes('organization');
+%>
+
 <body>
   <div class="sidebar-wrapper" id="sidebar">
     <!-- Brand Logo / Identity -->
-    <a href="index.html" class="sidebar-brand">
+    <a href="/dashboard" class="sidebar-brand">
       <i class="bi bi-asterisk"></i>
       <span>Spark Admin</span>
     </a>
 
-    <!-- Navigation Menu -->
+    <!-- Authoritative Navigation Menu -->
     <div class="flex-grow-1 overflow-y-auto">
-      <!-- Group: Menu -->
       <div class="sidebar-menu-section">
-        <div class="sidebar-menu-title">Menu</div>
+        <div class="sidebar-menu-title">MENU</div>
         <ul class="sidebar-menu-list">
           <li class="sidebar-menu-item">
-            <a href="index.html" class="sidebar-menu-link active" id="menu-overview" title="Overview">
+            <a href="/dashboard" class="sidebar-menu-link <%= isDashboard ? 'active' : '' %>" id="menu-dashboard" title="Dashboard">
               <i class="bi bi-grid-fill"></i>
               <span>Dashboard</span>
             </a>
           </li>
-        </ul>
-      </div>
-
-      <!-- Group: Components -->
-      <div class="sidebar-menu-section">
-        <div class="sidebar-menu-title">Components</div>
-        <ul class="sidebar-menu-list">
           <li class="sidebar-menu-item">
-            <a href="tables-basic.html" class="sidebar-menu-link" id="menu-basictables" title="Basic Tables">
-              <i class="bi bi-table"></i>
-              <span>Basic Tables</span>
+            <a href="/documents" class="sidebar-menu-link <%= isDocuments ? 'active' : '' %>" id="menu-documents" title="Documents">
+              <i class="bi bi-file-earmark-text-fill"></i>
+              <span>Documents</span>
             </a>
           </li>
           <li class="sidebar-menu-item">
-            <a href="ui-forms.html" class="sidebar-menu-link" id="menu-uiforms" title="Forms and Input">
-              <i class="bi bi-input-cursor-text"></i>
-              <span>Forms & Input</span>
+            <a href="/clients" class="sidebar-menu-link <%= isClients ? 'active' : '' %>" id="menu-clients" title="Clients">
+              <i class="bi bi-people-fill"></i>
+              <span>Clients</span>
             </a>
           </li>
           <li class="sidebar-menu-item">
-            <a href="ui-buttons.html" class="sidebar-menu-link" id="menu-uibuttons" title="Buttons">
-              <i class="bi bi-menu-button-wide-fill"></i>
-              <span>Buttons & Alerts</span>
-            </a>
-          </li>
-        </ul>
-      </div>
-
-      <!-- Group: Pages -->
-      <div class="sidebar-menu-section">
-        <div class="sidebar-menu-title">Pages</div>
-        <ul class="sidebar-menu-list">
-          <li class="sidebar-menu-item">
-            <a href="page-blank.html" class="sidebar-menu-link" id="menu-blankpage" title="Blank Page">
-              <i class="bi bi-file-earmark"></i>
-              <span>Blank Page</span>
+            <a href="/items" class="sidebar-menu-link <%= isItems ? 'active' : '' %>" id="menu-items" title="Items">
+              <i class="bi bi-box-seam-fill"></i>
+              <span>Items</span>
             </a>
           </li>
           <li class="sidebar-menu-item">
-            <a href="page-login.html" class="sidebar-menu-link" id="menu-loginpage" title="Login Page">
-              <i class="bi bi-box-arrow-in-right"></i>
-              <span>Login Screen</span>
+            <a href="/units" class="sidebar-menu-link <%= isUnits ? 'active' : '' %>" id="menu-units" title="Units">
+              <i class="bi bi-rulers"></i>
+              <span>Units</span>
             </a>
           </li>
           <li class="sidebar-menu-item">
-            <a href="page-404.html" class="sidebar-menu-link" id="menu-404" title="404 Page">
-              <i class="bi bi-slash-circle"></i>
-              <span>Error 404</span>
+            <a href="/settings" class="sidebar-menu-link <%= isSettings ? 'active' : '' %>" id="menu-settings" title="Settings">
+              <i class="bi bi-gear-fill"></i>
+              <span>Settings</span>
             </a>
           </li>
         </ul>
@@ -110,11 +101,11 @@
 
     <!-- Sidebar Profile Card (Dynamic Footer) -->
     <div class="sidebar-profile">
-      <img src="assets/images/avatar.png" alt="Administrator" class="sidebar-profile-img"
+      <img src="/images/avatar.png" alt="Administrator" class="sidebar-profile-img"
         onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=256&auto=format&fit=crop'">
       <div class="sidebar-profile-info">
-        <div class="sidebar-profile-name"><%= locals.user ? locals.user.name : 'Guest' %></div>
-        <div class="sidebar-profile-email"><%= locals.user ? locals.user.email : '' %></div>
+        <div class="sidebar-profile-name"><%= locals.user ? locals.user.name : 'Administrator' %></div>
+        <div class="sidebar-profile-email"><%= locals.user ? locals.user.email : 'admin@email.com' %></div>
       </div>
     </div>
   </div>
@@ -131,19 +122,22 @@
 
         <!-- Navigation Links -->
         <nav class="d-none d-md-flex align-items-center ms-3 gap-2">
-          <a href="/dashboard" class="btn btn-sm <%= pageTitle && pageTitle.toLowerCase().includes('dashboard') ? 'btn-primary' : 'btn-light border' %>">
+          <a href="/dashboard" class="btn btn-sm <%= isDashboard ? 'btn-primary' : 'btn-light border' %>">
             <i class="bi bi-speedometer2 me-1"></i> Dashboard
           </a>
-          <a href="/documents" class="btn btn-sm <%= pageTitle && (pageTitle.includes('Quotations') || pageTitle.includes('Invoice') || pageTitle.includes('Quotation')) && !pageTitle.includes('Client') && !pageTitle.includes('Item') ? 'btn-primary' : 'btn-light border' %>">
+          <a href="/documents" class="btn btn-sm <%= isDocuments ? 'btn-primary' : 'btn-light border' %>">
             <i class="bi bi-file-earmark-text me-1"></i> Documents
           </a>
-          <a href="/clients" class="btn btn-sm <%= pageTitle && pageTitle.includes('Client') ? 'btn-primary' : 'btn-light border' %>">
+          <a href="/clients" class="btn btn-sm <%= isClients ? 'btn-primary' : 'btn-light border' %>">
             <i class="bi bi-people me-1"></i> Clients
           </a>
-          <a href="/items" class="btn btn-sm <%= pageTitle && pageTitle.includes('Item') ? 'btn-primary' : 'btn-light border' %>">
+          <a href="/items" class="btn btn-sm <%= isItems ? 'btn-primary' : 'btn-light border' %>">
             <i class="bi bi-box-seam me-1"></i> Items
           </a>
-          <a href="/settings" class="btn btn-sm <%= pageTitle && (pageTitle.includes('Settings') || pageTitle.includes('Organization')) ? 'btn-primary' : 'btn-light border' %>">
+          <a href="/units" class="btn btn-sm <%= isUnits ? 'btn-primary' : 'btn-light border' %>">
+            <i class="bi bi-rulers me-1"></i> Units
+          </a>
+          <a href="/settings" class="btn btn-sm <%= isSettings ? 'btn-primary' : 'btn-light border' %>">
             <i class="bi bi-gear me-1"></i> Settings
           </a>
         </nav>
@@ -168,6 +162,11 @@
             <li>
               <a class="dropdown-item" href="/clients/new">
                 <i class="bi bi-person-plus text-success me-2"></i> New Client
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item" href="/units">
+                <i class="bi bi-rulers text-secondary me-2"></i> New Unit
               </a>
             </li>
           </ul>

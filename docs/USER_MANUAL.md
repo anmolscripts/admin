@@ -67,43 +67,59 @@ The dashboard provides real-time visibility into business performance:
 
 ## 4. Selecting or Creating a Client
 - **Existing Client:** Click the **Client** dropdown or type the client name. Selecting a client auto-populates their GSTIN, Place of Supply state, billing address, and email.
-- **New Client:** You can enter a new client's details directly in the form fields. The billing address will be snapshotted onto the document.
+## 4. Selecting or Creating a Client
+- **Saved Client Selection:** Choose an existing customer from the **Choose Saved Client** dropdown. The system automatically populates:
+  - Client / Company Name
+  - Email Address (if on file)
+  - Phone Number (if on file)
+  - Client GSTIN (15 characters)
+  - Place of Supply / State Code
+  - Billing Address
+  - Shipping Address
+- **Clear Selection:** Click the `×` button next to the dropdown to clear fields and create a fresh client record.
+- **Document-Level Client Snapshot:** The blue badge (`Document-level client snapshot`) indicates that the customer details are snapshotted specifically for this document. Modifying the address or contact info here will NOT alter the saved master client, and subsequent changes to the client master will NOT corrupt historical invoices.
+- **Optional Contact Fields:** Client Name is **required**. Email Address and Phone Number are **optional**; if entered, strict format validation applies.
 
 ---
 
 ## 5. Adding Line Items
-1. Click **+ Add Item** to insert a new line row.
+1. Click **+ Add Item** (or press `Enter` on the quantity field of the previous row) to insert a new line row.
 2. Enter:
    - **Item Description / Name**
-   - **HSN / SAC Code** (e.g., `998313` for consulting services)
-   - **Quantity** (e.g., `5`)
-   - **Unit** (`PCS`, `HOURS`, `MONTH`, `BOX`, `KGS`)
+   - **Unit** (dynamically loaded from Unit Master: `PCS`, `m`, `unit`, `Hours`, `Project`, etc.)
    - **Rate** (Unit price in INR)
+   - **Quantity** (e.g., `5`)
+   - **HSN / SAC Code** (e.g., `7304` or `998313`)
+   - **GST Rate** (if GST is enabled)
 3. The row total calculates instantly in the browser. Server-side validation guarantees final exactness.
 
 ---
 
-## 6. Item Master Autocomplete
+## 6. Item Master Autocomplete Portal
 When typing in the **Item Description** field:
-1. Type at least 2 characters of an existing catalog item.
-2. A dropdown menu appears beneath the input displaying matching products and services with their standard rates and units.
-3. Click a suggestion to immediately populate the description, unit, rate, and tax rate.
+1. Type at least 2 characters of an existing catalog item (e.g. `pipe` or `valve`).
+2. A high-contrast floating portal dropdown (`#item-autocomplete-portal`) appears instantly above the line items and surrounding sections.
+3. The portal is immune to parent container clipping or scroll overflow traps.
+4. Suggestions display the full item description, unit, and default rate.
+5. Click a suggestion or use the keyboard to populate Description, Unit, Rate, and HSN/SAC code immediately.
 
 ---
 
-## 7. Keyboard Shortcuts for Rapid Entry
-To speed up high-volume invoice entry:
-- **`↓` (Down Arrow):** Navigate down through autocomplete suggestions.
-- **`↑` (Up Arrow):** Navigate up through autocomplete suggestions.
-- **`Enter`:** Select the highlighted suggestion.
-- **`Esc`:** Close the suggestions popup.
-- **`Tab`:** Advance focus seamlessly to Quantity, Rate, and Add Line.
+## 7. Fast Keyboard Invoicing Workflow
+Designed for rapid, touch-typist data entry without requiring mouse interaction:
+- **`↓` / `↑` (Arrow Keys):** Move through autocomplete suggestions.
+- **`Enter` on Autocomplete:** Selects the highlighted item, closes dropdown, and advances focus to **Unit**.
+- **`Enter` on Unit:** Advances focus to **Rate**.
+- **`Enter` on Rate:** Advances focus to **Quantity**.
+- **`Enter` on Quantity:** Automatically creates the **next line item row** and immediately focuses its **Item Description** field.
+- **`Esc`:** Closes the autocomplete suggestions without selecting.
+- **`Tab`:** Standard forward navigation.
 
 ---
 
 ## 8. Adding a Brand-New Uncataloged Item
 If you type an item name that does not exist in your Item Master:
-- You do **not** need to leave the editor. Simply fill out the unit, quantity, and rate as normal.
+- You do **not** need to leave the editor. Simply fill out the unit, rate, and quantity as normal.
 - When you click **Save Document**, the backend automatically creates a new record in your Item Master.
 - The next time you create an invoice, this new item will be available in autocomplete.
 
@@ -290,6 +306,17 @@ Navigate to **Clients** (`/clients`):
 
 ## 32. Managing Item Master Catalog
 Navigate to **Items** (`/items`):
-- Maintain your standard product and service catalog.
+- Maintain your standard product and service catalog (preloaded with 21 industrial master items).
 - Set default unit rates, measurement units, HSN/SAC codes, and GST rates.
+- Quickly toggle active/inactive status right from the table row.
 - Deactivate obsolete products without impacting historical invoices.
+
+---
+
+## 33. Managing Unit Master Catalog
+Navigate to **Units** (`/units`):
+- Create, inspect, edit, and deactivate measurement units across the organization.
+- Standard symbols (`PCS`, `m`, `unit`, `Hours`, `Project`, `KG`, etc.) with database-enforced uniqueness.
+- Toggle units active or inactive instantly via the table switch without full page reloads.
+- Active units populate the Invoice and Quotation editor dropdowns automatically.
+- Historical invoices remain completely unaffected if a unit is subsequently edited or deactivated.

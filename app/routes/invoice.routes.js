@@ -3,6 +3,7 @@ const requireAuth = require('../middleware/auth.middleware');
 const invoiceController = require('../controllers/invoice.controller');
 const clientController = require('../controllers/client.controller');
 const itemController = require('../controllers/item.controller');
+const unitController = require('../controllers/unit.controller');
 const paymentController = require('../controllers/payment.controller');
 const businessProfileController = require('../controllers/businessProfile.controller');
 const dashboardController = require('../controllers/dashboard.controller');
@@ -21,6 +22,15 @@ router.get('/items', itemController.listItems);
 router.get('/items/:id', itemController.getItem);
 router.post('/items', itemController.createItem);
 router.put('/items/:id', itemController.updateItem);
+
+// Unit Master API routes (must precede parameterized routes)
+router.get('/units/active', unitController.getActiveUnits);
+router.get('/units', unitController.listUnits);
+router.get('/units/:id', unitController.getUnit);
+router.post('/units', unitController.createUnit);
+router.put('/units/:id', unitController.updateUnit);
+router.patch('/units/:id/status', unitController.toggleUnitStatus);
+router.delete('/units/:id', unitController.deleteUnit);
 
 // Dashboard KPIs (must precede /invoices/:id)
 router.get('/invoices/kpis', invoiceController.getDashboardKPIs);

@@ -37,6 +37,7 @@ model User {
   clientsCreated   Client[]          @relation("ClientCreatedBy")
   paymentsCreated  Payment[]         @relation("PaymentCreatedBy")
   itemsCreated     Item[]            @relation("ItemCreatedBy")
+  unitsCreated     Unit[]            @relation("UnitCreatedBy")
 
   @@map("users")
 }
@@ -182,6 +183,22 @@ model Item {
   @@index([active])
   @@index([createdById])
   @@map("items")
+}
+
+model Unit {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(100)
+  symbol      String   @unique @db.VarChar(30)
+  description String?  @db.Text
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById Int?
+  createdBy   User?    @relation("UnitCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([active])
+  @@index([createdById])
+  @@map("units")
 }
 
 model InvoiceRevision {

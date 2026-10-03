@@ -73,6 +73,7 @@ app.use(csrfProtection);
 // Global EJS variables
 app.use((req, res, next) => {
     res.locals.user = req.session ? req.session.user || null : null;
+    res.locals.currentPath = req.path;
     next();
 });
 

@@ -192,7 +192,7 @@
           <i class="bi bi-person-badge text-info fs-5"></i>
           <h5 class="mb-0 fw-bold">Client Information</h5>
         </div>
-        <span class="small text-muted-green">Document-level client snapshot</span>
+        <span class="badge bg-light text-muted border client-snapshot-badge">Document-level client snapshot</span>
       </div>
 
       <div class="row g-3">
@@ -202,27 +202,32 @@
         <!-- Select Existing Client Dropdown -->
         <div class="col-12">
           <label class="form-label-custom" for="client-select">Choose Saved Client</label>
-          <select class="form-select-custom" id="client-select" aria-label="Select saved client">
-            <option value="">-- Choose Existing Client (or enter details below) --</option>
-            <% if (locals.clientList && clientList.length > 0) { %>
-              <% clientList.forEach(c => { %>
-                <option value="<%= c.id %>" <%= (document && Number(document.clientId) === c.id) ? 'selected' : '' %>
-                  data-name="<%= c.name %>"
-                  data-email="<%= c.email || '' %>"
-                  data-phone="<%= c.phone || '' %>"
-                  data-gstin="<%= c.gstin || '' %>"
-                  data-state="<%= c.stateCode || '' %>"
-                  data-billing="<%= c.billingAddress || '' %>"
-                  data-shipping="<%= c.shippingAddress || '' %>">
-                  <%= c.name %> <%= c.gstin ? `(${c.gstin})` : '' %>
-                </option>
-              <% }); %>
-            <% } %>
-          </select>
+          <div class="input-group">
+            <select class="form-select-custom flex-grow-1" id="client-select" aria-label="Select saved client">
+              <option value="">-- Choose Existing Client (or enter details below) --</option>
+              <% if (locals.clientList && clientList.length > 0) { %>
+                <% clientList.forEach(c => { %>
+                  <option value="<%= c.id %>" <%= (document && Number(document.clientId) === c.id) ? 'selected' : '' %>
+                    data-name="<%= c.name %>"
+                    data-email="<%= c.email || '' %>"
+                    data-phone="<%= c.phone || '' %>"
+                    data-gstin="<%= c.gstin || '' %>"
+                    data-state="<%= c.stateCode || '' %>"
+                    data-billing="<%= c.billingAddress || '' %>"
+                    data-shipping="<%= c.shippingAddress || '' %>">
+                    <%= c.name %> <%= c.gstin ? `(${c.gstin})` : '' %>
+                  </option>
+                <% }); %>
+              <% } %>
+            </select>
+            <button class="btn btn-outline-secondary btn-clear-client <%= (document && document.clientId) ? '' : 'd-none' %>" type="button" id="btn-clear-client" title="Clear selected client">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
         </div>
 
         <!-- Client Name (Required, database backed) -->
-        <div class="col-12 col-lg-6">
+        <div class="col-12 col-md-4">
           <label class="form-label-custom" for="client-name">
             Client / Company Name *
           </label>
@@ -247,7 +252,7 @@
         </div>
 
         <!-- Client Email -->
-        <div class="col-12 col-sm-6 col-lg-3">
+        <div class="col-12 col-md-4">
           <label class="form-label-custom" for="client-email">Email Address</label>
           <input 
             type="email" 
@@ -265,7 +270,7 @@
         </div>
 
         <!-- Client Phone -->
-        <div class="col-12 col-sm-6 col-lg-3">
+        <div class="col-12 col-md-4">
           <label class="form-label-custom" for="client-phone">Phone Number</label>
           <input 
             type="tel" 
@@ -279,7 +284,7 @@
         </div>
 
         <!-- Client GSTIN -->
-        <div class="col-12 col-sm-6 col-lg-3">
+        <div class="col-12 col-md-6">
           <label class="form-label-custom" for="client-gstin">Client GSTIN (15 Digits)</label>
           <input
             type="text"
@@ -293,7 +298,7 @@
         </div>
 
         <!-- Place of Supply (State Code) -->
-        <div class="col-12 col-sm-6 col-lg-3">
+        <div class="col-12 col-md-6">
           <label class="form-label-custom" for="place-of-supply">Place of Supply (State Code)</label>
           <input
             type="text"
@@ -562,9 +567,12 @@
     id: document.id,
     documentType: document.documentType,
     invoiceNumber: document.invoiceNumber,
+    clientId: document.clientId || null,
     clientName: document.clientName,
     clientEmail: document.clientEmail,
     clientPhone: document.clientPhone,
+    clientGSTIN: document.clientGSTIN,
+    placeOfSupplyStateCode: document.placeOfSupplyStateCode,
     billingAddress: document.billingAddress,
     shippingAddress: document.shippingAddress,
     termsAndConditions: document.termsAndConditions,
@@ -590,6 +598,7 @@
         window.__INITIAL_DOCUMENT__ = ${JSON.stringify(clientDocumentData)};
         window.__EDITOR_MODE__ = "${mode}";
         window.__DOCUMENT_TYPE__ = "${documentType}";
+        window.__AVAILABLE_UNITS__ = ${JSON.stringify(locals.unitList || [])};
       </script>
       <script src="/js/editor.js"></script>
     ` 

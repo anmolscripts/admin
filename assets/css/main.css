@@ -3183,5 +3183,192 @@ span.flatpickr-weekday {
     color: var(--brand-lime) !important;
 }
 
+/* ========================================================================
+   20. REUSABLE BUTTON DESIGN SYSTEM (APPLICATION WIDE)
+   Unified heights, padding, border radii, colors, focus and hover states
+   ======================================================================== */
+.btn,
+.btn-custom {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    font-family: var(--bs-body-font-family);
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.4;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-md, 10px);
+    transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out, color 0.15s ease-in-out;
+    border: 1px solid transparent;
+    text-decoration: none;
+    cursor: pointer;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.btn:focus-visible,
+.btn-custom:focus-visible {
+    outline: 0;
+    box-shadow: 0 0 0 3px rgba(5, 28, 18, 0.16);
+}
+
+.btn:disabled,
+.btn.disabled,
+.btn-custom:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    pointer-events: none;
+    box-shadow: none !important;
+}
+
+/* Sizes */
+.btn-sm,
+.btn-custom-sm {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.8125rem;
+    border-radius: var(--radius-sm, 6px);
+}
+
+.btn-lg,
+.btn-custom-lg {
+    padding: 0.75rem 1.6rem;
+    font-size: 0.95rem;
+    border-radius: var(--radius-lg, 12px);
+}
+
+/* Primary Button (Forest Brand) */
+.btn-primary,
+.btn-spark-primary {
+    background-color: var(--brand-forest-dark, #051C12);
+    border-color: var(--brand-forest-dark, #051C12);
+    color: #FFFFFF !important;
+    box-shadow: 0 2px 6px rgba(5, 28, 18, 0.12);
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-spark-primary:hover,
+.btn-spark-primary:focus {
+    background-color: var(--brand-forest-light, #1A3E30);
+    border-color: var(--brand-forest-light, #1A3E30);
+    color: #FFFFFF !important;
+    box-shadow: 0 4px 14px rgba(5, 28, 18, 0.22);
+}
+
+.btn-primary:active,
+.btn-spark-primary:active {
+    background-color: #03130C;
+    border-color: #03130C;
+    color: #FFFFFF !important;
+}
+
+/* Secondary / Light Neutral Button */
+.btn-secondary,
+.btn-spark-secondary {
+    background-color: #FFFFFF;
+    border-color: var(--border-light, #E9EFEF);
+    color: var(--text-main, #0B130F);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.btn-secondary:hover,
+.btn-secondary:focus,
+.btn-spark-secondary:hover,
+.btn-spark-secondary:focus {
+    background-color: #F8FAF9;
+    border-color: #CCD7D1;
+    color: var(--text-main, #0B130F);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+/* Outline Buttons */
+.btn-outline-primary,
+.btn-custom-outline-primary {
+    background-color: transparent;
+    border-color: var(--brand-forest-dark, #051C12);
+    color: var(--brand-forest-dark, #051C12);
+}
+
+.btn-outline-primary:hover,
+.btn-outline-primary:focus,
+.btn-custom-outline-primary:hover,
+.btn-custom-outline-primary:focus {
+    background-color: var(--brand-forest-dark, #051C12);
+    border-color: var(--brand-forest-dark, #051C12);
+    color: #FFFFFF !important;
+}
+
+.btn-outline-secondary {
+    background-color: transparent;
+    border-color: var(--border-light, #E9EFEF);
+    color: var(--text-muted-green, #6C7E75);
+}
+
+.btn-outline-secondary:hover,
+.btn-outline-secondary:focus {
+    background-color: #F4F6F5;
+    border-color: #CCD7D1;
+    color: var(--text-main, #0B130F);
+}
+
+/* Danger Buttons */
+.btn-danger {
+    background-color: #DC2626;
+    border-color: #DC2626;
+    color: #FFFFFF !important;
+    box-shadow: 0 2px 6px rgba(220, 38, 38, 0.15);
+}
+
+.btn-danger:hover,
+.btn-danger:focus {
+    background-color: #B91C1C;
+    border-color: #B91C1C;
+    color: #FFFFFF !important;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
+}
+
+.btn-outline-danger {
+    background-color: transparent;
+    border-color: #FCA5A5;
+    color: #DC2626;
+}
+
+.btn-outline-danger:hover,
+.btn-outline-danger:focus {
+    background-color: #FEF2F2;
+    border-color: #EF4444;
+    color: #B91C1C;
+}
+
+/* Success Buttons */
+.btn-success {
+    background-color: #16A34A;
+    border-color: #16A34A;
+    color: #FFFFFF !important;
+}
+
+.btn-success:hover,
+.btn-success:focus {
+    background-color: #15803D;
+    border-color: #15803D;
+    color: #FFFFFF !important;
+}
+
+/* Icon Buttons */
+.btn-icon {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm, 6px);
+}
+
+.btn-icon.btn-sm {
+    width: 30px;
+    height: 30px;
+}
 
 

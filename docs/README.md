@@ -49,6 +49,7 @@ This directory contains the authoritative architecture specifications, database 
   - [ADR 0003: Single Shared Template for Print & PDF Rendering](file:///c:/Users/User/Documents/project/admin/docs/ADR/0003-shared-print-pdf-template.md)
   - [ADR 0004: Item Master Snapshot Isolation & Unique Identity](file:///c:/Users/User/Documents/project/admin/docs/ADR/0004-item-master-snapshot-and-uniqueness.md)
   - [ADR 0005: Single-Process Production Architecture Baseline](file:///c:/Users/User/Documents/project/admin/docs/ADR/0005-single-process-production-baseline.md)
+  - [ADR 0006: Unit Master Management & Document-Level Client Snapshotting](file:///c:/Users/User/Documents/project/admin/docs/ADR/0006-unit-master-and-client-snapshot.md)
 
 ---
 

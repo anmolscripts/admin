@@ -22,9 +22,14 @@
     let docVersionInput;
     let docDateInput;
     let docDueDateInput;
+    let clientSelect;
+    let btnClearClient;
+    let clientIdInput;
     let clientNameInput;
     let clientEmailInput;
     let clientPhoneInput;
+    let clientGstinInput;
+    let placeOfSupplyInput;
     let billingAddressInput;
     let shippingAddressInput;
     let sameAsBillingToggle;
@@ -34,6 +39,13 @@
     let btnAddItem;
     let btnAddItemHeader;
     let itemsCountIndicator;
+
+    let availableUnits = (window.__AVAILABLE_UNITS__ && Array.isArray(window.__AVAILABLE_UNITS__))
+        ? window.__AVAILABLE_UNITS__
+        : [];
+
+    let autocompletePortalEl = null;
+    let activeRowContext = null;
     let gstEnabledToggle;
     let gstRateContainer;
     let gstRateSelect;
@@ -106,6 +118,223 @@
     }
 
     /**
+     * Load active units from server if not already embedded
+     */
+    async function loadActiveUnitsIfMissing() {
+        if (!availableUnits || availableUnits.length === 0) {
+            try {
+                const res = await fetch('/api/units/active');
+                if (res.ok) {
+                    const json = await res.json();
+                    if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+                        availableUnits = json.data;
+                        const selects = itemsTbody ? itemsTbody.querySelectorAll('.item-unit') : [];
+                        selects.forEach(sel => {
+                            const curVal = sel.value;
+                            sel.innerHTML = renderUnitOptions(curVal);
+                        });
+                    }
+                }
+            } catch (_) {}
+        }
+    }
+
+    /**
+     * Render options for unit select from Unit Master
+     */
+    function renderUnitOptions(selectedUnit) {
+        const list = (availableUnits && availableUnits.length > 0)
+            ? availableUnits
+            : [
+                { symbol: 'PCS' }, { symbol: 'm' }, { symbol: 'unit' },
+                { symbol: 'Project' }, { symbol: 'Hours' }, { symbol: 'Months' },
+                { symbol: 'Units' }, { symbol: 'License' }, { symbol: 'Year' },
+                { symbol: 'Package' }, { symbol: 'Set' }, { symbol: 'KG' },
+                { symbol: 'Service' }
+            ];
+
+        let html = '';
+        let matched = false;
+        list.forEach(u => {
+            const sym = u.symbol || u;
+            const isSel = selectedUnit && selectedUnit.toLowerCase() === String(sym).toLowerCase();
+            if (isSel) matched = true;
+            html += `<option value="${escapeHtml(sym)}" ${isSel ? 'selected' : ''}>${escapeHtml(sym)}</option>`;
+        });
+
+        if (!matched && selectedUnit) {
+            html = `<option value="${escapeHtml(selectedUnit)}" selected>${escapeHtml(selectedUnit)}</option>` + html;
+        }
+        return html;
+    }
+
+    /**
+     * Top-level Autocomplete Portal Management
+     */
+    function getOrCreateAutocompletePortal() {
+        if (!autocompletePortalEl) {
+            autocompletePortalEl = document.getElementById('item-autocomplete-portal');
+            if (!autocompletePortalEl) {
+                autocompletePortalEl = document.createElement('div');
+                autocompletePortalEl.id = 'item-autocomplete-portal';
+                autocompletePortalEl.className = 'item-autocomplete-portal d-none';
+                autocompletePortalEl.setAttribute('role', 'listbox');
+                autocompletePortalEl.setAttribute('aria-label', 'Item suggestions');
+                document.body.appendChild(autocompletePortalEl);
+            }
+        }
+        return autocompletePortalEl;
+    }
+
+    function positionPortal(inputEl) {
+        if (!inputEl || !autocompletePortalEl || autocompletePortalEl.classList.contains('d-none')) return;
+        const rect = inputEl.getBoundingClientRect();
+        if (rect.width === 0 && rect.height === 0) {
+            hideAutocompletePortal();
+            return;
+        }
+        const vpHeight = window.innerHeight;
+        const vpWidth = window.innerWidth;
+        const portalWidth = Math.max(rect.width, 380);
+        let left = rect.left;
+        if (left + portalWidth > vpWidth - 12) {
+            left = Math.max(12, vpWidth - portalWidth - 12);
+        }
+
+        const spaceBelow = vpHeight - rect.bottom;
+        const spaceAbove = rect.top;
+        const estimatedHeight = Math.min(autocompletePortalEl.scrollHeight || 240, 280);
+
+        let top;
+        if (spaceBelow >= estimatedHeight + 8 || spaceBelow >= spaceAbove) {
+            top = rect.bottom + 4;
+            autocompletePortalEl.style.maxHeight = `${Math.min(280, Math.max(100, spaceBelow - 16))}px`;
+        } else {
+            top = Math.max(8, rect.top - estimatedHeight - 4);
+            autocompletePortalEl.style.maxHeight = `${Math.min(280, Math.max(100, spaceAbove - 16))}px`;
+        }
+
+        autocompletePortalEl.style.position = 'fixed';
+        autocompletePortalEl.style.top = `${top}px`;
+        autocompletePortalEl.style.left = `${left}px`;
+        autocompletePortalEl.style.width = `${portalWidth}px`;
+    }
+
+    function hideAutocompletePortal() {
+        if (autocompletePortalEl) {
+            autocompletePortalEl.classList.add('d-none');
+            autocompletePortalEl.innerHTML = '';
+        }
+        if (activeRowContext && activeRowContext.nameInput) {
+            activeRowContext.nameInput.setAttribute('aria-expanded', 'false');
+            activeRowContext.nameInput.removeAttribute('aria-activedescendant');
+        }
+        if (activeRowContext) {
+            activeRowContext.suggestions = [];
+            activeRowContext.highlightedIdx = -1;
+        }
+    }
+
+    function renderSuggestions(items, ctx) {
+        const portal = getOrCreateAutocompletePortal();
+        portal.innerHTML = '';
+        ctx.suggestions = items || [];
+        ctx.highlightedIdx = -1;
+
+        if (!items || items.length === 0) {
+            const emptyDiv = document.createElement('div');
+            emptyDiv.className = 'item-autocomplete-empty';
+            emptyDiv.innerHTML = '<i class="bi bi-info-circle me-1"></i> No matching items found in Item Master';
+            portal.appendChild(emptyDiv);
+            portal.classList.remove('d-none');
+            ctx.nameInput.setAttribute('aria-expanded', 'true');
+            positionPortal(ctx.nameInput);
+            return;
+        }
+
+        items.forEach((item, idx) => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'item-autocomplete-item';
+            itemDiv.setAttribute('role', 'option');
+            itemDiv.setAttribute('id', `item-opt-${idx}`);
+            itemDiv.setAttribute('aria-selected', 'false');
+
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'item-autocomplete-item-name';
+            nameSpan.textContent = item.name;
+
+            const metaSpan = document.createElement('span');
+            metaSpan.className = 'item-autocomplete-item-meta';
+
+            const badgeSpan = document.createElement('span');
+            badgeSpan.className = 'item-autocomplete-price-badge font-monospace';
+            const rateFormatted = Number(item.rate).toFixed(2);
+            badgeSpan.textContent = `₹ ${rateFormatted} / ${item.unit || 'PCS'}`;
+            metaSpan.appendChild(badgeSpan);
+
+            itemDiv.appendChild(nameSpan);
+            itemDiv.appendChild(metaSpan);
+
+            itemDiv.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                ctx.selectItem(item);
+            });
+
+            itemDiv.addEventListener('mouseenter', () => {
+                setHighlightedIndex(idx, ctx);
+            });
+
+            portal.appendChild(itemDiv);
+        });
+
+        portal.classList.remove('d-none');
+        ctx.nameInput.setAttribute('aria-expanded', 'true');
+        positionPortal(ctx.nameInput);
+    }
+
+    function setHighlightedIndex(newIdx, ctx) {
+        if (!autocompletePortalEl) return;
+        const items = autocompletePortalEl.querySelectorAll('.item-autocomplete-item');
+        items.forEach((el) => {
+            el.classList.remove('active');
+            el.setAttribute('aria-selected', 'false');
+        });
+
+        if (newIdx >= 0 && newIdx < items.length) {
+            ctx.highlightedIdx = newIdx;
+            items[newIdx].classList.add('active');
+            items[newIdx].setAttribute('aria-selected', 'true');
+            items[newIdx].scrollIntoView({ block: 'nearest' });
+            ctx.nameInput.setAttribute('aria-activedescendant', `item-opt-${newIdx}`);
+        } else {
+            ctx.highlightedIdx = -1;
+            ctx.nameInput.removeAttribute('aria-activedescendant');
+        }
+    }
+
+    // Window-level portal scroll & resize listeners
+    window.addEventListener('scroll', () => {
+        if (activeRowContext && activeRowContext.nameInput) {
+            positionPortal(activeRowContext.nameInput);
+        }
+    }, true);
+
+    window.addEventListener('resize', () => {
+        if (activeRowContext && activeRowContext.nameInput) {
+            positionPortal(activeRowContext.nameInput);
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        if (autocompletePortalEl && !autocompletePortalEl.contains(e.target)) {
+            if (!activeRowContext || e.target !== activeRowContext.nameInput) {
+                hideAutocompletePortal();
+            }
+        }
+    });
+
+    /**
      * Create an accessible item row element
      */
     function createItemRow(data = {}) {
@@ -136,22 +365,11 @@
                         aria-expanded="false"
                         aria-label="Item description"
                     />
-                    <div class="item-autocomplete-dropdown d-none" role="listbox" aria-label="Item suggestions"></div>
                 </div>
             </td>
             <td>
                 <select class="form-select-custom item-unit" aria-label="Item unit">
-                    <option value="PCS" ${unit === 'PCS' ? 'selected' : ''}>PCS</option>
-                    <option value="Project" ${unit === 'Project' ? 'selected' : ''}>Project</option>
-                    <option value="Hours" ${unit === 'Hours' ? 'selected' : ''}>Hours</option>
-                    <option value="Months" ${unit === 'Months' ? 'selected' : ''}>Months</option>
-                    <option value="Units" ${unit === 'Units' ? 'selected' : ''}>Units</option>
-                    <option value="License" ${unit === 'License' ? 'selected' : ''}>License</option>
-                    <option value="Year" ${unit === 'Year' ? 'selected' : ''}>Year</option>
-                    <option value="Package" ${unit === 'Package' ? 'selected' : ''}>Package</option>
-                    <option value="Set" ${unit === 'Set' ? 'selected' : ''}>Set</option>
-                    <option value="KG" ${unit === 'KG' ? 'selected' : ''}>KG</option>
-                    <option value="Service" ${unit === 'Service' ? 'selected' : ''}>Service</option>
+                    ${renderUnitOptions(unit)}
                 </select>
             </td>
             <td>
@@ -198,195 +416,141 @@
 
         // Row Element References
         const nameInput = tr.querySelector('.item-name');
-        const dropdownEl = tr.querySelector('.item-autocomplete-dropdown');
         const unitSelect = tr.querySelector('.item-unit');
         const rateInput = tr.querySelector('.item-rate');
         const qtyInput = tr.querySelector('.item-qty');
         const hsnInput = tr.querySelector('.item-hsn');
         const removeBtn = tr.querySelector('.btn-remove-item');
 
-        // Autocomplete State
-        let searchTimer = null;
-        let searchSeq = 0;
-        let suggestions = [];
-        let highlightedIdx = -1;
+        // Visual focus highlighting
+        [nameInput, unitSelect, rateInput, qtyInput, hsnInput].forEach(el => {
+            el.addEventListener('focus', () => tr.classList.add('row-active-focus'));
+            el.addEventListener('blur', () => tr.classList.remove('row-active-focus'));
+        });
 
-        function hideDropdown() {
-            dropdownEl.classList.add('d-none');
-            dropdownEl.innerHTML = '';
-            nameInput.setAttribute('aria-expanded', 'false');
-            suggestions = [];
-            highlightedIdx = -1;
-        }
-
-        function renderSuggestions(items) {
-            dropdownEl.innerHTML = '';
-            suggestions = items || [];
-            highlightedIdx = -1;
-
-            if (suggestions.length === 0) {
-                hideDropdown();
-                return;
-            }
-
-            suggestions.forEach((item, idx) => {
-                const itemDiv = document.createElement('div');
-                itemDiv.className = 'item-autocomplete-item';
-                itemDiv.setAttribute('role', 'option');
-                itemDiv.setAttribute('id', `item-opt-${idx}`);
-                itemDiv.setAttribute('aria-selected', 'false');
-
-                // Text node for name to strictly avoid raw innerHTML
-                const nameSpan = document.createElement('span');
-                nameSpan.className = 'item-autocomplete-item-name';
-                nameSpan.textContent = item.name;
-
-                const metaSpan = document.createElement('span');
-                metaSpan.className = 'item-autocomplete-item-meta';
-
-                const badgeSpan = document.createElement('span');
-                badgeSpan.className = 'item-autocomplete-price-badge font-monospace';
-                const rateFormatted = Number(item.rate).toFixed(2);
-                badgeSpan.textContent = `₹${rateFormatted} / ${item.unit || 'PCS'}`;
-                metaSpan.appendChild(badgeSpan);
-
-                itemDiv.appendChild(nameSpan);
-                itemDiv.appendChild(metaSpan);
-
-                // Mouse selection
-                itemDiv.addEventListener('mousedown', (e) => {
-                    e.preventDefault();
-                    selectItem(item);
-                });
-
-                itemDiv.addEventListener('mouseenter', () => {
-                    setHighlightedIndex(idx);
-                });
-
-                dropdownEl.appendChild(itemDiv);
-            });
-
-            dropdownEl.classList.remove('d-none');
-            nameInput.setAttribute('aria-expanded', 'true');
-        }
-
-        function setHighlightedIndex(newIdx) {
-            const items = dropdownEl.querySelectorAll('.item-autocomplete-item');
-            items.forEach((el) => {
-                el.classList.remove('active');
-                el.setAttribute('aria-selected', 'false');
-            });
-
-            if (newIdx >= 0 && newIdx < items.length) {
-                highlightedIdx = newIdx;
-                items[highlightedIdx].classList.add('active');
-                items[highlightedIdx].setAttribute('aria-selected', 'true');
-                items[highlightedIdx].scrollIntoView({ block: 'nearest' });
-                nameInput.setAttribute('aria-activedescendant', `item-opt-${highlightedIdx}`);
-            } else {
-                highlightedIdx = -1;
-                nameInput.removeAttribute('aria-activedescendant');
-            }
-        }
-
-        function selectItem(item) {
-            nameInput.value = item.name;
-            if (item.unit) {
-                let found = false;
-                for (let i = 0; i < unitSelect.options.length; i++) {
-                    if (unitSelect.options[i].value.toLowerCase() === item.unit.toLowerCase()) {
-                        unitSelect.selectedIndex = i;
-                        found = true;
-                        break;
+        // Row Context for Autocomplete & Navigation
+        const rowContext = {
+            tr,
+            nameInput,
+            unitSelect,
+            rateInput,
+            qtyInput,
+            hsnInput,
+            suggestions: [],
+            highlightedIdx: -1,
+            searchTimer: null,
+            searchSeq: 0,
+            selectItem: function(item) {
+                nameInput.value = item.name;
+                if (item.unit) {
+                    let found = false;
+                    for (let i = 0; i < unitSelect.options.length; i++) {
+                        if (unitSelect.options[i].value.toLowerCase() === item.unit.toLowerCase()) {
+                            unitSelect.selectedIndex = i;
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        const opt = document.createElement('option');
+                        opt.value = item.unit;
+                        opt.textContent = item.unit;
+                        opt.selected = true;
+                        unitSelect.appendChild(opt);
                     }
                 }
-                if (!found) {
-                    const opt = document.createElement('option');
-                    opt.value = item.unit;
-                    opt.textContent = item.unit;
-                    opt.selected = true;
-                    unitSelect.appendChild(opt);
+                if (item.rate !== undefined && !isNaN(Number(item.rate))) {
+                    rateInput.value = Number(item.rate).toFixed(2);
                 }
-            }
-            if (item.rate !== undefined && !isNaN(Number(item.rate))) {
-                rateInput.value = Number(item.rate).toFixed(2);
-            }
-            if (item.hsnSac && hsnInput) {
-                hsnInput.value = item.hsnSac;
-            }
+                if (item.hsnSac && hsnInput) {
+                    hsnInput.value = item.hsnSac;
+                }
 
-            hideDropdown();
-            updateRowAmount(tr);
-            markDirty();
-            recalculateTotals();
+                hideAutocompletePortal();
+                updateRowAmount(tr);
+                markDirty();
+                recalculateTotals();
 
-            // Next logical field in sequence: Unit
-            unitSelect.focus();
-        }
+                // Fast data entry sequence: Enter on item autocomplete moves focus to Unit!
+                unitSelect.focus();
+            }
+        };
 
         // Search Autocomplete on Input
         nameInput.addEventListener('input', () => {
             nameInput.classList.remove('is-invalid-custom');
             markDirty();
 
-            clearTimeout(searchTimer);
+            clearTimeout(rowContext.searchTimer);
             const query = nameInput.value.trim();
             if (query.length === 0) {
-                hideDropdown();
+                hideAutocompletePortal();
                 return;
             }
 
-            searchTimer = setTimeout(async () => {
-                const curId = ++searchSeq;
+            activeRowContext = rowContext;
+            rowContext.searchTimer = setTimeout(async () => {
+                const curId = ++rowContext.searchSeq;
                 try {
                     const res = await fetch(`/api/items/search?q=${encodeURIComponent(query)}`);
-                    if (curId !== searchSeq) return; // Prevent stale autocomplete replacement
+                    if (curId !== rowContext.searchSeq) return; // Stale response protection
                     if (res.ok) {
                         const json = await res.json();
-                        if (curId === searchSeq && json.success) {
-                            renderSuggestions(json.data);
+                        if (curId === rowContext.searchSeq && json.success) {
+                            renderSuggestions(json.data, rowContext);
                         }
                     }
                 } catch (_) {
-                    // Ignore network abort/fetch errors
+                    // Ignore network abort
                 }
-            }, 200);
+            }, 180);
         });
 
-        // Close on blur (timeout allows click event to register)
+        nameInput.addEventListener('focus', () => {
+            activeRowContext = rowContext;
+            const query = nameInput.value.trim();
+            if (query.length > 0 && (!autocompletePortalEl || autocompletePortalEl.classList.contains('d-none'))) {
+                nameInput.dispatchEvent(new Event('input'));
+            }
+        });
+
         nameInput.addEventListener('blur', () => {
-            setTimeout(hideDropdown, 200);
+            setTimeout(() => {
+                if (activeRowContext === rowContext) {
+                    hideAutocompletePortal();
+                }
+            }, 220);
         });
 
         // Keyboard sequence and autocomplete navigation on item-name
         nameInput.addEventListener('keydown', (e) => {
-            const isDropdownVisible = !dropdownEl.classList.contains('d-none');
+            const isPortalOpen = autocompletePortalEl && !autocompletePortalEl.classList.contains('d-none');
 
             if (e.key === 'ArrowDown') {
-                if (isDropdownVisible) {
+                if (isPortalOpen && rowContext.suggestions.length > 0) {
                     e.preventDefault();
-                    const next = (highlightedIdx + 1) % suggestions.length;
-                    setHighlightedIndex(next);
+                    const next = (rowContext.highlightedIdx + 1) % rowContext.suggestions.length;
+                    setHighlightedIndex(next, rowContext);
                 }
             } else if (e.key === 'ArrowUp') {
-                if (isDropdownVisible) {
+                if (isPortalOpen && rowContext.suggestions.length > 0) {
                     e.preventDefault();
-                    const prev = (highlightedIdx - 1 + suggestions.length) % suggestions.length;
-                    setHighlightedIndex(prev);
+                    const prev = (rowContext.highlightedIdx - 1 + rowContext.suggestions.length) % rowContext.suggestions.length;
+                    setHighlightedIndex(prev, rowContext);
                 }
             } else if (e.key === 'Escape') {
-                if (isDropdownVisible) {
+                if (isPortalOpen) {
                     e.preventDefault();
                     e.stopPropagation();
-                    hideDropdown();
+                    hideAutocompletePortal();
                 }
             } else if (e.key === 'Enter') {
                 e.preventDefault();
                 e.stopPropagation();
-                if (isDropdownVisible && highlightedIdx >= 0 && suggestions[highlightedIdx]) {
-                    selectItem(suggestions[highlightedIdx]);
+                if (isPortalOpen && rowContext.highlightedIdx >= 0 && rowContext.suggestions[rowContext.highlightedIdx]) {
+                    rowContext.selectItem(rowContext.suggestions[rowContext.highlightedIdx]);
                 } else {
-                    hideDropdown();
+                    hideAutocompletePortal();
                     unitSelect.focus();
                 }
             }
@@ -420,19 +584,15 @@
                     nextName.select();
                 }
             } else {
-                // If this is the last row and has a description, create next row
-                const currentName = nameInput.value.trim();
-                if (currentName) {
-                    const newRow = addItemRow();
-                    if (newRow) {
-                        const newName = newRow.querySelector('.item-name');
-                        if (newName) newName.focus();
-                    }
+                const newRow = addItemRow();
+                if (newRow) {
+                    const newName = newRow.querySelector('.item-name');
+                    if (newName) newName.focus();
                 }
             }
         }
 
-        // Sequence: Quantity → next logical field / end of row → next row Item Name
+        // Sequence: Quantity → next row Item Name (creates row if last)
         qtyInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -792,9 +952,12 @@
         const gstRate = isGst ? parseFloat(gstRateSelect.value) || 0 : 0;
 
         const payload = {
+            clientId: clientIdInput && clientIdInput.value ? parseInt(clientIdInput.value, 10) : null,
             clientName: clientNameInput.value.trim(),
             clientEmail: clientEmailInput ? (clientEmailInput.value.trim() || null) : null,
             clientPhone: clientPhoneInput ? (clientPhoneInput.value.trim() || null) : null,
+            clientGSTIN: clientGstinInput ? (clientGstinInput.value.trim() || null) : null,
+            placeOfSupplyStateCode: placeOfSupplyInput ? (placeOfSupplyInput.value.trim() || null) : null,
             billingAddress: billingAddressInput ? (billingAddressInput.value.trim() || null) : null,
             shippingAddress: shippingAddressInput ? (shippingAddressInput.value.trim() || null) : null,
             termsAndConditions: docTermsInput ? (docTermsInput.value.trim() || null) : null,
@@ -1070,8 +1233,16 @@
             }
 
             // Snapshot fields hydration
+            if (clientSelect && initialDoc.clientId) {
+                clientSelect.value = String(initialDoc.clientId);
+                if (btnClearClient) btnClearClient.classList.remove('d-none');
+            }
+            if (clientIdInput && initialDoc.clientId) clientIdInput.value = initialDoc.clientId;
+            if (clientNameInput && initialDoc.clientName) clientNameInput.value = initialDoc.clientName;
             if (clientEmailInput) clientEmailInput.value = initialDoc.clientEmail || '';
             if (clientPhoneInput) clientPhoneInput.value = initialDoc.clientPhone || '';
+            if (clientGstinInput) clientGstinInput.value = initialDoc.clientGSTIN || '';
+            if (placeOfSupplyInput) placeOfSupplyInput.value = initialDoc.placeOfSupplyStateCode || '';
             if (billingAddressInput) billingAddressInput.value = initialDoc.billingAddress || '';
             if (shippingAddressInput) shippingAddressInput.value = initialDoc.shippingAddress || '';
             if (docTermsInput) docTermsInput.value = initialDoc.termsAndConditions || '';
@@ -1119,9 +1290,16 @@
                 }
             }
 
+            if (clientSelect && initialDoc.clientId) {
+                clientSelect.value = String(initialDoc.clientId);
+                if (btnClearClient) btnClearClient.classList.remove('d-none');
+            }
+            if (clientIdInput && initialDoc.clientId) clientIdInput.value = initialDoc.clientId;
             if (clientNameInput && initialDoc.clientName) clientNameInput.value = initialDoc.clientName;
             if (clientEmailInput && initialDoc.clientEmail) clientEmailInput.value = initialDoc.clientEmail;
             if (clientPhoneInput && initialDoc.clientPhone) clientPhoneInput.value = initialDoc.clientPhone;
+            if (clientGstinInput && initialDoc.clientGSTIN) clientGstinInput.value = initialDoc.clientGSTIN;
+            if (placeOfSupplyInput && initialDoc.placeOfSupplyStateCode) placeOfSupplyInput.value = initialDoc.placeOfSupplyStateCode;
             if (billingAddressInput && initialDoc.billingAddress) billingAddressInput.value = initialDoc.billingAddress;
             if (shippingAddressInput && initialDoc.shippingAddress) shippingAddressInput.value = initialDoc.shippingAddress;
             if (docTermsInput && initialDoc.termsAndConditions) docTermsInput.value = initialDoc.termsAndConditions;
@@ -1237,6 +1415,52 @@
             docDueDateInput.classList.remove('is-invalid-custom');
         });
 
+        // Saved Client Selection Auto-fill
+        if (clientSelect) {
+            clientSelect.addEventListener('change', () => {
+                const opt = clientSelect.options[clientSelect.selectedIndex];
+                if (opt && opt.value) {
+                    if (clientIdInput) clientIdInput.value = opt.value;
+                    if (clientNameInput) clientNameInput.value = opt.dataset.name || '';
+                    if (clientEmailInput) clientEmailInput.value = opt.dataset.email || '';
+                    if (clientPhoneInput) clientPhoneInput.value = opt.dataset.phone || '';
+                    if (clientGstinInput) clientGstinInput.value = opt.dataset.gstin || '';
+                    if (placeOfSupplyInput) placeOfSupplyInput.value = opt.dataset.state || '';
+                    if (billingAddressInput) billingAddressInput.value = opt.dataset.billing || '';
+                    if (shippingAddressInput) shippingAddressInput.value = opt.dataset.shipping || '';
+
+                    if (sameAsBillingToggle && billingAddressInput && shippingAddressInput) {
+                        const b = opt.dataset.billing || '';
+                        const s = opt.dataset.shipping || '';
+                        if ((!s && b) || (b && s && b === s)) {
+                            sameAsBillingToggle.checked = true;
+                            shippingAddressInput.readOnly = true;
+                            shippingAddressInput.classList.add('bg-light');
+                        } else {
+                            sameAsBillingToggle.checked = false;
+                            shippingAddressInput.readOnly = false;
+                            shippingAddressInput.classList.remove('bg-light');
+                        }
+                    }
+
+                    if (btnClearClient) btnClearClient.classList.remove('d-none');
+                    markDirty();
+                } else {
+                    if (clientIdInput) clientIdInput.value = '';
+                    if (btnClearClient) btnClearClient.classList.add('d-none');
+                }
+            });
+        }
+
+        if (btnClearClient) {
+            btnClearClient.addEventListener('click', () => {
+                if (clientSelect) clientSelect.value = '';
+                if (clientIdInput) clientIdInput.value = '';
+                btnClearClient.classList.add('d-none');
+                markDirty();
+            });
+        }
+
         // Add Item Buttons
         btnAddItem.addEventListener('click', () => addItemRow());
         if (btnAddItemHeader) {
@@ -1314,9 +1538,14 @@
         docVersionInput = document.getElementById('doc-version');
         docDateInput = document.getElementById('doc-date');
         docDueDateInput = document.getElementById('doc-due-date');
+        clientSelect = document.getElementById('client-select');
+        btnClearClient = document.getElementById('btn-clear-client');
+        clientIdInput = document.getElementById('client-id');
         clientNameInput = document.getElementById('client-name');
         clientEmailInput = document.getElementById('client-email');
         clientPhoneInput = document.getElementById('client-phone');
+        clientGstinInput = document.getElementById('client-gstin');
+        placeOfSupplyInput = document.getElementById('place-of-supply');
         billingAddressInput = document.getElementById('billing-address');
         shippingAddressInput = document.getElementById('shipping-address');
         sameAsBillingToggle = document.getElementById('same-as-billing');
@@ -1354,6 +1583,7 @@
 
         hydrateForm();
         attachEventListeners();
+        loadActiveUnitsIfMissing();
     });
 
 })();

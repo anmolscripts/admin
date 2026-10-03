@@ -79,8 +79,10 @@ Do not write raw SQL strings unless executing an optimized aggregation not suppo
 
 - **Modern Vanilla JavaScript:** Use ES6+ syntax (destructuring, arrow functions, `fetch`). Avoid jQuery or legacy libraries.
 - **Safe DOM Manipulation:** Prefer `textContent`, `setAttribute`, or structured elements over `innerHTML`. If setting HTML from dynamic variables, rigorously sanitize.
-- **Debounced Network Requests:** Any input-triggered fetch (e.g., autocomplete) must be debounced by 250–300ms to avoid flooding the server.
-- **Accessibility:** Ensure interactive elements include appropriate ARIA attributes, semantic tags (`<button>`, `<a>`, `<input>`), and keyboard handlers (`keydown`).
+- **Debounced Network Requests:** Any input-triggered fetch (e.g., autocomplete) must be debounced by 200–300ms to avoid flooding the server.
+- **Body Portal Dropdowns:** When rendering interactive suggestion dropdowns over scrollable table containers, mount the menu into a top-level body portal (`#item-autocomplete-portal`, `position: fixed`) with boundary collision calculations to prevent parent overflow clipping.
+- **Unified Button System:** All actions must use standardized button classes (`.btn-primary`, `.btn-secondary`, `.btn-outline-primary`, `.btn-outline-secondary`, `.btn-danger`) with consistent border radii (6px), heights, typography, and hover transitions.
+- **Accessibility:** Ensure interactive elements include appropriate ARIA attributes (`role="listbox"`, `role="option"`, `aria-expanded`, `aria-activedescendant`), semantic tags (`<button>`, `<a>`, `<input>`), and keyboard handlers (`keydown`).
 
 ---
 

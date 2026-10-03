@@ -17,6 +17,7 @@ Whenever a foundational technical decision is made that constrains future design
 | [0003](file:///c:/Users/User/Documents/project/admin/docs/ADR/0003-shared-print-pdf-template.md) | Single Shared Template for Print and PDF | **ACCEPTED / FROZEN** | 2026-10-02 |
 | [0004](file:///c:/Users/User/Documents/project/admin/docs/ADR/0004-item-master-snapshot-and-uniqueness.md) | Item Master Snapshot Isolation & Unique Identity | **ACCEPTED / FROZEN** | 2026-10-02 |
 | [0005](file:///c:/Users/User/Documents/project/admin/docs/ADR/0005-single-process-production-baseline.md) | Single-Process Production Architecture Baseline | **ACCEPTED / FROZEN** | 2026-10-02 |
+| [0006](file:///c:/Users/User/Documents/project/admin/docs/ADR/0006-unit-master-and-client-snapshot.md) | Unit Master Management & Document-Level Client Snapshotting | **ACCEPTED / FROZEN** | 2026-10-03 |
 
 ---
 

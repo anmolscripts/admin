@@ -1,0 +1,360 @@
+<%
+  const headerActionHtml = `
+    <button type="button" class="btn btn-primary" id="btn-new-unit" data-bs-toggle="modal" data-bs-target="#modal-unit-form" onclick="openCreateUnitModal()">
+      <i class="bi bi-plus-lg me-1"></i>
+      <span>Add Unit</span>
+    </button>
+  `;
+%>
+
+<%- include('../layouts/header', {
+    pageTitle: 'Unit Master',
+    pageSubtitle: 'Manage standard measurement units, symbols, and status across documents.',
+    headerAction: headerActionHtml
+}) %>
+
+<!-- Search and Filter Bar -->
+<section class="card border-0 shadow-sm rounded-3 p-3 mb-4 bg-white" aria-label="Unit Filters">
+  <form method="GET" action="/units" class="row g-2 align-items-center">
+    <div class="col-12 col-md-6 col-lg-5">
+      <div class="input-group">
+        <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+        <input
+          type="search"
+          name="search"
+          class="form-control bg-light border-start-0"
+          placeholder="Search by unit name, symbol, or description..."
+          value="<%= locals.search || '' %>"
+          aria-label="Search units"
+        />
+      </div>
+    </div>
+    <div class="col-6 col-md-3 col-lg-3">
+      <select name="active" class="form-select" aria-label="Filter by status">
+        <option value="" <%= locals.active === undefined || locals.active === '' ? 'selected' : '' %>>All Statuses</option>
+        <option value="true" <%= locals.active === 'true' ? 'selected' : '' %>>Active Only</option>
+        <option value="false" <%= locals.active === 'false' ? 'selected' : '' %>>Inactive Only</option>
+      </select>
+    </div>
+    <div class="col-6 col-md-3 col-lg-2">
+      <button type="submit" class="btn btn-secondary w-100">
+        <i class="bi bi-funnel me-1"></i> Filter
+      </button>
+    </div>
+    <% if (locals.search || (locals.active !== undefined && locals.active !== '')) { %>
+      <div class="col-12 col-lg-2">
+        <a href="/units" class="btn btn-link text-decoration-none text-muted p-0">Clear Filters</a>
+      </div>
+    <% } %>
+  </form>
+</section>
+
+<!-- Units Table Card -->
+<section class="card border-0 shadow-sm rounded-3 overflow-hidden bg-white mb-4" aria-label="Units Master Table">
+  <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+    <div class="d-flex align-items-center gap-2">
+      <i class="bi bi-rulers text-primary fs-5"></i>
+      <h5 class="card-title fw-bold mb-0 text-dark">Units Master</h5>
+      <span class="badge bg-light text-muted border ms-2"><%= (units && units.length) || 0 %> Units</span>
+    </div>
+    <button type="button" class="btn btn-sm btn-primary" onclick="openCreateUnitModal()" data-bs-toggle="modal" data-bs-target="#modal-unit-form">
+      <i class="bi bi-plus-lg me-1"></i> Add Unit
+    </button>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0" id="unit-master-table">
+      <thead class="table-light">
+        <tr>
+          <th scope="col" class="ps-4 text-center" style="width: 60px;">#</th>
+          <th scope="col">Unit Name</th>
+          <th scope="col">Symbol</th>
+          <th scope="col">Description</th>
+          <th scope="col" class="text-center" style="width: 120px;">Active</th>
+          <th scope="col" class="text-end pe-4" style="width: 140px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (!units || units.length === 0) { %>
+          <tr>
+            <td colspan="6" class="text-center py-5 text-muted">
+              <i class="bi bi-rulers fs-1 text-muted d-block mb-2"></i>
+              <p class="mb-0">No units found matching criteria.</p>
+              <button class="btn btn-sm btn-outline-primary mt-2" onclick="openCreateUnitModal()" data-bs-toggle="modal" data-bs-target="#modal-unit-form">Add First Unit</button>
+            </td>
+          </tr>
+        <% } else { %>
+          <% units.forEach(function(unit, idx) { %>
+            <tr id="unit-row-<%= unit.id %>">
+              <td class="ps-4 text-center font-monospace text-muted">
+                <%= idx + 1 %>
+              </td>
+              <td>
+                <span class="fw-semibold text-dark"><%= unit.name %></span>
+              </td>
+              <td>
+                <span class="badge bg-light text-dark border font-monospace px-2 py-1 fs-6"><%= unit.symbol %></span>
+              </td>
+              <td>
+                <%= unit.description ? unit.description : '<span class="text-muted">—</span>' %>
+              </td>
+              <td class="text-center">
+                <div class="form-check form-switch d-inline-block">
+                  <input
+                    class="form-check-input unit-status-toggle"
+                    type="checkbox"
+                    role="switch"
+                    id="switch-unit-<%= unit.id %>"
+                    data-unit-id="<%= unit.id %>"
+                    <%= unit.active ? 'checked' : '' %>
+                    onchange="toggleUnitStatus(<%= unit.id %>, this)"
+                    title="Toggle active status"
+                  />
+                  <label class="visually-hidden" for="switch-unit-<%= unit.id %>">Toggle status for <%= unit.symbol %></label>
+                </div>
+              </td>
+              <td class="text-end pe-4">
+                <div class="btn-group btn-group-sm">
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    title="Edit Unit"
+                    onclick='openEditUnitModal(<%= JSON.stringify(unit) %>)'
+                    data-bs-toggle="modal"
+                    data-bs-target="#modal-unit-form"
+                  >
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-outline-danger"
+                    title="Delete Unit"
+                    onclick="confirmDeleteUnit(<%= unit.id %>, '<%= unit.symbol.replace(/'/g, "\\'") %>')"
+                  >
+                    <i class="bi bi-trash3"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          <% }); %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- Unit Form Modal (Create / Edit) -->
+<div class="modal fade" id="modal-unit-form" tabindex="-1" aria-labelledby="modalUnitTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold" id="modalUnitTitle">Add Unit</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="unit-form" onsubmit="handleUnitFormSubmit(event)">
+        <input type="hidden" id="unit-id" name="id" value="" />
+        <div class="modal-body">
+          <div id="unit-modal-alert" class="alert alert-danger d-none py-2 px-3 small" role="alert"></div>
+
+          <div class="mb-3">
+            <label for="unit-name-input" class="form-label fw-semibold">Unit Name <span class="text-danger">*</span></label>
+            <input
+              type="text"
+              class="form-control"
+              id="unit-name-input"
+              name="name"
+              placeholder="e.g. Piece, Meter, Project, Hour"
+              required
+              maxlength="100"
+            />
+            <div class="form-text">Full descriptive name of the unit of measure.</div>
+          </div>
+
+          <div class="mb-3">
+            <label for="unit-symbol-input" class="form-label fw-semibold">Symbol / Code <span class="text-danger">*</span></label>
+            <input
+              type="text"
+              class="form-control font-monospace"
+              id="unit-symbol-input"
+              name="symbol"
+              placeholder="e.g. PCS, m, Project, Hours, KG"
+              required
+              maxlength="30"
+            />
+            <div class="form-text">The exact symbol printed on invoices (e.g. PCS, m, unit). Must be unique.</div>
+          </div>
+
+          <div class="mb-3">
+            <label for="unit-desc-input" class="form-label fw-semibold">Description</label>
+            <input
+              type="text"
+              class="form-control"
+              id="unit-desc-input"
+              name="description"
+              placeholder="Optional notes or specification"
+              maxlength="255"
+            />
+          </div>
+
+          <div class="form-check form-switch mt-3">
+            <input class="form-check-input" type="checkbox" id="unit-active-input" name="active" checked />
+            <label class="form-check-label fw-semibold" for="unit-active-input">Active for Document Selection</label>
+          </div>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-unit">
+            <span class="spinner-border spinner-border-sm me-1 d-none" id="spinner-save-unit" role="status" aria-hidden="true"></span>
+            <span id="text-save-unit">Save Unit</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  const CSRF_TOKEN = '<%= locals.csrfToken || "" %>';
+
+  function openCreateUnitModal() {
+    document.getElementById('modalUnitTitle').textContent = 'Add Unit';
+    document.getElementById('unit-id').value = '';
+    document.getElementById('unit-name-input').value = '';
+    document.getElementById('unit-symbol-input').value = '';
+    document.getElementById('unit-desc-input').value = '';
+    document.getElementById('unit-active-input').checked = true;
+    hideUnitAlert();
+    setTimeout(() => document.getElementById('unit-name-input').focus(), 300);
+  }
+
+  function openEditUnitModal(unit) {
+    document.getElementById('modalUnitTitle').textContent = 'Edit Unit';
+    document.getElementById('unit-id').value = unit.id;
+    document.getElementById('unit-name-input').value = unit.name || '';
+    document.getElementById('unit-symbol-input').value = unit.symbol || '';
+    document.getElementById('unit-desc-input').value = unit.description || '';
+    document.getElementById('unit-active-input').checked = Boolean(unit.active);
+    hideUnitAlert();
+    setTimeout(() => document.getElementById('unit-name-input').focus(), 300);
+  }
+
+  function showUnitAlert(msg) {
+    const el = document.getElementById('unit-modal-alert');
+    el.textContent = msg;
+    el.classList.remove('d-none');
+  }
+
+  function hideUnitAlert() {
+    const el = document.getElementById('unit-modal-alert');
+    el.classList.add('d-none');
+    el.textContent = '';
+  }
+
+  async function handleUnitFormSubmit(e) {
+    e.preventDefault();
+    hideUnitAlert();
+
+    const id = document.getElementById('unit-id').value;
+    const name = document.getElementById('unit-name-input').value.trim();
+    const symbol = document.getElementById('unit-symbol-input').value.trim();
+    const description = document.getElementById('unit-desc-input').value.trim();
+    const active = document.getElementById('unit-active-input').checked;
+
+    if (!name) {
+      showUnitAlert('Unit name is required.');
+      return;
+    }
+    if (!symbol) {
+      showUnitAlert('Unit symbol is required.');
+      return;
+    }
+
+    const spinner = document.getElementById('spinner-save-unit');
+    const btnText = document.getElementById('text-save-unit');
+    const btnSave = document.getElementById('btn-save-unit');
+
+    spinner.classList.remove('d-none');
+    btnText.textContent = 'Saving...';
+    btnSave.disabled = true;
+
+    try {
+      const url = id ? `/api/units/${id}` : '/api/units';
+      const method = id ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': CSRF_TOKEN
+        },
+        body: JSON.stringify({ name, symbol, description, active })
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        showUnitAlert(data.error || 'Failed to save unit.');
+        return;
+      }
+
+      window.location.reload();
+    } catch (err) {
+      showUnitAlert(err.message || 'Network error occurred.');
+    } finally {
+      spinner.classList.add('d-none');
+      btnText.textContent = 'Save Unit';
+      btnSave.disabled = false;
+    }
+  }
+
+  async function toggleUnitStatus(unitId, toggleEl) {
+    const originalChecked = !toggleEl.checked;
+    try {
+      const res = await fetch(`/api/units/${unitId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': CSRF_TOKEN
+        }
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        toggleEl.checked = originalChecked;
+        alert(data.error || 'Failed to update unit status.');
+      }
+    } catch (err) {
+      toggleEl.checked = originalChecked;
+      alert('Network error while updating unit status.');
+    }
+  }
+
+  async function confirmDeleteUnit(unitId, symbol) {
+    if (!confirm(`Are you sure you want to delete unit "${symbol}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/units/${unitId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': CSRF_TOKEN
+        }
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        alert(data.error || 'Failed to delete unit.');
+        return;
+      }
+
+      const row = document.getElementById(`unit-row-${unitId}`);
+      if (row) {
+        row.remove();
+      } else {
+        window.location.reload();
+      }
+    } catch (err) {
+      alert('Network error while deleting unit.');
+    }
+  }
+</script>
+
+<%- include('../layouts/footer') %>

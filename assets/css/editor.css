@@ -310,3 +310,112 @@
         justify-content: center;
     }
 }
+
+/* ---------------------------------------------------------------------
+   8. Item Autocomplete Portal & Fast Entry Styles
+   --------------------------------------------------------------------- */
+#item-autocomplete-portal,
+.item-autocomplete-portal {
+    position: fixed;
+    z-index: 10050;
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    box-shadow: 0 14px 35px rgba(5, 28, 18, 0.16), 0 2px 6px rgba(0, 0, 0, 0.05);
+    overflow-y: auto;
+    max-height: 280px;
+    min-width: 320px;
+    padding: 4px 0;
+    margin: 0;
+}
+
+.item-autocomplete-item {
+    padding: 8px 14px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #f3f4f6;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.item-autocomplete-item:last-child {
+    border-bottom: none;
+}
+
+.item-autocomplete-item:hover,
+.item-autocomplete-item.active,
+.item-autocomplete-item[aria-selected="true"] {
+    background-color: #f0fdf4 !important;
+    color: #166534 !important;
+}
+
+.item-autocomplete-item-name {
+    font-weight: 600;
+    font-size: 13px;
+    color: #1f2937;
+}
+
+.item-autocomplete-item.active .item-autocomplete-item-name,
+.item-autocomplete-item:hover .item-autocomplete-item-name {
+    color: #166534;
+}
+
+.item-autocomplete-item-meta {
+    font-size: 12px;
+    color: #4b5563;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.item-autocomplete-price-badge {
+    background: #e5e7eb;
+    color: #1f2937;
+    font-weight: 600;
+    font-size: 11.5px;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.item-autocomplete-item.active .item-autocomplete-price-badge,
+.item-autocomplete-item:hover .item-autocomplete-price-badge {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.item-autocomplete-empty,
+.item-autocomplete-loading {
+    padding: 12px 16px;
+    color: #6b7280;
+    font-size: 12.5px;
+    text-align: center;
+}
+
+.client-snapshot-badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    padding: 0.35rem 0.65rem;
+    border-radius: 6px;
+    background-color: #f9fafb !important;
+    color: #4b5563 !important;
+    border-color: #e5e7eb !important;
+}
+
+.btn-clear-client {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    border-color: var(--border-light, #E9EFEF);
+    color: #6b7280;
+}
+
+.btn-clear-client:hover {
+    background-color: #fee2e2;
+    border-color: #fca5a5;
+    color: #dc2626;
+}
+
+.line-item-row.row-active-focus td {
+    background-color: rgba(240, 253, 244, 0.45);
+}

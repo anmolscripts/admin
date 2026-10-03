@@ -4,6 +4,8 @@ const invoiceService = require('../services/invoice.service');
 const invoiceController = require('../controllers/invoice.controller');
 const clientService = require('../services/client.service');
 const itemService = require('../services/item.service');
+const unitService = require('../services/unit.service');
+const unitController = require('../controllers/unit.controller');
 const businessProfileService = require('../services/businessProfile.service');
 const documentViewService = require('../services/documentView.service');
 const dashboardController = require('../controllers/dashboard.controller');
@@ -51,6 +53,7 @@ router.get('/documents/new', requireAuth, async (req, res, next) => {
         }
 
         const clientList = await clientService.searchClients();
+        const unitList = await unitService.getActiveUnits();
         const profile = await businessProfileService.getProfile();
         let clientData = null;
         if (req.query.clientId) {
@@ -103,6 +106,7 @@ router.get('/documents/new', requireAuth, async (req, res, next) => {
             documentType,
             document: initialDoc,
             clientList,
+            unitList,
             copyOfNumber,
             csrfToken: req.session ? req.session.csrfToken : ''
         });
@@ -145,6 +149,7 @@ router.get('/documents/:id/edit', requireAuth, async (req, res, next) => {
 
         const isQuotation = doc.documentType === 'QUOTATION';
         const clientList = await clientService.searchClients();
+        const unitList = await unitService.getActiveUnits();
 
         res.render('documents/editor', {
             pageTitle: `Edit ${doc.invoiceNumber}`,
@@ -153,6 +158,7 @@ router.get('/documents/:id/edit', requireAuth, async (req, res, next) => {
             documentType: doc.documentType,
             document: doc,
             clientList,
+            unitList,
             csrfToken: req.session ? req.session.csrfToken : ''
         });
     } catch (err) {
@@ -365,11 +371,15 @@ router.post('/settings', requireAuth, async (req, res) => {
 router.get('/items', requireAuth, async (req, res, next) => {
     try {
         const { search, active } = req.query;
-        const result = await itemService.listItems({ search, active, limit: 100 });
+        const [result, unitList] = await Promise.all([
+            itemService.listItems({ search, active, limit: 100 }),
+            unitService.getActiveUnits()
+        ]);
         res.render('items/index', {
             pageTitle: 'Item Master',
             pageSubtitle: 'Manage standard product catalog, services, default units, and baseline rates.',
             items: result.data,
+            unitList: unitList || [],
             search,
             active,
             csrfToken: req.session ? req.session.csrfToken : '',
@@ -379,5 +389,10 @@ router.get('/items', requireAuth, async (req, res, next) => {
         next(err);
     }
 });
+
+// -------------------------------------------------------------
+// UNIT MASTER WEB ROUTES
+// -------------------------------------------------------------
+router.get('/units', requireAuth, unitController.renderUnitsPage);
 
 module.exports = router;

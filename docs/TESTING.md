@@ -22,6 +22,7 @@ npm test
 | **Export & Presentation** | `tests/export.test.js` | HTML print view, Chromium headless PDF generation, Excel workbook export. |
 | **Security Hardening** | `tests/hardening.test.js` | CSRF enforcement, rate limiting, security headers, XSS mitigation. |
 | **Item Master & QA** | `tests/phase8.test.js` | Autocomplete search, concurrency unique constraints, dashboard KPI queries. |
+| **UX Polish & Unit Master** | `tests/ux_polish.test.js` | Unit Master CRUD, client optional email/phone, saved client autofill, portal DOM verification, seed idempotency. |
 | **Integration Baseline** | `tests/phase6.test.js` | Full end-to-end integration workflows. |
 
 ---

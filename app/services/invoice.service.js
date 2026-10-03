@@ -86,12 +86,17 @@ function validateEmail(email) {
     return str;
 }
 
+const PHONE_REGEX = /^[+]?[(]?[0-9]{1,4}[)]?[-\s./0-9]{4,30}$/;
+
 function validatePhone(phone) {
     if (phone === undefined || phone === null) return null;
     const str = String(phone).trim();
     if (!str) return null;
     if (str.length > 50) {
         throw new ValidationError('Client phone number must not exceed 50 characters.');
+    }
+    if (!PHONE_REGEX.test(str)) {
+        throw new ValidationError('Invalid client phone number format.');
     }
     return str;
 }

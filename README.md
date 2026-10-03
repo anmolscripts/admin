@@ -54,7 +54,12 @@ Spark Admin delivers an operational platform for business invoicing and quotatio
 - **Quotation to Invoice Conversion:** Instant single-click conversion with sequence-isolated numbering, linking, and status tracking.
 - **Custom Validity / Due Dates:** Persistent date tracking (`validUntil` for quotations, `dueDate` for invoices) with automatic fallback rules and overdue analytics.
 - **Indian GST Compliance:** Automatic intra-state (CGST + SGST split) vs. inter-state (IGST) calculation based on supplier and customer places of supply.
-- **Item Master Autocomplete:** Real-time search with keyboard navigation (`↑`, `↓`, `Enter`, `Esc`), asynchronous debouncing, and automated new-item ingestion with database uniqueness.
+- **Unit Master (`/units`):** Full measurement units management with symbol uniqueness, active/inactive toggles, and dynamic dropdown population in document editors.
+- **Item Master Autocomplete Portal:** Body portal dropdown with boundary collision avoidance (`zIndex: 10050`) ensuring suggestions never clip behind tables or cards.
+- **Fast Keyboard Invoicing Workflow:** Rapid data entry flow (`Item Autocomplete Enter` -> `Unit Enter` -> `Rate Enter` -> `Quantity Enter` -> `Next Row`). Enter on the last row automatically creates a new row and focuses Item Name.
+- **Client Optional Fields & Snapshotting:** Client Name is required; Email and Phone are optional (strictly validated when provided). Selecting a saved client auto-populates all fields into an editable document-level snapshot.
+- **Unified Button Design System:** Cohesive styling across all pages, modals, and actions following Spark Admin design guidelines.
+- **Authoritative Navigation:** Single clean source of truth for sidebar and header pills without demo template links.
 - **Separate Payment Ledger:** Invoices track payments independently with receipt numbering, payment methods (Bank Transfer, UPI, Cash, Cheque, Card), and immutable void audits.
 - **Optimistic Locking:** Document edit collisions are prevented using concurrency version tokens.
 - **Executive Analytics:** Dashboard KPI strip, status counts, aging metrics, and trends aggregated via SQL across dynamic date ranges (`today`, `this_week`, `this_month`, `this_quarter`, `this_year`, `custom`).
@@ -380,11 +385,29 @@ Payments are modeled as a distinct child ledger (`Payment`):
 
 ## Item Master & Autocomplete
 
-- **Centralized Catalog:** The `Item` model stores catalog items with name, unit, default rate, and default GST rate.
+- **Centralized Catalog:** The `Item` model stores catalog items with name, unit, default rate, and default GST rate. Includes the 21 industrial and commercial preloaded master items.
 - **Case-Insensitive Unique Names:** MySQL unique index prevents duplicate names.
-- **Autocomplete UI:** In the document editor, typing in the Item Description invokes a debounced `/api/items/search` query. Results can be selected via mouse or keyboard navigation (`↓`, `↑`, `Enter`).
+- **Autocomplete Portal UI:** In the document editor, typing in the Item Description invokes a debounced `/api/items/search` query. Results render via a top-level body portal (`#item-autocomplete-portal`, `z-index: 10050`) using fixed coordinates and viewport collision clamping, eliminating clipping by horizontal/vertical scroll wrappers.
+- **Keyboard Navigation & Fast Operations:** Full keyboard support (`↑`, `↓`, `Enter`, `Escape`). Pressing Enter on Quantity automatically creates the next row and transfers focus to the new Item Name.
 - **Inline Catalog Ingestion:** If a user completes a document with an uncataloged item name, the service automatically inserts the new item into the Item Master inside a concurrent-safe upsert.
 - **Snapshot Isolation:** Changing an item in Item Master does NOT alter prices or descriptions of historical invoices/quotations.
+
+---
+
+## Unit Master (`/units`)
+
+- **Domain Model:** Dedicated `Unit` entity with name, symbol (`@unique`), description, and `active` boolean.
+- **Predefined Units:** 13 common measurement standards seeded idempotently (`PCS`, `m`, `unit`, `Project`, `Hours`, `Months`, `Units`, `License`, `Year`, `Package`, `Set`, `KG`, `Service`).
+- **Dynamic Editor Integration:** Invoice and quotation editors fetch active units dynamically from `/api/units/active`.
+- **Historical Immutability:** Line items snapshot unit symbols as string values; deactivating or editing a unit in Unit Master never mutates historical documents.
+
+---
+
+## Client Optional Fields & Document-Level Snapshot
+
+- **Required vs Optional:** Client / Business Name is required. Email address and phone number are optional; when provided, strict RFC 5322 email and phone format validation applies.
+- **Saved Client Autofill:** Selecting an existing client from "Choose Saved Client" populates Name, Email, Phone, GSTIN, Place of Supply, Billing Address, and Shipping Address instantly.
+- **Document Snapshot Badge:** Changes made in the editor after selection remain isolated to the document snapshot (`Document-level client snapshot`), never silently modifying the Client Master.
 
 ---
 

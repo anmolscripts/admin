@@ -90,16 +90,25 @@
                 ₹ <%= Number(item.rate).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %>
               </td>
               <td class="text-center">
-                <% if (item.active) { %>
-                  <span class="badge bg-success-subtle text-success">Active</span>
-                <% } else { %>
-                  <span class="badge bg-secondary-subtle text-secondary">Inactive</span>
-                <% } %>
+                <div class="form-check form-switch d-inline-block">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    role="switch"
+                    <%= item.active ? 'checked' : '' %>
+                    onchange="toggleItemStatus('<%= item.id %>', this.checked)"
+                    title="<%= item.active ? 'Click to deactivate' : 'Click to activate' %>"
+                    id="switch-item-<%= item.id %>"
+                  />
+                  <label class="form-check-label visually-hidden" for="switch-item-<%= item.id %>">
+                    <%= item.active ? 'Active' : 'Inactive' %>
+                  </label>
+                </div>
               </td>
               <td class="text-end pe-4">
                 <button
                   type="button"
-                  class="btn btn-sm btn-outline-secondary"
+                  class="btn btn-sm btn-outline-primary"
                   onclick="openEditItemModal(<%= JSON.stringify(item) %>)"
                   title="Edit Item"
                 >
@@ -129,7 +138,7 @@
 
           <div class="mb-3">
             <label for="modal-item-name" class="form-label fw-semibold">Item Name *</label>
-            <input type="text" class="form-control" id="modal-item-name" required maxlength="255" placeholder="e.g. Cloud Hosting Services, Widget Pro">
+            <input type="text" class="form-control" id="modal-item-name" required maxlength="255" placeholder="e.g. Pipe Seamless S-40 Sudul 40">
           </div>
 
           <div class="mb-3">
@@ -141,22 +150,30 @@
             <div class="col-6">
               <label for="modal-item-unit" class="form-label fw-semibold">Unit</label>
               <select class="form-select" id="modal-item-unit">
-                <option value="PCS">PCS</option>
-                <option value="Hours">Hours</option>
-                <option value="Project">Project</option>
-                <option value="Months">Months</option>
-                <option value="Units">Units</option>
-                <option value="License">License</option>
-                <option value="Year">Year</option>
-                <option value="Package">Package</option>
-                <option value="Set">Set</option>
-                <option value="KG">KG</option>
-                <option value="Service">Service</option>
+                <% if (locals.unitList && unitList.length > 0) { %>
+                  <% unitList.forEach(function(u) { %>
+                    <option value="<%= u.symbol %>"><%= u.name %> (<%= u.symbol %>)</option>
+                  <% }); %>
+                <% } else { %>
+                  <option value="PCS">Piece (PCS)</option>
+                  <option value="m">Meter (m)</option>
+                  <option value="unit">Unit (unit)</option>
+                  <option value="Hours">Hours</option>
+                  <option value="Project">Project</option>
+                  <option value="Months">Months</option>
+                  <option value="Units">Units</option>
+                  <option value="License">License</option>
+                  <option value="Year">Year</option>
+                  <option value="Package">Package</option>
+                  <option value="Set">Set</option>
+                  <option value="KG">Kilogram (KG)</option>
+                  <option value="Service">Service</option>
+                <% } %>
               </select>
             </div>
             <div class="col-6">
               <label for="modal-item-hsn" class="form-label fw-semibold">HSN/SAC</label>
-              <input type="text" class="form-control font-monospace" id="modal-item-hsn" maxlength="20" placeholder="e.g. 998313">
+              <input type="text" class="form-control font-monospace" id="modal-item-hsn" maxlength="20" placeholder="e.g. 7304">
             </div>
           </div>
 
@@ -223,13 +240,51 @@
     document.getElementById('modal-item-id').value = item.id;
     document.getElementById('modal-item-name').value = item.name || '';
     document.getElementById('modal-item-desc').value = item.description || '';
-    document.getElementById('modal-item-unit').value = item.unit || 'PCS';
+
+    const unitSelect = document.getElementById('modal-item-unit');
+    const targetUnit = item.unit || 'PCS';
+    let optionExists = false;
+    for (let i = 0; i < unitSelect.options.length; i++) {
+      if (unitSelect.options[i].value === targetUnit) {
+        optionExists = true;
+        break;
+      }
+    }
+    if (!optionExists && targetUnit) {
+      const opt = document.createElement('option');
+      opt.value = targetUnit;
+      opt.textContent = targetUnit;
+      unitSelect.appendChild(opt);
+    }
+    unitSelect.value = targetUnit;
+
     document.getElementById('modal-item-hsn').value = item.hsnSac || '';
     document.getElementById('modal-item-rate').value = Number(item.rate).toFixed(2);
     document.getElementById('modal-item-gst').value = String(Number(item.gstRate) || 0);
     document.getElementById('modal-item-active').checked = item.active !== false;
     document.getElementById('modal-item-alert').classList.add('d-none');
     if (modalInstance) modalInstance.show();
+  }
+
+  async function toggleItemStatus(id, active) {
+    const csrfToken = '<%= locals.csrfToken || "" %>';
+    try {
+      const res = await fetch(`/api/items/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken
+        },
+        body: JSON.stringify({ active })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to update item status');
+      }
+    } catch (err) {
+      alert('Error updating item status: ' + err.message);
+      window.location.reload();
+    }
   }
 
   async function saveItem(e) {

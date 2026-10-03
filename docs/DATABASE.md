@@ -67,6 +67,12 @@ Spark Admin utilizes MySQL 8 (or MariaDB 10.6+) accessed via **Prisma ORM 7** (`
 - **Key Fields:** `id` (Int, PK), `documentType` (`QUOTATION` | `INVOICE`), `year` (Int), `currentNumber` (Int).
 - **Indexes:** Unique composite `[documentType, year]`.
 
+### 2.10. `Unit` (`units`)
+- **Purpose:** Centralized Unit Master catalog defining standard measurement units for line items.
+- **Key Fields:** `id` (Int, PK), `name` (VarChar), `symbol` (VarChar(30), Unique), `description` (Text), `active` (Boolean), `createdById` (Int, FK), `createdAt`, `updatedAt`.
+- **Relations:** Belongs to `User` (createdBy).
+- **Indexes:** Unique `symbol`, `active`, `createdById`.
+
 ---
 
 ## 3. Prisma Migrations History
@@ -81,6 +87,7 @@ All database schema evolutions are captured in forward-only SQL migration script
 6. `20261002065000_add_item_master_and_audit_fields`: Item Master table and append-only audit revision log.
 7. `20261002141500_add_unique_constraint_to_item_name`: Strict case-insensitive uniqueness index on `Item.name`.
 8. `20261002150000_add_due_date_and_valid_until_to_invoices`: Pure calendar date persistence for `validUntil` and `dueDate`.
+9. `20261003060017_add_unit_master`: Unit Master table with symbol uniqueness constraint and user audit relation.
 
 ---
 
