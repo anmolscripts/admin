@@ -11,7 +11,8 @@ describe('Authentication Module Test Suite', () => {
     let server;
     let baseUrl;
     const testAdminEmail = 'admin@email.com';
-    const testAdminPassword = process.env.SEED_ADMIN_PASSWORD || 'choose-a-local-development-password';
+    const testAdminPassword = process.env.SEED_ADMIN_PASSWORD;
+    if (!testAdminPassword) throw new Error('SEED_ADMIN_PASSWORD environment variable is required to run tests');
     const inactiveUserEmail = 'inactive-test-user@email.com';
 
     // Helper to extract cookie from Response headers

@@ -72,12 +72,21 @@ async function seedDevelopment(prisma, options = {}) {
         });
         console.log(`[SEED] Development admin created: ${admin.email}`);
     } else {
+        const updateData = {};
         if (admin.roleId !== ownerRole.id) {
+            updateData.roleId = ownerRole.id;
+            updateData.status = 'ACTIVE';
+            updateData.active = true;
+        }
+        if (password) {
+            updateData.password = await bcrypt.hash(password, getSaltRounds());
+        }
+        if (Object.keys(updateData).length > 0) {
             admin = await prisma.user.update({
                 where: { id: admin.id },
-                data: { roleId: ownerRole.id, status: 'ACTIVE', active: true }
+                data: updateData
             });
-            console.log(`[SEED] Updated existing admin with OWNER role: ${email}`);
+            console.log(`[SEED] Updated existing admin credentials/role: ${email}`);
         } else {
             console.log(`[SEED] Admin already exists with OWNER role: ${email}`);
         }

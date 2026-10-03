@@ -410,7 +410,7 @@ describe('UX Polish, Unit Master & Master Data Tests', () => {
                 body: new URLSearchParams({
                     _csrf: csrfToken,
                     email: 'admin@email.com',
-                    password: process.env.SEED_ADMIN_PASSWORD || 'choose-a-local-development-password'
+                    password: process.env.SEED_ADMIN_PASSWORD
                 }),
                 redirect: 'manual'
             });

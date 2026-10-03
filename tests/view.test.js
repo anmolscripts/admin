@@ -22,7 +22,8 @@ describe('Document View & Lifecycle (Phase 4) Test Suite', () => {
     let convertedInvoiceId;
 
     const adminEmail = 'admin@email.com';
-    const adminPassword = process.env.SEED_ADMIN_PASSWORD || 'choose-a-local-development-password';
+    const adminPassword = process.env.SEED_ADMIN_PASSWORD;
+    if (!adminPassword) throw new Error('SEED_ADMIN_PASSWORD environment variable is required to run tests');
 
     function extractCookie(res) {
         const setCookie = res.headers.get('set-cookie');

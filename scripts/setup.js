@@ -172,6 +172,8 @@ async function main() {
     for (const [key, val] of Object.entries(envConfig)) {
         process.env[key] = val;
     }
+    // Explicitly expose SEED_ADMIN_PASSWORD so automatic prisma seed picks it up
+    process.env.SEED_ADMIN_PASSWORD = adminCredentials.password;
 
     // -------------------------------------------------------------------------
     // [4/8] Preparing database
@@ -211,13 +213,24 @@ async function main() {
     }
     logger.pass('Prisma schema is valid.');
 
-    logger.step('Executing prisma migrate deploy...');
-    const migrateRes = runPrismaCommand(['migrate', 'deploy'], { DATABASE_URL: envConfig.DATABASE_URL });
-    if (!migrateRes.ok) {
-        logger.fail(`Migration deployment failed:\n${logger.formatError(migrateRes.error || migrateRes.stderr)}`);
-        process.exit(1);
+    if (!isProduction) {
+        logger.step('Executing prisma migrate reset for a clean development database...');
+        const migrateEnv = { ...process.env, DATABASE_URL: envConfig.DATABASE_URL, PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION: 'yes' };
+        const migrateRes = runPrismaCommand(['migrate', 'reset', '--force'], migrateEnv);
+        if (!migrateRes.ok) {
+            logger.fail(`Development database reset failed:\n${logger.formatError(migrateRes.error || migrateRes.stderr)}`);
+            process.exit(1);
+        }
+        logger.pass('Database reset and migrations applied successfully.');
+    } else {
+        logger.step('Executing prisma migrate deploy...');
+        const migrateRes = runPrismaCommand(['migrate', 'deploy'], { DATABASE_URL: envConfig.DATABASE_URL });
+        if (!migrateRes.ok) {
+            logger.fail(`Migration deployment failed:\n${logger.formatError(migrateRes.error || migrateRes.stderr)}`);
+            process.exit(1);
+        }
+        logger.pass('All database migrations applied successfully.');
     }
-    logger.pass('All database migrations applied successfully.');
 
     // -------------------------------------------------------------------------
     // [6/8] Generating Prisma Client
@@ -285,10 +298,15 @@ async function main() {
         // Development mode: run test suite
         if (!skipTests) {
             logger.step('Running regression test suite (npm test)...');
+            const testEnv = {
+                ...process.env,
+                SEED_ADMIN_PASSWORD: adminCredentials.password
+            };
             const testRun = spawnSync(`${npmCmd} test`, {
                 cwd: ROOT_DIR,
                 stdio: 'inherit',
-                shell: true
+                shell: true,
+                env: testEnv
             });
             if (testRun.status !== 0) {
                 logger.fail('One or more tests failed during development setup verification.');
