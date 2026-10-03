@@ -15,6 +15,10 @@ This directory contains the authoritative architecture specifications, database 
   *The frozen core architectural baseline. Documents the 20 foundational invariants that must not be casually altered.*
 - [DOCUMENT_LIFECYCLE.md](file:///c:/Users/User/Documents/project/admin/docs/DOCUMENT_LIFECYCLE.md)
   *Complete state transition matrix, terminal states, restoration rules, conversion rules, and optimistic locking mechanisms.*
+- [RBAC.md](file:///c:/Users/User/Documents/project/admin/docs/RBAC.md)
+  *Role-Based Access Control architecture: 5-tier role hierarchy, permission dictionary, delegation boundaries, invitation flows, and controller/middleware patterns.*
+- [USER_ACTIVITY.md](file:///c:/Users/User/Documents/project/admin/docs/USER_ACTIVITY.md)
+  *Operational user activity logging and security audit trail specification: atomic events, schema, sanitization rules, and analytics endpoints.*
 - [DATABASE.md](file:///c:/Users/User/Documents/project/admin/docs/DATABASE.md)
   *Comprehensive database schema reference covering all production Prisma models, relations, indices, migrations history, and deployment policies.*
 
@@ -22,7 +26,7 @@ This directory contains the authoritative architecture specifications, database 
 - [API.md](file:///c:/Users/User/Documents/project/admin/docs/API.md)
   *Exhaustive HTTP and REST API documentation detailing authentication, CSRF headers, request payloads, response bodies, and error status codes.*
 - [USER_MANUAL.md](file:///c:/Users/User/Documents/project/admin/docs/USER_MANUAL.md)
-  *End-to-end user manual explaining how to manage documents, clients, items, GST, payments, audit histories, and exports.*
+  *End-to-end user manual explaining how to manage documents, clients, items, units, team members, RBAC permissions, audit histories, and exports.*
 
 ### Developer & Operational Handbooks
 - [DEVELOPER_HANDBOOK.md](file:///c:/Users/User/Documents/project/admin/docs/DEVELOPER_HANDBOOK.md)
@@ -40,7 +44,7 @@ This directory contains the authoritative architecture specifications, database 
 - [RELEASE_CHECKLIST.md](file:///c:/Users/User/Documents/project/admin/docs/RELEASE_CHECKLIST.md)
   *Rigorous step-by-step verification checklist required prior to tagging or releasing production builds.*
 - [CHANGELOG.md](file:///c:/Users/User/Documents/project/admin/docs/CHANGELOG.md)
-  *Chronological release history tracking Phase 1 through Phase 8.1 and the Core Baseline Freeze.*
+  *Chronological release history tracking Phase 1 through Phase 8.3 and the Core Baseline Freeze.*
 
 ### Architecture Decision Records (ADR)
 - [ADR Index & Guidelines](file:///c:/Users/User/Documents/project/admin/docs/ADR/README.md)
@@ -50,6 +54,7 @@ This directory contains the authoritative architecture specifications, database 
   - [ADR 0004: Item Master Snapshot Isolation & Unique Identity](file:///c:/Users/User/Documents/project/admin/docs/ADR/0004-item-master-snapshot-and-uniqueness.md)
   - [ADR 0005: Single-Process Production Architecture Baseline](file:///c:/Users/User/Documents/project/admin/docs/ADR/0005-single-process-production-baseline.md)
   - [ADR 0006: Unit Master Management & Document-Level Client Snapshotting](file:///c:/Users/User/Documents/project/admin/docs/ADR/0006-unit-master-and-client-snapshot.md)
+  - [ADR 0007: RBAC Hierarchy Enforcement, Delegation Boundaries, and Immutable Audit Trails](file:///c:/Users/User/Documents/project/admin/docs/ADR/0007-rbac-hierarchy-and-audit-security.md)
 
 ---
 

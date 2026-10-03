@@ -89,11 +89,17 @@ async function runBrowserQA() {
 
         // 1. LOGIN
         console.log('[STEP 1] Verifying Login in native Chrome...');
+        const testAdminEmail = process.env.TEST_ADMIN_EMAIL || 'admin@email.com';
+        const testAdminPassword = process.env.TEST_ADMIN_PASSWORD || process.env.SEED_ADMIN_PASSWORD;
+        if (!testAdminPassword) {
+            throw new Error('Test admin password must be supplied via TEST_ADMIN_PASSWORD or SEED_ADMIN_PASSWORD environment variable.');
+        }
+
         const isLoginPage = await cdp.eval(`document.getElementById('email') !== null`);
         if (isLoginPage) {
             await cdp.eval(`
-                document.getElementById('email').value = 'admin@email.com';
-                document.getElementById('password').value = 'choose-a-local-development-password';
+                document.getElementById('email').value = ${JSON.stringify(testAdminEmail)};
+                document.getElementById('password').value = ${JSON.stringify(testAdminPassword)};
                 document.getElementById('loginForm').submit();
                 return true;
             `);

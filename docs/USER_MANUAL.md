@@ -38,6 +38,11 @@ Welcome to the **Spark Admin** operator guide. This manual provides detailed, st
 30. [Managing Business Profile & Settings](#30-managing-business-profile--settings)
 31. [Managing Client Directory](#31-managing-client-directory)
 32. [Managing Item Master Catalog](#32-managing-item-master-catalog)
+33. [Managing Unit Master Catalog](#33-managing-unit-master-catalog)
+34. [Managing Team Members](#34-managing-team-members)
+35. [Roles and Permissions Matrix](#35-roles-and-permissions-matrix)
+36. [Inviting Users and Password Setup](#36-inviting-users-and-password-setup)
+37. [Activity Audit Trail & Security Logs](#37-activity-audit-trail--security-logs)
 
 ---
 
@@ -320,3 +325,56 @@ Navigate to **Units** (`/units`):
 - Toggle units active or inactive instantly via the table switch without full page reloads.
 - Active units populate the Invoice and Quotation editor dropdowns automatically.
 - Historical invoices remain completely unaffected if a unit is subsequently edited or deactivated.
+
+---
+
+## 34. Managing Team Members
+Navigate to **Team** (`/team`):
+- View the complete organization directory with user roles, status badges, and last activity timestamps.
+- Filter team members by role (`OWNER`, `ADMIN`, `MANAGER`, `MEMBER`, `VIEWER`) and account status (`ACTIVE`, `INACTIVE`, `INVITED`).
+- Click on any team member to view their individual user profile, effective permissions, and recent audit activity.
+- Quickly toggle account activation status or soft-delete members (subject to role hierarchy and safety protections).
+
+---
+
+## 35. Roles and Permissions Matrix
+Spark Admin provides five standard roles designed for business operations:
+
+1. **OWNER:** Full organizational authority. Can invite/manage all roles, alter business profile settings, delete documents, and manage billing.
+2. **ADMIN:** High-level administrator. Can manage users below Owner, edit company defaults, configure units and items, and manage documents. Cannot delete the Owner or assign permissions beyond Admin capabilities.
+3. **MANAGER:** Operational supervisor. Can create and edit invoices, record payments, manage clients, and inspect reports. Cannot edit business profile settings or administer user roles.
+4. **MEMBER:** Standard operational user. Can create and edit invoices and add clients. Cannot void payments or delete documents.
+5. **VIEWER:** Read-only access. Can inspect quotations, invoices, reports, and master data without mutation rights.
+
+### Custom Permission Overrides
+Administrators can grant or revoke specific granular permissions on an individual user basis:
+1. Open the user profile or click **Edit Permissions**.
+2. Select the desired module permissions (e.g. allowing a Manager to view the Team Activity log).
+3. Save changes. Granular overrides take effect immediately upon subsequent requests.
+
+---
+
+## 36. Inviting Users and Password Setup
+To onboard a new employee or team member:
+1. On the **Team** screen, click **+ Invite Member**.
+2. Enter their Full Name, Email Address, and select their primary Role.
+3. Optionally select custom permission overrides.
+4. Click **Send Invitation**.
+5. The system generates a cryptographic invitation link (`/invite/<token>`).
+6. The invitee opens the link in their browser, enters their chosen password, and confirms.
+7. Upon successful setup, the account status transitions from `INVITED` to `ACTIVE` and the user is redirected to the login screen.
+8. If an invitation expires or is misplaced, administrators can click **Resend Invitation** or **Revoke Invitation** from the member actions menu.
+
+---
+
+## 37. Activity Audit Trail & Security Logs
+Navigate to **Activity Logs** (`/team/activity`):
+- Full immutable timeline of business events, including:
+  - Document creations, edits, status transitions, and deletions.
+  - Payment records and void events.
+  - Client and Item catalog modifications.
+  - Team invitations, role changes, permission adjustments, and account deactivations.
+  - Administrative logins and logouts.
+- Search logs by actor name, filter by functional module, or select a date window.
+- Detailed JSON change metadata allows auditing exact before-and-after values for financial compliance.
+- Access the **Team Analytics** screen (`/team/analytics`) to inspect action frequency graphs and top active users.

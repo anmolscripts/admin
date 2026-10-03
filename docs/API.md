@@ -290,3 +290,149 @@ All API endpoints are mounted under `/api/` (except authentication and web prese
 ### 9.2. `GET /health`
 - **Auth Required:** No
 - **Response:** `200 OK` `{ "status": "ok", "timestamp": "...", "uptime": 1234, "database": "connected" }`
+
+---
+
+## 10. Team & Role-Based Access Control API (`/api/team*`)
+
+All team management endpoints require authentication and corresponding RBAC permissions (`TEAM:VIEW`, `TEAM:MANAGE`).
+
+### 10.1. `GET /api/team`
+- **Permission Required:** `TEAM:VIEW`
+- **Description:** Retrieve paginated list of team members with assigned roles, statuses, and custom permission counts.
+- **Query Parameters:** `page`, `limit`, `search`, `role`, `status` (`ACTIVE` | `INACTIVE` | `INVITED`)
+- **Response:** `200 OK`
+  ```json
+  {
+    "success": true,
+    "data": [
+      {
+        "id": 1,
+        "name": "Jane Owner",
+        "email": "owner@company.com",
+        "role": { "name": "OWNER", "description": "Full organization owner" },
+        "active": true,
+        "customPermissionsCount": 0
+      }
+    ],
+    "pagination": { "page": 1, "limit": 10, "total": 1, "totalPages": 1 }
+  }
+  ```
+
+### 10.2. `GET /api/team/:id`
+- **Permission Required:** `TEAM:VIEW`
+- **Description:** Retrieve individual team member details, role assignment, and direct user permissions.
+- **Response:** `200 OK`
+
+### 10.3. `POST /api/team`
+- **Permission Required:** `TEAM:MANAGE`
+- **Description:** Invite a new team member and dispatch an onboarding invitation token.
+- **Payload:**
+  ```json
+  {
+    "name": "Alex Smith",
+    "email": "alex@company.com",
+    "roleId": 3,
+    "permissions": [1, 2, 5]
+  }
+  ```
+- **Response:** `201 Created`
+  ```json
+  {
+    "success": true,
+    "data": { "id": 5, "email": "alex@company.com", "invitationToken": "..." }
+  }
+  ```
+
+### 10.4. `PUT /api/team/:id`
+- **Permission Required:** `TEAM:MANAGE`
+- **Description:** Update member profile details, role, or base assignment.
+- **Security Rule:** Cannot modify own profile via this endpoint. Target user role rank must be lower than actor role rank. Cannot grant permissions not held by actor.
+- **Response:** `200 OK`
+
+### 10.5. `PATCH /api/team/:id/status`
+- **Permission Required:** `TEAM:MANAGE`
+- **Description:** Activate or deactivate a team member account.
+- **Payload:** `{ "active": false }`
+- **Security Rule:** Cannot deactivate self. Cannot deactivate the last active OWNER or last active admin holding `TEAM:MANAGE`.
+- **Response:** `200 OK`
+
+### 10.6. `PUT /api/team/:id/permissions`
+- **Permission Required:** `TEAM:MANAGE`
+- **Description:** Explicitly assign or override granular permissions for a user.
+- **Payload:** `{ "permissionIds": [3, 7, 12] }`
+- **Security Rule:** Non-owners cannot grant permissions that they themselves do not possess.
+- **Response:** `200 OK`
+
+### 10.7. `POST /api/team/:id/invite/resend`
+- **Permission Required:** `TEAM:MANAGE`
+- **Description:** Regenerate and resend invitation link for pending invited members.
+- **Response:** `200 OK`
+
+### 10.8. `POST /api/team/:id/invite/revoke`
+- **Permission Required:** `TEAM:MANAGE`
+- **Description:** Revoke pending invitation token.
+- **Response:** `200 OK`
+
+### 10.9. `DELETE /api/team/:id`
+- **Permission Required:** `TEAM:MANAGE`
+- **Description:** Soft-delete or remove a team member.
+- **Security Rule:** Cannot delete self. Cannot delete last active OWNER or administrator.
+- **Response:** `200 OK`
+
+### 10.10. `GET /api/team-roles` & `GET /api/team-permissions`
+- **Permission Required:** `TEAM:VIEW`
+- **Description:** Retrieve available role definitions (`OWNER`, `ADMIN`, `MANAGER`, `MEMBER`, `VIEWER`) and permission dictionary grouped by module.
+- **Response:** `200 OK`
+
+---
+
+## 11. User Activity & Audit API (`/api/team-*`)
+
+### 11.1. `GET /api/team-activity`
+- **Permission Required:** `TEAM:ACTIVITY_VIEW`
+- **Description:** Retrieve append-only audit trail of user activities and system mutations.
+- **Query Parameters:** `page`, `limit`, `actorUserId`, `module` (`AUTH` | `DOCUMENTS` | `PAYMENTS` | `CLIENTS` | `ITEMS` | `UNITS` | `TEAM` | `SETTINGS`), `action`, `startDate`, `endDate`
+- **Response:** `200 OK`
+  ```json
+  {
+    "success": true,
+    "data": [
+      {
+        "id": 142,
+        "action": "CREATE_USER",
+        "module": "TEAM",
+        "targetType": "USER",
+        "targetId": "12",
+        "actor": { "id": 1, "name": "Admin", "email": "admin@company.com" },
+        "ipAddress": "127.0.0.1",
+        "metadata": { "email": "newuser@company.com", "role": "MANAGER" },
+        "createdAt": "2026-10-03T12:00:00.000Z"
+      }
+    ],
+    "pagination": { "page": 1, "limit": 20, "total": 142, "totalPages": 8 }
+  }
+  ```
+
+### 11.2. `GET /api/team-analytics`
+- **Permission Required:** `TEAM:ACTIVITY_VIEW`
+- **Description:** Aggregated activity volume by module, top actors, and mutation velocity.
+- **Response:** `200 OK`
+
+---
+
+## 12. Invitation & Account Activation API
+
+### 12.1. `GET /invite/:token`
+- **Auth Required:** No
+- **Description:** Validate invitation token and present account password setup form.
+- **Responses:**
+  - `200 OK`: Form rendered if token is valid and unexpired.
+  - `400 Bad Request`: Token invalid, expired, or already used.
+
+### 12.2. `POST /invite/:token`
+- **Auth Required:** No
+- **CSRF Required:** Yes
+- **Description:** Complete invitation by establishing password and activating the account.
+- **Payload:** `{ "password": "secure-new-password", "_csrf": "..." }`
+- **Response:** `302 Found` redirecting to `/login` upon success.

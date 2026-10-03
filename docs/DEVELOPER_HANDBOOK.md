@@ -81,7 +81,9 @@ DATABASE_URL="mysql://root:your_actual_mysql_password@localhost:3306/spark_admin
 
 SESSION_SECRET=dev-session-secret-change-in-production-min32chars
 SEED_ADMIN_PASSWORD=local-dev-password-123
+TEST_ADMIN_PASSWORD=local-dev-password-123
 ```
+*Note: `TEST_ADMIN_PASSWORD` (or `SEED_ADMIN_PASSWORD`) is strictly required by automated test scripts and browser QA verification suites. The runner will throw an error if no admin password is provided in environment variables.*
 
 ### 8. Run Prisma Migrations & Client Generation
 Apply all forward-only migrations and generate the Prisma Client:
@@ -97,12 +99,13 @@ npx prisma migrate status
 ```
 
 ### 9. Seed Development Data
-Seed the local admin account, company settings, predefined units, master items, and sample documents:
+Seed the local admin account, company settings, RBAC roles, permissions, predefined units, master items, and sample documents:
 ```bash
 npm run prisma:seed
 ```
 *Output will confirm:*
-- Admin account: `admin@email.com`
+- Admin account: `admin@email.com` (assigned `OWNER` role)
+- System roles (`OWNER`, `ADMIN`, `MANAGER`, `MEMBER`, `VIEWER`) and permission dictionary
 - Organization defaults & GST settings
 - 13 Predefined measurement units (`PCS`, `m`, `unit`, `Hours`, `Project`, etc.)
 - 21 Standard industrial catalog items
@@ -149,6 +152,11 @@ Branch naming conventions:
 - Follow the guidelines in [docs/CODING_STANDARDS.md](file:///c:/Users/User/Documents/project/admin/docs/CODING_STANDARDS.md).
 - Place business logic in services (`app/services/`), not controllers or routes.
 - Respect the frozen core contracts in [docs/CORE_CONTRACTS.md](file:///c:/Users/User/Documents/project/admin/docs/CORE_CONTRACTS.md).
+- **Authorization Pattern:** Protect all routes and controllers using RBAC middleware:
+  - Route middleware: `requirePermission('MODULE', 'ACTION')`
+  - Service-level checks: `await rbacService.hasPermission(userId, module, action)`
+  - Protect mutations with atomic activity logs: `await activityService.log({ ... }, tx)`
+  - Never allow self-modification of roles/permissions or delegation escalation beyond current user privileges.
 
 ### 15. Adding Database Migrations (If Schema Changes)
 If your feature requires a database schema change:
@@ -170,10 +178,10 @@ If your feature requires a database schema change:
 ### 16. Test Your Changes
 Run focused tests during development:
 ```bash
-node --test tests/phase8.test.js
+node --test tests/rbac_team_activity.test.js
 node --test tests/documents.test.js
 ```
-Then run the entire suite before committing:
+Then run the entire suite before committing (all 353 tests across 59 suites must pass naturally with exit code 0):
 ```bash
 npm test
 npx prisma validate

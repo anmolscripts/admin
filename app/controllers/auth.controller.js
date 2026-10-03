@@ -2,6 +2,8 @@ const authService = require('../services/auth.service');
 const { refreshCsrfToken } = require('../middleware/csrf.middleware');
 const { recordFailedLogin, resetLoginAttempts } = require('../middleware/rateLimit.middleware');
 const { SESSION_COOKIE_NAME, cookieOptions } = require('../config/session');
+const prisma = require('../config/prisma');
+const activityService = require('../services/activity.service');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -50,8 +52,17 @@ async function login(req, res, next) {
 
         if (!result.success) {
             recordFailedLogin(req);
-            // Non-sensitive logging (email only, no password/hash)
             console.warn(`[AUTH] Failed login attempt for user: ${email} (reason: ${result.reason})`);
+
+            // Audit failed login attempt
+            await activityService.log({
+                action: 'LOGIN_FAILED',
+                module: 'AUTHENTICATION',
+                targetReference: email,
+                ipAddress: req.ip,
+                userAgent: req.headers ? req.headers['user-agent'] : null,
+                metadata: { reason: result.reason }
+            });
 
             // Generic error message to prevent user enumeration
             return res.status(401).render('auth/login', {
@@ -63,6 +74,24 @@ async function login(req, res, next) {
 
         // Authentication succeeded; clear failed attempt counter
         resetLoginAttempts(req);
+
+        // Update lastLoginAt
+        try {
+            await prisma.user.update({
+                where: { id: result.user.id },
+                data: { lastLoginAt: new Date() }
+            });
+        } catch (_) {}
+
+        // Audit successful login
+        await activityService.log({
+            actorUserId: result.user.id,
+            action: 'LOGIN',
+            module: 'AUTHENTICATION',
+            targetReference: result.user.email,
+            ipAddress: req.ip,
+            userAgent: req.headers ? req.headers['user-agent'] : null
+        });
 
         // Prevent session fixation by regenerating session
         req.session.regenerate((err) => {
@@ -102,10 +131,24 @@ async function login(req, res, next) {
 /**
  * Handle Logout
  */
-function logout(req, res, next) {
+async function logout(req, res, next) {
     if (!req.session) {
         res.clearCookie(SESSION_COOKIE_NAME, cookieOptions);
         return res.redirect('/login');
+    }
+
+    const userId = req.session.user ? req.session.user.id : null;
+    const userEmail = req.session.user ? req.session.user.email : null;
+
+    if (userId) {
+        await activityService.log({
+            actorUserId: userId,
+            action: 'LOGOUT',
+            module: 'AUTHENTICATION',
+            targetReference: userEmail,
+            ipAddress: req.ip,
+            userAgent: req.headers ? req.headers['user-agent'] : null
+        });
     }
 
     req.session.destroy((err) => {

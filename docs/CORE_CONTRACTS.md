@@ -144,3 +144,15 @@
 - **Why It Exists:** Enables fast, frictionless counter invoicing when complete customer contact information is unavailable, while strictly preserving accounting audit immutability.
 - **Side Effects If Changed:** Validation rejecting valid cash/counter clients; or dynamic joins corrupting historical client addresses on past tax invoices.
 - **Tests Protecting It:** [tests/ux_polish.test.js](file:///c:/Users/User/Documents/project/admin/tests/ux_polish.test.js).
+
+### 23. RBAC Hierarchy, Delegation Boundary & Last-Administrator Invariant
+- **Contract:** Access control strictly enforces `OWNER > ADMIN > STAFF / VIEWER` hierarchy. Non-owners cannot create/modify/demote an OWNER. Administrators cannot delegate permissions they do not possess. Users cannot self-modify roles, permissions, or deactivation status. The last active OWNER and last active holder of `TEAM.MANAGE` cannot be demoted, deactivated, or deleted.
+- **Why It Exists:** Prevents horizontal and vertical self-privilege escalation, stops administrative lockout, and enforces organizational delegation boundaries.
+- **Side Effects If Changed:** Unauthorized elevation to Owner, privilege delegation leakage, accidental administrative lockouts.
+- **Tests Protecting It:** [tests/rbac_team_activity.test.js](file:///c:/Users/User/Documents/project/admin/tests/rbac_team_activity.test.js).
+
+### 24. Operational Audit Event Immutability & Secret Sanitization
+- **Contract:** State-changing operational actions create semantic, append-only records (`CREATE_USER`, `ASSIGN_ROLE`, `CHANGE_PERMISSIONS`, etc.) atomically inside the same database transaction. Audit logs strictly sanitize and never record passwords, bcrypt hashes, raw tokens, or session identifiers.
+- **Why It Exists:** Guarantees regulatory forensic auditability while preventing credential leakage into logs and reports.
+- **Side Effects If Changed:** Phantom audit logs on rolled-back transactions, untraceable administrative actions, secret credential exposure.
+- **Tests Protecting It:** [tests/rbac_team_activity.test.js](file:///c:/Users/User/Documents/project/admin/tests/rbac_team_activity.test.js), [tests/phase8.test.js](file:///c:/Users/User/Documents/project/admin/tests/phase8.test.js).

@@ -4,26 +4,31 @@
 
 Spark Admin utilizes Node's built-in test runner (`node:test`) and assertion module (`node:assert`). This provides fast, native test execution without external runners (such as Jest or Mocha) or compilation overhead.
 
-To run the complete automated test suite:
+The entire test suite discovers **13 test files**, **59 suites**, and **353 automated tests**:
 ```bash
 npm test
 ```
+All tests execute deterministically and terminate cleanly with process exit code 0.
 
 ---
 
 ## 2. Test Suite Organization
 
-| Suite | File | Focus Areas |
+| Suite | File | Tests / Focus Areas |
 | :--- | :--- | :--- |
 | **Unit Calculations** | `tests/unit.test.js` | Financial formulas, GST split (CGST/SGST/IGST), half-up rounding, round-off logic. |
 | **Authentication & Session** | `tests/auth.test.js` | Login flows, bcrypt verification, session persistence, logout destruction. |
 | **Document Domain** | `tests/invoice.test.js` | Create, update, sequence allocation, tax determination, optimistic locking. |
 | **Document Lifecycle** | `tests/documents.test.js` | State transitions (`ACTIVE` -> `INACTIVE` -> `VOID` -> `DELETED`), restoration, copy mechanics. |
+| **Document Editor** | `tests/editor.test.js` | Editor rendering, payload structure, item rows, validation error states. |
+| **Document View & Actions** | `tests/view.test.js` | Document details presentation, lifecycle action buttons, status transitions. |
 | **Export & Presentation** | `tests/export.test.js` | HTML print view, Chromium headless PDF generation, Excel workbook export. |
 | **Security Hardening** | `tests/hardening.test.js` | CSRF enforcement, rate limiting, security headers, XSS mitigation. |
 | **Item Master & QA** | `tests/phase8.test.js` | Autocomplete search, concurrency unique constraints, dashboard KPI queries. |
 | **UX Polish & Unit Master** | `tests/ux_polish.test.js` | Unit Master CRUD, client optional email/phone, saved client autofill, portal DOM verification, seed idempotency. |
 | **Integration Baseline** | `tests/phase6.test.js` | Full end-to-end integration workflows. |
+| **Core Contracts** | `tests/contracts.test.js` | Invariant contracts verification across financial math, models, and boundaries. |
+| **RBAC, Team & Activity** | `tests/rbac_team_activity.test.js` | 56 tests across 13 suites: Role hierarchy, self-escalation protection, delegation boundaries, last admin safeguards, direct API security, and semantic audit trails. |
 
 ---
 
@@ -90,6 +95,25 @@ describe('Feature Integration Suite', () => {
 > **POLICY:**
 > **Never call `process.exit()` inside a test file as a workaround.**
 > Any test file failing to exit naturally indicates an unhandled resource leak that must be identified and closed properly.
+
+### 4.3. Node 24 Concurrency & Database Pool Lifecycle
+Under Node.js 24 LTS, the default test runner executes test files concurrently. In an application using Prisma ORM with MySQL/MariaDB driver adapters:
+1. **Connection Pool Starvation:** Concurrent test suites attempting rapid connection checkout and transaction commits can saturate local database connection limits, leading to connection timeouts and deadlocks.
+2. **Background Activity Clashes:** Unawaited background queries (e.g. updating a user's `lastActivityAt` timestamp in `activityService.log`) can attempt database access precisely as an `after()` teardown hook triggers `prisma.$disconnect()`, leading to "Transaction already closed" errors.
+
+**Engineered Defenses:**
+- In `package.json`, test execution is serialized across files via `--test-concurrency=1`:
+  ```json
+  "test": "node --test --test-concurrency=1 tests/*.test.js"
+  ```
+- In `app/services/activity.service.js`, non-critical background updates (`lastActivityAt`) are automatically bypassed when `process.env.NODE_ENV === 'test'`:
+  ```javascript
+  const isTestEnv = process.env.NODE_ENV === 'test';
+  if (!isTestEnv) {
+      prisma.user.update({ where: { id: actorUserId }, data: { lastActivityAt: new Date() } }).catch(...);
+  }
+  ```
+This ensures zero pool starvation, zero race conditions on pool teardown, and clean 100% natural process termination.
 
 ---
 

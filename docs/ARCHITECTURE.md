@@ -18,15 +18,16 @@ Spark Admin follows an enterprise layered architecture with strict separation of
        │
        ▼
 [ Routing Layer ] (app/routes/)
-  ├─ web.routes.js     -> Server-rendered EJS pages (GET, editor, view, print)
-  ├─ auth.routes.js    -> Session lifecycle (login, logout, session check)
-  └─ invoice.routes.js -> RESTful API endpoints for JSON consumers
+  ├─ web.routes.js     -> Server-rendered EJS pages (GET, editor, view, print, team)
+  ├─ auth.routes.js    -> Session lifecycle (login, logout, invitation acceptance)
+  ├─ invoice.routes.js -> RESTful API endpoints for documents, payments, clients
+  └─ team.routes.js    -> Team management, RBAC metadata, and audit log endpoints
        │
        ▼
 [ Controller Layer ] (app/controllers/)
   ├─ Parameter sanitization and HTTP type coercion
   ├─ Invocation of domain services
-  ├─ HTTP status code resolution (200, 201, 400, 404, 409, 500)
+  ├─ HTTP status code resolution (200, 201, 400, 403, 404, 409, 500)
   └─ View rendering (res.render) or JSON response delivery (res.json)
        │
        ▼
@@ -35,6 +36,10 @@ Spark Admin follows an enterprise layered architecture with strict separation of
   ├─ documentView.service.js  -> Single normalized view model generation
   ├─ item.service.js          -> Catalog search, uniqueness, autocomplete
   ├─ unit.service.js          -> Measurement unit master, validation, active lists
+  ├─ team.service.js          -> Team management, hierarchy enforcement, safe delegation
+  ├─ rbac.service.js          -> Role permissions dictionary, permission resolution
+  ├─ invitation.service.js    -> Cryptographic invitations and password onboarding
+  ├─ activity.service.js      -> Append-only user activity logging and analytics
   ├─ payment.service.js       -> Payment ledger, balance resolution, receipts
   ├─ dashboard.service.js     -> Parallel SQL KPI aggregations
   ├─ pdf.service.js           -> Headless Chromium PDF generation from shared HTML
@@ -67,14 +72,18 @@ Spark Admin follows an enterprise layered architecture with strict separation of
    - API Rate Limiter: 100 requests per minute for sensitive mutation endpoints.
 5. **CSRF Middleware (`app/middleware/csrf.middleware.js`):** Protects all mutating requests (`POST`, `PUT`, `DELETE`). Compares incoming `_csrf` body field or `x-csrf-token` header against the cryptographically secure token stored in `req.session.csrfToken`.
 6. **Authentication Guard (`app/middleware/auth.middleware.js`):** Enforces valid session presence on protected routes. Unauthenticated browser requests are redirected to `/login`; unauthenticated API requests receive HTTP 401 Unauthorized.
-7. **Error Middleware (`app/middleware/error.middleware.js`):** Global error trap. Maps domain errors (`ValidationError`, `NotFoundError`, `ConcurrencyError`) to structured JSON or user-friendly 404/500 EJS views without exposing internal stack traces in production.
+7. **Permission Middleware (`app/middleware/permission.middleware.js`):** Enforces granular module-action authorization (`requirePermission(module, action)`). Rejects unauthorized calls with HTTP 403 Forbidden.
+8. **Error Middleware (`app/middleware/error.middleware.js`):** Global error trap. Maps domain errors (`ValidationError`, `NotFoundError`, `ConcurrencyError`) to structured JSON or user-friendly 404/500 EJS views without exposing internal stack traces in production.
 
 ### 2.3. Controllers (`app/controllers/`)
 Controllers handle the HTTP layer only. They unpack request data, execute services, and package the response.
 - [auth.controller.js](file:///c:/Users/User/Documents/project/admin/app/controllers/auth.controller.js): Login validation, timing-safe bcrypt authentication, session establishment, and logout destruction.
+- [invitation.controller.js](file:///c:/Users/User/Documents/project/admin/app/controllers/invitation.controller.js): Invitation token validation and onboarding password setup.
 - [invoice.controller.js](file:///c:/Users/User/Documents/project/admin/app/controllers/invoice.controller.js): CRUD, status transitions, quotation conversion, PDF/Excel streaming, and copy endpoints.
 - [client.controller.js](file:///c:/Users/User/Documents/project/admin/app/controllers/client.controller.js): Client directory management.
 - [item.controller.js](file:///c:/Users/User/Documents/project/admin/app/controllers/item.controller.js): Item Master queries, debounced autocomplete search.
+- [unit.controller.js](file:///c:/Users/User/Documents/project/admin/app/controllers/unit.controller.js): Unit Master catalog and status toggling.
+- [team.controller.js](file:///c:/Users/User/Documents/project/admin/app/controllers/team.controller.js): Team member administration, role assignment, custom permissions, and audit logs.
 - [payment.controller.js](file:///c:/Users/User/Documents/project/admin/app/controllers/payment.controller.js): Payment recording and payment voiding.
 - [dashboard.controller.js](file:///c:/Users/User/Documents/project/admin/app/controllers/dashboard.controller.js): Analytics aggregations and trend charts.
 
@@ -84,6 +93,11 @@ Services contain ALL business rules, financial formulas, and database transactio
 - **`documentView.service.js`:** The authoritative single view model builder for print, PDF, and details screens.
 - **`pdf.service.js`:** Headless browser automation converting the shared HTML template to PDF buffers.
 - **`item.service.js`:** Case-insensitive catalog lookup and automated concurrent upserting.
+- **`unit.service.js`:** Predefined measurement units, validation, and active listings.
+- **`team.service.js`:** User directory, hierarchy enforcement, safe delegation, and last administrator safeguards.
+- **`rbac.service.js`:** Dynamic permission resolution combining base role permissions with custom user overrides.
+- **`invitation.service.js`:** Single-use invitation lifecycle with SHA-256 token hashing and account activation.
+- **`activity.service.js`:** Immutable append-only operational audit logging and aggregated analytics.
 - **`payment.service.js`:** Multi-payment ledger, partial payment reconciliation, and overdue checking.
 - **`dashboard.service.js`:** Server-side SQL metric counting, sums, and trend bucketing.
 

@@ -69,7 +69,8 @@ async function createClient(req, res) {
  */
 async function updateClient(req, res) {
     try {
-        const client = await clientService.updateClient(req.params.id, req.body);
+        const userId = req.session && req.session.user ? req.session.user.id : null;
+        const client = await clientService.updateClient(req.params.id, req.body, userId);
         return res.status(200).json({ success: true, data: client });
     } catch (err) {
         return handleControllerError(err, res);
@@ -81,7 +82,8 @@ async function updateClient(req, res) {
  */
 async function toggleStatus(req, res) {
     try {
-        const client = await clientService.toggleClientStatus(req.params.id);
+        const userId = req.session && req.session.user ? req.session.user.id : null;
+        const client = await clientService.toggleClientStatus(req.params.id, userId);
         return res.status(200).json({ success: true, data: client });
     } catch (err) {
         return handleControllerError(err, res);

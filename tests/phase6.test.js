@@ -70,6 +70,9 @@ describe('Clients, Business Profile, GST & Payments (Phase 6) Test Suite', () =>
     });
 
     after(async () => {
+        try {
+            await prisma.client.deleteMany({ where: { email: 'billing@tcs.example.com' } });
+        } catch (_) {}
         if (server) {
             if (typeof server.closeAllConnections === 'function') {
                 server.closeAllConnections();

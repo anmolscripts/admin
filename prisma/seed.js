@@ -13,9 +13,23 @@ const adapter = new PrismaMariaDb({
 });
 
 const prisma = new PrismaClient({ adapter });
+const rbacService = require('../app/services/rbac.service');
 
 async function main() {
-    const email = 'admin@email.com';
+    // 0. Seed RBAC Permissions & System Roles
+    console.log('Seeding RBAC permissions and system roles...');
+    await rbacService.seedPermissionsAndRoles();
+
+    const ownerRole = await prisma.role.findUnique({ where: { name: 'OWNER' } });
+
+    const isProduction = process.env.NODE_ENV === 'production';
+    if (isProduction) {
+        console.log('[SEED POLICY] Production mode detected (NODE_ENV=production).');
+        console.log('[SEED POLICY] Only system metadata (roles, permissions, mappings) and master data (units, items, profile) will be seeded.');
+        console.log('[SEED POLICY] Demo clients, invoices, quotations, payments, and revisions will NOT be seeded.');
+    }
+
+    const email = process.env.SEED_ADMIN_EMAIL || 'admin@email.com';
 
     let admin = await prisma.user.findUnique({
         where: { email }
@@ -25,33 +39,48 @@ async function main() {
         const password = process.env.SEED_ADMIN_PASSWORD;
 
         if (!password) {
-            throw new Error('SEED_ADMIN_PASSWORD is missing from .env');
-        }
-
-        const passwordHash = await bcrypt.hash(password, 12);
-
-        admin = await prisma.user.create({
-            data: {
-                name: 'Administrator',
-                email,
-                password: passwordHash,
-                role: 'ADMIN',
-                active: true
+            if (isProduction) {
+                console.log('[SEED POLICY] SEED_ADMIN_PASSWORD not set. Skipping initial admin user creation in production.');
+            } else {
+                throw new Error('SEED_ADMIN_PASSWORD is missing from .env');
             }
-        });
+        } else {
+            const passwordHash = await bcrypt.hash(password, 12);
 
-        console.log('Development admin created:', admin.email);
+            admin = await prisma.user.create({
+                data: {
+                    name: 'Administrator',
+                    email,
+                    password: passwordHash,
+                    role: 'ADMIN',
+                    roleId: ownerRole ? ownerRole.id : null,
+                    status: 'ACTIVE',
+                    active: true
+                }
+            });
+
+            console.log('Initial admin created:', admin.email);
+        }
     } else {
-        console.log('Development admin already exists:', email);
+        if (ownerRole && admin.roleId !== ownerRole.id) {
+            await prisma.user.update({
+                where: { id: admin.id },
+                data: { roleId: ownerRole.id, status: 'ACTIVE', active: true }
+            });
+            console.log('Updated existing admin with OWNER role:', email);
+        } else {
+            console.log('Admin already exists:', email);
+        }
     }
 
-    // Seed Development Invoices if not already present
-    const existingInvoicesCount = await prisma.invoice.count({
-        where: { documentType: 'INVOICE' }
-    });
+    // Seed Development Invoices and Quotations if not already present (strictly excluded in production)
+    if (!isProduction) {
+        const existingInvoicesCount = await prisma.invoice.count({
+            where: { documentType: 'INVOICE' }
+        });
 
-    if (existingInvoicesCount === 0) {
-        console.log('Seeding development invoice data...');
+        if (existingInvoicesCount === 0 && admin) {
+            console.log('Seeding development invoice data...');
 
         // 1. ACTIVE Invoice
         const invoice1 = await prisma.invoice.create({
@@ -300,6 +329,7 @@ async function main() {
     } else {
         console.log(`Development quotations already seeded (${existingQuotationsCount} existing).`);
     }
+    }
 
     // Synchronize sequences
     const currentYear = 2026;
@@ -382,7 +412,7 @@ async function main() {
                     symbol: u.symbol,
                     description: u.description,
                     active: true,
-                    createdById: admin.id
+                    createdById: admin ? admin.id : null
                 }
             });
             unitsCreated++;
@@ -513,7 +543,7 @@ async function main() {
                     unit: item.unit.trim(),
                     rate: item.rate,
                     active: true,
-                    createdById: admin.id
+                    createdById: admin ? admin.id : null
                 }
             });
             itemsCreated++;
@@ -521,36 +551,38 @@ async function main() {
     }
     console.log(`Item Master seeded (${itemsCreated} new items created out of 21 specified).`);
 
-    // Seed Sample Clients if not present
-    const clientsCount = await prisma.client.count();
-    if (clientsCount === 0) {
-        await prisma.client.createMany({
-            data: [
-                {
-                    name: 'Tata Consultancy Services',
-                    email: 'billing@tcs.example.com',
-                    phone: '+91 22 6778 9999',
-                    gstin: '27AAACT2727Q1ZW',
-                    stateCode: '27',
-                    billingAddress: 'TCS House, Raveline Street, Fort, Mumbai 400001',
-                    shippingAddress: 'TCS Olympus, Thane West, Mumbai 400607',
-                    active: true,
-                    createdById: admin.id
-                },
-                {
-                    name: 'Infosys Limited',
-                    email: 'accounts@infosys.example.com',
-                    phone: '+91 80 2852 0261',
-                    gstin: '29AAACI4818H1ZP',
-                    stateCode: '29',
-                    billingAddress: 'Electronics City, Hosur Road, Bengaluru 560100',
-                    shippingAddress: 'Electronics City, Hosur Road, Bengaluru 560100',
-                    active: true,
-                    createdById: admin.id
-                }
-            ]
-        });
-        console.log('Sample clients seeded.');
+    // Seed Sample Clients if not present (strictly excluded in production)
+    if (!isProduction) {
+        const clientsCount = await prisma.client.count();
+        if (clientsCount === 0 && admin) {
+            await prisma.client.createMany({
+                data: [
+                    {
+                        name: 'Tata Consultancy Services',
+                        email: 'billing@tcs.example.com',
+                        phone: '+91 22 6778 9999',
+                        gstin: '27AAACT2727Q1ZW',
+                        stateCode: '27',
+                        billingAddress: 'TCS House, Raveline Street, Fort, Mumbai 400001',
+                        shippingAddress: 'TCS Olympus, Thane West, Mumbai 400607',
+                        active: true,
+                        createdById: admin.id
+                    },
+                    {
+                        name: 'Infosys Limited',
+                        email: 'accounts@infosys.example.com',
+                        phone: '+91 80 2852 0261',
+                        gstin: '29AAACI4818H1ZP',
+                        stateCode: '29',
+                        billingAddress: 'Electronics City, Hosur Road, Bengaluru 560100',
+                        shippingAddress: 'Electronics City, Hosur Road, Bengaluru 560100',
+                        active: true,
+                        createdById: admin.id
+                    }
+                ]
+            });
+            console.log('Sample clients seeded.');
+        }
     }
 
     console.log('Seed completed successfully.');

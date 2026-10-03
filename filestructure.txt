@@ -1,27 +1,366 @@
+|-- .agents
+    |-- skills
+        |-- prisma-cli
+            |-- references
+                |-- agent-safety.md
+                |-- complete.md
+                |-- db-execute.md
+                |-- db-pull.md
+                |-- db-push.md
+                |-- db-seed.md
+                |-- debug.md
+                |-- dev.md
+                |-- format.md
+                |-- generate.md
+                |-- init.md
+                |-- mcp.md
+                |-- migrate-deploy.md
+                |-- migrate-dev.md
+                |-- migrate-diff.md
+                |-- migrate-reset.md
+                |-- migrate-resolve.md
+                |-- migrate-status.md
+                |-- studio.md
+                |-- validate.md
+            |-- SKILL.md
+        |-- prisma-client-api
+            |-- references
+                |-- client-methods.md
+                |-- constructor.md
+                |-- filters.md
+                |-- model-queries.md
+                |-- query-options.md
+                |-- raw-queries.md
+                |-- relations.md
+                |-- transactions.md
+            |-- SKILL.md
+        |-- prisma-compute
+            |-- references
+                |-- app-deploy-cli.md
+                |-- compute-config.md
+                |-- create-prisma.md
+                |-- frameworks.md
+                |-- sdk-api.md
+                |-- troubleshooting.md
+            |-- SKILL.md
+        |-- prisma-database-setup
+            |-- references
+                |-- cockroachdb.md
+                |-- mongodb.md
+                |-- mysql.md
+                |-- postgresql.md
+                |-- prisma-client-setup.md
+                |-- prisma-postgres.md
+                |-- sqlite.md
+                |-- sqlserver.md
+            |-- SKILL.md
+        |-- prisma-driver-adapter-implementation
+            |-- SKILL.md
+        |-- prisma-mongodb-upgrade
+            |-- references
+                |-- client-api-mapping.md
+                |-- decision-stay-or-migrate.md
+                |-- migrations-mapping.md
+                |-- schema-contract-mapping.md
+                |-- verify-cutover-checklist.md
+            |-- SKILL.md
+        |-- prisma-postgres
+            |-- references
+                |-- console-and-connections.md
+                |-- create-db-cli.md
+                |-- management-api-sdk.md
+                |-- management-api.md
+            |-- SKILL.md
+        |-- prisma-postgres-setup
+            |-- references
+                |-- api-basics.md
+                |-- auth.md
+                |-- endpoints.md
+                |-- prisma7-client.md
+            |-- SKILL.md
+        |-- prisma-upgrade-v7
+            |-- references
+                |-- accelerate-users.md
+                |-- driver-adapters.md
+                |-- env-variables.md
+                |-- esm-support.md
+                |-- prisma-config.md
+                |-- removed-features.md
+                |-- schema-changes.md
+            |-- SKILL.md
+|-- .claude
+    |-- skills
+        |-- prisma-cli
+            |-- references
+                |-- agent-safety.md
+                |-- complete.md
+                |-- db-execute.md
+                |-- db-pull.md
+                |-- db-push.md
+                |-- db-seed.md
+                |-- debug.md
+                |-- dev.md
+                |-- format.md
+                |-- generate.md
+                |-- init.md
+                |-- mcp.md
+                |-- migrate-deploy.md
+                |-- migrate-dev.md
+                |-- migrate-diff.md
+                |-- migrate-reset.md
+                |-- migrate-resolve.md
+                |-- migrate-status.md
+                |-- studio.md
+                |-- validate.md
+            |-- SKILL.md
+        |-- prisma-client-api
+            |-- references
+                |-- client-methods.md
+                |-- constructor.md
+                |-- filters.md
+                |-- model-queries.md
+                |-- query-options.md
+                |-- raw-queries.md
+                |-- relations.md
+                |-- transactions.md
+            |-- SKILL.md
+        |-- prisma-compute
+            |-- references
+                |-- app-deploy-cli.md
+                |-- compute-config.md
+                |-- create-prisma.md
+                |-- frameworks.md
+                |-- sdk-api.md
+                |-- troubleshooting.md
+            |-- SKILL.md
+        |-- prisma-database-setup
+            |-- references
+                |-- cockroachdb.md
+                |-- mongodb.md
+                |-- mysql.md
+                |-- postgresql.md
+                |-- prisma-client-setup.md
+                |-- prisma-postgres.md
+                |-- sqlite.md
+                |-- sqlserver.md
+            |-- SKILL.md
+        |-- prisma-driver-adapter-implementation
+            |-- SKILL.md
+        |-- prisma-mongodb-upgrade
+            |-- references
+                |-- client-api-mapping.md
+                |-- decision-stay-or-migrate.md
+                |-- migrations-mapping.md
+                |-- schema-contract-mapping.md
+                |-- verify-cutover-checklist.md
+            |-- SKILL.md
+        |-- prisma-postgres
+            |-- references
+                |-- console-and-connections.md
+                |-- create-db-cli.md
+                |-- management-api-sdk.md
+                |-- management-api.md
+            |-- SKILL.md
+        |-- prisma-postgres-setup
+            |-- references
+                |-- api-basics.md
+                |-- auth.md
+                |-- endpoints.md
+                |-- prisma7-client.md
+            |-- SKILL.md
+        |-- prisma-upgrade-v7
+            |-- references
+                |-- accelerate-users.md
+                |-- driver-adapters.md
+                |-- env-variables.md
+                |-- esm-support.md
+                |-- prisma-config.md
+                |-- removed-features.md
+                |-- schema-changes.md
+            |-- SKILL.md
+|-- .editorconfig
+|-- .env
+|-- .env.example
+|-- .env.production.example
+|-- .gitattributes
 |-- .gitignore
+|-- .nvmrc
+|-- .windsurf
+    |-- skills
+        |-- prisma-cli
+            |-- references
+                |-- agent-safety.md
+                |-- complete.md
+                |-- db-execute.md
+                |-- db-pull.md
+                |-- db-push.md
+                |-- db-seed.md
+                |-- debug.md
+                |-- dev.md
+                |-- format.md
+                |-- generate.md
+                |-- init.md
+                |-- mcp.md
+                |-- migrate-deploy.md
+                |-- migrate-dev.md
+                |-- migrate-diff.md
+                |-- migrate-reset.md
+                |-- migrate-resolve.md
+                |-- migrate-status.md
+                |-- studio.md
+                |-- validate.md
+            |-- SKILL.md
+        |-- prisma-client-api
+            |-- references
+                |-- client-methods.md
+                |-- constructor.md
+                |-- filters.md
+                |-- model-queries.md
+                |-- query-options.md
+                |-- raw-queries.md
+                |-- relations.md
+                |-- transactions.md
+            |-- SKILL.md
+        |-- prisma-compute
+            |-- references
+                |-- app-deploy-cli.md
+                |-- compute-config.md
+                |-- create-prisma.md
+                |-- frameworks.md
+                |-- sdk-api.md
+                |-- troubleshooting.md
+            |-- SKILL.md
+        |-- prisma-database-setup
+            |-- references
+                |-- cockroachdb.md
+                |-- mongodb.md
+                |-- mysql.md
+                |-- postgresql.md
+                |-- prisma-client-setup.md
+                |-- prisma-postgres.md
+                |-- sqlite.md
+                |-- sqlserver.md
+            |-- SKILL.md
+        |-- prisma-driver-adapter-implementation
+            |-- SKILL.md
+        |-- prisma-mongodb-upgrade
+            |-- references
+                |-- client-api-mapping.md
+                |-- decision-stay-or-migrate.md
+                |-- migrations-mapping.md
+                |-- schema-contract-mapping.md
+                |-- verify-cutover-checklist.md
+            |-- SKILL.md
+        |-- prisma-postgres
+            |-- references
+                |-- console-and-connections.md
+                |-- create-db-cli.md
+                |-- management-api-sdk.md
+                |-- management-api.md
+            |-- SKILL.md
+        |-- prisma-postgres-setup
+            |-- references
+                |-- api-basics.md
+                |-- auth.md
+                |-- endpoints.md
+                |-- prisma7-client.md
+            |-- SKILL.md
+        |-- prisma-upgrade-v7
+            |-- references
+                |-- accelerate-users.md
+                |-- driver-adapters.md
+                |-- env-variables.md
+                |-- esm-support.md
+                |-- prisma-config.md
+                |-- removed-features.md
+                |-- schema-changes.md
+            |-- SKILL.md
 |-- app
     |-- app.js
+    |-- config
+        |-- env.js
+        |-- prisma.js
+        |-- session.js
+    |-- controllers
+        |-- auth.controller.js
+        |-- businessProfile.controller.js
+        |-- client.controller.js
+        |-- dashboard.controller.js
+        |-- invitation.controller.js
+        |-- invoice.controller.js
+        |-- item.controller.js
+        |-- payment.controller.js
+        |-- team.controller.js
+        |-- unit.controller.js
     |-- middleware
         |-- auth.middleware.js
+        |-- csrf.middleware.js
         |-- error.middleware.js
+        |-- permission.middleware.js
+        |-- rateLimit.middleware.js
     |-- routes
         |-- admin.routes.js
         |-- auth.routes.js
+        |-- invoice.routes.js
+        |-- team.routes.js
         |-- web.routes.js
+    |-- server.js
+    |-- services
+        |-- activity.service.js
+        |-- auth.service.js
+        |-- businessProfile.service.js
+        |-- client.service.js
+        |-- dashboard.service.js
+        |-- documentView.service.js
+        |-- excel.service.js
+        |-- invitation.service.js
+        |-- invoice.service.js
+        |-- item.service.js
+        |-- payment.service.js
+        |-- pdf.service.js
+        |-- rbac.service.js
+        |-- team.service.js
+        |-- unit.service.js
     |-- views
         |-- auth
             |-- login.ejs
+            |-- setup-password.ejs
+        |-- clients
+            |-- form.ejs
+            |-- index.ejs
         |-- dashboard
             |-- index.ejs
+        |-- documents
+            |-- editor.ejs
+            |-- index.ejs
+            |-- print.ejs
+            |-- templates
+                |-- document.ejs
+            |-- view.ejs
         |-- errors
+            |-- 403.ejs
             |-- 404.ejs
             |-- 500.ejs
+        |-- items
+            |-- index.ejs
         |-- layouts
             |-- footer.ejs
             |-- header.ejs
+        |-- settings
+            |-- index.ejs
+        |-- team
+            |-- activity.ejs
+            |-- analytics.ejs
+            |-- index.ejs
+            |-- show.ejs
+        |-- units
+            |-- index.ejs
 |-- assets
     |-- css
+        |-- documents.css
+        |-- editor.css
         |-- main.css
+        |-- view.css
     |-- images
         |-- avatar.png
         |-- favicon.ico
@@ -37,6 +376,9 @@
     |-- js
         |-- auth.js
         |-- dashboard.js
+        |-- documents.js
+        |-- editor.js
+        |-- view.js
     |-- libs
         |-- apexcharts
             |-- apexcharts.css
@@ -54,6 +396,34 @@
         |-- flatpickr
             |-- flatpickr.min.css
             |-- flatpickr.min.js
+|-- DEPLOYMENT.md
+|-- docs
+    |-- ADR
+        |-- 0001-shared-document-model.md
+        |-- 0002-server-authoritative-financial-calculation.md
+        |-- 0003-shared-print-pdf-template.md
+        |-- 0004-item-master-snapshot-and-uniqueness.md
+        |-- 0005-single-process-production-baseline.md
+        |-- 0006-unit-master-and-client-snapshot.md
+        |-- 0007-rbac-hierarchy-and-audit-security.md
+        |-- README.md
+    |-- API.md
+    |-- ARCHITECTURE.md
+    |-- CHANGELOG.md
+    |-- CODING_STANDARDS.md
+    |-- CORE_CONTRACTS.md
+    |-- DATABASE.md
+    |-- DEPLOYMENT.md
+    |-- DEVELOPER_HANDBOOK.md
+    |-- DEVELOPMENT_WORKFLOW.md
+    |-- DOCUMENT_LIFECYCLE.md
+    |-- RBAC.md
+    |-- README.md
+    |-- RELEASE_CHECKLIST.md
+    |-- SECURITY.md
+    |-- TESTING.md
+    |-- USER_ACTIVITY.md
+    |-- USER_MANUAL.md
 |-- documentation
     |-- assets
         |-- css
@@ -67,7 +437,52 @@
 |-- page-404.html
 |-- page-blank.html
 |-- page-login.html
+|-- prisma
+    |-- migrations
+        |-- 20260925090401_init
+            |-- migration.sql
+        |-- 20261001111514_add_invoice_module
+            |-- migration.sql
+        |-- 20261001120315_add_document_foundation
+            |-- migration.sql
+        |-- 20261001132951_add_document_snapshot_fields
+            |-- migration.sql
+        |-- 20261001163947_add_clients_business_profile_and_payments
+            |-- migration.sql
+        |-- 20261002065000_add_item_master_and_audit_fields
+            |-- migration.sql
+        |-- 20261002141500_add_unique_constraint_to_item_name
+            |-- migration.sql
+        |-- 20261002150000_add_due_date_and_valid_until_to_invoices
+            |-- migration.sql
+        |-- 20261003060017_add_unit_master
+            |-- migration.sql
+        |-- 20261003071507_add_team_rbac_and_user_activity
+            |-- migration.sql
+        |-- migration_lock.toml
+    |-- schema.prisma
+    |-- seed.js
+|-- prisma7.config.ts
+|-- PRODUCTION_CHECKLIST.md
 |-- README.md
+|-- scratch
+|-- scripts
+    |-- qa_browser_e2e.js
+|-- skills-lock.json
 |-- tables-basic.html
+|-- tests
+    |-- auth.test.js
+    |-- contracts.test.js
+    |-- documents.test.js
+    |-- editor.test.js
+    |-- export.test.js
+    |-- hardening.test.js
+    |-- invoice.test.js
+    |-- phase6.test.js
+    |-- phase8.test.js
+    |-- rbac_team_activity.test.js
+    |-- unit.test.js
+    |-- ux_polish.test.js
+    |-- view.test.js
 |-- ui-buttons.html
 |-- ui-forms.html

@@ -66,19 +66,61 @@ In-memory rate limiters protect the application against brute-force attacks and 
 Configured in `app/app.js`:
 - `app.set('trust proxy', 1)`: Accurately identifies client IP behind Nginx/Cloudflare reverse proxies.
 - `X-Content-Type-Options: nosniff`: Prevents MIME-type sniffing.
-- `X-Frame-Options: SAMEORIGIN`: Prevents clickjacking by restricting embedding in third-party iframes.
+- `X-Frame-Options: SAMEORIGIN`: Prevents clickjacking by practical iframe sandboxing.
 - `Referrer-Policy: strict-origin-when-cross-origin`: Restricts referrer data leakage.
 
 ---
 
-## 7. Input Limits & Error Sanitization
+## 7. Role-Based Access Control (RBAC) & Privilege Boundaries
+
+Spark Admin implements strict multi-tier Role-Based Access Control with defense-in-depth protections:
+
+### 7.1. Actor / Target Role Hierarchy
+Roles are ordered strictly: `OWNER (5) > ADMIN (4) > MANAGER (3) > MEMBER (2) > VIEWER (1)`.
+- A user can only manage or invite users with a strictly lower hierarchy level (`actorRank > targetRank`).
+- Non-`OWNER` users can never create, promote, modify, deactivate, or delete an `OWNER` or peer-level account.
+
+### 7.2. Self-Privilege Escalation & Self-Modification Protections
+To prevent insider threat escalation and account lockouts:
+- Users are strictly prohibited from changing their own role, assigned permissions, or activation status.
+- Attempts by any user to modify their own account via administrative endpoints trigger an immediate HTTP `403 Forbidden` response.
+
+### 7.3. Privilege Delegation Boundaries
+- Non-`OWNER` administrators or managers cannot grant, invite, or assign any permission that they do not personally possess.
+- For example, an `ADMIN` cannot grant `SETTINGS:DELETE` or `TEAM:DELETE` to another user if their own role lacks that permission.
+
+### 7.4. Last Active Administrator Protections
+- The system prevents deactivating, demoting, or deleting the last remaining active `OWNER`.
+- The system prevents deactivating, demoting, or deleting the last active user who holds `TEAM:MANAGE` permissions.
+- This guarantees the system cannot be left in an unadministered or locked-out state.
+
+---
+
+## 8. Audit Trail & Sensitive Data Sanitization
+
+All significant mutations generate append-only logs in `user_activity_logs`:
+- **Atomic Operations:** Activity logging occurs within the same database transaction (`tx`) as the operation itself, ensuring no phantom logs or orphaned mutations.
+- **Sensitive Field Scrubbing:** Passwords, password hashes, reset tokens, invitation token secrets, session IDs, authorization headers, and payment secrets are strictly sanitized prior to persisting log metadata.
+- **Append-Only Immutability:** Activity logs contain no `UPDATE` or `DELETE` endpoints, guaranteeing non-repudiation for audit inspections.
+
+---
+
+## 9. Automated Testing & Credential Governance
+
+- **Zero Hardcoded Credentials:** Automated tests and browser end-to-end scripts strictly read administrative credentials from environment variables (`TEST_ADMIN_PASSWORD` or `SEED_ADMIN_PASSWORD`).
+- **Fail-Fast Enforcement:** Scripts fail immediately with descriptive errors if credentials are not provided via environment variables, preventing fallback to insecure hardcoded defaults.
+- **Git Hygiene:** Local configuration files (`.env`, `.env.production`) and secret tokens are strictly excluded by `.gitignore`.
+
+---
+
+## 10. Input Limits & Error Sanitization
 
 - **Body Parser Limits:** JSON and form payloads are capped at 10MB to prevent denial-of-service memory exhaustion.
 - **Error Sanitization:** In `NODE_ENV=production`, internal database errors and stack traces are suppressed from client responses. Clients receive clean, actionable error messages.
 
 ---
 
-## 8. Known Horizontal Scaling Limitations
+## 11. Known Horizontal Scaling Limitations
 
 > **IMPORTANT ARCHITECTURAL ADVISORY:**
 > The current baseline is engineered for **Single-Process VPS Deployments**.

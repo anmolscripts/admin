@@ -73,6 +73,36 @@ Spark Admin utilizes MySQL 8 (or MariaDB 10.6+) accessed via **Prisma ORM 7** (`
 - **Relations:** Belongs to `User` (createdBy).
 - **Indexes:** Unique `symbol`, `active`, `createdById`.
 
+### 2.11. `Role` (`roles`)
+- **Purpose:** System role classification hierarchy (`OWNER`, `ADMIN`, `MANAGER`, `MEMBER`, `VIEWER`).
+- **Key Fields:** `id` (Int, PK), `name` (VarChar(50), Unique), `description` (VarChar), `isSystem` (Boolean), `createdAt`, `updatedAt`.
+- **Relations:** 1-to-many with `User`, 1-to-many with `RolePermission`.
+
+### 2.12. `Permission` (`permissions`)
+- **Purpose:** Atomic system capability dictionary keyed by module and action.
+- **Key Fields:** `id` (Int, PK), `module` (VarChar(50)), `action` (VarChar(50)), `description` (VarChar), `createdAt`, `updatedAt`.
+- **Indexes:** Unique composite `[module, action]`, index `module`.
+
+### 2.13. `RolePermission` (`role_permissions`)
+- **Purpose:** Join table associating base permission grants with system roles.
+- **Key Fields:** `id` (Int, PK), `roleId` (Int, FK), `permissionId` (Int, FK), `createdAt`.
+- **Indexes:** Unique composite `[roleId, permissionId]`.
+
+### 2.14. `UserPermission` (`user_permissions`)
+- **Purpose:** User-specific custom permission overrides augmenting or revoking base role permissions.
+- **Key Fields:** `id` (Int, PK), `userId` (Int, FK), `permissionId` (Int, FK), `createdAt`.
+- **Indexes:** Unique composite `[userId, permissionId]`.
+
+### 2.15. `Invitation` (`invitations`)
+- **Purpose:** Secure onboarding tokens for pending invited users.
+- **Key Fields:** `id` (Int, PK), `userId` (Int, FK, Unique), `tokenHash` (VarChar(64), Unique SHA-256), `status` (VarChar(20): `PENDING`, `ACCEPTED`, `EXPIRED`, `REVOKED`), `expiresAt`, `invitedById` (Int, FK), `acceptedAt`, `revokedAt`, `createdAt`, `updatedAt`.
+- **Indexes:** Unique `tokenHash`, index `status`, index `invitedById`.
+
+### 2.16. `UserActivityLog` (`user_activity_logs`)
+- **Purpose:** Immutable append-only audit trail capturing user mutations across all business domains.
+- **Key Fields:** `id` (Int, PK), `actorUserId` (Int, FK, Nullable on system events), `action` (VarChar(50)), `module` (VarChar(50)), `targetType` (VarChar(50)), `targetId` (VarChar(50)), `targetReference` (VarChar(100)), `ipAddress` (VarChar(45)), `userAgent` (VarChar(500)), `metadata` (JSON sanitized attributes), `createdAt`.
+- **Indexes:** `actorUserId`, `createdAt`, `module`, `action`, composite `[targetType, targetId]`.
+
 ---
 
 ## 3. Prisma Migrations History
@@ -88,6 +118,7 @@ All database schema evolutions are captured in forward-only SQL migration script
 7. `20261002141500_add_unique_constraint_to_item_name`: Strict case-insensitive uniqueness index on `Item.name`.
 8. `20261002150000_add_due_date_and_valid_until_to_invoices`: Pure calendar date persistence for `validUntil` and `dueDate`.
 9. `20261003060017_add_unit_master`: Unit Master table with symbol uniqueness constraint and user audit relation.
+10. `20261003071507_add_team_rbac_and_user_activity`: Team management, RBAC tables (`roles`, `permissions`, `role_permissions`, `user_permissions`), user invitations, and `user_activity_logs`.
 
 ---
 

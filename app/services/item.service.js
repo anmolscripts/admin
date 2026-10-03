@@ -1,4 +1,5 @@
 const prisma = require('../config/prisma');
+const activityService = require('./activity.service');
 
 class ValidationError extends Error {
     constructor(message) {
@@ -221,6 +222,17 @@ async function createItem(data, userId) {
             }
         });
 
+        if (userId) {
+            await activityService.log({
+                actorUserId: userId,
+                action: 'CREATE_ITEM',
+                module: 'ITEMS',
+                targetType: 'ITEM',
+                targetId: item.id,
+                targetReference: item.name
+            }).catch(() => {});
+        }
+
         return {
             id: item.id,
             name: item.name,
@@ -321,6 +333,17 @@ async function updateItem(id, data, userId) {
             where: { id: numericId },
             data: updateData
         });
+
+        if (userId) {
+            await activityService.log({
+                actorUserId: userId,
+                action: 'EDIT_ITEM',
+                module: 'ITEMS',
+                targetType: 'ITEM',
+                targetId: updated.id,
+                targetReference: updated.name
+            }).catch(() => {});
+        }
 
         return {
             id: updated.id,

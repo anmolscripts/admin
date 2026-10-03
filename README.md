@@ -63,6 +63,9 @@ Spark Admin delivers an operational platform for business invoicing and quotatio
 - **Separate Payment Ledger:** Invoices track payments independently with receipt numbering, payment methods (Bank Transfer, UPI, Cash, Cheque, Card), and immutable void audits.
 - **Optimistic Locking:** Document edit collisions are prevented using concurrency version tokens.
 - **Executive Analytics:** Dashboard KPI strip, status counts, aging metrics, and trends aggregated via SQL across dynamic date ranges (`today`, `this_week`, `this_month`, `this_quarter`, `this_year`, `custom`).
+- **Team & Role-Based Access Control (`/team`):** 5-tier role hierarchy (`OWNER`, `ADMIN`, `MANAGER`, `MEMBER`, `VIEWER`), module-level action permissions, custom overrides, self-escalation blocks, and last-administrator protection.
+- **Cryptographic User Invitations (`/invite/:token`):** Secure single-use invitation lifecycle with SHA-256 token hashing, expiration, revoking, and password onboarding.
+- **Append-Only Activity Audit & Analytics (`/team/activity`):** Transaction-atomic logging of user events with sensitive credential sanitization and operational analytics.
 - **Export Engines:**
   - One-click native browser print.
   - Pixel-perfect PDF generation powered by headless Chrome/Chromium.

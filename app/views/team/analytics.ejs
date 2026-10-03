@@ -1,0 +1,153 @@
+<%- include('../layouts/header', {
+    pageTitle: 'Team & Activity Analytics',
+    pageSubtitle: 'Operational audit metrics, document lifecycle volume, and security telemetry.'
+}) %>
+
+<!-- Sub-Navigation Tabs -->
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+  <ul class="nav nav-pills gap-2">
+    <li class="nav-item">
+      <a class="nav-link bg-white text-dark border fw-medium px-3 py-2 rounded-3" href="/team">
+        <i class="bi bi-people me-1"></i> Team Members
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link bg-white text-dark border fw-medium px-3 py-2 rounded-3" href="/team/activity">
+        <i class="bi bi-clock-history me-1"></i> Activity Log
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link active bg-primary text-white fw-medium px-3 py-2 rounded-3" href="/team/analytics">
+        <i class="bi bi-graph-up me-1"></i> Team Analytics
+      </a>
+    </li>
+  </ul>
+
+  <!-- Range Presets Form -->
+  <form method="GET" action="/team/analytics" class="d-flex align-items-center gap-2">
+    <select name="range" class="form-select form-select-sm bg-white" onchange="this.form.submit()">
+      <option value="today" <%= currentRange === 'today' ? 'selected' : '' %>>Today</option>
+      <option value="this_week" <%= currentRange === 'this_week' ? 'selected' : '' %>>This Week</option>
+      <option value="this_month" <%= currentRange === 'this_month' ? 'selected' : '' %>>This Month</option>
+      <option value="this_quarter" <%= currentRange === 'this_quarter' ? 'selected' : '' %>>This Quarter</option>
+      <option value="this_year" <%= currentRange === 'this_year' ? 'selected' : '' %>>This Year</option>
+    </select>
+  </form>
+</div>
+
+<!-- Metrics Cards Row -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100">
+      <span class="text-muted small text-uppercase fw-semibold">Documents Created</span>
+      <h3 class="fw-bold mb-0 text-success mt-1"><%= analytics.metrics.documentsCreated %></h3>
+      <span class="text-muted small mt-1">In selected period</span>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100">
+      <span class="text-muted small text-uppercase fw-semibold">Documents Edited</span>
+      <h3 class="fw-bold mb-0 text-primary mt-1"><%= analytics.metrics.documentsEdited %></h3>
+      <span class="text-muted small mt-1">Revision adjustments</span>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100">
+      <span class="text-muted small text-uppercase fw-semibold">Prints & Exports</span>
+      <h3 class="fw-bold mb-0 text-info mt-1"><%= analytics.metrics.documentsPrinted + analytics.metrics.documentsExported %></h3>
+      <span class="text-muted small mt-1"><%= analytics.metrics.documentsPrinted %> Printed • <%= analytics.metrics.documentsExported %> Exported</span>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100">
+      <span class="text-muted small text-uppercase fw-semibold">Security Alerts</span>
+      <h3 class="fw-bold mb-0 text-danger mt-1"><%= analytics.metrics.permissionDenied + analytics.metrics.loginFailures %></h3>
+      <span class="text-muted small mt-1"><%= analytics.metrics.permissionDenied %> Denied • <%= analytics.metrics.loginFailures %> Failed Logins</span>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <!-- Top Active Team Members -->
+  <div class="col-12 col-lg-7">
+    <div class="card border-0 shadow-sm rounded-3 bg-white h-100">
+      <div class="card-header bg-white border-bottom py-3 px-4">
+        <h5 class="card-title fw-bold mb-0 text-dark">
+          <i class="bi bi-person-check text-primary me-2"></i>Most Active Members
+        </h5>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light small text-uppercase text-muted">
+            <tr>
+              <th scope="col" class="ps-4">Member</th>
+              <th scope="col">Role</th>
+              <th scope="col" class="text-end pe-4">Operations Recorded</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (!analytics.topActiveUsers || analytics.topActiveUsers.length === 0) { %>
+              <tr>
+                <td colspan="3" class="text-center py-4 text-muted small">No operations recorded in this period.</td>
+              </tr>
+            <% } else { %>
+              <% analytics.topActiveUsers.forEach(u => { %>
+                <tr>
+                  <td class="ps-4">
+                    <a href="/team/<%= u.userId %>" class="fw-semibold text-dark text-decoration-none">
+                      <%= u.name %>
+                    </a>
+                    <div class="text-muted small"><%= u.email %></div>
+                  </td>
+                  <td>
+                    <span class="badge bg-light text-dark border"><%= u.roleName %></span>
+                  </td>
+                  <td class="text-end pe-4 fw-bold text-primary">
+                    <%= u.activityCount %>
+                  </td>
+                </tr>
+              <% }); %>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Activity by Module Breakdown -->
+  <div class="col-12 col-lg-5">
+    <div class="card border-0 shadow-sm rounded-3 bg-white h-100">
+      <div class="card-header bg-white border-bottom py-3 px-4">
+        <h5 class="card-title fw-bold mb-0 text-dark">
+          <i class="bi bi-pie-chart text-primary me-2"></i>Activity by Module
+        </h5>
+      </div>
+      <div class="card-body p-4">
+        <% if (!analytics.moduleBreakdown || analytics.moduleBreakdown.length === 0) { %>
+          <div class="text-center py-4 text-muted small">No module activity recorded.</div>
+        <% } else { %>
+          <div class="d-flex flex-column gap-3">
+            <%
+              const maxCount = Math.max(...analytics.moduleBreakdown.map(m => m.count), 1);
+              analytics.moduleBreakdown.forEach(m => {
+                const percent = Math.round((m.count / maxCount) * 100);
+            %>
+              <div>
+                <div class="d-flex justify-content-between small mb-1">
+                  <span class="fw-semibold text-dark"><%= m.module %></span>
+                  <span class="text-muted"><%= m.count %> events</span>
+                </div>
+                <div class="progress" style="height: 6px;">
+                  <div class="progress-bar bg-primary" role="progressbar" style="width: <%= percent %>%;" aria-valuenow="<%= percent %>" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+              </div>
+            <% }); %>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>

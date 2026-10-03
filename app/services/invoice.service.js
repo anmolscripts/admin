@@ -1,6 +1,7 @@
 const prisma = require('../config/prisma');
 const businessProfileService = require('./businessProfile.service');
 const itemService = require('./item.service');
+const activityService = require('./activity.service');
 
 function stripSensitiveKeys(obj) {
     if (!obj || typeof obj !== 'object') return obj;
@@ -546,6 +547,17 @@ async function createDocument(data, userId, meta = {}) {
         console.warn('[ITEM MASTER] Notice during auto-persist item:', itemErr.message);
     }
 
+    if (userId) {
+        await activityService.log({
+            actorUserId: userId,
+            action: 'CREATE_DOCUMENT',
+            module: 'DOCUMENTS',
+            targetType: createdDoc.documentType,
+            targetId: createdDoc.id,
+            targetReference: createdDoc.invoiceNumber
+        }).catch(() => {});
+    }
+
     return createdDoc;
 }
 
@@ -878,6 +890,17 @@ async function updateInvoice(id, data, userId, meta = {}) {
         console.warn('[ITEM MASTER] Notice during auto-persist item on update:', itemErr.message);
     }
 
+    if (userId) {
+        await activityService.log({
+            actorUserId: userId,
+            action: 'EDIT_DOCUMENT',
+            module: 'DOCUMENTS',
+            targetType: updatedDoc.documentType,
+            targetId: updatedDoc.id,
+            targetReference: updatedDoc.invoiceNumber
+        }).catch(() => {});
+    }
+
     return updatedDoc;
 }
 
@@ -1030,6 +1053,19 @@ async function updateInvoiceStatus(id, newStatusInput, userIdOrReason, optionsOr
             }
         });
 
+        if (userId) {
+            const actName = newStatus === 'VOID' ? 'VOID_DOCUMENT' : (newStatus === 'ACTIVE' ? 'RESTORE_DOCUMENT' : 'EDIT_DOCUMENT');
+            await activityService.log({
+                actorUserId: userId,
+                action: actName,
+                module: 'DOCUMENTS',
+                targetType: updated.documentType,
+                targetId: updated.id,
+                targetReference: updated.invoiceNumber,
+                metadata: { fromStatus: existing.status, toStatus: newStatus }
+            }, tx).catch(() => {});
+        }
+
         return updated;
     });
 }
@@ -1060,6 +1096,14 @@ async function softDeleteDocument(id, deleteReason, userId, options = {}, meta =
             throw new NotFoundError(`Document with ID ${numericId} was not found.`);
         }
 
+        // Enforce optimistic concurrency version check if provided
+        const expectedVersion = options.version !== undefined ? parseInt(options.version, 10) : existing.version;
+        if (options.version !== undefined && (isNaN(expectedVersion) || existing.version !== expectedVersion)) {
+            throw new ConflictError(
+                `Conflict: Document was modified by another user. Current version is ${existing.version}, submitted version was ${options.version}. Please refresh and try again.`
+            );
+        }
+
         if (existing.status === 'VOID') {
             throw new ValidationError('Cannot delete an invoice in VOID status.');
         }
@@ -1071,14 +1115,6 @@ async function softDeleteDocument(id, deleteReason, userId, options = {}, meta =
         if (existing.status !== 'ACTIVE' && existing.status !== 'INACTIVE') {
             throw new ValidationError(
                 `Cannot delete a document in ${existing.status} status. Only ACTIVE or INACTIVE documents can be deleted.`
-            );
-        }
-
-        // Enforce optimistic concurrency version check if provided
-        const expectedVersion = options.version !== undefined ? parseInt(options.version, 10) : existing.version;
-        if (options.version !== undefined && (isNaN(expectedVersion) || existing.version !== expectedVersion)) {
-            throw new ConflictError(
-                `Conflict: Document was modified by another user. Current version is ${existing.version}, submitted version was ${options.version}. Please refresh and try again.`
             );
         }
 
@@ -1140,6 +1176,17 @@ async function softDeleteDocument(id, deleteReason, userId, options = {}, meta =
             }
         });
 
+        if (userId) {
+            await activityService.log({
+                actorUserId: userId,
+                action: 'DELETE_DOCUMENT',
+                module: 'DOCUMENTS',
+                targetType: updated.documentType,
+                targetId: updated.id,
+                targetReference: updated.invoiceNumber
+            }, tx).catch(() => {});
+        }
+
         return updated;
     });
 }
@@ -1169,6 +1216,14 @@ async function restoreDocument(id, userId, options = {}, meta = {}) {
             throw new NotFoundError(`Document with ID ${numericId} was not found.`);
         }
 
+        // Enforce optimistic concurrency version check if provided
+        const expectedVersion = options.version !== undefined ? parseInt(options.version, 10) : existing.version;
+        if (options.version !== undefined && (isNaN(expectedVersion) || existing.version !== expectedVersion)) {
+            throw new ConflictError(
+                `Conflict: Document was modified by another user. Current version is ${existing.version}, submitted version was ${options.version}. Please refresh and try again.`
+            );
+        }
+
         if (existing.status !== 'DELETED') {
             throw new ValidationError('Only DELETED documents can be restored.');
         }
@@ -1177,14 +1232,6 @@ async function restoreDocument(id, userId, options = {}, meta = {}) {
         if (targetStatus !== 'ACTIVE' && targetStatus !== 'INACTIVE') {
             throw new ValidationError(
                 'Cannot restore document: previous status is invalid or missing. VOID documents cannot be restored.'
-            );
-        }
-
-        // Enforce optimistic concurrency version check if provided
-        const expectedVersion = options.version !== undefined ? parseInt(options.version, 10) : existing.version;
-        if (options.version !== undefined && (isNaN(expectedVersion) || existing.version !== expectedVersion)) {
-            throw new ConflictError(
-                `Conflict: Document was modified by another user. Current version is ${existing.version}, submitted version was ${options.version}. Please refresh and try again.`
             );
         }
 
@@ -1244,6 +1291,17 @@ async function restoreDocument(id, userId, options = {}, meta = {}) {
                 snapshot: sanitizeAuditData(updated)
             }
         });
+
+        if (userId) {
+            await activityService.log({
+                actorUserId: userId,
+                action: 'RESTORE_DOCUMENT',
+                module: 'DOCUMENTS',
+                targetType: updated.documentType,
+                targetId: updated.id,
+                targetReference: updated.invoiceNumber
+            }, tx).catch(() => {});
+        }
 
         return updated;
     });
@@ -1469,6 +1527,18 @@ async function convertQuotationToInvoice(quotationId, userId, options = {}, meta
             }
         });
 
+        if (userId) {
+            await activityService.log({
+                actorUserId: userId,
+                action: 'CONVERT_DOCUMENT',
+                module: 'DOCUMENTS',
+                targetType: 'QUOTATION',
+                targetId: quotation.id,
+                targetReference: quotation.invoiceNumber,
+                metadata: { convertedInvoiceId: newInvoice.id, convertedInvoiceNumber: newInvoice.invoiceNumber }
+            }, tx).catch(() => {});
+        }
+
         return newInvoice;
     });
 }
@@ -1517,6 +1587,15 @@ async function copyDocument(id, userId = null, meta = {}) {
                 snapshot: sanitizeAuditData(doc)
             }
         });
+
+        await activityService.log({
+            actorUserId: userId,
+            action: 'COPY_DOCUMENT',
+            module: 'DOCUMENTS',
+            targetType: doc.documentType,
+            targetId: doc.id,
+            targetReference: doc.invoiceNumber
+        }).catch(() => {});
     }
 
     return {

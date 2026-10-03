@@ -1,6 +1,7 @@
 const invoiceService = require('../services/invoice.service');
 const pdfService = require('../services/pdf.service');
 const excelService = require('../services/excel.service');
+const activityService = require('../services/activity.service');
 
 function getRequestMeta(req) {
     const forwarded = req.headers['x-forwarded-for'];
@@ -286,6 +287,20 @@ async function exportPdf(req, res, next) {
         const invoice = await invoiceService.getInvoiceById(id);
         const pdfBuffer = await pdfService.generateDocumentPdf(invoice);
 
+        if (req.session && req.session.user) {
+            await activityService.log({
+                actorUserId: req.session.user.id,
+                action: 'EXPORT_DOCUMENT',
+                module: 'DOCUMENTS',
+                targetType: invoice.documentType,
+                targetId: invoice.id,
+                targetReference: invoice.invoiceNumber,
+                ipAddress: req.ip,
+                userAgent: req.headers['user-agent'],
+                metadata: { format: 'PDF' }
+            }).catch(() => {});
+        }
+
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${invoice.invoiceNumber}.pdf"`);
         res.setHeader('Content-Length', pdfBuffer.length);
@@ -310,6 +325,19 @@ async function exportExcel(req, res, next) {
             dateTo,
             limit
         });
+
+        if (req.session && req.session.user) {
+            await activityService.log({
+                actorUserId: req.session.user.id,
+                action: 'EXPORT_DOCUMENT',
+                module: 'DOCUMENTS',
+                targetType: 'DOCUMENTS',
+                targetReference: 'EXCEL_EXPORT',
+                ipAddress: req.ip,
+                userAgent: req.headers['user-agent'],
+                metadata: { format: 'EXCEL', query: req.query }
+            }).catch(() => {});
+        }
 
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', `attachment; filename="documents_export_${Date.now()}.xlsx"`);

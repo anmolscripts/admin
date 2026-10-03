@@ -39,11 +39,15 @@
   const currentNavTitle = (locals.pageTitle || '').toLowerCase();
 
   const isDashboard = currentNavPath === '/dashboard' || currentNavTitle.includes('dashboard');
-  const isDocuments = (currentNavPath.startsWith('/documents') || currentNavPath === '/' || currentNavTitle.includes('quotation') || currentNavTitle.includes('invoice')) && !currentNavTitle.includes('client') && !currentNavTitle.includes('item') && !currentNavTitle.includes('unit');
+  const isDocuments = (currentNavPath.startsWith('/documents') || currentNavPath === '/' || currentNavTitle.includes('quotation') || currentNavTitle.includes('invoice')) && !currentNavTitle.includes('client') && !currentNavTitle.includes('item') && !currentNavTitle.includes('unit') && !currentNavTitle.includes('team');
   const isClients = currentNavPath.startsWith('/clients') || currentNavTitle.includes('client');
   const isItems = currentNavPath.startsWith('/items') || currentNavTitle.includes('item');
   const isUnits = currentNavPath.startsWith('/units') || currentNavTitle.includes('unit');
+  const isTeam = currentNavPath.startsWith('/team') || currentNavTitle.includes('team');
   const isSettings = currentNavPath.startsWith('/settings') || currentNavTitle.includes('setting') || currentNavTitle.includes('organization');
+
+  // Permission resolution for dynamic navigation visibility
+  const canViewTeam = typeof locals.hasPermission === 'function' ? locals.hasPermission('TEAM', 'VIEW') : (locals.user && (locals.user.role === 'ADMIN' || locals.user.role === 'OWNER'));
 %>
 
 <body>
@@ -89,6 +93,14 @@
               <span>Units</span>
             </a>
           </li>
+          <% if (canViewTeam) { %>
+          <li class="sidebar-menu-item">
+            <a href="/team" class="sidebar-menu-link <%= isTeam ? 'active' : '' %>" id="menu-team" title="Team">
+              <i class="bi bi-person-badge-fill"></i>
+              <span>Team</span>
+            </a>
+          </li>
+          <% } %>
           <li class="sidebar-menu-item">
             <a href="/settings" class="sidebar-menu-link <%= isSettings ? 'active' : '' %>" id="menu-settings" title="Settings">
               <i class="bi bi-gear-fill"></i>
@@ -137,6 +149,11 @@
           <a href="/units" class="btn btn-sm <%= isUnits ? 'btn-primary' : 'btn-light border' %>">
             <i class="bi bi-rulers me-1"></i> Units
           </a>
+          <% if (canViewTeam) { %>
+          <a href="/team" class="btn btn-sm <%= isTeam ? 'btn-primary' : 'btn-light border' %>" id="topnav-team">
+            <i class="bi bi-person-badge me-1"></i> Team
+          </a>
+          <% } %>
           <a href="/settings" class="btn btn-sm <%= isSettings ? 'btn-primary' : 'btn-light border' %>">
             <i class="bi bi-gear me-1"></i> Settings
           </a>
@@ -169,6 +186,13 @@
                 <i class="bi bi-rulers text-secondary me-2"></i> New Unit
               </a>
             </li>
+            <% if (typeof locals.hasPermission === 'function' ? (locals.hasPermission('TEAM', 'CREATE') || locals.hasPermission('TEAM', 'MANAGE')) : (locals.user && (locals.user.role === 'ADMIN' || locals.user.role === 'OWNER'))) { %>
+            <li>
+              <a class="dropdown-item" href="/team?action=invite">
+                <i class="bi bi-person-plus text-warning me-2"></i> New Team Member
+              </a>
+            </li>
+            <% } %>
           </ul>
         </div>
       </div>

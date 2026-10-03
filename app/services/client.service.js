@@ -1,4 +1,5 @@
 const prisma = require('../config/prisma');
+const activityService = require('./activity.service');
 
 class ValidationError extends Error {
     constructor(message) {
@@ -95,6 +96,17 @@ async function createClient(data = {}, userId = null) {
         }
     });
 
+    if (userId) {
+        await activityService.log({
+            actorUserId: userId,
+            action: 'CREATE_CLIENT',
+            module: 'CLIENTS',
+            targetType: 'CLIENT',
+            targetId: client.id,
+            targetReference: client.name
+        }).catch(() => {});
+    }
+
     return formatClientResponse(client);
 }
 
@@ -125,7 +137,7 @@ async function getClientById(idInput) {
 /**
  * Update client details
  */
-async function updateClient(idInput, data = {}) {
+async function updateClient(idInput, data = {}, userId = null) {
     const id = parseInt(idInput, 10);
     if (isNaN(id) || id <= 0) {
         throw new ValidationError('Invalid client ID.');
@@ -169,13 +181,24 @@ async function updateClient(idInput, data = {}) {
         data: updateData
     });
 
+    if (userId) {
+        await activityService.log({
+            actorUserId: userId,
+            action: 'EDIT_CLIENT',
+            module: 'CLIENTS',
+            targetType: 'CLIENT',
+            targetId: updated.id,
+            targetReference: updated.name
+        }).catch(() => {});
+    }
+
     return formatClientResponse(updated);
 }
 
 /**
  * Toggle active status of a client
  */
-async function toggleClientStatus(idInput) {
+async function toggleClientStatus(idInput, userId = null) {
     const id = parseInt(idInput, 10);
     if (isNaN(id) || id <= 0) {
         throw new ValidationError('Invalid client ID.');
@@ -190,6 +213,18 @@ async function toggleClientStatus(idInput) {
         where: { id },
         data: { active: !existing.active }
     });
+
+    if (userId) {
+        await activityService.log({
+            actorUserId: userId,
+            action: 'EDIT_CLIENT',
+            module: 'CLIENTS',
+            targetType: 'CLIENT',
+            targetId: updated.id,
+            targetReference: updated.name,
+            metadata: { active: updated.active }
+        }).catch(() => {});
+    }
 
     return formatClientResponse(updated);
 }

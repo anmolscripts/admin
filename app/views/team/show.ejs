@@ -1,0 +1,393 @@
+<%
+  const canManage = typeof locals.hasPermission === 'function'
+    ? (locals.hasPermission('TEAM', 'MANAGE') || locals.hasPermission('TEAM', 'CREATE'))
+    : (locals.user && (locals.user.role === 'ADMIN' || locals.user.role === 'OWNER'));
+
+  const roleName = member.assignedRole ? member.assignedRole.name : (member.role || 'STAFF');
+  const isOwner = roleName === 'OWNER';
+  const isAdmin = roleName === 'ADMIN';
+
+  let statusBadge = '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">Active</span>';
+  if (member.status === 'INVITED') {
+      statusBadge = '<span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1">Invited</span>';
+  } else if (member.status === 'INACTIVE' || !member.active) {
+      statusBadge = '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">Inactive</span>';
+  }
+
+  const customPermIdSet = new Set((member.userPermissions || []).map(up => up.permissionId));
+%>
+
+<%- include('../layouts/header', {
+    pageTitle: `${member.name} - Team Member`,
+    pageSubtitle: `Member profile, fine-grained access control, and activity trail.`
+}) %>
+
+<!-- Back Link & Action Bar -->
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+  <div class="d-flex align-items-center gap-3">
+    <a href="/team" class="btn btn-spark btn-spark-outline btn-sm">
+      <i class="bi bi-arrow-left me-1"></i> Back to Team
+    </a>
+    <h4 class="fw-bold mb-0 text-dark"><%= member.name %></h4>
+    <%- statusBadge %>
+  </div>
+
+  <% if (canManage) { %>
+  <div class="d-flex gap-2">
+    <% if (member.status === 'INVITED') { %>
+      <button type="button" class="btn btn-spark btn-spark-primary btn-sm" onclick="resendInvitation(<%= member.id %>)">
+        <i class="bi bi-send me-1"></i> Resend Invitation
+      </button>
+      <button type="button" class="btn btn-spark btn-spark-outline btn-sm text-danger" onclick="revokeInvitation(<%= member.id %>)">
+        <i class="bi bi-x-circle me-1"></i> Revoke
+      </button>
+    <% } %>
+
+    <% if (member.status === 'ACTIVE') { %>
+      <button type="button" class="btn btn-spark btn-spark-outline btn-sm text-warning" onclick="toggleStatus(<%= member.id %>, 'INACTIVE')">
+        <i class="bi bi-pause-circle me-1"></i> Deactivate
+      </button>
+    <% } else if (member.status === 'INACTIVE') { %>
+      <button type="button" class="btn btn-spark btn-spark-success btn-sm" onclick="toggleStatus(<%= member.id %>, 'ACTIVE')">
+        <i class="bi bi-play-circle me-1"></i> Activate
+      </button>
+    <% } %>
+  </div>
+  <% } %>
+</div>
+
+<!-- Main Row: Profile Summary & Tabs -->
+<div class="row g-4">
+  <!-- Left Column: Member Card -->
+  <div class="col-12 col-lg-4">
+    <div class="card border-0 shadow-sm rounded-3 p-4 bg-white mb-4">
+      <div class="text-center mb-3">
+        <div class="rounded-circle bg-light border d-inline-flex align-items-center justify-content-center text-primary fw-bold display-6 mb-2" style="width: 80px; height: 80px;">
+          <%= member.name ? member.name.charAt(0).toUpperCase() : 'U' %>
+        </div>
+        <h5 class="fw-bold text-dark mb-0"><%= member.name %></h5>
+        <span class="text-muted small"><%= member.email %></span>
+      </div>
+
+      <hr class="my-3">
+
+      <div class="d-flex flex-column gap-2 small">
+        <div class="d-flex justify-content-between">
+          <span class="text-muted">Assigned Role:</span>
+          <span class="badge bg-primary text-white"><%= roleName %></span>
+        </div>
+        <div class="d-flex justify-content-between">
+          <span class="text-muted">Status:</span>
+          <span class="fw-semibold"><%= member.status %></span>
+        </div>
+        <div class="d-flex justify-content-between">
+          <span class="text-muted">Member Since:</span>
+          <span class="text-dark"><%= new Date(member.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) %></span>
+        </div>
+        <div class="d-flex justify-content-between">
+          <span class="text-muted">Last Login:</span>
+          <span class="text-dark"><%= member.lastLoginAt ? new Date(member.lastLoginAt).toLocaleString('en-GB') : 'Never' %></span>
+        </div>
+        <div class="d-flex justify-content-between">
+          <span class="text-muted">Last Activity:</span>
+          <span class="text-dark"><%= member.lastActivityAt ? new Date(member.lastActivityAt).toLocaleString('en-GB') : 'None' %></span>
+        </div>
+        <% if (member.invitation) { %>
+        <div class="d-flex justify-content-between">
+          <span class="text-muted">Invitation:</span>
+          <span class="badge <%= member.invitation.status === 'ACCEPTED' ? 'bg-success' : 'bg-warning text-dark' %>"><%= member.invitation.status %></span>
+        </div>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Quick Effective Access Summary Card (User Enhancement) -->
+    <div class="card border-0 shadow-sm rounded-3 p-4 bg-white">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="fw-bold mb-0 text-dark"><i class="bi bi-shield-check text-primary me-2"></i>Effective Access</h6>
+        <% if (isOwner) { %>
+          <span class="badge bg-dark text-white">Full Authority</span>
+        <% } %>
+      </div>
+
+      <div class="d-flex flex-column gap-2 small">
+        <% modules.forEach(mod => {
+             const acts = effective.byModule[mod] || {};
+             const grantedList = Object.entries(acts).filter(([_, v]) => v).map(([a]) => a);
+        %>
+          <div class="border rounded p-2 bg-light">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="fw-bold text-dark"><%= mod %></span>
+              <% if (grantedList.length > 0) { %>
+                <span class="badge bg-success-subtle text-success border small">Granted</span>
+              <% } else { %>
+                <span class="badge bg-light text-muted border small">No Access</span>
+              <% } %>
+            </div>
+            <div class="text-muted small">
+              <% if (grantedList.length === 0) { %>
+                <span class="text-secondary fst-italic">None</span>
+              <% } else if (effective.isOwner || grantedList.includes('FULL_ACCESS')) { %>
+                <span class="text-primary fw-semibold"><i class="bi bi-check-all"></i> Full Access</span>
+              <% } else { %>
+                <%= grantedList.join(', ') %>
+              <% } %>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column: Tabs (Access Management & Activity History) -->
+  <div class="col-12 col-lg-8">
+    <div class="card border-0 shadow-sm rounded-3 bg-white overflow-hidden mb-4">
+      <div class="card-header bg-white border-bottom p-3">
+        <ul class="nav nav-tabs card-header-tabs" id="memberTab" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-semibold" id="permissions-tab" data-bs-toggle="tab" data-bs-target="#permissions-pane" type="button" role="tab" aria-selected="true">
+              <i class="bi bi-grid-3x3 me-1"></i> Permission Matrix
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link fw-semibold" id="activity-tab" data-bs-toggle="tab" data-bs-target="#activity-pane" type="button" role="tab" aria-selected="false">
+              <i class="bi bi-clock-history me-1"></i> Member Activity (<%= recentActivity.length %>)
+            </button>
+          </li>
+        </ul>
+      </div>
+
+      <div class="card-body p-4 tab-content" id="memberTabContent">
+
+        <!-- TAB 1: PERMISSION MATRIX -->
+        <div class="tab-pane fade show active" id="permissions-pane" role="tabpanel" aria-labelledby="permissions-tab">
+          <% if (isOwner) { %>
+            <div class="alert alert-info d-flex align-items-center" role="alert">
+              <i class="bi bi-shield-lock-fill fs-4 me-3"></i>
+              <div>
+                <strong>Super Administrator / Owner</strong>
+                <p class="mb-0 small">This account holds the OWNER role. Owners automatically hold unrestricted authority across every module, action, and setting in Spark Admin.</p>
+              </div>
+            </div>
+          <% } %>
+
+          <form id="form-update-permissions" onsubmit="savePermissions(event)">
+            <input type="hidden" name="_csrf" id="perm-csrf" value="<%= locals.csrfToken || '' %>">
+
+            <% if (canManage && !isOwner) { %>
+            <div class="row g-3 align-items-center mb-4 p-3 bg-light rounded-3">
+              <div class="col-12 col-md-6">
+                <label for="select-role" class="form-label fw-semibold small mb-1">Base Role</label>
+                <select class="form-select bg-white" id="select-role" name="roleId" onchange="onRoleSelectChange()">
+                  <% (roles || []).forEach(r => { %>
+                    <option value="<%= r.id %>" <%= member.roleId === r.id ? 'selected' : '' %> data-name="<%= r.name %>">
+                      <%= r.name %> - <%= r.description %>
+                    </option>
+                  <% }); %>
+                </select>
+              </div>
+              <div class="col-12 col-md-6 text-md-end mt-md-4">
+                <button type="submit" class="btn btn-spark btn-spark-primary btn-sm" id="btn-save-perm">
+                  <i class="bi bi-check-lg me-1"></i> Save Access Changes
+                </button>
+              </div>
+            </div>
+            <% } %>
+
+            <!-- Detailed Permissions Matrix Table -->
+            <div class="table-responsive">
+              <table class="table table-bordered table-sm align-middle mb-0" id="matrix-table">
+                <thead class="table-light text-muted small text-center text-uppercase">
+                  <tr>
+                    <th scope="col" class="text-start ps-3" style="min-width: 140px;">Module</th>
+                    <% actions.forEach(act => { %>
+                      <th scope="col" style="min-width: 70px;" class="small"><%= act %></th>
+                    <% }); %>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% modules.forEach(mod => {
+                       const allowedActs = moduleActionMatrix[mod] || [];
+                  %>
+                    <tr>
+                      <td class="ps-3 fw-semibold text-dark"><%= mod %></td>
+                      <% actions.forEach(act => {
+                           const isSupported = allowedActs.includes(act);
+                           if (!isSupported) { %>
+                             <td class="text-center bg-light text-muted small">—</td>
+                           <% } else {
+                               const permRecord = allPermissions.find(p => p.module === mod && p.action === act);
+                               const permId = permRecord ? permRecord.id : null;
+                               const isInherited = effective.byModule[mod] && effective.byModule[mod][act];
+                               const isCustom = permId && customPermIdSet.has(permId);
+                           %>
+                             <td class="text-center">
+                               <% if (canManage && !isOwner) { %>
+                                 <input
+                                   type="checkbox"
+                                   class="form-check-input perm-checkbox"
+                                   name="permissionIds[]"
+                                   value="<%= permId %>"
+                                   <%= isInherited || isCustom ? 'checked' : '' %>
+                                   data-module="<%= mod %>"
+                                   data-action="<%= act %>"
+                                 >
+                               <% } else { %>
+                                 <% if (isInherited) { %>
+                                   <i class="bi bi-check-circle-fill text-success fs-6" title="Granted"></i>
+                                 <% } else { %>
+                                   <i class="bi bi-x-circle text-muted fs-6" title="Denied"></i>
+                                 <% } %>
+                               <% } %>
+                             </td>
+                           <% } %>
+                      <% }); %>
+                    </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+
+            <% if (canManage && !isOwner) { %>
+            <div class="d-flex justify-content-between align-items-center mt-3">
+              <span class="small text-muted"><i class="bi bi-info-circle me-1"></i> Permissions are enforced immediately upon save. No re-login required.</span>
+              <button type="submit" class="btn btn-spark btn-spark-primary" id="btn-save-perm-bottom">
+                <i class="bi bi-check-lg me-1"></i> Save Changes
+              </button>
+            </div>
+            <% } %>
+          </form>
+        </div>
+
+        <!-- TAB 2: MEMBER ACTIVITY LOG -->
+        <div class="tab-pane fade" id="activity-pane" role="tabpanel" aria-labelledby="activity-tab">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold mb-0 text-dark">Recent Operations</h6>
+            <a href="/team/activity?actorUserId=<%= member.id %>" class="btn btn-spark btn-spark-outline btn-sm">
+              <i class="bi bi-box-arrow-up-right me-1"></i> Full Log
+            </a>
+          </div>
+
+          <% if (!recentActivity || recentActivity.length === 0) { %>
+            <div class="text-center py-5 text-muted">
+              <i class="bi bi-activity display-6 d-block mb-2"></i>
+              No recent activity recorded for this team member.
+            </div>
+          <% } else { %>
+            <div class="timeline">
+              <% recentActivity.forEach(act => { %>
+                <div class="d-flex gap-3 mb-3 pb-3 border-bottom">
+                  <div class="rounded-circle bg-light border p-2 text-primary d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                    <i class="bi bi-record-circle"></i>
+                  </div>
+                  <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <span class="fw-semibold text-dark"><%= act.action %></span>
+                      <span class="small text-muted"><%= new Date(act.createdAt).toLocaleString('en-GB') %></span>
+                    </div>
+                    <p class="mb-1 text-secondary small"><%= act.description %></p>
+                    <% if (act.ipAddress) { %>
+                      <span class="badge bg-light text-muted border small me-1">IP: <%= act.ipAddress %></span>
+                    <% } %>
+                    <% if (act.targetReference) { %>
+                      <span class="badge bg-light text-muted border small">Ref: <%= act.targetReference %></span>
+                    <% } %>
+                  </div>
+                </div>
+              <% }); %>
+            </div>
+          <% } %>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const CSRF_TOKEN = document.getElementById('perm-csrf') ? document.getElementById('perm-csrf').value : '';
+
+  async function savePermissions(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btn-save-perm');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving...';
+    }
+
+    const checkboxes = document.querySelectorAll('.perm-checkbox:checked');
+    const permissionIds = Array.from(checkboxes).map(cb => cb.value).filter(Boolean);
+    const roleSelect = document.getElementById('select-role');
+    const roleId = roleSelect ? roleSelect.value : null;
+
+    try {
+      const res = await fetch(`/api/team/<%= member.id %>`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
+        body: JSON.stringify({ roleId, permissionIds })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || 'Failed to save permissions.');
+
+      alert('Permissions and role updated successfully.');
+      location.reload();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-check-lg me-1"></i> Save Access Changes';
+      }
+    }
+  }
+
+  async function toggleStatus(id, newStatus) {
+    if (!confirm(`Are you sure you want to change account status to ${newStatus}?`)) return;
+
+    try {
+      const res = await fetch(`/api/team/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
+        body: JSON.stringify({ status: newStatus })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || 'Failed to update status.');
+
+      location.reload();
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  async function resendInvitation(id) {
+    try {
+      const res = await fetch(`/api/team/${id}/invite/resend`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN }
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || 'Failed to resend invitation.');
+
+      prompt('New invitation link generated! Copy and share it with the user:', data.data.inviteUrl);
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  async function revokeInvitation(id) {
+    if (!confirm('Are you sure you want to revoke this invitation?')) return;
+
+    try {
+      const res = await fetch(`/api/team/${id}/invite/revoke`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN }
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || 'Failed to revoke invitation.');
+
+      location.reload();
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+</script>

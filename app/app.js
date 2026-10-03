@@ -64,24 +64,29 @@ app.get('/health', async (req, res) => {
     }
 });
 
+const teamRoutes = require('./routes/team.routes');
+const { attachUserPermissions } = require('./middleware/permission.middleware');
+
 // Session management
 app.use(sessionMiddleware);
 
 // CSRF protection for all state-changing requests
 app.use(csrfProtection);
 
-// Global EJS variables
+// Global EJS variables & RBAC permission resolution
 app.use((req, res, next) => {
     res.locals.user = req.session ? req.session.user || null : null;
     res.locals.currentPath = req.path;
     next();
 });
+app.use(attachUserPermissions);
 
 // Routes
 app.use('/', authRoutes);
 app.use('/', webRoutes);
 app.use('/', adminRoutes);
 app.use('/api', invoiceRoutes);
+app.use('/api', teamRoutes);
 
 // Error handling
 app.use(notFound);

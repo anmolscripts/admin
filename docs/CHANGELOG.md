@@ -4,6 +4,36 @@ All notable changes to the **Spark Admin** Quotation & Invoice Management system
 
 ---
 
+## [Phase 8.3 / Team RBAC & Activity Audit] — 2026-10-03
+`feat: implement team rbac and user activity audit system`
+
+### Added
+- **Team & Role-Based Access Control (RBAC):**
+  - Database schema: `Role`, `Permission`, `RolePermission`, `UserPermission`, `Invitation`, and `UserActivityLog` via migration `20261003071507_add_team_rbac_and_user_activity`.
+  - Five system roles seeded: `OWNER`, `ADMIN`, `MANAGER`, `MEMBER`, `VIEWER`.
+  - Atomic permission dictionary across 8 core modules: `DASHBOARD`, `DOCUMENTS`, `PAYMENTS`, `CLIENTS`, `ITEMS`, `UNITS`, `TEAM`, `SETTINGS`.
+  - Custom user-specific permission overrides (direct grants and revokes).
+  - Web management screens: `/team`, `/team/:id`, `/team/activity`, `/team/analytics`.
+  - Cryptographic invitation workflow (`/invite/:token`) with secure SHA-256 token hashing and account activation.
+- **Append-Only User Activity Logging:**
+  - Real-time logging of business mutations (`CREATE_USER`, `INVITATION_CREATED`, `ASSIGN_ROLE`, `CHANGE_PERMISSIONS`, `ACTIVATE_USER`, `DEACTIVATE_USER`, `DELETE_USER`, etc.).
+  - Transaction-atomic execution with caller context (`tx`).
+  - Sensitive metadata sanitization removing passwords, hashes, reset tokens, invitation secrets, session tokens, and headers.
+  - Aggregated analytics queries for event volume, top actors, and system velocity.
+- **Security & Authorization Hardening:**
+  - Role hierarchy validation (`actorRank > targetRank`).
+  - Strict self-privilege escalation and self-modification blocking (cannot change own role, status, or permissions; returns HTTP 403).
+  - Privilege delegation boundaries: non-OWNER administrators cannot grant permissions they do not possess.
+  - Invariant protection: Last active `OWNER` and last active administrator holding `TEAM:MANAGE` cannot be deactivated, demoted, or deleted.
+- **Test Automation & Suite Expansion:**
+  - Expanded `tests/rbac_team_activity.test.js` to 56 comprehensive tests across 13 suites.
+  - Total automated suite reaches 353 tests across 59 suites in 13 files with 100% pass rate.
+  - Serialized test execution (`--test-concurrency=1`) in `package.json` to prevent MariaDB connection pool starvation under Node 24.
+  - Suppressed unawaited background queries (`lastActivityAt`) during test runs (`isTestEnv`) to eliminate event loop teardown race conditions.
+  - Scrubbed hardcoded credentials from browser end-to-end QA scripts, enforcing `TEST_ADMIN_PASSWORD` / `SEED_ADMIN_PASSWORD` environment variables.
+
+---
+
 ## [Phase 8.2 / UX Polish & Master Data] — 2026-10-03
 `fix: improve invoice editor ux and master data management`
 

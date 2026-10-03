@@ -16,4 +16,11 @@ router.post('/login', redirectIfAuthenticated, loginRateLimiter, authController.
 // ==========================================
 router.post('/logout', authController.logout);
 
+// ==========================================
+// User Invitation & Password Setup Routes
+// ==========================================
+const invitationController = require('../controllers/invitation.controller');
+router.get('/invite/:token', redirectIfAuthenticated, invitationController.showSetupPasswordPage);
+router.post('/invite/:token', redirectIfAuthenticated, invitationController.handleSetupPassword);
+
 module.exports = router;

@@ -141,7 +141,8 @@ async function updateUnit(req, res, next) {
  */
 async function toggleUnitStatus(req, res, next) {
     try {
-        const unit = await unitService.toggleUnitStatus(req.params.id);
+        const userId = req.session && req.session.user ? req.session.user.id : null;
+        const unit = await unitService.toggleUnitStatus(req.params.id, userId);
         return res.status(200).json({
             success: true,
             data: unit
@@ -156,7 +157,8 @@ async function toggleUnitStatus(req, res, next) {
  */
 async function deleteUnit(req, res, next) {
     try {
-        const result = await unitService.deleteUnit(req.params.id);
+        const userId = req.session && req.session.user ? req.session.user.id : null;
+        const result = await unitService.deleteUnit(req.params.id, userId);
         return res.status(200).json(result);
     } catch (err) {
         return handleControllerError(err, res, next);

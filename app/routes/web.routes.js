@@ -9,27 +9,30 @@ const unitController = require('../controllers/unit.controller');
 const businessProfileService = require('../services/businessProfile.service');
 const documentViewService = require('../services/documentView.service');
 const dashboardController = require('../controllers/dashboard.controller');
+const teamController = require('../controllers/team.controller');
+const { requirePermission } = require('../middleware/permission.middleware');
+const activityService = require('../services/activity.service');
 
 const router = express.Router();
 
 // Business Analytics Dashboard
-router.get('/dashboard', requireAuth, dashboardController.renderDashboard);
+router.get('/dashboard', requireAuth, requirePermission('DASHBOARD', 'VIEW'), dashboardController.renderDashboard);
 
 // Main authenticated application screen: Quotations & Invoices Listing
-router.get('/', requireAuth, (req, res) => {
+router.get('/', requireAuth, requirePermission('DOCUMENTS', 'VIEW'), (req, res) => {
     res.render('documents/index', {
         pageTitle: 'Quotations & Invoices'
     });
 });
 
-router.get('/documents', requireAuth, (req, res) => {
+router.get('/documents', requireAuth, requirePermission('DOCUMENTS', 'VIEW'), (req, res) => {
     res.render('documents/index', {
         pageTitle: 'Quotations & Invoices'
     });
 });
 
 // Reusable Document Editor: Create New Quotation or Invoice (or Copy existing)
-router.get('/documents/new', requireAuth, async (req, res, next) => {
+router.get('/documents/new', requireAuth, requirePermission('DOCUMENTS', 'CREATE'), async (req, res, next) => {
     try {
         let copyData = null;
         let copyOfNumber = null;
@@ -121,7 +124,7 @@ router.get('/documents/new', requireAuth, async (req, res, next) => {
 });
 
 // Reusable Document Editor: Edit Existing Quotation or Invoice
-router.get('/documents/:id/edit', requireAuth, async (req, res, next) => {
+router.get('/documents/:id/edit', requireAuth, requirePermission('DOCUMENTS', 'EDIT'), async (req, res, next) => {
     try {
         const id = parseInt(req.params.id, 10);
         if (isNaN(id) || id <= 0) {
@@ -172,10 +175,10 @@ router.get('/documents/:id/edit', requireAuth, async (req, res, next) => {
 });
 
 // Export Excel Route (must precede /documents/:id)
-router.get('/documents/export/excel', requireAuth, invoiceController.exportExcel);
+router.get('/documents/export/excel', requireAuth, requirePermission('DOCUMENTS', 'EXPORT'), invoiceController.exportExcel);
 
 // Dedicated Document Print View (must precede /documents/:id)
-router.get('/documents/:id/print', requireAuth, async (req, res, next) => {
+router.get('/documents/:id/print', requireAuth, requirePermission('DOCUMENTS', 'PRINT'), async (req, res, next) => {
     try {
         const id = parseInt(req.params.id, 10);
         if (isNaN(id) || id <= 0) {
@@ -188,6 +191,21 @@ router.get('/documents/:id/print', requireAuth, async (req, res, next) => {
         const doc = await invoiceService.getInvoiceById(id);
         const profile = await businessProfileService.getProfile();
         const model = documentViewService.buildDocumentViewModel(doc, profile);
+
+        // Audit print event
+        if (req.session && req.session.user) {
+            await activityService.log({
+                actorUserId: req.session.user.id,
+                action: 'PRINT_DOCUMENT',
+                module: 'DOCUMENTS',
+                targetType: doc.documentType,
+                targetId: doc.id,
+                targetReference: doc.invoiceNumber,
+                ipAddress: req.ip,
+                userAgent: req.headers['user-agent']
+            }).catch(() => {});
+        }
+
         res.render('documents/print', {
             document: doc,
             model
@@ -203,10 +221,10 @@ router.get('/documents/:id/print', requireAuth, async (req, res, next) => {
 });
 
 // Document PDF Download Route (must precede /documents/:id)
-router.get('/documents/:id/pdf', requireAuth, invoiceController.exportPdf);
+router.get('/documents/:id/pdf', requireAuth, requirePermission('DOCUMENTS', 'EXPORT'), invoiceController.exportPdf);
 
 // Document View / Detail Screen: Comprehensive Document Inspection & Lifecycle Hub
-router.get('/documents/:id', requireAuth, async (req, res, next) => {
+router.get('/documents/:id', requireAuth, requirePermission('DOCUMENTS', 'VIEW'), async (req, res, next) => {
     try {
         const id = parseInt(req.params.id, 10);
         if (isNaN(id) || id <= 0) {
@@ -218,6 +236,20 @@ router.get('/documents/:id', requireAuth, async (req, res, next) => {
 
         const doc = await invoiceService.getInvoiceById(id);
         const isQuotation = doc.documentType === 'QUOTATION';
+
+        // Audit view event
+        if (req.session && req.session.user) {
+            await activityService.log({
+                actorUserId: req.session.user.id,
+                action: 'VIEW_DOCUMENT',
+                module: 'DOCUMENTS',
+                targetType: doc.documentType,
+                targetId: doc.id,
+                targetReference: doc.invoiceNumber,
+                ipAddress: req.ip,
+                userAgent: req.headers['user-agent']
+            }).catch(() => {});
+        }
 
         res.render('documents/view', {
             pageTitle: `${isQuotation ? 'Quotation' : 'Invoice'} ${doc.invoiceNumber}`,
@@ -240,7 +272,7 @@ router.get('/documents/:id', requireAuth, async (req, res, next) => {
 // -------------------------------------------------------------
 // CLIENTS WEB ROUTES
 // -------------------------------------------------------------
-router.get('/clients', requireAuth, async (req, res, next) => {
+router.get('/clients', requireAuth, requirePermission('CLIENTS', 'VIEW'), async (req, res, next) => {
     try {
         const { search, active } = req.query;
         const result = await clientService.listClients({ search, active, limit: 100 });
@@ -258,7 +290,7 @@ router.get('/clients', requireAuth, async (req, res, next) => {
     }
 });
 
-router.get('/clients/new', requireAuth, (req, res) => {
+router.get('/clients/new', requireAuth, requirePermission('CLIENTS', 'CREATE'), (req, res) => {
     res.render('clients/form', {
         pageTitle: 'New Client',
         pageSubtitle: 'Add a new client profile with GSTIN and billing/shipping addresses.',
@@ -269,7 +301,7 @@ router.get('/clients/new', requireAuth, (req, res) => {
     });
 });
 
-router.post('/clients', requireAuth, async (req, res) => {
+router.post('/clients', requireAuth, requirePermission('CLIENTS', 'CREATE'), async (req, res) => {
     try {
         const userId = req.session && req.session.user ? req.session.user.id : null;
         await clientService.createClient(req.body, userId);
@@ -287,7 +319,7 @@ router.post('/clients', requireAuth, async (req, res) => {
     }
 });
 
-router.get('/clients/:id/edit', requireAuth, async (req, res, next) => {
+router.get('/clients/:id/edit', requireAuth, requirePermission('CLIENTS', 'EDIT'), async (req, res, next) => {
     try {
         const client = await clientService.getClientById(req.params.id);
         res.render('clients/form', {
@@ -306,7 +338,7 @@ router.get('/clients/:id/edit', requireAuth, async (req, res, next) => {
     }
 });
 
-router.post('/clients/:id', requireAuth, async (req, res) => {
+router.post('/clients/:id', requireAuth, requirePermission('CLIENTS', 'EDIT'), async (req, res) => {
     try {
         const userId = req.session && req.session.user ? req.session.user.id : null;
         await clientService.updateClient(req.params.id, req.body, userId);
@@ -327,7 +359,7 @@ router.post('/clients/:id', requireAuth, async (req, res) => {
 // -------------------------------------------------------------
 // SETTINGS WEB ROUTES
 // -------------------------------------------------------------
-router.get('/settings', requireAuth, async (req, res, next) => {
+router.get('/settings', requireAuth, requirePermission('SETTINGS', 'VIEW'), async (req, res, next) => {
     try {
         const profile = await businessProfileService.getProfile();
         res.render('settings/index', {
@@ -342,7 +374,7 @@ router.get('/settings', requireAuth, async (req, res, next) => {
     }
 });
 
-router.post('/settings', requireAuth, async (req, res) => {
+router.post('/settings', requireAuth, requirePermission('SETTINGS', 'EDIT'), async (req, res) => {
     try {
         const profile = await businessProfileService.updateProfile(req.body);
         res.render('settings/index', {
@@ -368,7 +400,7 @@ router.post('/settings', requireAuth, async (req, res) => {
 // -------------------------------------------------------------
 // ITEM MASTER WEB ROUTES
 // -------------------------------------------------------------
-router.get('/items', requireAuth, async (req, res, next) => {
+router.get('/items', requireAuth, requirePermission('ITEMS', 'VIEW'), async (req, res, next) => {
     try {
         const { search, active } = req.query;
         const [result, unitList] = await Promise.all([
@@ -393,6 +425,14 @@ router.get('/items', requireAuth, async (req, res, next) => {
 // -------------------------------------------------------------
 // UNIT MASTER WEB ROUTES
 // -------------------------------------------------------------
-router.get('/units', requireAuth, unitController.renderUnitsPage);
+router.get('/units', requireAuth, requirePermission('UNITS', 'VIEW'), unitController.renderUnitsPage);
+
+// -------------------------------------------------------------
+// TEAM & USER ACTIVITY WEB ROUTES
+// -------------------------------------------------------------
+router.get('/team', requireAuth, requirePermission('TEAM', 'VIEW'), teamController.renderTeamPage);
+router.get('/team/activity', requireAuth, requirePermission('TEAM', 'ACTIVITY_VIEW'), teamController.renderActivityLogPage);
+router.get('/team/analytics', requireAuth, requirePermission('TEAM', 'ACTIVITY_VIEW'), teamController.renderAnalyticsPage);
+router.get('/team/:id', requireAuth, requirePermission('TEAM', 'VIEW'), teamController.renderTeamMemberDetail);
 
 module.exports = router;

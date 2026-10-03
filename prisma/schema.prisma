@@ -27,7 +27,12 @@ model User {
   email            String            @unique @db.VarChar(150)
   password         String            @db.VarChar(255)
   role             String            @default("ADMIN") @db.VarChar(30)
+  roleId           Int?
+  assignedRole     Role?             @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  status           String            @default("ACTIVE") @db.VarChar(20)
   active           Boolean           @default(true)
+  lastLoginAt      DateTime?
+  lastActivityAt   DateTime?
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   invoicesCreated  Invoice[]         @relation("InvoiceCreatedBy")
@@ -38,7 +43,13 @@ model User {
   paymentsCreated  Payment[]         @relation("PaymentCreatedBy")
   itemsCreated     Item[]            @relation("ItemCreatedBy")
   unitsCreated     Unit[]            @relation("UnitCreatedBy")
+  userPermissions  UserPermission[]
+  invitation       Invitation?       @relation("UserInvitation")
+  invitationsSent  Invitation[]      @relation("InvitationCreatedBy")
+  activities       UserActivityLog[] @relation("UserActivities")
 
+  @@index([roleId])
+  @@index([status])
   @@map("users")
 }
 
@@ -253,4 +264,102 @@ model InvoiceNumberSequence {
 
   @@unique([documentType, year])
   @@map("invoice_number_sequences")
+}
+
+model Role {
+  id              Int              @id @default(autoincrement())
+  name            String           @unique @db.VarChar(50)
+  description     String?          @db.VarChar(255)
+  isSystem        Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  users           User[]
+  rolePermissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id              Int              @id @default(autoincrement())
+  module          String           @db.VarChar(50)
+  action          String           @db.VarChar(50)
+  description     String?          @db.VarChar(255)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  rolePermissions RolePermission[]
+  userPermissions UserPermission[]
+
+  @@unique([module, action])
+  @@index([module])
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           Int        @id @default(autoincrement())
+  roleId       Int
+  permissionId Int
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+model UserPermission {
+  id           Int        @id @default(autoincrement())
+  userId       Int
+  permissionId Int
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@unique([userId, permissionId])
+  @@index([userId])
+  @@index([permissionId])
+  @@map("user_permissions")
+}
+
+model Invitation {
+  id          Int       @id @default(autoincrement())
+  userId      Int       @unique
+  user        User      @relation("UserInvitation", fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash   String    @unique @db.VarChar(64)
+  status      String    @default("PENDING") @db.VarChar(20)
+  expiresAt   DateTime
+  invitedById Int
+  invitedBy   User      @relation("InvitationCreatedBy", fields: [invitedById], references: [id], onDelete: Cascade)
+  acceptedAt  DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([tokenHash])
+  @@index([status])
+  @@index([invitedById])
+  @@map("invitations")
+}
+
+model UserActivityLog {
+  id              Int      @id @default(autoincrement())
+  actorUserId     Int?
+  actorUser       User?    @relation("UserActivities", fields: [actorUserId], references: [id], onDelete: SetNull)
+  action          String   @db.VarChar(50)
+  module          String   @db.VarChar(50)
+  targetType      String?  @db.VarChar(50)
+  targetId        String?  @db.VarChar(50)
+  targetReference String?  @db.VarChar(100)
+  ipAddress       String?  @db.VarChar(45)
+  userAgent       String?  @db.VarChar(500)
+  metadata        Json?
+  createdAt       DateTime @default(now())
+
+  @@index([actorUserId])
+  @@index([createdAt])
+  @@index([module])
+  @@index([action])
+  @@index([targetType, targetId])
+  @@map("user_activity_logs")
 }

@@ -1,4 +1,5 @@
 const prisma = require('../config/prisma');
+const activityService = require('./activity.service');
 
 class ValidationError extends Error {
     constructor(message) {
@@ -115,6 +116,18 @@ async function createUnit(data = {}, userId = null) {
                 createdById: userId || null
             }
         });
+
+        if (userId) {
+            await activityService.log({
+                actorUserId: userId,
+                action: 'CREATE_UNIT',
+                module: 'UNITS',
+                targetType: 'UNIT',
+                targetId: unit.id,
+                targetReference: unit.symbol
+            }).catch(() => {});
+        }
+
         return formatUnitResponse(unit);
     } catch (err) {
         if (err.code === 'P2002' || (err.message && err.message.includes('Unique constraint'))) {
@@ -270,6 +283,18 @@ async function updateUnit(idInput, data = {}, userId = null) {
             where: { id },
             data: updateData
         });
+
+        if (userId) {
+            await activityService.log({
+                actorUserId: userId,
+                action: 'EDIT_UNIT',
+                module: 'UNITS',
+                targetType: 'UNIT',
+                targetId: updated.id,
+                targetReference: updated.symbol
+            }).catch(() => {});
+        }
+
         return formatUnitResponse(updated);
     } catch (err) {
         if (err.code === 'P2002' || (err.message && err.message.includes('Unique constraint'))) {
@@ -282,7 +307,7 @@ async function updateUnit(idInput, data = {}, userId = null) {
 /**
  * Toggle active status of a unit
  */
-async function toggleUnitStatus(idInput) {
+async function toggleUnitStatus(idInput, userId = null) {
     const id = parseInt(idInput, 10);
     if (isNaN(id) || id <= 0) {
         throw new ValidationError('Invalid unit ID.');
@@ -301,13 +326,25 @@ async function toggleUnitStatus(idInput) {
         data: { active: !existing.active }
     });
 
+    if (userId) {
+        await activityService.log({
+            actorUserId: userId,
+            action: updated.active ? 'ACTIVATE_UNIT' : 'DEACTIVATE_UNIT',
+            module: 'UNITS',
+            targetType: 'UNIT',
+            targetId: updated.id,
+            targetReference: updated.symbol,
+            metadata: { active: updated.active }
+        }).catch(() => {});
+    }
+
     return formatUnitResponse(updated);
 }
 
 /**
  * Delete a unit from Unit Master
  */
-async function deleteUnit(idInput) {
+async function deleteUnit(idInput, userId = null) {
     const id = parseInt(idInput, 10);
     if (isNaN(id) || id <= 0) {
         throw new ValidationError('Invalid unit ID.');
@@ -324,6 +361,17 @@ async function deleteUnit(idInput) {
     await prisma.unit.delete({
         where: { id }
     });
+
+    if (userId) {
+        await activityService.log({
+            actorUserId: userId,
+            action: 'DELETE_UNIT',
+            module: 'UNITS',
+            targetType: 'UNIT',
+            targetId: existing.id,
+            targetReference: existing.symbol
+        }).catch(() => {});
+    }
 
     return { success: true, message: `Unit "${existing.symbol}" deleted.` };
 }

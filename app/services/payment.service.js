@@ -1,4 +1,5 @@
 const prisma = require('../config/prisma');
+const activityService = require('./activity.service');
 
 class ValidationError extends Error {
     constructor(message) {
@@ -208,6 +209,18 @@ async function recordPayment(invoiceIdInput, paymentData, userId, meta = {}) {
             }
         });
 
+        if (userId) {
+            await activityService.log({
+                actorUserId: userId,
+                action: 'CREATE_PAYMENT',
+                module: 'PAYMENTS',
+                targetType: 'PAYMENT',
+                targetId: payment.id,
+                targetReference: payment.reference || `Payment #${payment.id}`,
+                metadata: { invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber, amount: Number(payment.amount), method: payment.method }
+            }, tx).catch(() => {});
+        }
+
         return {
             payment: {
                 ...payment,
@@ -220,7 +233,7 @@ async function recordPayment(invoiceIdInput, paymentData, userId, meta = {}) {
                 outstandingAmount: Number(updatedInvoice.outstandingAmount)
             }
         };
-    });
+    }, { timeout: 15000, maxWait: 10000 });
 }
 
 /**
@@ -316,6 +329,18 @@ async function voidPayment(paymentIdInput, userId, reason = '', meta = {}) {
             }
         });
 
+        if (userId) {
+            await activityService.log({
+                actorUserId: userId,
+                action: 'VOID_PAYMENT',
+                module: 'PAYMENTS',
+                targetType: 'PAYMENT',
+                targetId: updatedPayment.id,
+                targetReference: updatedPayment.reference || `Payment #${updatedPayment.id}`,
+                metadata: { invoiceId: payment.invoice.id, invoiceNumber: payment.invoice.invoiceNumber, amount: Number(updatedPayment.amount), reason }
+            }, tx).catch(() => {});
+        }
+
         return {
             payment: {
                 ...updatedPayment,
@@ -328,7 +353,7 @@ async function voidPayment(paymentIdInput, userId, reason = '', meta = {}) {
                 outstandingAmount: Number(updatedInvoice.outstandingAmount)
             }
         };
-    });
+    }, { timeout: 15000, maxWait: 10000 });
 }
 
 module.exports = {
