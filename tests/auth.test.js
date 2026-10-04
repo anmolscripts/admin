@@ -886,4 +886,49 @@ describe('Authentication Module Test Suite', () => {
         assert.strictEqual(Object.prototype.hasOwnProperty.call(capturedSession.user, 'passwordHash'), false);
         assert.deepStrictEqual(Object.keys(capturedSession.user).sort(), ['email', 'id', 'name', 'role'].sort());
     });
+
+    it('Regression: Session cookie config allows auto secure detection in production', () => {
+        const { cookieOptions } = require('../app/config/session');
+        assert.ok(cookieOptions.httpOnly, 'cookie must be httpOnly');
+        assert.strictEqual(cookieOptions.sameSite, 'lax');
+        // secure must not be hardcoded boolean true which rejects HTTP localhost/IP in production mode
+        assert.notStrictEqual(cookieOptions.secure, true, 'cookie secure must not be strictly boolean true; must allow auto or false');
+    });
+
+    it('Regression: Authenticated landing page GET / renders cleanly without 500', async () => {
+        // 1. GET /login
+        const loginPageRes = await fetch(`${baseUrl}/login`);
+        const initialCookie = extractCookie(loginPageRes);
+        const html = await loginPageRes.text();
+        const csrfToken = extractCsrfToken(html);
+
+        // 2. POST /login
+        const loginRes = await fetch(`${baseUrl}/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                Cookie: initialCookie
+            },
+            body: new URLSearchParams({
+                _csrf: csrfToken,
+                email: testAdminEmail,
+                password: testAdminPassword
+            }).toString(),
+            redirect: 'manual'
+        });
+
+        assert.strictEqual(loginRes.status, 302, 'Login should succeed and redirect');
+        const authCookie = extractCookie(loginRes) || initialCookie;
+
+        // 3. GET / (landing page)
+        const landingRes = await fetch(`${baseUrl}/`, {
+            headers: { Cookie: authCookie }
+        });
+
+        assert.strictEqual(landingRes.status, 200, 'Landing page must return 200 OK');
+        const body = await landingRes.text();
+        assert.ok(body.includes('Quotations') || body.includes('Dashboard'), 'Landing page should display Quotations / Dashboard');
+        assert.ok(!body.includes('500 Something Went Wrong'), 'Landing page must not display 500 error');
+    });
 });
+

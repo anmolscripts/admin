@@ -13,7 +13,7 @@ const maxAgeMs = (Number(process.env.SESSION_MAX_AGE_HOURS) || 8) * 60 * 60 * 10
 
 const cookieOptions = {
     httpOnly: true,
-    secure: isProduction,
+    secure: isProduction ? 'auto' : false,
     sameSite: 'lax',
     maxAge: maxAgeMs,
     path: '/'
