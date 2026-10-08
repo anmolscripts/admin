@@ -2,6 +2,7 @@ const prisma = require('../config/prisma');
 const businessProfileService = require('./businessProfile.service');
 const itemService = require('./item.service');
 const activityService = require('./activity.service');
+const { ensureFinancialYear } = require('./financialYear.service');
 
 function stripSensitiveKeys(obj) {
     if (!obj || typeof obj !== 'object') return obj;
@@ -443,11 +444,13 @@ async function createDocument(data, userId, meta = {}) {
         }
 
         const invoiceNumber = await generateDocumentNumber(tx, documentType, invoiceDate);
+        const financialYear = await ensureFinancialYear(invoiceDate);
 
         const doc = await tx.invoice.create({
             data: {
                 documentType,
                 invoiceNumber,
+                financialYearId: financialYear ? financialYear.id : null,
                 clientId,
                 clientName,
                 clientEmail,
@@ -749,6 +752,9 @@ async function updateInvoice(id, data, userId, meta = {}) {
             throw new ValidationError('Cannot modify an invoice in DELETED status.');
         }
 
+        // Ensure financial year for invoice date
+        const financialYear = await ensureFinancialYear(invoiceDate);
+
         // Atomic database update condition: WHERE id = ? AND version = ?
         const updateResult = await tx.invoice.updateMany({
             where: {
@@ -756,6 +762,7 @@ async function updateInvoice(id, data, userId, meta = {}) {
                 version: expectedVersion
             },
             data: {
+                financialYearId: financialYear ? financialYear.id : null,
                 clientId,
                 clientName,
                 clientEmail,
@@ -1411,10 +1418,12 @@ async function convertQuotationToInvoice(quotationId, userId, options = {}, meta
 
         let newInvoice;
         try {
+            const financialYear = await ensureFinancialYear(quotation.invoiceDate);
             newInvoice = await tx.invoice.create({
                 data: {
                     documentType: 'INVOICE',
                     invoiceNumber,
+                    financialYearId: financialYear ? financialYear.id : null,
                     clientId: quotation.clientId,
                     clientName: quotation.clientName,
                     clientEmail: quotation.clientEmail,

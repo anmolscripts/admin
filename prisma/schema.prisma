@@ -22,31 +22,32 @@ enum InvoiceStatus {
 }
 
 model User {
-  id               Int               @id @default(autoincrement())
-  name             String            @db.VarChar(100)
-  email            String            @unique @db.VarChar(150)
-  password         String            @db.VarChar(255)
-  role             String            @default("ADMIN") @db.VarChar(30)
-  roleId           Int?
-  assignedRole     Role?             @relation(fields: [roleId], references: [id], onDelete: SetNull)
-  status           String            @default("ACTIVE") @db.VarChar(20)
-  active           Boolean           @default(true)
-  lastLoginAt      DateTime?
-  lastActivityAt   DateTime?
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  invoicesCreated  Invoice[]         @relation("InvoiceCreatedBy")
-  invoicesUpdated  Invoice[]         @relation("InvoiceUpdatedBy")
-  invoicesDeleted  Invoice[]         @relation("InvoiceDeletedBy")
-  revisionsCreated InvoiceRevision[] @relation("RevisionChangedBy")
-  clientsCreated   Client[]          @relation("ClientCreatedBy")
-  paymentsCreated  Payment[]         @relation("PaymentCreatedBy")
-  itemsCreated     Item[]            @relation("ItemCreatedBy")
-  unitsCreated     Unit[]            @relation("UnitCreatedBy")
-  userPermissions  UserPermission[]
-  invitation       Invitation?       @relation("UserInvitation")
-  invitationsSent  Invitation[]      @relation("InvitationCreatedBy")
-  activities       UserActivityLog[] @relation("UserActivities")
+  id                   Int               @id @default(autoincrement())
+  name                 String            @db.VarChar(100)
+  email                String            @unique @db.VarChar(150)
+  password             String            @db.VarChar(255)
+  role                 String            @default("ADMIN") @db.VarChar(30)
+  roleId               Int?
+  assignedRole         Role?             @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  status               String            @default("ACTIVE") @db.VarChar(20)
+  active               Boolean           @default(true)
+  lastLoginAt          DateTime?
+  lastActivityAt       DateTime?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  invoicesCreated      Invoice[]         @relation("InvoiceCreatedBy")
+  invoicesUpdated      Invoice[]         @relation("InvoiceUpdatedBy")
+  invoicesDeleted      Invoice[]         @relation("InvoiceDeletedBy")
+  revisionsCreated     InvoiceRevision[] @relation("RevisionChangedBy")
+  clientsCreated       Client[]          @relation("ClientCreatedBy")
+  paymentsCreated      Payment[]         @relation("PaymentCreatedBy")
+  itemsCreated         Item[]            @relation("ItemCreatedBy")
+  unitsCreated         Unit[]            @relation("UnitCreatedBy")
+  financialYearsClosed FinancialYear[]   @relation("FinancialYearClosedBy")
+  userPermissions      UserPermission[]
+  invitation           Invitation?       @relation("UserInvitation")
+  invitationsSent      Invitation[]      @relation("InvitationCreatedBy")
+  activities           UserActivityLog[] @relation("UserActivities")
 
   @@index([roleId])
   @@index([status])
@@ -135,10 +136,12 @@ model Invoice {
   deleteReason               String?           @db.Text
   version                    Int               @default(1)
   sourceQuotationId          Int?              @unique
+  financialYearId            Int?
   createdById                Int
   updatedById                Int
   createdAt                  DateTime          @default(now())
   updatedAt                  DateTime          @updatedAt
+  financialYear              FinancialYear?    @relation(fields: [financialYearId], references: [id], onDelete: SetNull)
   createdBy                  User              @relation("InvoiceCreatedBy", fields: [createdById], references: [id])
   updatedBy                  User              @relation("InvoiceUpdatedBy", fields: [updatedById], references: [id])
   deletedBy                  User?             @relation("InvoiceDeletedBy", fields: [deletedById], references: [id])
@@ -156,6 +159,7 @@ model Invoice {
   @@index([createdById])
   @@index([updatedById])
   @@index([deletedById])
+  @@index([financialYearId])
   @@map("invoices")
 }
 
@@ -233,24 +237,27 @@ model InvoiceRevision {
 }
 
 model Payment {
-  id          Int      @id @default(autoincrement())
-  invoiceId   Int
-  paymentDate DateTime @db.Date
-  amount      Decimal  @db.Decimal(12, 2)
-  method      String   @default("BANK_TRANSFER") @db.VarChar(50)
-  reference   String?  @db.VarChar(191)
-  notes       String?  @db.Text
-  status      String   @default("POSTED") @db.VarChar(20)
-  createdById Int?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
-  createdBy   User?    @relation("PaymentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  id              Int            @id @default(autoincrement())
+  invoiceId       Int
+  paymentDate     DateTime       @db.Date
+  amount          Decimal        @db.Decimal(12, 2)
+  method          String         @default("BANK_TRANSFER") @db.VarChar(50)
+  reference       String?        @db.VarChar(191)
+  notes           String?        @db.Text
+  status          String         @default("POSTED") @db.VarChar(20)
+  createdById     Int?
+  financialYearId Int?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  invoice         Invoice        @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  createdBy       User?          @relation("PaymentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  financialYear   FinancialYear? @relation(fields: [financialYearId], references: [id], onDelete: SetNull)
 
   @@index([invoiceId])
   @@index([status])
   @@index([paymentDate])
   @@index([createdById])
+  @@index([financialYearId])
   @@map("payments")
 }
 
@@ -362,4 +369,23 @@ model UserActivityLog {
   @@index([action])
   @@index([targetType, targetId])
   @@map("user_activity_logs")
+}
+
+model FinancialYear {
+  id         Int       @id @default(autoincrement())
+  code       String    @unique @db.VarChar(20)
+  startDate  DateTime
+  endDate    DateTime
+  status     String    @default("OPEN") @db.VarChar(10)
+  isCurrent  Boolean   @default(false)
+  closedAt   DateTime?
+  closedById Int?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  closedBy   User?     @relation("FinancialYearClosedBy", fields: [closedById], references: [id], onDelete: SetNull)
+  invoices   Invoice[]
+  payments   Payment[]
+
+  @@index([closedById])
+  @@map("financial_years")
 }

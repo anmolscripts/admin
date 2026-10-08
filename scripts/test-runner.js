@@ -70,15 +70,32 @@ if (testFiles.length === 0) {
     process.exit(1);
 }
 
+const { applyTestFixtures } = require('./test-fixtures');
+const prisma = require('../app/config/prisma');
+
 const args = ['--test', '--test-concurrency=1', ...testFiles];
 
-const result = spawnSync(process.execPath, args, {
-    cwd: ROOT_DIR,
-    stdio: 'inherit',
-    env: {
-        ...process.env,
-        SEED_ADMIN_PASSWORD: cleanPassword
+async function run() {
+    try {
+        await applyTestFixtures({ adminPassword: cleanPassword });
+    } catch (err) {
+        console.error('');
+        console.error('[TEST RUNNER ERROR]: Failed to apply deterministic test fixtures:', err);
+        process.exit(1);
+    } finally {
+        await prisma.$disconnect();
     }
-});
 
-process.exit(result.status !== null ? result.status : 1);
+    const result = spawnSync(process.execPath, args, {
+        cwd: ROOT_DIR,
+        stdio: 'inherit',
+        env: {
+            ...process.env,
+            SEED_ADMIN_PASSWORD: cleanPassword
+        }
+    });
+
+    process.exit(result.status !== null ? result.status : 1);
+}
+
+run();

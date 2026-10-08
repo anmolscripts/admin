@@ -3,6 +3,7 @@
 const crypto = require('node:crypto');
 const bcrypt = require('bcrypt');
 const { seedCommon } = require('../common');
+const { ensureFinancialYear } = require('../../../app/services/financialYear.service');
 
 const DEFAULT_SALT_ROUNDS = 12;
 
@@ -117,6 +118,7 @@ async function seedDevelopment(prisma, options = {}) {
 
         if (existingInvoicesCount === 0) {
             console.log('[SEED] Seeding development invoice data...');
+            const fy2025_26 = await ensureFinancialYear(new Date('2026-02-15'));
 
             // 1. ACTIVE Invoice
             const invoice1 = await prisma.invoice.create({
@@ -125,6 +127,7 @@ async function seedDevelopment(prisma, options = {}) {
                     invoiceNumber: 'INV-2026-0001',
                     clientName: 'Acme Corporation',
                     invoiceDate: new Date('2026-02-15'),
+                    financialYearId: fy2025_26.id,
                     gstEnabled: true,
                     gstRate: '18.00',
                     subtotal: '120000.00',
@@ -174,6 +177,7 @@ async function seedDevelopment(prisma, options = {}) {
                     invoiceNumber: 'INV-2026-0002',
                     clientName: 'Globex Logistics Ltd',
                     invoiceDate: new Date('2026-02-20'),
+                    financialYearId: fy2025_26.id,
                     gstEnabled: false,
                     gstRate: '0.00',
                     subtotal: '57500.00',
@@ -222,6 +226,7 @@ async function seedDevelopment(prisma, options = {}) {
                     invoiceNumber: 'INV-2026-0003',
                     clientName: 'Stark Industries',
                     invoiceDate: new Date('2026-02-25'),
+                    financialYearId: fy2025_26.id,
                     gstEnabled: true,
                     gstRate: '12.00',
                     subtotal: '40002.50',
@@ -273,6 +278,7 @@ async function seedDevelopment(prisma, options = {}) {
 
         if (existingQuotationsCount === 0) {
             console.log('[SEED] Seeding development quotation data...');
+            const fy2025_26 = await ensureFinancialYear(new Date('2026-03-01'));
 
             // 1. ACTIVE Quotation
             const qtn1 = await prisma.invoice.create({
@@ -281,6 +287,7 @@ async function seedDevelopment(prisma, options = {}) {
                     invoiceNumber: 'QTN-2026-0001',
                     clientName: 'Nexus Cybernetics',
                     invoiceDate: new Date('2026-03-01'),
+                    financialYearId: fy2025_26.id,
                     gstEnabled: true,
                     gstRate: '18.00',
                     subtotal: '85000.00',
@@ -319,6 +326,7 @@ async function seedDevelopment(prisma, options = {}) {
                     invoiceNumber: 'QTN-2026-0002',
                     clientName: 'Solaris Energy Ltd',
                     invoiceDate: new Date('2026-03-05'),
+                    financialYearId: fy2025_26.id,
                     gstEnabled: true,
                     gstRate: '12.00',
                     subtotal: '45000.00',

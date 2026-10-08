@@ -1,5 +1,6 @@
 const prisma = require('../config/prisma');
 const activityService = require('./activity.service');
+const { ensureFinancialYear } = require('./financialYear.service');
 
 class ValidationError extends Error {
     constructor(message) {
@@ -140,9 +141,12 @@ async function recordPayment(invoiceIdInput, paymentData, userId, meta = {}) {
             );
         }
 
+        const financialYear = await ensureFinancialYear(paymentDate);
+
         const payment = await tx.payment.create({
             data: {
                 invoiceId: invoice.id,
+                financialYearId: financialYear ? financialYear.id : null,
                 amount,
                 paymentDate,
                 method,
