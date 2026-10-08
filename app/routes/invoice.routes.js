@@ -51,6 +51,8 @@ router.patch('/invoices/:id/status', requirePermission('DOCUMENTS', 'EDIT'), inv
 router.post('/invoices/:id/restore', requirePermission('DOCUMENTS', 'RESTORE'), invoiceController.restoreInvoice);
 router.post('/invoices/:id/convert', requirePermission('DOCUMENTS', 'CONVERT'), invoiceController.convertQuotation);
 router.get('/invoices/:id/copy', requirePermission('DOCUMENTS', 'CREATE'), invoiceController.copyInvoice);
+router.post('/invoices/:id/post', requirePermission('JOURNALS', 'CREATE'), invoiceController.postInvoiceAccounting);
+router.get('/invoices/:id/accounting', requirePermission('JOURNALS', 'VIEW'), invoiceController.getInvoiceAccounting);
 
 // Payment lifecycle routes
 router.post('/payments/:id/void', requirePermission('PAYMENTS', 'VOID'), paymentController.voidPayment);

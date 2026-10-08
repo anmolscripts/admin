@@ -12,6 +12,7 @@ const dashboardController = require('../controllers/dashboard.controller');
 const teamController = require('../controllers/team.controller');
 const { requirePermission } = require('../middleware/permission.middleware');
 const activityService = require('../services/activity.service');
+const postingService = require('../services/accounting/posting.service');
 
 const router = express.Router();
 
@@ -236,6 +237,10 @@ router.get('/documents/:id', requireAuth, requirePermission('DOCUMENTS', 'VIEW')
 
         const doc = await invoiceService.getInvoiceById(id);
         const isQuotation = doc.documentType === 'QUOTATION';
+        let accounting = null;
+        if (!isQuotation) {
+            accounting = await postingService.getInvoiceAccountingStatus(id);
+        }
 
         // Audit view event
         if (req.session && req.session.user) {
@@ -255,6 +260,7 @@ router.get('/documents/:id', requireAuth, requirePermission('DOCUMENTS', 'VIEW')
             pageTitle: `${isQuotation ? 'Quotation' : 'Invoice'} ${doc.invoiceNumber}`,
             pageSubtitle: `${isQuotation ? 'Client Quotation' : 'Tax Invoice'} • ${doc.clientName}`,
             document: doc,
+            accounting,
             csrfToken: req.session ? req.session.csrfToken : '',
             user: req.session ? req.session.user : null
         });

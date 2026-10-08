@@ -1,4 +1,5 @@
 const invoiceService = require('../services/invoice.service');
+const postingService = require('../services/accounting/posting.service');
 const pdfService = require('../services/pdf.service');
 const excelService = require('../services/excel.service');
 const activityService = require('../services/activity.service');
@@ -11,21 +12,21 @@ function getRequestMeta(req) {
 }
 
 function handleControllerError(err, res, next) {
-    if (err instanceof invoiceService.ValidationError) {
+    if (err instanceof invoiceService.ValidationError || err instanceof postingService.ValidationError) {
         return res.status(400).json({
             success: false,
             error: err.message
         });
     }
 
-    if (err instanceof invoiceService.NotFoundError) {
+    if (err instanceof invoiceService.NotFoundError || err instanceof postingService.NotFoundError) {
         return res.status(404).json({
             success: false,
             error: err.message
         });
     }
 
-    if (err instanceof invoiceService.ConflictError) {
+    if (err instanceof invoiceService.ConflictError || err instanceof postingService.ConflictError) {
         return res.status(409).json({
             success: false,
             error: err.message
@@ -363,6 +364,33 @@ async function getDashboardKPIs(req, res, next) {
     }
 }
 
+async function postInvoiceAccounting(req, res, next) {
+    try {
+        const userId = req.session && req.session.user ? req.session.user.id : null;
+        const result = await postingService.postInvoice(req.params.id, { userId });
+        return res.status(200).json({
+            success: true,
+            ...result
+        });
+    } catch (err) {
+        return handleControllerError(err, res, next);
+    }
+}
+
+async function getInvoiceAccounting(req, res, next) {
+    try {
+        const status = await postingService.getInvoiceAccountingStatus(req.params.id);
+        const journal = await postingService.getInvoicePosting(req.params.id);
+        return res.status(200).json({
+            success: true,
+            status,
+            journal
+        });
+    } catch (err) {
+        return handleControllerError(err, res, next);
+    }
+}
+
 module.exports = {
     listInvoices,
     getInvoice,
@@ -376,5 +404,7 @@ module.exports = {
     copyInvoice,
     exportPdf,
     exportExcel,
-    getDashboardKPIs
+    getDashboardKPIs,
+    postInvoiceAccounting,
+    getInvoiceAccounting
 };

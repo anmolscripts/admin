@@ -416,6 +416,41 @@
                 }
             });
         }
+
+        const btnActionPostLedger = document.getElementById('btn-action-post-ledger');
+        if (btnActionPostLedger) {
+            btnActionPostLedger.addEventListener('click', async () => {
+                btnActionPostLedger.disabled = true;
+                btnActionPostLedger.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Posting...';
+                try {
+                    const response = await fetch(`/api/invoices/${docId}/post`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'x-csrf-token': csrfTokenInput ? csrfTokenInput.value : ''
+                        }
+                    });
+
+                    if (response.status === 401) {
+                        window.location.href = '/login?expired=1';
+                        return;
+                    }
+
+                    const data = await response.json().catch(() => ({}));
+                    if (response.ok && data.success) {
+                        window.location.reload();
+                    } else {
+                        btnActionPostLedger.disabled = false;
+                        btnActionPostLedger.innerHTML = '<i class="bi bi-journal-arrow-up me-1"></i> Post to Ledger';
+                        showErrorFeedback(data.error || 'Failed to post invoice to ledger.');
+                    }
+                } catch (err) {
+                    btnActionPostLedger.disabled = false;
+                    btnActionPostLedger.innerHTML = '<i class="bi bi-journal-arrow-up me-1"></i> Post to Ledger';
+                    showErrorFeedback('Network error while posting invoice to ledger.');
+                }
+            });
+        }
     }
 
     document.addEventListener('DOMContentLoaded', attachListeners);

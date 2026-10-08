@@ -126,7 +126,7 @@ async function postJournalEntry(params, externalTx = null) {
             include: {
                 lines: {
                     include: {
-                        account: { select: { id: true, code: true, name: true, type: true } },
+                        account: { select: { id: true, code: true, name: true, type: true, systemAccountKey: true } },
                         client: { select: { id: true, name: true } }
                     },
                     orderBy: { lineNumber: 'asc' }
@@ -269,7 +269,7 @@ async function postJournalEntry(params, externalTx = null) {
             include: {
                 lines: {
                     include: {
-                        account: { select: { id: true, code: true, name: true, type: true } },
+                        account: { select: { id: true, code: true, name: true, type: true, systemAccountKey: true } },
                         client: { select: { id: true, name: true } }
                     },
                     orderBy: { lineNumber: 'asc' }
@@ -308,7 +308,7 @@ async function postJournalEntry(params, externalTx = null) {
             include: {
                 lines: {
                     include: {
-                        account: { select: { id: true, code: true, name: true, type: true } },
+                        account: { select: { id: true, code: true, name: true, type: true, systemAccountKey: true } },
                         client: { select: { id: true, name: true } }
                     },
                     orderBy: { lineNumber: 'asc' }
@@ -430,7 +430,7 @@ async function getJournalEntryById(id) {
             reversingEntry: { select: { id: true, entryNumber: true, entryDate: true, status: true } },
             lines: {
                 include: {
-                    account: { select: { id: true, code: true, name: true, type: true } },
+                    account: { select: { id: true, code: true, name: true, type: true, systemAccountKey: true } },
                     client: { select: { id: true, name: true } }
                 },
                 orderBy: { lineNumber: 'asc' }
@@ -493,7 +493,7 @@ async function listJournalEntries(filters = {}) {
                 postedBy: { select: { id: true, name: true } },
                 lines: {
                     include: {
-                        account: { select: { id: true, code: true, name: true, type: true } },
+                        account: { select: { id: true, code: true, name: true, type: true, systemAccountKey: true } },
                         client: { select: { id: true, name: true } }
                     },
                     orderBy: { lineNumber: 'asc' }

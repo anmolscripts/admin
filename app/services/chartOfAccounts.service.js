@@ -71,7 +71,8 @@ const STANDARD_ACCOUNTS = [
     { code: '5110', name: 'Direct Material & Job Work Costs', type: 'EXPENSE', subtype: 'DIRECT_EXPENSE', parentCode: '5100', level: 3, isGroup: false, allowPosting: true, systemAccount: true, systemAccountKey: 'COGS', openingBalanceType: 'DEBIT' },
     { code: '5200', name: 'Operating & Administrative Expenses', type: 'EXPENSE', subtype: 'OPERATING_EXPENSE', parentCode: '5000', level: 2, isGroup: true, allowPosting: false },
     { code: '5210', name: 'Office & Administrative Expenses', type: 'EXPENSE', subtype: 'ADMIN_EXPENSE', parentCode: '5200', level: 3, isGroup: false, allowPosting: true, systemAccount: false, openingBalanceType: 'DEBIT' },
-    { code: '5220', name: 'Bank Charges & Fees', type: 'EXPENSE', subtype: 'FINANCE_EXPENSE', parentCode: '5200', level: 3, isGroup: false, allowPosting: true, systemAccount: true, systemAccountKey: 'BANK_CHARGES', openingBalanceType: 'DEBIT' }
+    { code: '5220', name: 'Bank Charges & Fees', type: 'EXPENSE', subtype: 'FINANCE_EXPENSE', parentCode: '5200', level: 3, isGroup: false, allowPosting: true, systemAccount: true, systemAccountKey: 'BANK_CHARGES', openingBalanceType: 'DEBIT' },
+    { code: '5230', name: 'Round Off Discrepancy', type: 'EXPENSE', subtype: 'ROUND_OFF', parentCode: '5200', level: 3, isGroup: false, allowPosting: true, systemAccount: true, systemAccountKey: 'ROUND_OFF', openingBalanceType: 'DEBIT' }
 ];
 
 /**

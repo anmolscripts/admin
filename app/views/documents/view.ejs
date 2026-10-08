@@ -198,6 +198,17 @@
       <% } %>
 
       <span class="version-pill" id="view-doc-version">v<%= document.version %></span>
+      <% if (!isQuotation) { %>
+        <% if (locals.accounting && locals.accounting.isPosted) { %>
+          <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 ms-2" id="view-doc-ledger-status" title="Posted to Double Entry Ledger">
+            <i class="bi bi-journal-check me-1"></i>Ledger: <%= accounting.entryNumber %>
+          </span>
+        <% } else if (document.status === 'ACTIVE') { %>
+          <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1 ms-2" id="view-doc-ledger-status" title="Unposted to Accounting Ledger">
+            <i class="bi bi-journal me-1"></i>Unposted
+          </span>
+        <% } %>
+      <% } %>
     </div>
 
     <!-- Right: Status-Aware Action Controls -->
@@ -224,6 +235,12 @@
         <% if (!isQuotation && Number(document.outstandingAmount !== undefined ? document.outstandingAmount : document.grandTotal) > 0) { %>
           <button type="button" class="btn-custom btn-custom-success" id="btn-action-record-payment" data-bs-toggle="modal" data-bs-target="#modal-record-payment">
             <i class="bi bi-wallet2 me-1"></i> Record Payment
+          </button>
+        <% } %>
+
+        <% if (!isQuotation && document.status === 'ACTIVE' && (!locals.accounting || !locals.accounting.isPosted)) { %>
+          <button type="button" class="btn-custom btn-custom-outline-primary" id="btn-action-post-ledger" title="Post to General Ledger">
+            <i class="bi bi-journal-arrow-up me-1"></i> Post to Ledger
           </button>
         <% } %>
 
@@ -403,6 +420,16 @@
           <div class="meta-field-value font-monospace fw-semibold">Revision <%= document.version %></div>
         </div>
       </div>
+      <% if (!isQuotation && locals.accounting && locals.accounting.isPosted) { %>
+      <div class="col-6 col-md-3">
+        <div class="meta-field">
+          <div class="meta-field-label">Accounting Journal</div>
+          <div class="meta-field-value font-monospace fw-bold text-success">
+            <i class="bi bi-journal-check me-1"></i><%= accounting.entryNumber %>
+          </div>
+        </div>
+      </div>
+      <% } %>
     </div>
   </div>
 
