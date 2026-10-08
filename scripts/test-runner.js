@@ -15,6 +15,8 @@
  *    process credentials.
  * ==============================================================================
  */
+// Load .env for database connection variables and dev credentials
+require('dotenv').config();
 
 const explicitPassword = process.env.SEED_ADMIN_PASSWORD;
 
@@ -46,9 +48,6 @@ if (!explicitPassword || !explicitPassword.trim()) {
     console.error('');
     process.exit(1);
 }
-
-// Load .env for database connection variables (dotenv will not overwrite existing process.env variables)
-require('dotenv').config();
 
 // Ensure trimmed password is explicitly assigned to environment
 const cleanPassword = explicitPassword.trim();
