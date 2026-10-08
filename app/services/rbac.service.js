@@ -13,7 +13,9 @@ const MODULES = [
     'BUSINESS_PROFILE',
     'TEAM',
     'AUDIT_LOGS',
-    'SETTINGS'
+    'SETTINGS',
+    'ACCOUNTS',
+    'JOURNALS'
 ];
 
 /**
@@ -47,7 +49,9 @@ const MODULE_ACTION_MATRIX = {
     BUSINESS_PROFILE: ['VIEW', 'EDIT', 'MANAGE', 'FULL_ACCESS'],
     TEAM: ['VIEW', 'CREATE', 'EDIT', 'DELETE', 'MANAGE', 'ACTIVITY_VIEW', 'FULL_ACCESS'],
     AUDIT_LOGS: ['VIEW', 'EXPORT', 'MANAGE', 'FULL_ACCESS'],
-    SETTINGS: ['VIEW', 'EDIT', 'MANAGE', 'FULL_ACCESS']
+    SETTINGS: ['VIEW', 'EDIT', 'MANAGE', 'FULL_ACCESS'],
+    ACCOUNTS: ['VIEW', 'CREATE', 'EDIT', 'DELETE', 'MANAGE', 'FULL_ACCESS'],
+    JOURNALS: ['VIEW', 'CREATE', 'VOID', 'EXPORT', 'PRINT', 'MANAGE', 'FULL_ACCESS']
 };
 
 /**
@@ -125,6 +129,8 @@ async function seedPermissionsAndRoles() {
                 'ITEMS:VIEW', 'ITEMS:CREATE', 'ITEMS:EDIT', 'ITEMS:MANAGE',
                 'UNITS:VIEW', 'UNITS:CREATE', 'UNITS:EDIT', 'UNITS:MANAGE',
                 'PAYMENTS:VIEW', 'PAYMENTS:CREATE', 'PAYMENTS:EDIT',
+                'ACCOUNTS:VIEW', 'ACCOUNTS:CREATE', 'ACCOUNTS:EDIT',
+                'JOURNALS:VIEW', 'JOURNALS:CREATE', 'JOURNALS:PRINT', 'JOURNALS:EXPORT',
                 'AUDIT_LOGS:VIEW',
                 'TEAM:VIEW'
             ]
@@ -139,7 +145,9 @@ async function seedPermissionsAndRoles() {
                 'CLIENTS:VIEW', 'CLIENTS:CREATE', 'CLIENTS:EDIT',
                 'ITEMS:VIEW',
                 'UNITS:VIEW',
-                'PAYMENTS:VIEW', 'PAYMENTS:CREATE'
+                'PAYMENTS:VIEW', 'PAYMENTS:CREATE',
+                'ACCOUNTS:VIEW',
+                'JOURNALS:VIEW'
             ]
         },
         {
@@ -151,7 +159,9 @@ async function seedPermissionsAndRoles() {
                 'DOCUMENTS:VIEW', 'DOCUMENTS:PRINT',
                 'CLIENTS:VIEW',
                 'ITEMS:VIEW',
-                'UNITS:VIEW'
+                'UNITS:VIEW',
+                'ACCOUNTS:VIEW',
+                'JOURNALS:VIEW'
             ]
         },
         {
@@ -164,7 +174,9 @@ async function seedPermissionsAndRoles() {
                 'CLIENTS:VIEW', 'CLIENTS:CREATE', 'CLIENTS:EDIT',
                 'ITEMS:VIEW',
                 'UNITS:VIEW',
-                'PAYMENTS:VIEW', 'PAYMENTS:CREATE'
+                'PAYMENTS:VIEW', 'PAYMENTS:CREATE',
+                'ACCOUNTS:VIEW',
+                'JOURNALS:VIEW'
             ]
         }
     ];

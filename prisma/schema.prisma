@@ -21,6 +21,14 @@ enum InvoiceStatus {
   DELETED
 }
 
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  INCOME
+  EXPENSE
+}
+
 model User {
   id                   Int               @id @default(autoincrement())
   name                 String            @db.VarChar(100)
@@ -44,6 +52,8 @@ model User {
   itemsCreated         Item[]            @relation("ItemCreatedBy")
   unitsCreated         Unit[]            @relation("UnitCreatedBy")
   financialYearsClosed FinancialYear[]   @relation("FinancialYearClosedBy")
+  accountsCreated      ChartOfAccount[]  @relation("AccountCreatedBy")
+  journalsPosted       JournalEntry[]    @relation("JournalPostedBy")
   userPermissions      UserPermission[]
   invitation           Invitation?       @relation("UserInvitation")
   invitationsSent      Invitation[]      @relation("InvitationCreatedBy")
@@ -55,20 +65,21 @@ model User {
 }
 
 model Client {
-  id              Int       @id @default(autoincrement())
-  name            String    @db.VarChar(191)
-  email           String?   @db.VarChar(191)
-  phone           String?   @db.VarChar(50)
-  gstin           String?   @db.VarChar(20)
-  stateCode       String?   @db.VarChar(5)
-  billingAddress  String?   @db.Text
-  shippingAddress String?   @db.Text
-  active          Boolean   @default(true)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id              Int                @id @default(autoincrement())
+  name            String             @db.VarChar(191)
+  email           String?            @db.VarChar(191)
+  phone           String?            @db.VarChar(50)
+  gstin           String?            @db.VarChar(20)
+  stateCode       String?            @db.VarChar(5)
+  billingAddress  String?            @db.Text
+  shippingAddress String?            @db.Text
+  active          Boolean            @default(true)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
   createdById     Int?
-  createdBy       User?     @relation("ClientCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdBy       User?              @relation("ClientCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   invoices        Invoice[]
+  journalLines    JournalEntryLine[]
 
   @@index([name])
   @@index([email])
@@ -372,20 +383,117 @@ model UserActivityLog {
 }
 
 model FinancialYear {
-  id         Int       @id @default(autoincrement())
-  code       String    @unique @db.VarChar(20)
-  startDate  DateTime
-  endDate    DateTime
-  status     String    @default("OPEN") @db.VarChar(10)
-  isCurrent  Boolean   @default(false)
-  closedAt   DateTime?
-  closedById Int?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  closedBy   User?     @relation("FinancialYearClosedBy", fields: [closedById], references: [id], onDelete: SetNull)
-  invoices   Invoice[]
-  payments   Payment[]
+  id              Int                    @id @default(autoincrement())
+  code            String                 @unique @db.VarChar(20)
+  startDate       DateTime
+  endDate         DateTime
+  status          String                 @default("OPEN") @db.VarChar(10)
+  isCurrent       Boolean                @default(false)
+  closedAt        DateTime?
+  closedById      Int?
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  closedBy        User?                  @relation("FinancialYearClosedBy", fields: [closedById], references: [id], onDelete: SetNull)
+  invoices        Invoice[]
+  payments        Payment[]
+  journalEntries  JournalEntry[]
+  journalSequence JournalNumberSequence?
 
   @@index([closedById])
   @@map("financial_years")
+}
+
+model ChartOfAccount {
+  id                 Int                @id @default(autoincrement())
+  code               String             @unique @db.VarChar(50)
+  name               String             @db.VarChar(191)
+  type               AccountType
+  subtype            String?            @db.VarChar(100)
+  parentId           Int?
+  level              Int                @default(1)
+  isGroup            Boolean            @default(false)
+  isControlAccount   Boolean            @default(false)
+  allowPosting       Boolean            @default(true)
+  openingBalance     Decimal            @default(0.00) @db.Decimal(15, 2)
+  openingBalanceType String             @default("DEBIT") @db.VarChar(10)
+  currentBalance     Decimal            @default(0.00) @db.Decimal(15, 2)
+  active             Boolean            @default(true)
+  systemAccount      Boolean            @default(false)
+  systemAccountKey   String?            @unique @db.VarChar(50)
+  description        String?            @db.Text
+  createdById        Int?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  parent             ChartOfAccount?    @relation("AccountHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
+  children           ChartOfAccount[]   @relation("AccountHierarchy")
+  createdBy          User?              @relation("AccountCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  journalLines       JournalEntryLine[]
+
+  @@index([type])
+  @@index([parentId])
+  @@index([isGroup])
+  @@index([active])
+  @@index([createdById])
+  @@map("chart_of_accounts")
+}
+
+model JournalEntry {
+  id              Int                @id @default(autoincrement())
+  entryNumber     String             @unique @db.VarChar(50)
+  entryDate       DateTime           @db.Date
+  financialYearId Int
+  sourceType      String             @default("MANUAL") @db.VarChar(50)
+  sourceId        Int?
+  narration       String             @db.Text
+  status          String             @default("POSTED") @db.VarChar(20)
+  idempotencyKey  String?            @unique @db.VarChar(100)
+  postedAt        DateTime           @default(now())
+  postedById      Int?
+  reversedEntryId Int?               @unique
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  financialYear   FinancialYear      @relation(fields: [financialYearId], references: [id], onDelete: Restrict)
+  postedBy        User?              @relation("JournalPostedBy", fields: [postedById], references: [id], onDelete: SetNull)
+  reversedEntry   JournalEntry?      @relation("JournalReversal", fields: [reversedEntryId], references: [id], onDelete: Restrict)
+  reversingEntry  JournalEntry?      @relation("JournalReversal")
+  lines           JournalEntryLine[]
+
+  @@index([entryDate])
+  @@index([financialYearId])
+  @@index([sourceType, sourceId])
+  @@index([status])
+  @@index([postedById])
+  @@map("journal_entries")
+}
+
+model JournalEntryLine {
+  id             Int            @id @default(autoincrement())
+  journalEntryId Int
+  accountId      Int
+  lineNumber     Int
+  debit          Decimal        @default(0.00) @db.Decimal(15, 2)
+  credit         Decimal        @default(0.00) @db.Decimal(15, 2)
+  description    String?        @db.Text
+  clientId       Int?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  journalEntry   JournalEntry   @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  account        ChartOfAccount @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  client         Client?        @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  @@index([journalEntryId])
+  @@index([accountId])
+  @@index([clientId])
+  @@map("journal_entry_lines")
+}
+
+model JournalNumberSequence {
+  id              Int           @id @default(autoincrement())
+  financialYearId Int           @unique
+  currentNumber   Int           @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  financialYear   FinancialYear @relation(fields: [financialYearId], references: [id], onDelete: Restrict)
+
+  @@map("journal_number_sequences")
 }

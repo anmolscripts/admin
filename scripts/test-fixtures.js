@@ -72,12 +72,16 @@ async function applyTestFixtures(options = {}) {
         });
     }
 
-    // Associate unowned units and items with test admin
+    // Associate unowned units, items, and accounts with test admin
     await prisma.unit.updateMany({
         where: { createdById: null },
         data: { createdById: admin.id }
     });
     await prisma.item.updateMany({
+        where: { createdById: null },
+        data: { createdById: admin.id }
+    });
+    await prisma.chartOfAccount.updateMany({
         where: { createdById: null },
         data: { createdById: admin.id }
     });

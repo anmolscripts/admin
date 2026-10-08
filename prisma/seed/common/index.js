@@ -1,6 +1,7 @@
 'use strict';
 
 const rbacService = require('../../../app/services/rbac.service');
+const { ensureSystemAccounts } = require('../../../app/services/chartOfAccounts.service');
 
 // Predefined Unit Master entries (13 standard units)
 const DEFAULT_UNITS = [
@@ -181,7 +182,10 @@ async function seedCommon(prisma, adminUser = null) {
         }
     }
 
-    return { unitsCreated, itemsCreated };
+    // 4. Standard Chart of Accounts Master
+    const accountsCreated = await ensureSystemAccounts(adminUser ? adminUser.id : null);
+
+    return { unitsCreated, itemsCreated, accountsCreated };
 }
 
 module.exports = {
