@@ -172,12 +172,40 @@
       </div>
 
       <!-- Search -->
-      <div class="navbar-search-wrapper">
-        <input type="text" class="navbar-search-input" placeholder="Search anything in Spark..." id="main-search" />
+      <div class="navbar-search-wrapper" id="global-search-container">
+        <input
+          type="text"
+          class="navbar-search-input"
+          placeholder="Search anything in Spark... (Ctrl+K)"
+          id="main-search"
+          autocomplete="off"
+          spellcheck="false"
+          role="combobox"
+          aria-expanded="false"
+          aria-haspopup="listbox"
+          aria-autocomplete="list"
+          aria-controls="global-search-dropdown"
+        />
 
-        <button class="navbar-search-btn" aria-label="Search">
-          <i class="bi bi-search"></i>
+        <button class="navbar-search-btn" type="button" aria-label="Search" id="main-search-btn">
+          <i class="bi bi-search" id="main-search-icon"></i>
+          <span class="spinner-border spinner-border-sm text-success d-none" id="main-search-spinner" role="status" aria-hidden="true" style="width: 1rem; height: 1rem; border-width: 2px;"></span>
         </button>
+
+        <!-- Global Search Dropdown Panel -->
+        <div class="global-search-dropdown d-none" id="global-search-dropdown" role="listbox" aria-label="Search results">
+          <div class="global-search-body" id="global-search-body">
+            <!-- Dynamic grouped results rendered here -->
+          </div>
+          <div class="global-search-footer" id="global-search-footer">
+            <div class="d-flex align-items-center justify-content-between text-muted px-3 py-2" style="font-size: 0.75rem;">
+              <span class="d-none d-sm-inline"><kbd class="search-kbd">↑</kbd> <kbd class="search-kbd">↓</kbd> Navigate</span>
+              <span class="d-none d-sm-inline"><kbd class="search-kbd">↵</kbd> Open</span>
+              <span><kbd class="search-kbd">ESC</kbd> Close</span>
+              <span><kbd class="search-kbd">Ctrl+K</kbd> Focus</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Right actions -->

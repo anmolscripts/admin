@@ -290,6 +290,7 @@
         |-- invoice.controller.js
         |-- item.controller.js
         |-- payment.controller.js
+        |-- search.controller.js
         |-- team.controller.js
         |-- unit.controller.js
     |-- middleware
@@ -302,6 +303,7 @@
         |-- admin.routes.js
         |-- auth.routes.js
         |-- invoice.routes.js
+        |-- search.routes.js
         |-- team.routes.js
         |-- web.routes.js
     |-- server.js
@@ -319,6 +321,7 @@
         |-- payment.service.js
         |-- pdf.service.js
         |-- rbac.service.js
+        |-- search.service.js
         |-- team.service.js
         |-- unit.service.js
     |-- views
@@ -379,6 +382,7 @@
         |-- dashboard.js
         |-- documents.js
         |-- editor.js
+        |-- global-search.js
         |-- spark-datatable.js
         |-- view.js
     |-- libs
@@ -462,6 +466,8 @@
             |-- migration.sql
         |-- 20261003071507_add_team_rbac_and_user_activity
             |-- migration.sql
+        |-- 20261004100000_change_invoice_item_name_to_text
+            |-- migration.sql
         |-- migration_lock.toml
     |-- schema.prisma
     |-- seed
@@ -485,7 +491,9 @@
         |-- prerequisites.js
         |-- verifier.js
     |-- qa_browser_e2e.js
+    |-- qa_search_browser_e2e.js
     |-- setup.js
+    |-- test-runner.js
 |-- skills-lock.json
 |-- tables-basic.html
 |-- tests
@@ -499,7 +507,9 @@
     |-- invoice.test.js
     |-- phase6.test.js
     |-- phase8.test.js
+    |-- quotation_long_item_regression.test.js
     |-- rbac_team_activity.test.js
+    |-- search.test.js
     |-- unit.test.js
     |-- ux_polish.test.js
     |-- view.test.js

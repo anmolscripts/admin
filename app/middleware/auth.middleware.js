@@ -4,6 +4,12 @@
  */
 function requireAuth(req, res, next) {
     if (!req.session || !req.session.user || !req.session.user.id) {
+        if ((req.originalUrl && req.originalUrl.startsWith('/api')) || req.xhr || (req.headers['accept'] && req.headers['accept'].includes('application/json'))) {
+            return res.status(401).json({
+                success: false,
+                error: 'Authentication required.'
+            });
+        }
         return res.redirect('/login');
     }
     next();

@@ -10,6 +10,7 @@ const webRoutes = require('./routes/web.routes');
 const authRoutes = require('./routes/auth.routes');
 const adminRoutes = require('./routes/admin.routes');
 const invoiceRoutes = require('./routes/invoice.routes');
+const searchRoutes = require('./routes/search.routes');
 
 const {
     notFound,
@@ -87,6 +88,7 @@ app.use('/', webRoutes);
 app.use('/', adminRoutes);
 app.use('/api', invoiceRoutes);
 app.use('/api', teamRoutes);
+app.use('/api', searchRoutes);
 
 // Error handling
 app.use(notFound);
