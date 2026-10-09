@@ -688,6 +688,413 @@ async function getPaymentAccountingStatus(paymentId) {
     };
 }
 
+/**
+ * ==============================================================================
+ * CREDIT NOTE & DEBIT NOTE ACCOUNTING POSTING ENGINE (MILESTONE 6)
+ * ==============================================================================
+ */
+
+/**
+ * Deterministic idempotency key for Credit and Debit Notes.
+ * @param {'CREDIT'|'DEBIT'} noteType
+ * @param {number|string} noteId
+ * @returns {string} e.g. 'CREDIT_NOTE:42' or 'DEBIT_NOTE:42'
+ */
+function getCreditDebitNoteIdempotencyKey(noteType, noteId) {
+    const norm = String(noteType).trim().toUpperCase();
+    const prefix = norm === 'DEBIT' ? 'DEBIT_NOTE' : 'CREDIT_NOTE';
+    return `${prefix}:${noteId}`;
+}
+
+/**
+ * Posts an atomic double-entry journal entry for a Credit Note or Debit Note.
+ *
+ * Credit Note Accounting:
+ *   Debit:  Sales Returns & Rebates (4130)  [Taxable subtotal]
+ *   Debit:  Output CGST / SGST / IGST       [Tax reversal]
+ *   Debit/Credit: Round Off Discrepancy (5230)
+ *   Credit: Accounts Receivable (1121)      [Grand total, tagged with clientId]
+ *
+ * Debit Note Accounting:
+ *   Debit:  Accounts Receivable (1121)      [Grand total, tagged with clientId]
+ *   Credit: Sales Revenue (4110)            [Taxable subtotal]
+ *   Credit: Output CGST / SGST / IGST       [Output tax liability]
+ *   Debit/Credit: Round Off Discrepancy (5230)
+ *
+ * @param {number|string} noteId
+ * @param {Object} [options={}]
+ * @param {number} [options.userId]
+ * @param {Object} [clientOrTxArg=null]
+ * @returns {Promise<{ success: boolean, alreadyPosted?: boolean, journal: Object }>}
+ */
+async function postCreditDebitNote(noteId, options = {}, clientOrTxArg = null) {
+    const numId = parseInt(noteId, 10);
+    if (isNaN(numId) || numId <= 0) {
+        throw new ValidationError('Invalid credit/debit note ID.');
+    }
+
+    const userId = options.userId || null;
+    const executeInContext = async (tx) => {
+        // 1. Fetch note with items and relations
+        const note = await tx.creditDebitNote.findUnique({
+            where: { id: numId },
+            include: {
+                invoice: true,
+                client: true,
+                financialYear: true,
+                items: true
+            }
+        });
+
+        if (!note) {
+            throw new NotFoundError(`Credit/Debit Note #${numId} not found.`);
+        }
+
+        // 2. Validate lifecycle status
+        if (note.status === 'VOID') {
+            throw new ValidationError(`Cannot post accounting for a VOID note (#${note.noteNumber}).`);
+        }
+
+        if (note.status === 'DRAFT') {
+            throw new ValidationError(`Cannot post accounting for a DRAFT note (#${note.noteNumber}). Note must be ISSUED.`);
+        }
+
+        // 3. Check Financial Year validity
+        const noteDate = new Date(note.noteDate);
+        if (isNaN(noteDate.getTime())) {
+            throw new ValidationError(`Invalid note date on note #${note.noteNumber}.`);
+        }
+
+        const financialYear = await ensureFinancialYear(noteDate);
+        if (!financialYear) {
+            throw new ValidationError(`Could not resolve Financial Year for note date ${noteDate.toISOString().slice(0, 10)}.`);
+        }
+
+        if (financialYear.status === 'CLOSED') {
+            throw new ValidationError(`Cannot post note to closed Financial Year ${financialYear.code}.`);
+        }
+
+        // 4. Idempotency Check
+        const idempotencyKey = getCreditDebitNoteIdempotencyKey(note.noteType, note.id);
+        const existingJournal = await tx.journalEntry.findUnique({
+            where: { idempotencyKey },
+            include: {
+                lines: {
+                    include: { account: true, client: true },
+                    orderBy: { lineNumber: 'asc' }
+                },
+                financialYear: true
+            }
+        });
+
+        if (existingJournal) {
+            return {
+                success: true,
+                alreadyPosted: true,
+                journal: existingJournal
+            };
+        }
+
+        // 5. Ensure System Accounts Exist
+        await coaService.ensureSystemAccounts(userId);
+
+        const arAccount = await coaService.getSystemAccount('ACCOUNTS_RECEIVABLE');
+        const roundOffAccount = await coaService.getSystemAccount('ROUND_OFF');
+
+        // 6. Integer-Cent Monetary Arithmetic
+        const grandTotalCents = toCents(note.grandTotal);
+        const subtotalCents = toCents(note.subtotal);
+        const cgstCents = toCents(note.cgstAmount || 0);
+        const sgstCents = toCents(note.sgstAmount || 0);
+        const igstCents = toCents(note.igstAmount || 0);
+        const roundOffCents = toCents(note.roundOff || 0);
+
+        if (grandTotalCents <= 0n) {
+            throw new ValidationError(`Note ${note.noteNumber} has zero or negative grand total and cannot be posted.`);
+        }
+
+        const lines = [];
+
+        if (note.noteType === 'CREDIT') {
+            const salesReturnsAccount = await coaService.getSystemAccount('SALES_RETURNS');
+
+            // Line 1: Debit Sales Returns
+            lines.push({
+                accountId: salesReturnsAccount.id,
+                debit: fromCents(subtotalCents),
+                credit: '0.00',
+                description: `Sales Return - Credit Note ${note.noteNumber} against Invoice ${note.originalInvoiceNumber}`,
+                clientId: null
+            });
+
+            // Tax Reversal Lines (Debit Output Tax)
+            if (cgstCents > 0n || sgstCents > 0n) {
+                const cgstAccount = await coaService.getSystemAccount('OUTPUT_CGST');
+                const sgstAccount = await coaService.getSystemAccount('OUTPUT_SGST');
+
+                if (cgstCents > 0n) {
+                    lines.push({
+                        accountId: cgstAccount.id,
+                        debit: fromCents(cgstCents),
+                        credit: '0.00',
+                        description: `Output CGST Reversal - Credit Note ${note.noteNumber}`,
+                        clientId: null
+                    });
+                }
+                if (sgstCents > 0n) {
+                    lines.push({
+                        accountId: sgstAccount.id,
+                        debit: fromCents(sgstCents),
+                        credit: '0.00',
+                        description: `Output SGST Reversal - Credit Note ${note.noteNumber}`,
+                        clientId: null
+                    });
+                }
+            } else if (igstCents > 0n) {
+                const igstAccount = await coaService.getSystemAccount('OUTPUT_IGST');
+                lines.push({
+                    accountId: igstAccount.id,
+                    debit: fromCents(igstCents),
+                    credit: '0.00',
+                    description: `Output IGST Reversal - Credit Note ${note.noteNumber}`,
+                    clientId: null
+                });
+            }
+
+            // Round-Off Adjustment for Credit Note:
+            // Since Credit AR = GrandTotal (unrounded + roundOff),
+            // to balance: if roundOff > 0 (rounded up), Dr RoundOff; if roundOff < 0 (rounded down), Cr RoundOff
+            if (roundOffCents !== 0n) {
+                if (roundOffCents > 0n) {
+                    lines.push({
+                        accountId: roundOffAccount.id,
+                        debit: fromCents(roundOffCents),
+                        credit: '0.00',
+                        description: `Round Off - Credit Note ${note.noteNumber}`,
+                        clientId: null
+                    });
+                } else {
+                    lines.push({
+                        accountId: roundOffAccount.id,
+                        debit: '0.00',
+                        credit: fromCents(-roundOffCents),
+                        description: `Round Off - Credit Note ${note.noteNumber}`,
+                        clientId: null
+                    });
+                }
+            }
+
+            // Line: Credit Accounts Receivable (Customer Subledger)
+            lines.push({
+                accountId: arAccount.id,
+                debit: '0.00',
+                credit: fromCents(grandTotalCents),
+                description: `Credit Note ${note.noteNumber} - ${note.clientName}`,
+                clientId: note.clientId || null
+            });
+        } else {
+            // DEBIT NOTE
+            const salesAccount = await coaService.getSystemAccount('SALES_REVENUE');
+
+            // Line 1: Debit Accounts Receivable (Customer Subledger)
+            lines.push({
+                accountId: arAccount.id,
+                debit: fromCents(grandTotalCents),
+                credit: '0.00',
+                description: `Debit Note ${note.noteNumber} - ${note.clientName}`,
+                clientId: note.clientId || null
+            });
+
+            // Line 2: Credit Sales Revenue
+            lines.push({
+                accountId: salesAccount.id,
+                debit: '0.00',
+                credit: fromCents(subtotalCents),
+                description: `Revenue Adjustment - Debit Note ${note.noteNumber} against Invoice ${note.originalInvoiceNumber}`,
+                clientId: null
+            });
+
+            // Output Tax Lines (Credit Output Tax)
+            if (cgstCents > 0n || sgstCents > 0n) {
+                const cgstAccount = await coaService.getSystemAccount('OUTPUT_CGST');
+                const sgstAccount = await coaService.getSystemAccount('OUTPUT_SGST');
+
+                if (cgstCents > 0n) {
+                    lines.push({
+                        accountId: cgstAccount.id,
+                        debit: '0.00',
+                        credit: fromCents(cgstCents),
+                        description: `Output CGST - Debit Note ${note.noteNumber}`,
+                        clientId: null
+                    });
+                }
+                if (sgstCents > 0n) {
+                    lines.push({
+                        accountId: sgstAccount.id,
+                        debit: '0.00',
+                        credit: fromCents(sgstCents),
+                        description: `Output SGST - Debit Note ${note.noteNumber}`,
+                        clientId: null
+                    });
+                }
+            } else if (igstCents > 0n) {
+                const igstAccount = await coaService.getSystemAccount('OUTPUT_IGST');
+                lines.push({
+                    accountId: igstAccount.id,
+                    debit: '0.00',
+                    credit: fromCents(igstCents),
+                    description: `Output IGST - Debit Note ${note.noteNumber}`,
+                    clientId: null
+                });
+            }
+
+            // Round-Off Adjustment for Debit Note:
+            // Since Debit AR = GrandTotal (unrounded + roundOff),
+            // to balance: if roundOff > 0 (rounded up), Cr RoundOff; if roundOff < 0 (rounded down), Dr RoundOff
+            if (roundOffCents !== 0n) {
+                if (roundOffCents > 0n) {
+                    lines.push({
+                        accountId: roundOffAccount.id,
+                        debit: '0.00',
+                        credit: fromCents(roundOffCents),
+                        description: `Round Off Gain - Debit Note ${note.noteNumber}`,
+                        clientId: null
+                    });
+                } else {
+                    lines.push({
+                        accountId: roundOffAccount.id,
+                        debit: fromCents(-roundOffCents),
+                        credit: '0.00',
+                        description: `Round Off Expense - Debit Note ${note.noteNumber}`,
+                        clientId: null
+                    });
+                }
+            }
+        }
+
+        // 7. Verify Double-Entry Balance
+        let totalDrCents = 0n;
+        let totalCrCents = 0n;
+        for (const l of lines) {
+            totalDrCents += toCents(l.debit);
+            totalCrCents += toCents(l.credit);
+        }
+
+        if (totalDrCents !== totalCrCents) {
+            throw new ValidationError(
+                `Unbalanced double-entry journal for Note ${note.noteNumber}: Debit ₹${fromCents(totalDrCents)} != Credit ₹${fromCents(totalCrCents)}`
+            );
+        }
+
+        // 8. Create Atomic Journal Entry
+        const journal = await journalService.postJournalEntry(
+            {
+                entryDate: noteDate,
+                financialYearId: financialYear.id,
+                sourceType: note.noteType === 'DEBIT' ? 'DEBIT_NOTE' : 'CREDIT_NOTE',
+                sourceId: note.id,
+                narration: `${note.noteType === 'DEBIT' ? 'Debit Note' : 'Credit Note'} ${note.noteNumber} issued for ₹${note.grandTotal} against Invoice ${note.originalInvoiceNumber} (${note.reason})`,
+                idempotencyKey,
+                lines,
+                userId
+            },
+            tx
+        );
+
+        // 9. Activity Log
+        if (activityService && typeof activityService.logUserActivity === 'function') {
+            activityService.logUserActivity({
+                userId,
+                action: 'POST_NOTE_ACCOUNTING',
+                module: 'JOURNALS',
+                targetType: note.noteType === 'DEBIT' ? 'DEBIT_NOTE' : 'CREDIT_NOTE',
+                targetId: String(note.id),
+                meta: {
+                    noteNumber: note.noteNumber,
+                    invoiceNumber: note.originalInvoiceNumber,
+                    journalNumber: journal.entryNumber,
+                    grandTotal: Number(note.grandTotal)
+                }
+            }, tx).catch(() => {});
+        }
+
+        return {
+            success: true,
+            alreadyPosted: false,
+            journal
+        };
+    };
+
+    if (clientOrTxArg) {
+        return await executeInContext(clientOrTxArg);
+    }
+    try {
+        return await prisma.$transaction(executeInContext, { timeout: 15000, maxWait: 10000 });
+    } catch (err) {
+        if (err.code === 'P2002' || err.message?.includes('idempotencyKey')) {
+            const note = await prisma.creditDebitNote.findUnique({ where: { id: numId } });
+            if (note) {
+                const existing = await getCreditDebitNotePosting(note.noteType, note.id);
+                if (existing) {
+                    return {
+                        success: true,
+                        alreadyPosted: true,
+                        journal: existing
+                    };
+                }
+            }
+        }
+        throw err;
+    }
+}
+
+/**
+ * Retrieves the posted journal entry for a Credit or Debit Note.
+ */
+async function getCreditDebitNotePosting(noteType, noteId) {
+    const numId = parseInt(noteId, 10);
+    if (isNaN(numId) || numId <= 0) return null;
+
+    const idempotencyKey = getCreditDebitNoteIdempotencyKey(noteType, numId);
+    return await prisma.journalEntry.findUnique({
+        where: { idempotencyKey },
+        include: {
+            lines: {
+                include: { account: true, client: true },
+                orderBy: { lineNumber: 'asc' }
+            },
+            financialYear: true,
+            postedBy: { select: { id: true, name: true, email: true } },
+            reversedEntry: { select: { id: true, entryNumber: true } }
+        }
+    });
+}
+
+/**
+ * Retrieves accounting posting status summary for a note.
+ */
+async function getCreditDebitNoteAccountingStatus(noteType, noteId) {
+    const journal = await getCreditDebitNotePosting(noteType, noteId);
+    if (!journal) {
+        return {
+            isPosted: false,
+            journalId: null,
+            entryNumber: null,
+            status: 'UNPOSTED',
+            reversedEntryId: null,
+            postedAt: null
+        };
+    }
+    return {
+        isPosted: true,
+        journalId: journal.id,
+        entryNumber: journal.entryNumber,
+        status: journal.status,
+        reversedEntryId: journal.reversedEntryId,
+        postedAt: journal.postedAt
+    };
+}
+
 module.exports = {
     ValidationError,
     NotFoundError,
@@ -701,6 +1108,10 @@ module.exports = {
     postPayment,
     getPaymentPosting,
     getPaymentAccountingStatus,
+    getCreditDebitNoteIdempotencyKey,
+    postCreditDebitNote,
+    getCreditDebitNotePosting,
+    getCreditDebitNoteAccountingStatus,
     toCents,
     fromCents,
     SUPPORTED_PAYMENT_METHODS

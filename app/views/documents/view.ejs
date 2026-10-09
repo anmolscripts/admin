@@ -800,6 +800,113 @@
   </div>
   <% } %>
 
+  <% if (!isQuotation) { %>
+  <!-- ===================================================================
+       CREDIT & DEBIT NOTES CARD (INVOICES ONLY)
+       =================================================================== -->
+  <div class="view-card" id="credit-debit-notes-card">
+    <div class="view-card-header">
+      <h3 class="view-card-title">
+        <i class="bi bi-receipt text-primary"></i>
+        <span>Credit & Debit Notes</span>
+      </h3>
+      <div class="d-flex align-items-center gap-2">
+        <% if (['ACTIVE'].includes(document.status)) { %>
+          <a href="/credit-debit-notes/new?invoiceId=<%= document.id %>&type=CREDIT" class="btn-custom btn-custom-outline-primary btn-custom-sm">
+            <i class="bi bi-dash-circle me-1"></i> Issue Credit Note
+          </a>
+          <a href="/credit-debit-notes/new?invoiceId=<%= document.id %>&type=DEBIT" class="btn-custom btn-custom-outline-info btn-custom-sm">
+            <i class="bi bi-plus-circle me-1"></i> Issue Debit Note
+          </a>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Notes Table -->
+    <div class="table-responsive">
+      <table class="table align-middle view-items-table mb-0">
+        <thead>
+          <tr>
+            <th scope="col" style="width: 140px;">Note #</th>
+            <th scope="col" style="width: 110px;">Type</th>
+            <th scope="col" style="width: 120px;">Date</th>
+            <th scope="col">Reason</th>
+            <th scope="col" class="text-end" style="width: 140px;">Amount</th>
+            <th scope="col" class="text-center" style="width: 110px;">Status</th>
+            <th scope="col" class="text-center" style="width: 160px;">Ledger Journal</th>
+            <th scope="col" class="text-end" style="width: 90px;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (document.creditDebitNotes && document.creditDebitNotes.length > 0) { %>
+            <% document.creditDebitNotes.forEach(n => { %>
+              <tr class="<%= n.status === 'VOID' ? 'text-muted bg-light' : '' %>">
+                <td>
+                  <a href="/credit-debit-notes/<%= n.id %>" class="fw-bold font-monospace text-decoration-none">
+                    <%= n.noteNumber %>
+                  </a>
+                </td>
+                <td>
+                  <% if (n.noteType === 'CREDIT') { %>
+                    <span class="badge border" style="background-color: #faf5ff; color: #7c3aed; border-color: #e9d5ff !important;">
+                      CREDIT
+                    </span>
+                  <% } else { %>
+                    <span class="badge bg-info-subtle text-info border">
+                      DEBIT
+                    </span>
+                  <% } %>
+                </td>
+                <td class="text-muted small"><%= formatDate(n.noteDate) %></td>
+                <td><%= n.reason %></td>
+                <td class="text-end font-monospace fw-bold <%= n.noteType === 'CREDIT' ? 'text-purple' : 'text-info' %>">
+                  <%= formatMoney(n.grandTotal) %>
+                </td>
+                <td class="text-center">
+                  <% if (n.status === 'ISSUED') { %>
+                    <span class="badge bg-success-subtle text-success">ISSUED</span>
+                  <% } else if (n.status === 'VOID') { %>
+                    <span class="badge bg-secondary-subtle text-secondary">VOID</span>
+                  <% } else { %>
+                    <span class="badge bg-warning-subtle text-warning">DRAFT</span>
+                  <% } %>
+                </td>
+                <td class="text-center">
+                  <% if (n.accounting && n.accounting.isPosted && n.accounting.entryNumber) { %>
+                    <% if (n.accounting.status === 'REVERSED') { %>
+                      <a href="/accounting/journals/<%= n.accounting.journalId %>" class="badge bg-warning-subtle text-warning border text-decoration-none font-monospace" title="Journal Reversed">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i><%= n.accounting.entryNumber %>
+                      </a>
+                    <% } else { %>
+                      <a href="/accounting/journals/<%= n.accounting.journalId %>" class="badge bg-primary-subtle text-primary border text-decoration-none font-monospace" title="View Journal Entry">
+                        <i class="bi bi-journal-text me-1"></i><%= n.accounting.entryNumber %>
+                      </a>
+                    <% } %>
+                  <% } else { %>
+                    <span class="text-muted small">—</span>
+                  <% } %>
+                </td>
+                <td class="text-end">
+                  <a href="/credit-debit-notes/<%= n.id %>" class="btn btn-sm btn-outline-secondary" title="View Note">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                </td>
+              </tr>
+            <% }); %>
+          <% } else { %>
+            <tr>
+              <td colspan="8" class="text-center py-4 text-muted">
+                <i class="bi bi-receipt fs-4 d-block mb-1 text-muted"></i>
+                No credit or debit notes have been issued for this invoice.
+              </td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <% } %>
+
   <!-- ===================================================================
        ACTIVITY TIMELINE / REVISION HISTORY CARD
        =================================================================== -->

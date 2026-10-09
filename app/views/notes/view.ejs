@@ -1,0 +1,369 @@
+<%- include('../layouts/header') %>
+
+<div class="content-wrapper p-4">
+  <!-- Top Navigation Bar & Actions -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div class="d-flex align-items-center gap-3">
+      <a href="/credit-debit-notes" class="btn btn-outline-secondary btn-sm" title="Back to Notes List">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+      <div>
+        <div class="d-flex align-items-center gap-2">
+          <h1 class="h3 fw-bold mb-0 font-monospace"><%= note.noteNumber %></h1>
+          <% if (note.noteType === 'CREDIT') { %>
+            <span class="badge border" style="background-color: #faf5ff; color: #7c3aed; border-color: #e9d5ff !important;">
+              CREDIT NOTE
+            </span>
+          <% } else { %>
+            <span class="badge bg-info-subtle text-info border">
+              DEBIT NOTE
+            </span>
+          <% } %>
+
+          <% if (note.status === 'ISSUED') { %>
+            <span class="badge bg-success-subtle text-success">ISSUED</span>
+          <% } else if (note.status === 'VOID') { %>
+            <span class="badge bg-secondary-subtle text-secondary">VOID</span>
+          <% } else { %>
+            <span class="badge bg-warning-subtle text-warning">DRAFT</span>
+          <% } %>
+        </div>
+        <div class="text-muted small mt-1">
+          Issued on <%= new Date(note.noteDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) %>
+          • Financial Year: <span class="fw-medium font-monospace"><%= note.financialYear ? note.financialYear.code : '—' %></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="d-flex gap-2">
+      <a href="/credit-debit-notes/<%= note.id %>/print" target="_blank" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2">
+        <i class="bi bi-printer"></i>
+        <span>Print Document</span>
+      </a>
+
+      <% if (note.status === 'ISSUED') { %>
+        <button type="button" class="btn btn-outline-danger d-inline-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#voidNoteModal">
+          <i class="bi bi-x-circle"></i>
+          <span>Void Note</span>
+        </button>
+      <% } %>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Left Column: Details, Original Invoice, Items -->
+    <div class="col-lg-8">
+      <!-- Original Invoice Reference Card -->
+      <div class="card border-0 shadow-sm mb-4" style="border-left: 4px solid <%= note.noteType === 'CREDIT' ? '#7c3aed' : '#0284c7' %> !important;">
+        <div class="card-body p-3 d-flex justify-content-between align-items-center">
+          <div>
+            <div class="text-muted small text-uppercase fw-semibold mb-1">Referenced Sales Invoice</div>
+            <div class="d-flex align-items-center gap-2">
+              <a href="/documents/<%= note.invoiceId %>" class="fs-5 fw-bold font-monospace text-decoration-none">
+                <i class="bi bi-file-earmark-text me-1"></i><%= note.originalInvoiceNumber %>
+              </a>
+              <span class="badge bg-light text-dark border">
+                Invoice Total: ₹<%= Number(note.originalInvoiceGrandTotal).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %>
+              </span>
+            </div>
+            <div class="text-muted small mt-1">
+              Invoice Date: <%= new Date(note.originalInvoiceDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) %>
+            </div>
+          </div>
+          <a href="/documents/<%= note.invoiceId %>" class="btn btn-sm btn-outline-primary">
+            View Invoice <i class="bi bi-arrow-right ms-1"></i>
+          </a>
+        </div>
+      </div>
+
+      <!-- Adjustment Items Card -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3 border-0">
+          <h5 class="card-title mb-0 fw-semibold fs-6">
+            <i class="bi bi-list-check me-2 text-primary"></i>Adjustment Items
+          </h5>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light small text-muted text-uppercase">
+              <tr>
+                <th style="width: 40px;">#</th>
+                <th>Item & Description</th>
+                <th class="text-center" style="width: 100px;">HSN/SAC</th>
+                <th class="text-end" style="width: 100px;">Qty</th>
+                <th class="text-end" style="width: 120px;">Rate</th>
+                <th class="text-end" style="width: 130px;">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% note.items.forEach((item, idx) => { %>
+                <tr>
+                  <td class="text-muted small"><%= idx + 1 %></td>
+                  <td>
+                    <div class="fw-semibold"><%= item.name %></div>
+                    <% if (item.description) { %>
+                      <div class="text-muted small text-break"><%= item.description %></div>
+                    <% } %>
+                  </td>
+                  <td class="text-center font-monospace small"><%= item.hsnSac || '—' %></td>
+                  <td class="text-end font-monospace"><%= Number(item.quantity).toFixed(2) %> <%= item.unit %></td>
+                  <td class="text-end font-monospace">₹<%= Number(item.rate).toFixed(2) %></td>
+                  <td class="text-end fw-semibold font-monospace">₹<%= Number(item.amount).toFixed(2) %></td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Commercial Reason & Remarks -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+          <h6 class="fw-semibold text-muted text-uppercase small mb-2">Commercial Reason & Remarks</h6>
+          <p class="mb-2 fw-medium"><%= note.reason %></p>
+          <% if (note.remarks) { %>
+            <p class="text-muted small mb-0"><%= note.remarks %></p>
+          <% } %>
+
+          <% if (note.status === 'VOID' && note.voidReason) { %>
+            <div class="alert alert-danger py-2 px-3 mt-3 mb-0 small">
+              <strong>Void Reason:</strong> <%= note.voidReason %>
+              <% if (note.voidedAt) { %>
+                <span class="text-muted ms-2">(Voided on <%= new Date(note.voidedAt).toLocaleString() %>)</span>
+              <% } %>
+            </div>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- General Ledger Double-Entry Audit Card -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+          <h5 class="card-title mb-0 fw-semibold fs-6">
+            <i class="bi bi-journal-bookmark me-2 text-primary"></i>Double-Entry General Ledger Posting
+          </h5>
+          <% if (accounting && accounting.isPosted) { %>
+            <% if (accounting.status === 'REVERSED') { %>
+              <span class="badge bg-warning-subtle text-warning border">REVERSED</span>
+            <% } else { %>
+              <span class="badge bg-success-subtle text-success border">POSTED</span>
+            <% } %>
+          <% } else { %>
+            <span class="badge bg-secondary-subtle text-secondary">UNPOSTED</span>
+          <% } %>
+        </div>
+        <div class="card-body pt-0">
+          <% if (accounting && accounting.isPosted && accounting.journal) { %>
+            <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+              <div>
+                <span class="text-muted small">Journal Entry: </span>
+                <a href="/accounting/journals/<%= accounting.journal.id %>" class="fw-bold font-monospace text-decoration-none">
+                  <%= accounting.journal.entryNumber %>
+                </a>
+              </div>
+              <div class="text-muted small">
+                Posted on <%= new Date(accounting.journal.postedAt).toLocaleString() %>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table table-sm table-bordered align-middle mb-0 font-monospace small">
+                <thead class="table-light">
+                  <tr>
+                    <th>Account</th>
+                    <th>Subledger</th>
+                    <th class="text-end" style="width: 120px;">Debit (₹)</th>
+                    <th class="text-end" style="width: 120px;">Credit (₹)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% accounting.journal.lines.forEach(line => { %>
+                    <tr>
+                      <td>
+                        <span class="text-muted"><%= line.account.code %></span>
+                        <span class="fw-medium ms-1"><%= line.account.name %></span>
+                      </td>
+                      <td class="text-muted">
+                        <%= line.client ? line.client.name : '—' %>
+                      </td>
+                      <td class="text-end <%= Number(line.debit) > 0 ? 'fw-bold text-dark' : 'text-muted' %>">
+                        <%= Number(line.debit) > 0 ? Number(line.debit).toFixed(2) : '—' %>
+                      </td>
+                      <td class="text-end <%= Number(line.credit) > 0 ? 'fw-bold text-dark' : 'text-muted' %>">
+                        <%= Number(line.credit) > 0 ? Number(line.credit).toFixed(2) : '—' %>
+                      </td>
+                    </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+          <% } else { %>
+            <p class="text-muted small mb-0">No general ledger journal has been posted for this note.</p>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Financial Summary & Snapshot -->
+    <div class="col-lg-4">
+      <!-- Financial Totals Box -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3 border-0">
+          <h5 class="card-title mb-0 fw-semibold fs-6">
+            <i class="bi bi-cash-stack me-2 text-primary"></i>Financial Breakdown
+          </h5>
+        </div>
+        <div class="card-body pt-0">
+          <div class="d-flex justify-content-between mb-2">
+            <span class="text-muted small">Taxable Subtotal:</span>
+            <span class="fw-semibold font-monospace">₹<%= Number(note.subtotal).toFixed(2) %></span>
+          </div>
+
+          <% if (note.gstEnabled) { %>
+            <div class="d-flex justify-content-between mb-2">
+              <span class="text-muted small">GST Rate:</span>
+              <span class="font-monospace"><%= Number(note.gstRate).toFixed(1) %>%</span>
+            </div>
+            <% if (Number(note.cgstAmount) > 0) { %>
+              <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted small">CGST:</span>
+                <span class="font-monospace">₹<%= Number(note.cgstAmount).toFixed(2) %></span>
+              </div>
+            <% } %>
+            <% if (Number(note.sgstAmount) > 0) { %>
+              <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted small">SGST:</span>
+                <span class="font-monospace">₹<%= Number(note.sgstAmount).toFixed(2) %></span>
+              </div>
+            <% } %>
+            <% if (Number(note.igstAmount) > 0) { %>
+              <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted small">IGST:</span>
+                <span class="font-monospace">₹<%= Number(note.igstAmount).toFixed(2) %></span>
+              </div>
+            <% } %>
+          <% } else { %>
+            <div class="text-muted small mb-2 fst-italic">GST not enabled on this note.</div>
+          <% } %>
+
+          <% if (Number(note.roundOff) !== 0) { %>
+            <div class="d-flex justify-content-between mb-2">
+              <span class="text-muted small">Round Off:</span>
+              <span class="font-monospace text-muted"><%= Number(note.roundOff) > 0 ? '+' : '' %>₹<%= Number(note.roundOff).toFixed(2) %></span>
+            </div>
+          <% } %>
+
+          <hr class="my-3">
+
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="fw-bold">Grand Total:</span>
+            <span class="fs-4 fw-bold text-primary font-monospace">
+              ₹<%= Number(note.grandTotal).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Immutable Client Snapshot Card -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white py-3 border-0">
+          <h5 class="card-title mb-0 fw-semibold fs-6">
+            <i class="bi bi-person-badge me-2 text-primary"></i>Customer Snapshot
+          </h5>
+        </div>
+        <div class="card-body pt-0 small">
+          <div class="fw-bold fs-6 mb-1"><%= note.clientName %></div>
+          <% if (note.clientGSTIN) { %>
+            <div class="text-muted mb-1 font-monospace">GSTIN: <%= note.clientGSTIN %></div>
+          <% } %>
+          <% if (note.clientEmail) { %>
+            <div class="text-muted mb-1"><i class="bi bi-envelope me-1"></i><%= note.clientEmail %></div>
+          <% } %>
+          <% if (note.clientPhone) { %>
+            <div class="text-muted mb-1"><i class="bi bi-telephone me-1"></i><%= note.clientPhone %></div>
+          <% } %>
+          <% if (note.billingAddress) { %>
+            <div class="text-muted mt-2 pt-2 border-top">
+              <strong>Billing Address:</strong><br>
+              <%= note.billingAddress %>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Void Note Modal -->
+<% if (note.status === 'ISSUED') { %>
+  <div class="modal fade" id="voidNoteModal" tabindex="-1" aria-labelledby="voidNoteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header">
+          <h5 class="modal-title text-danger fw-bold" id="voidNoteModalLabel">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>Void <%= note.noteNumber %>
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="void-note-form">
+          <input type="hidden" id="void-csrf-token" value="<%= csrfToken %>">
+          <div class="modal-body">
+            <p class="mb-3">
+              Voiding this note will permanently lock it and <strong>automatically reverse its double-entry general ledger journal</strong>. This action is irreversible.
+            </p>
+            <div class="mb-3">
+              <label for="voidReason" class="form-label small fw-semibold">Void Reason *</label>
+              <textarea class="form-control" id="voidReason" rows="3" placeholder="Explain why this note is being voided..." required></textarea>
+            </div>
+            <div class="alert alert-danger d-none py-2 px-3 small" id="void-error-alert"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-danger" id="btn-confirm-void">
+              Confirm Void & Reverse Journal
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('void-note-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btn-confirm-void');
+      const errorAlert = document.getElementById('void-error-alert');
+      errorAlert.classList.add('d-none');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Voiding...';
+
+      try {
+        const res = await fetch('/api/credit-debit-notes/<%= note.id %>/void', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'CSRF-Token': document.getElementById('void-csrf-token').value
+          },
+          body: JSON.stringify({
+            reason: document.getElementById('voidReason').value.trim()
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.message || 'Failed to void note.');
+        }
+
+        window.location.reload();
+      } catch (err) {
+        errorAlert.textContent = err.message;
+        errorAlert.classList.remove('d-none');
+        btn.disabled = false;
+        btn.innerHTML = 'Confirm Void & Reverse Journal';
+      }
+    });
+  </script>
+<% } %>
+
+<%- include('../layouts/footer') %>

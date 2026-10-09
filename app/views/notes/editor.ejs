@@ -1,0 +1,369 @@
+<%- include('../layouts/header') %>
+
+<div class="content-wrapper p-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <a href="/credit-debit-notes" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-arrow-left"></i>
+        </a>
+        <h1 class="h3 fw-bold mb-0">Create <%= noteType === 'DEBIT' ? 'Debit Note' : 'Credit Note' %></h1>
+      </div>
+      <p class="text-muted small mb-0 ms-5 ps-1">
+        <%= noteType === 'DEBIT' ? 'Issue an upward adjustment note to increase accounts receivable.' : 'Issue a downward adjustment / return note to reduce accounts receivable.' %>
+      </p>
+    </div>
+  </div>
+
+  <form id="note-form" class="needs-validation">
+    <input type="hidden" name="_csrf" id="csrf-token" value="<%= csrfToken %>">
+
+    <div class="row g-4">
+      <!-- Main Form Column -->
+      <div class="col-lg-8">
+        <!-- Document Meta Card -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-white py-3 border-0">
+            <h5 class="card-title mb-0 fw-semibold fs-6">
+              <i class="bi bi-info-circle me-2 text-primary"></i>Note Details & Reference
+            </h5>
+          </div>
+          <div class="card-body pt-0">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label for="noteType" class="form-label small fw-semibold">Note Type</label>
+                <select class="form-select form-select-sm" id="noteType" name="noteType" required>
+                  <option value="CREDIT" <%= noteType === 'CREDIT' ? 'selected' : '' %>>Credit Note (Reduces AR)</option>
+                  <option value="DEBIT" <%= noteType === 'DEBIT' ? 'selected' : '' %>>Debit Note (Increases AR)</option>
+                </select>
+              </div>
+
+              <div class="col-md-4">
+                <label for="invoiceId" class="form-label small fw-semibold">Referenced Invoice ID / Number *</label>
+                <input type="number" class="form-control form-control-sm" id="invoiceId" name="invoiceId"
+                       value="<%= invoice ? invoice.id : '' %>" required <%= invoice ? 'readonly' : '' %>>
+                <% if (invoice) { %>
+                  <div class="form-text small text-success">
+                    <i class="bi bi-check-circle-fill me-1"></i>Linked to <%= invoice.invoiceNumber %> (Total: ₹<%= Number(invoice.grandTotal).toFixed(2) %>)
+                  </div>
+                <% } else { %>
+                  <div class="form-text small">Enter numeric database ID of the target invoice.</div>
+                <% } %>
+              </div>
+
+              <div class="col-md-4">
+                <label for="noteDate" class="form-label small fw-semibold">Note Date *</label>
+                <input type="date" class="form-control form-control-sm" id="noteDate" name="noteDate"
+                       value="<%= new Date().toISOString().slice(0, 10) %>" required>
+                <div class="form-text small">Financial Year resolves automatically from this date.</div>
+              </div>
+
+              <div class="col-12">
+                <label for="reason" class="form-label small fw-semibold">Adjustment Reason *</label>
+                <input type="text" class="form-control form-control-sm" id="reason" name="reason"
+                       placeholder="e.g. Returned damaged items, post-sale rebate, freight surcharge correction..." required>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Items Card -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0 fw-semibold fs-6">
+              <i class="bi bi-list-check me-2 text-primary"></i>Adjustment Line Items
+            </h5>
+            <% if (invoice && invoice.items && invoice.items.length > 0) { %>
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-prefill-invoice-items">
+                <i class="bi bi-arrow-repeat me-1"></i>Copy Items from Invoice
+              </button>
+            <% } %>
+          </div>
+          <div class="card-body pt-0">
+            <div class="table-responsive">
+              <table class="table table-sm align-middle" id="items-table">
+                <thead class="table-light small text-muted">
+                  <tr>
+                    <th style="width: 30%;">Item Name *</th>
+                    <th style="width: 25%;">Description</th>
+                    <th style="width: 15%;">Quantity *</th>
+                    <th style="width: 15%;">Rate (₹) *</th>
+                    <th style="width: 10%;" class="text-end">Amount (₹)</th>
+                    <th style="width: 5%;"></th>
+                  </tr>
+                </thead>
+                <tbody id="items-body">
+                  <tr class="item-row">
+                    <td>
+                      <input type="text" class="form-control form-control-sm item-name" placeholder="Item name" required>
+                    </td>
+                    <td>
+                      <input type="text" class="form-control form-control-sm item-desc" placeholder="Details/notes">
+                    </td>
+                    <td>
+                      <input type="number" class="form-control form-control-sm item-qty text-end" min="0.01" step="0.01" value="1.00" required>
+                    </td>
+                    <td>
+                      <input type="number" class="form-control form-control-sm item-rate text-end" min="0" step="0.01" value="0.00" required>
+                    </td>
+                    <td class="text-end fw-semibold item-amount-cell">
+                      ₹0.00
+                    </td>
+                    <td class="text-center">
+                      <button type="button" class="btn btn-sm btn-link text-danger p-0 btn-remove-row" title="Remove row">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-primary" id="btn-add-row">
+              <i class="bi bi-plus me-1"></i>Add Item Row
+            </button>
+          </div>
+        </div>
+
+        <!-- Remarks -->
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <label for="remarks" class="form-label small fw-semibold">Remarks & Customer Notes (Optional)</label>
+            <textarea class="form-control form-control-sm" id="remarks" name="remarks" rows="2" placeholder="Additional customer notes..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Financial Summary & Actions -->
+      <div class="col-lg-4">
+        <div class="card border-0 shadow-sm sticky-top" style="top: 20px;">
+          <div class="card-header bg-white py-3 border-0">
+            <h5 class="card-title mb-0 fw-semibold fs-6">
+              <i class="bi bi-calculator me-2 text-primary"></i>Financial Summary
+            </h5>
+          </div>
+          <div class="card-body pt-0">
+            <div class="d-flex justify-content-between mb-2">
+              <span class="text-muted small">Taxable Subtotal:</span>
+              <span class="fw-semibold font-monospace" id="summary-subtotal">₹0.00</span>
+            </div>
+
+            <div class="mb-3">
+              <div class="form-check form-switch small">
+                <input class="form-check-input" type="checkbox" id="gstEnabled" <%= invoice && invoice.gstEnabled ? 'checked' : '' %>>
+                <label class="form-check-label fw-semibold" for="gstEnabled">Enable GST Calculation</label>
+              </div>
+            </div>
+
+            <div id="gst-breakdown-container">
+              <div class="d-flex justify-content-between mb-2 align-items-center">
+                <span class="text-muted small">GST Rate:</span>
+                <div class="input-group input-group-sm" style="width: 100px;">
+                  <input type="number" class="form-control form-control-sm text-end" id="gstRate" min="0" max="100" step="0.5" value="<%= invoice ? Number(invoice.gstRate) : 18 %>">
+                  <span class="input-group-text">%</span>
+                </div>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted small">GST Tax Total:</span>
+                <span class="fw-semibold font-monospace" id="summary-gst">₹0.00</span>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-between mb-2">
+              <span class="text-muted small">Round Off Adjustment:</span>
+              <span class="font-monospace text-muted" id="summary-roundoff">₹0.00</span>
+            </div>
+
+            <hr class="my-3">
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <span class="fw-bold">Grand Total:</span>
+              <span class="fs-4 fw-bold text-primary font-monospace" id="summary-grandtotal">₹0.00</span>
+            </div>
+
+            <!-- Error Banner -->
+            <div class="alert alert-danger d-none py-2 px-3 small" id="form-error-alert" role="alert"></div>
+
+            <!-- Actions -->
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-primary btn-lg" id="btn-submit-note">
+                <i class="bi bi-check2-circle me-1"></i>Issue Note & Post to GL
+              </button>
+              <a href="/credit-debit-notes" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const invoiceData = <%- invoice ? JSON.stringify(invoice) : 'null' %>;
+  const itemsBody = document.getElementById('items-body');
+  const btnAddRow = document.getElementById('btn-add-row');
+  const btnPrefill = document.getElementById('btn-prefill-invoice-items');
+  const gstEnabledInput = document.getElementById('gstEnabled');
+  const gstRateInput = document.getElementById('gstRate');
+  const form = document.getElementById('note-form');
+  const errorAlert = document.getElementById('form-error-alert');
+  const btnSubmit = document.getElementById('btn-submit-note');
+
+  function calculateRow(row) {
+    const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
+    const rate = parseFloat(row.querySelector('.item-rate').value) || 0;
+    const amount = Math.round(qty * rate * 100) / 100;
+    row.querySelector('.item-amount-cell').textContent = '₹' + amount.toFixed(2);
+    return amount;
+  }
+
+  function recalculateAll() {
+    let subtotal = 0;
+    const rows = itemsBody.querySelectorAll('.item-row');
+    rows.forEach(r => {
+      subtotal += calculateRow(r);
+    });
+    subtotal = Math.round(subtotal * 100) / 100;
+
+    const gstEnabled = gstEnabledInput.checked;
+    const gstRate = parseFloat(gstRateInput.value) || 0;
+    let gstAmount = 0;
+    if (gstEnabled && gstRate > 0) {
+      gstAmount = Math.round(subtotal * (gstRate / 100) * 100) / 100;
+    }
+
+    const unrounded = Math.round((subtotal + gstAmount) * 100) / 100;
+    const grandTotal = Math.round(unrounded);
+    const roundOff = Math.round((grandTotal - unrounded) * 100) / 100;
+
+    document.getElementById('summary-subtotal').textContent = '₹' + subtotal.toFixed(2);
+    document.getElementById('summary-gst').textContent = '₹' + gstAmount.toFixed(2);
+    document.getElementById('summary-roundoff').textContent = (roundOff >= 0 ? '+' : '') + '₹' + roundOff.toFixed(2);
+    document.getElementById('summary-grandtotal').textContent = '₹' + grandTotal.toFixed(2);
+  }
+
+  itemsBody.addEventListener('input', (e) => {
+    if (e.target.matches('.item-qty, .item-rate')) {
+      recalculateAll();
+    }
+  });
+
+  gstEnabledInput.addEventListener('change', recalculateAll);
+  gstRateInput.addEventListener('input', recalculateAll);
+
+  itemsBody.addEventListener('click', (e) => {
+    const btn = e.target.closest('.btn-remove-row');
+    if (btn) {
+      const rows = itemsBody.querySelectorAll('.item-row');
+      if (rows.length > 1) {
+        btn.closest('.item-row').remove();
+        recalculateAll();
+      } else {
+        alert('At least one item row is required.');
+      }
+    }
+  });
+
+  btnAddRow.addEventListener('click', () => {
+    const tr = document.createElement('tr');
+    tr.className = 'item-row';
+    tr.innerHTML = `
+      <td><input type="text" class="form-control form-control-sm item-name" placeholder="Item name" required></td>
+      <td><input type="text" class="form-control form-control-sm item-desc" placeholder="Details/notes"></td>
+      <td><input type="number" class="form-control form-control-sm item-qty text-end" min="0.01" step="0.01" value="1.00" required></td>
+      <td><input type="number" class="form-control form-control-sm item-rate text-end" min="0" step="0.01" value="0.00" required></td>
+      <td class="text-end fw-semibold item-amount-cell">₹0.00</td>
+      <td class="text-center">
+        <button type="button" class="btn btn-sm btn-link text-danger p-0 btn-remove-row" title="Remove row">
+          <i class="bi bi-trash"></i>
+        </button>
+      </td>
+    `;
+    itemsBody.appendChild(tr);
+    recalculateAll();
+  });
+
+  if (btnPrefill && invoiceData && invoiceData.items) {
+    btnPrefill.addEventListener('click', () => {
+      itemsBody.innerHTML = '';
+      invoiceData.items.forEach(it => {
+        const tr = document.createElement('tr');
+        tr.className = 'item-row';
+        tr.dataset.invoiceItemId = it.id;
+        tr.innerHTML = `
+          <td><input type="text" class="form-control form-control-sm item-name" value="${it.name || ''}" required></td>
+          <td><input type="text" class="form-control form-control-sm item-desc" value="${it.hsnSac ? 'HSN: ' + it.hsnSac : ''}"></td>
+          <td><input type="number" class="form-control form-control-sm item-qty text-end" min="0.01" step="0.01" value="${Number(it.quantity || 1).toFixed(2)}" required></td>
+          <td><input type="number" class="form-control form-control-sm item-rate text-end" min="0" step="0.01" value="${Number(it.rate || 0).toFixed(2)}" required></td>
+          <td class="text-end fw-semibold item-amount-cell">₹0.00</td>
+          <td class="text-center">
+            <button type="button" class="btn btn-sm btn-link text-danger p-0 btn-remove-row" title="Remove row">
+              <i class="bi bi-trash"></i>
+            </button>
+          </td>
+        `;
+        itemsBody.appendChild(tr);
+      });
+      recalculateAll();
+    });
+  }
+
+  // Initial calculation
+  recalculateAll();
+
+  // Submission handler
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errorAlert.classList.add('d-none');
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Posting Note...';
+
+    const items = [];
+    itemsBody.querySelectorAll('.item-row').forEach(row => {
+      items.push({
+        invoiceItemId: row.dataset.invoiceItemId ? parseInt(row.dataset.invoiceItemId, 10) : null,
+        name: row.querySelector('.item-name').value.trim(),
+        description: row.querySelector('.item-desc').value.trim(),
+        quantity: parseFloat(row.querySelector('.item-qty').value) || 0,
+        rate: parseFloat(row.querySelector('.item-rate').value) || 0
+      });
+    });
+
+    const payload = {
+      noteType: document.getElementById('noteType').value,
+      invoiceId: parseInt(document.getElementById('invoiceId').value, 10),
+      noteDate: document.getElementById('noteDate').value,
+      reason: document.getElementById('reason').value.trim(),
+      remarks: document.getElementById('remarks').value.trim(),
+      gstEnabled: gstEnabledInput.checked,
+      gstRate: parseFloat(gstRateInput.value) || 0,
+      items
+    };
+
+    try {
+      const res = await fetch('/api/credit-debit-notes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'CSRF-Token': document.getElementById('csrf-token').value
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to create credit/debit note.');
+      }
+
+      window.location.href = `/credit-debit-notes/${data.note.id}`;
+    } catch (err) {
+      errorAlert.textContent = err.message;
+      errorAlert.classList.remove('d-none');
+      btnSubmit.disabled = false;
+      btnSubmit.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Issue Note & Post to GL';
+    }
+  });
+});
+</script>
+
+<%- include('../layouts/footer') %>

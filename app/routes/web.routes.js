@@ -13,6 +13,7 @@ const teamController = require('../controllers/team.controller');
 const { requirePermission } = require('../middleware/permission.middleware');
 const activityService = require('../services/activity.service');
 const postingService = require('../services/accounting/posting.service');
+const creditDebitNoteService = require('../services/creditDebitNote.service');
 
 const router = express.Router();
 
@@ -249,6 +250,8 @@ router.get('/documents/:id', requireAuth, requirePermission('DOCUMENTS', 'VIEW')
                     accounting: paymentPostings[idx]
                 }));
             }
+            const notesResult = await creditDebitNoteService.listCreditDebitNotes({ invoiceId: id });
+            doc.creditDebitNotes = notesResult.notes;
         }
 
         // Audit view event
@@ -449,5 +452,118 @@ router.get('/team', requireAuth, requirePermission('TEAM', 'VIEW'), teamControll
 router.get('/team/activity', requireAuth, requirePermission('TEAM', 'ACTIVITY_VIEW'), teamController.renderActivityLogPage);
 router.get('/team/analytics', requireAuth, requirePermission('TEAM', 'ACTIVITY_VIEW'), teamController.renderAnalyticsPage);
 router.get('/team/:id', requireAuth, requirePermission('TEAM', 'VIEW'), teamController.renderTeamMemberDetail);
+
+// -------------------------------------------------------------
+// CREDIT & DEBIT NOTES WEB ROUTES
+// -------------------------------------------------------------
+router.get('/credit-debit-notes', requireAuth, requirePermission('CREDIT_NOTES', 'VIEW'), async (req, res, next) => {
+    try {
+        const result = await creditDebitNoteService.listCreditDebitNotes(req.query);
+        res.render('notes/index', {
+            pageTitle: 'Credit & Debit Notes',
+            pageSubtitle: 'Manage seller-issued credit and debit adjustments against sales invoices.',
+            notes: result.notes,
+            pagination: result.pagination,
+            filters: req.query,
+            isNotes: true,
+            csrfToken: req.session ? req.session.csrfToken : '',
+            user: req.session ? req.session.user : null
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.get('/credit-debit-notes/new', requireAuth, requirePermission('CREDIT_NOTES', 'CREATE'), async (req, res, next) => {
+    try {
+        let invoice = null;
+        if (req.query.invoiceId) {
+            const invId = parseInt(req.query.invoiceId, 10);
+            if (!isNaN(invId) && invId > 0) {
+                invoice = await invoiceService.getInvoiceById(invId);
+            }
+        }
+
+        const noteType = (req.query.type || 'CREDIT').toString().trim().toUpperCase() === 'DEBIT' ? 'DEBIT' : 'CREDIT';
+        const clientList = await clientService.searchClients();
+        const profile = await businessProfileService.getProfile();
+
+        res.render('notes/editor', {
+            pageTitle: `New ${noteType === 'DEBIT' ? 'Debit' : 'Credit'} Note`,
+            noteType,
+            invoice,
+            clientList,
+            profile,
+            isNotes: true,
+            csrfToken: req.session ? req.session.csrfToken : '',
+            user: req.session ? req.session.user : null
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.get('/credit-debit-notes/:id', requireAuth, requirePermission('CREDIT_NOTES', 'VIEW'), async (req, res, next) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        if (isNaN(id) || id <= 0) {
+            return res.status(400).render('errors/500', {
+                pageTitle: 'Bad Request',
+                error: new Error('Invalid note ID.')
+            });
+        }
+
+        const note = await creditDebitNoteService.getCreditDebitNoteById(id);
+        const accounting = await postingService.getCreditDebitNoteAccountingStatus(note.noteType, note.id);
+        const journal = await postingService.getCreditDebitNotePosting(note.noteType, note.id);
+
+        res.render('notes/view', {
+            pageTitle: `${note.noteType === 'DEBIT' ? 'Debit Note' : 'Credit Note'} ${note.noteNumber}`,
+            note,
+            accounting: {
+                ...accounting,
+                journal
+            },
+            isNotes: true,
+            csrfToken: req.session ? req.session.csrfToken : '',
+            user: req.session ? req.session.user : null
+        });
+    } catch (err) {
+        if (err instanceof creditDebitNoteService.NotFoundError) {
+            return res.status(404).render('errors/404', {
+                pageTitle: 'Note Not Found'
+            });
+        }
+        next(err);
+    }
+});
+
+router.get('/credit-debit-notes/:id/print', requireAuth, requirePermission('CREDIT_NOTES', 'PRINT'), async (req, res, next) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        if (isNaN(id) || id <= 0) {
+            return res.status(400).render('errors/500', {
+                pageTitle: 'Bad Request',
+                error: new Error('Invalid note ID.')
+            });
+        }
+
+        const note = await creditDebitNoteService.getCreditDebitNoteById(id);
+        const profile = await businessProfileService.getProfile();
+        const model = documentViewService.buildNoteViewModel(note, profile);
+
+        res.render('notes/print', {
+            note,
+            model
+        });
+    } catch (err) {
+        if (err instanceof creditDebitNoteService.NotFoundError) {
+            return res.status(404).render('errors/404', {
+                pageTitle: 'Note Not Found'
+            });
+        }
+        next(err);
+    }
+});
 
 module.exports = router;

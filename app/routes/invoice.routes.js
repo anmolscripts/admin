@@ -6,6 +6,7 @@ const clientController = require('../controllers/client.controller');
 const itemController = require('../controllers/item.controller');
 const unitController = require('../controllers/unit.controller');
 const paymentController = require('../controllers/payment.controller');
+const creditDebitNoteController = require('../controllers/creditDebitNote.controller');
 const businessProfileController = require('../controllers/businessProfile.controller');
 const dashboardController = require('../controllers/dashboard.controller');
 
@@ -58,6 +59,16 @@ router.get('/invoices/:id/accounting', requirePermission('JOURNALS', 'VIEW'), in
 router.post('/payments/:id/void', requirePermission('PAYMENTS', 'VOID'), paymentController.voidPayment);
 router.post('/payments/:id/post', requirePermission('JOURNALS', 'CREATE'), paymentController.postPaymentAccounting);
 router.get('/payments/:id/accounting', requirePermission('JOURNALS', 'VIEW'), paymentController.getPaymentAccounting);
+
+// Credit & Debit Note API routes
+router.get('/invoices/:id/notes', requirePermission('CREDIT_NOTES', 'VIEW'), creditDebitNoteController.getInvoiceNotes);
+router.post('/invoices/:id/notes', requirePermission('CREDIT_NOTES', 'CREATE'), creditDebitNoteController.createNote);
+router.get('/credit-debit-notes', requirePermission('CREDIT_NOTES', 'VIEW'), creditDebitNoteController.listNotes);
+router.post('/credit-debit-notes', requirePermission('CREDIT_NOTES', 'CREATE'), creditDebitNoteController.createNote);
+router.get('/credit-debit-notes/:id', requirePermission('CREDIT_NOTES', 'VIEW'), creditDebitNoteController.getNote);
+router.post('/credit-debit-notes/:id/void', requirePermission('CREDIT_NOTES', 'VOID'), creditDebitNoteController.voidNote);
+router.get('/credit-debit-notes/:id/accounting', requirePermission('JOURNALS', 'VIEW'), creditDebitNoteController.getNoteAccounting);
+router.post('/credit-debit-notes/:id/post', requirePermission('JOURNALS', 'CREATE'), creditDebitNoteController.postNoteAccounting);
 
 // Client API routes
 router.get('/clients', requirePermission('CLIENTS', 'VIEW'), clientController.listClients);

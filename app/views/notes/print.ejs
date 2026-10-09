@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= model.invoiceNumber %> - <%= model.documentTitle %></title>
+  <link rel="stylesheet" href="/libs/bootstrap/bootstrap.min.css">
+  <link rel="stylesheet" href="/libs/bootstrap-icons/bootstrap-icons.css">
+  <style>
+    @page {
+      size: A4;
+      margin: 10mm 12mm;
+    }
+    body {
+      background: #f1f5f9;
+      margin: 0;
+      padding: 0;
+      color: #1f2937;
+    }
+    .print-actions-bar {
+      background: #0f172a;
+      color: #ffffff;
+      padding: 10px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .print-actions-bar a, .print-actions-bar button {
+      font-size: 13px;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-weight: 500;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s ease-in-out;
+    }
+    .btn-print-primary {
+      background: <%= model.themeColor %>;
+      color: #ffffff;
+      border-color: <%= model.themeColor %>;
+    }
+    .btn-print-primary:hover {
+      opacity: 0.9;
+      color: #ffffff;
+    }
+    .btn-print-secondary {
+      background: #334155;
+      color: #f8fafc;
+      border-color: #475569;
+    }
+    .btn-print-secondary:hover {
+      background: #475569;
+      color: #ffffff;
+    }
+    .print-wrapper {
+      max-width: 840px;
+      margin: 24px auto;
+      background: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+
+    @media print {
+      .print-actions-bar {
+        display: none !important;
+      }
+      body {
+        background: #ffffff !important;
+      }
+      .print-wrapper {
+        margin: 0 !important;
+        box-shadow: none !important;
+        max-width: 100% !important;
+        border-radius: 0 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Print Control Bar -->
+  <div class="print-actions-bar d-print-none">
+    <div class="d-flex align-items-center gap-2">
+      <a href="/credit-debit-notes/<%= model.id %>" class="btn-print-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Note
+      </a>
+      <span class="text-white-50 ms-2 font-monospace" style="font-size: 12px;">
+        <%= model.invoiceNumber %> (<%= model.documentTitle %>)
+      </span>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <button type="button" class="btn-print-primary" onclick="window.print()">
+        <i class="bi bi-printer"></i> Print Document
+      </button>
+    </div>
+  </div>
+
+  <!-- Reusable Shared Template Container -->
+  <div class="print-wrapper">
+    <%- include('../documents/templates/document', { model }) %>
+  </div>
+
+  <script>
+    if (new URLSearchParams(window.location.search).get('autoprint') === '1') {
+      window.addEventListener('load', () => {
+        setTimeout(() => window.print(), 350);
+      });
+    }
+  </script>
+</body>
+</html>
