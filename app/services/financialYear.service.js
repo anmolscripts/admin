@@ -111,10 +111,21 @@ async function setCurrentFinancialYear(id) {
   });
 }
 
+/**
+ * List all Financial Years ordered by start date descending.
+ * @returns {Promise<Array<Object>>}
+ */
+async function listFinancialYears() {
+  return await prisma.financialYear.findMany({
+    orderBy: { startDate: 'desc' }
+  });
+}
+
 module.exports = {
   computeFinancialYear,
   getFinancialYearForDate,
   createFinancialYear,
   ensureFinancialYear,
   setCurrentFinancialYear,
+  listFinancialYears,
 };

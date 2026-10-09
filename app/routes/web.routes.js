@@ -14,6 +14,7 @@ const { requirePermission } = require('../middleware/permission.middleware');
 const activityService = require('../services/activity.service');
 const postingService = require('../services/accounting/posting.service');
 const creditDebitNoteService = require('../services/creditDebitNote.service');
+const reportController = require('../controllers/report.controller');
 
 const router = express.Router();
 
@@ -565,5 +566,18 @@ router.get('/credit-debit-notes/:id/print', requireAuth, requirePermission('CRED
         next(err);
     }
 });
+
+// -------------------------------------------------------------
+// FINANCIAL REPORTS & RECONCILIATION WEB ROUTES (MILESTONE 7)
+// -------------------------------------------------------------
+router.get('/reports', requireAuth, requirePermission('REPORTS', 'VIEW'), reportController.renderReportsOverview);
+router.get('/reports/journals', requireAuth, requirePermission('JOURNALS', 'VIEW'), reportController.renderJournalRegister);
+router.get('/reports/journals/:id', requireAuth, requirePermission('JOURNALS', 'VIEW'), reportController.renderJournalDetail);
+router.get('/reports/general-ledger', requireAuth, requirePermission('ACCOUNTS', 'VIEW'), reportController.renderGeneralLedger);
+router.get('/reports/trial-balance', requireAuth, requirePermission('REPORTS', 'VIEW'), reportController.renderTrialBalance);
+router.get('/reports/profit-and-loss', requireAuth, requirePermission('REPORTS', 'VIEW'), reportController.renderProfitAndLoss);
+router.get('/reports/balance-sheet', requireAuth, requirePermission('REPORTS', 'VIEW'), reportController.renderBalanceSheet);
+router.get('/reports/customer-receivables', requireAuth, requirePermission('REPORTS', 'VIEW'), reportController.renderCustomerReceivables);
+router.get('/reports/customer-statement/:clientId', requireAuth, requirePermission('REPORTS', 'VIEW'), reportController.renderCustomerStatement);
 
 module.exports = router;

@@ -16,7 +16,8 @@ const MODULES = [
     'SETTINGS',
     'ACCOUNTS',
     'JOURNALS',
-    'CREDIT_NOTES'
+    'CREDIT_NOTES',
+    'REPORTS'
 ];
 
 /**
@@ -53,7 +54,8 @@ const MODULE_ACTION_MATRIX = {
     SETTINGS: ['VIEW', 'EDIT', 'MANAGE', 'FULL_ACCESS'],
     ACCOUNTS: ['VIEW', 'CREATE', 'EDIT', 'DELETE', 'MANAGE', 'FULL_ACCESS'],
     JOURNALS: ['VIEW', 'CREATE', 'VOID', 'EXPORT', 'PRINT', 'MANAGE', 'FULL_ACCESS'],
-    CREDIT_NOTES: ['VIEW', 'CREATE', 'EDIT', 'VOID', 'DELETE', 'EXPORT', 'PRINT', 'MANAGE', 'FULL_ACCESS']
+    CREDIT_NOTES: ['VIEW', 'CREATE', 'EDIT', 'VOID', 'DELETE', 'EXPORT', 'PRINT', 'MANAGE', 'FULL_ACCESS'],
+    REPORTS: ['VIEW', 'EXPORT', 'PRINT', 'FULL_ACCESS']
 };
 
 /**
@@ -134,6 +136,7 @@ async function seedPermissionsAndRoles() {
                 'ACCOUNTS:VIEW', 'ACCOUNTS:CREATE', 'ACCOUNTS:EDIT',
                 'JOURNALS:VIEW', 'JOURNALS:CREATE', 'JOURNALS:PRINT', 'JOURNALS:EXPORT',
                 'CREDIT_NOTES:VIEW', 'CREDIT_NOTES:CREATE', 'CREDIT_NOTES:EDIT', 'CREDIT_NOTES:VOID', 'CREDIT_NOTES:PRINT', 'CREDIT_NOTES:EXPORT',
+                'REPORTS:VIEW', 'REPORTS:EXPORT', 'REPORTS:PRINT',
                 'AUDIT_LOGS:VIEW',
                 'TEAM:VIEW'
             ]
@@ -151,7 +154,8 @@ async function seedPermissionsAndRoles() {
                 'PAYMENTS:VIEW', 'PAYMENTS:CREATE',
                 'ACCOUNTS:VIEW',
                 'JOURNALS:VIEW',
-                'CREDIT_NOTES:VIEW', 'CREDIT_NOTES:CREATE', 'CREDIT_NOTES:EDIT', 'CREDIT_NOTES:PRINT'
+                'CREDIT_NOTES:VIEW', 'CREDIT_NOTES:CREATE', 'CREDIT_NOTES:EDIT', 'CREDIT_NOTES:PRINT',
+                'REPORTS:VIEW', 'REPORTS:PRINT'
             ]
         },
         {
@@ -166,7 +170,8 @@ async function seedPermissionsAndRoles() {
                 'UNITS:VIEW',
                 'ACCOUNTS:VIEW',
                 'JOURNALS:VIEW',
-                'CREDIT_NOTES:VIEW', 'CREDIT_NOTES:PRINT'
+                'CREDIT_NOTES:VIEW', 'CREDIT_NOTES:PRINT',
+                'REPORTS:VIEW', 'REPORTS:PRINT'
             ]
         },
         {
