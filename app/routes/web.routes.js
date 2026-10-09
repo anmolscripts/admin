@@ -240,6 +240,15 @@ router.get('/documents/:id', requireAuth, requirePermission('DOCUMENTS', 'VIEW')
         let accounting = null;
         if (!isQuotation) {
             accounting = await postingService.getInvoiceAccountingStatus(id);
+            if (doc.payments && doc.payments.length > 0) {
+                const paymentPostings = await Promise.all(
+                    doc.payments.map(p => postingService.getPaymentAccountingStatus(p.id))
+                );
+                doc.payments = doc.payments.map((p, idx) => ({
+                    ...p,
+                    accounting: paymentPostings[idx]
+                }));
+            }
         }
 
         // Audit view event

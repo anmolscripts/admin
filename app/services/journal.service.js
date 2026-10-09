@@ -346,7 +346,7 @@ async function postJournalEntry(params, externalTx = null) {
  * Reverse a posted journal entry immutably.
  * Creates an offsetting reversal entry (swapped debit and credit) and links them.
  */
-async function reverseJournalEntry(id, options = {}) {
+async function reverseJournalEntry(id, options = {}, externalTx = null) {
     const numId = parseInt(id, 10);
     if (isNaN(numId) || numId <= 0) throw new ValidationError('Invalid journal entry ID.');
 
@@ -356,7 +356,7 @@ async function reverseJournalEntry(id, options = {}) {
         userId = null
     } = options;
 
-    return await prisma.$transaction(async (tx) => {
+    const executeInTx = async (tx) => {
         const original = await tx.journalEntry.findUnique({
             where: { id: numId },
             include: {
@@ -411,7 +411,12 @@ async function reverseJournalEntry(id, options = {}) {
         });
 
         return reversingEntry;
-    });
+    };
+
+    if (externalTx) {
+        return await executeInTx(externalTx);
+    }
+    return await prisma.$transaction(executeInTx);
 }
 
 /**

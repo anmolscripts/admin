@@ -54,8 +54,10 @@ router.get('/invoices/:id/copy', requirePermission('DOCUMENTS', 'CREATE'), invoi
 router.post('/invoices/:id/post', requirePermission('JOURNALS', 'CREATE'), invoiceController.postInvoiceAccounting);
 router.get('/invoices/:id/accounting', requirePermission('JOURNALS', 'VIEW'), invoiceController.getInvoiceAccounting);
 
-// Payment lifecycle routes
+// Payment lifecycle and accounting routes
 router.post('/payments/:id/void', requirePermission('PAYMENTS', 'VOID'), paymentController.voidPayment);
+router.post('/payments/:id/post', requirePermission('JOURNALS', 'CREATE'), paymentController.postPaymentAccounting);
+router.get('/payments/:id/accounting', requirePermission('JOURNALS', 'VIEW'), paymentController.getPaymentAccounting);
 
 // Client API routes
 router.get('/clients', requirePermission('CLIENTS', 'VIEW'), clientController.listClients);

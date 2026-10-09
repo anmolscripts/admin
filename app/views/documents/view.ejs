@@ -732,6 +732,7 @@
             <th scope="col">Reference / Transaction ID</th>
             <th scope="col" class="text-end" style="width: 140px;">Amount</th>
             <th scope="col" class="text-center" style="width: 110px;">Status</th>
+            <th scope="col" class="text-center" style="width: 150px;">Ledger Journal</th>
             <th scope="col" class="text-end" style="width: 110px;" data-sortable="false">Action</th>
           </tr>
         </thead>
@@ -757,6 +758,23 @@
                     <span class="badge bg-secondary-subtle text-secondary">VOID</span>
                   <% } %>
                 </td>
+                <td class="text-center">
+                  <% if (p.accounting && p.accounting.isPosted && p.accounting.entryNumber) { %>
+                    <% if (p.accounting.status === 'REVERSED') { %>
+                      <a href="/accounting/journals/<%= p.accounting.journalId %>" class="badge bg-warning-subtle text-warning border text-decoration-none font-monospace" title="Journal Reversed">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i><%= p.accounting.entryNumber %>
+                      </a>
+                    <% } else { %>
+                      <a href="/accounting/journals/<%= p.accounting.journalId %>" class="badge bg-primary-subtle text-primary border text-decoration-none font-monospace" title="View Journal Entry">
+                        <i class="bi bi-journal-text me-1"></i><%= p.accounting.entryNumber %>
+                      </a>
+                    <% } %>
+                  <% } else if (p.status === 'POSTED') { %>
+                    <span class="badge bg-secondary-subtle text-secondary" title="Payment pending ledger post">Unposted</span>
+                  <% } else { %>
+                    <span class="text-muted small">—</span>
+                  <% } %>
+                </td>
                 <td class="text-end">
                   <% if (p.status === 'POSTED' && !['VOID', 'DELETED'].includes(document.status)) { %>
                     <button type="button" class="btn btn-sm btn-outline-danger btn-void-payment" data-id="<%= p.id %>" data-amount="<%= p.amount %>" title="Void this payment">
@@ -770,7 +788,7 @@
             <% }); %>
           <% } else { %>
             <tr>
-              <td colspan="6" class="text-center py-4 text-muted">
+              <td colspan="7" class="text-center py-4 text-muted">
                 <i class="bi bi-wallet2 fs-4 d-block mb-1 text-muted"></i>
                 No payments have been recorded for this invoice yet.
               </td>

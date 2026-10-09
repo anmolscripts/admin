@@ -1,6 +1,8 @@
 const prisma = require('../config/prisma');
 const activityService = require('./activity.service');
 const { ensureFinancialYear } = require('./financialYear.service');
+const postingService = require('./accounting/posting.service');
+const journalService = require('./journal.service');
 
 class ValidationError extends Error {
     constructor(message) {
@@ -96,10 +98,10 @@ async function recordPayment(invoiceIdInput, paymentData, userId, meta = {}) {
     }
     const amount = Math.round(rawAmount * 100) / 100;
 
-    let method = (paymentData.method || 'BANK_TRANSFER').toString().trim().toUpperCase();
-    if (method === 'CREDIT_CARD') method = 'CARD';
-    if (!ALLOWED_METHODS.includes(method)) {
-        method = 'BANK_TRANSFER';
+    const rawMethod = (paymentData.method || 'BANK_TRANSFER').toString().trim().toUpperCase();
+    let method = rawMethod === 'CREDIT_CARD' ? 'CARD' : rawMethod;
+    if (!ALLOWED_METHODS.includes(rawMethod) && !ALLOWED_METHODS.includes(method)) {
+        throw new ValidationError(`Unsupported payment method: "${paymentData.method}". Allowed methods are ${ALLOWED_METHODS.join(', ')}.`);
     }
 
     const paymentDate = paymentData.paymentDate ? new Date(paymentData.paymentDate) : new Date();
@@ -132,6 +134,10 @@ async function recordPayment(invoiceIdInput, paymentData, userId, meta = {}) {
 
         if (invoice.status === 'DELETED') {
             throw new ValidationError('Cannot record payment for a DELETED invoice.');
+        }
+
+        if (invoice.status === 'INACTIVE') {
+            throw new ValidationError('Cannot record payment for an INACTIVE invoice.');
         }
 
         const currentOutstanding = Number(invoice.outstandingAmount);
@@ -225,17 +231,29 @@ async function recordPayment(invoiceIdInput, paymentData, userId, meta = {}) {
             }, tx).catch(() => {});
         }
 
+        // Post double-entry journal entry atomically in the same transaction
+        const postingResult = await postingService.postPayment(
+            payment.id,
+            {
+                userId,
+                depositAccountId: paymentData.depositAccountId || null
+            },
+            tx
+        );
+
         return {
             payment: {
                 ...payment,
-                amount: Number(payment.amount)
+                amount: Number(payment.amount),
+                journal: postingResult.journal
             },
             invoice: {
                 ...updatedInvoice,
                 grandTotal: Number(updatedInvoice.grandTotal),
                 paidAmount: Number(updatedInvoice.paidAmount),
                 outstandingAmount: Number(updatedInvoice.outstandingAmount)
-            }
+            },
+            journal: postingResult.journal
         };
     }, { timeout: 15000, maxWait: 10000 });
 }
@@ -345,6 +363,25 @@ async function voidPayment(paymentIdInput, userId, reason = '', meta = {}) {
             }, tx).catch(() => {});
         }
 
+        // If payment has a posted ledger journal, atomically reverse it
+        const journalKey = postingService.getPaymentIdempotencyKey(payment.id);
+        const existingJournal = await tx.journalEntry.findUnique({
+            where: { idempotencyKey: journalKey }
+        });
+
+        let reversalJournal = null;
+        if (existingJournal && existingJournal.status !== 'REVERSED') {
+            reversalJournal = await journalService.reverseJournalEntry(
+                existingJournal.id,
+                {
+                    reason: `Voided payment #${payment.id}: ${reason ? reason.trim() : 'Voided by user'}`,
+                    reversalDate: new Date(),
+                    userId
+                },
+                tx
+            );
+        }
+
         return {
             payment: {
                 ...updatedPayment,
@@ -355,7 +392,8 @@ async function voidPayment(paymentIdInput, userId, reason = '', meta = {}) {
                 grandTotal: Number(updatedInvoice.grandTotal),
                 paidAmount: Number(updatedInvoice.paidAmount),
                 outstandingAmount: Number(updatedInvoice.outstandingAmount)
-            }
+            },
+            reversalJournal
         };
     }, { timeout: 15000, maxWait: 10000 });
 }
