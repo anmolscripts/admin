@@ -1,0 +1,186 @@
+<%- include('../layouts/header') %>
+
+<div class="content-wrapper p-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h3 fw-bold mb-1"><%= pageTitle %></h1>
+      <p class="text-muted small mb-0"><%= pageSubtitle %></p>
+    </div>
+    <a href="/purchases/bills" class="btn btn-outline-secondary">Back to Bills</a>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-4">
+      <form id="billForm">
+        <div class="row g-3 mb-4">
+          <div class="col-md-3">
+            <label class="form-label fw-bold">Vendor Bill # <span class="text-danger">*</span></label>
+            <input type="text" name="billNumber" class="form-control" required placeholder="e.g. BILL-9921">
+          </div>
+          <div class="col-md-5">
+            <label class="form-label fw-bold">Supplier <span class="text-danger">*</span></label>
+            <select name="supplierId" class="form-select" required>
+              <option value="">Select Supplier...</option>
+              <% suppliers.forEach(s => { %>
+                <option value="<%= s.id %>"><%= s.name %> <%= s.gstin ? '(' + s.gstin + ')' : '' %></option>
+              <% }); %>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-bold">Bill Date <span class="text-danger">*</span></label>
+            <input type="date" name="billDate" class="form-control" value="<%= new Date().toISOString().split('T')[0] %>" required>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-bold">Due Date</label>
+            <input type="date" name="dueDate" class="form-control">
+          </div>
+        </div>
+
+        <h5 class="fw-bold mb-3">Bill Line Items</h5>
+        <div class="table-responsive mb-3">
+          <table class="table table-bordered align-middle" id="itemsTable">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 40%;">Item Name / Expense Category <span class="text-danger">*</span></th>
+                <th style="width: 15%;">HSN/SAC</th>
+                <th style="width: 15%;">Quantity <span class="text-danger">*</span></th>
+                <th style="width: 15%;">Rate ($) <span class="text-danger">*</span></th>
+                <th style="width: 15%;">Amount ($)</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="itemsBody">
+              <tr>
+                <td><input type="text" class="form-control form-control-sm item-name" required placeholder="Item description / Raw material"></td>
+                <td><input type="text" class="form-control form-control-sm item-hsn"></td>
+                <td><input type="number" step="0.01" class="form-control form-control-sm item-qty" value="1" required oninput="calcTotals()"></td>
+                <td><input type="number" step="0.01" class="form-control form-control-sm item-rate" value="0.00" required oninput="calcTotals()"></td>
+                <td><input type="text" class="form-control form-control-sm item-amt" readonly value="0.00"></td>
+                <td><button type="button" class="btn btn-sm btn-link text-danger" onclick="removeItem(this)">✕</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-primary mb-4" onclick="addItem()">+ Add Item</button>
+
+        <div class="row justify-content-end mb-4">
+          <div class="col-md-4">
+            <div class="card bg-light border-0 p-3">
+              <div class="d-flex justify-content-between mb-2">
+                <span>Subtotal:</span>
+                <span id="subtotalDisplay" class="fw-bold">$0.00</span>
+              </div>
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span>GST Rate:</span>
+                <select id="gstRateSelect" class="form-select form-select-sm w-50" onchange="calcTotals()">
+                  <option value="0">0%</option>
+                  <option value="5">5%</option>
+                  <option value="12">12%</option>
+                  <option value="18" selected>18%</option>
+                  <option value="28">28%</option>
+                </select>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <span>Input GST:</span>
+                <span id="gstDisplay" class="fw-bold">$0.00</span>
+              </div>
+              <hr class="my-2">
+              <div class="d-flex justify-content-between fs-5 fw-bold text-primary">
+                <span>Total Payable:</span>
+                <span id="totalDisplay">$0.00</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+          <a href="/purchases/bills" class="btn btn-light">Cancel</a>
+          <button type="submit" class="btn btn-primary px-4">Post Supplier Bill to Ledger</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function calcTotals() {
+  let subtotal = 0;
+  document.querySelectorAll('#itemsBody tr').forEach(tr => {
+    const qty = parseFloat(tr.querySelector('.item-qty').value) || 0;
+    const rate = parseFloat(tr.querySelector('.item-rate').value) || 0;
+    const lineAmt = Math.round(qty * rate * 100) / 100;
+    tr.querySelector('.item-amt').value = lineAmt.toFixed(2);
+    subtotal += lineAmt;
+  });
+
+  const gstRate = parseFloat(document.getElementById('gstRateSelect').value) || 0;
+  const gstAmount = Math.round(subtotal * (gstRate / 100) * 100) / 100;
+  const grandTotal = Math.round((subtotal + gstAmount) * 100) / 100;
+
+  document.getElementById('subtotalDisplay').innerText = '$' + subtotal.toFixed(2);
+  document.getElementById('gstDisplay').innerText = '$' + gstAmount.toFixed(2);
+  document.getElementById('totalDisplay').innerText = '$' + grandTotal.toFixed(2);
+}
+
+function addItem() {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="text" class="form-control form-control-sm item-name" required placeholder="Item description / Raw material"></td>
+    <td><input type="text" class="form-control form-control-sm item-hsn"></td>
+    <td><input type="number" step="0.01" class="form-control form-control-sm item-qty" value="1" required oninput="calcTotals()"></td>
+    <td><input type="number" step="0.01" class="form-control form-control-sm item-rate" value="0.00" required oninput="calcTotals()"></td>
+    <td><input type="text" class="form-control form-control-sm item-amt" readonly value="0.00"></td>
+    <td><button type="button" class="btn btn-sm btn-link text-danger" onclick="removeItem(this)">✕</button></td>
+  `;
+  document.getElementById('itemsBody').appendChild(tr);
+}
+
+function removeItem(btn) {
+  if (document.querySelectorAll('#itemsBody tr').length > 1) {
+    btn.closest('tr').remove();
+    calcTotals();
+  }
+}
+
+document.getElementById('billForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const formData = new FormData(e.target);
+  const items = [];
+  document.querySelectorAll('#itemsBody tr').forEach(tr => {
+    items.push({
+      name: tr.querySelector('.item-name').value,
+      hsnSac: tr.querySelector('.item-hsn').value,
+      quantity: parseFloat(tr.querySelector('.item-qty').value) || 1,
+      rate: parseFloat(tr.querySelector('.item-rate').value) || 0
+    });
+  });
+
+  const payload = {
+    billNumber: formData.get('billNumber'),
+    supplierId: parseInt(formData.get('supplierId'), 10),
+    billDate: formData.get('billDate'),
+    dueDate: formData.get('dueDate') || null,
+    gstRate: parseFloat(document.getElementById('gstRateSelect').value) || 0,
+    items
+  };
+
+  try {
+    const res = await fetch('/api/supplier-bills', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert('Supplier Bill successfully posted to accounting ledger!');
+      window.location.href = '/purchases/bills';
+    } else {
+      alert('Error: ' + data.error);
+    }
+  } catch (err) {
+    alert('Failed to save supplier bill.');
+  }
+});
+</script>
+
+<%- include('../layouts/footer') %>

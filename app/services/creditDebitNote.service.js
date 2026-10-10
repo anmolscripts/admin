@@ -454,6 +454,10 @@ async function voidCreditDebitNote(noteId, userId, reason = '', meta = {}, exter
             throw new ValidationError(`Note ${note.noteNumber} is already VOID.`);
         }
 
+        if (note.financialYear && note.financialYear.status === 'CLOSED') {
+            throw new ValidationError(`Cannot void credit/debit note in CLOSED Financial Year ${note.financialYear.code}.`);
+        }
+
         // 1. Update Note Status to VOID
         const voidReasonClean = (reason || '').toString().trim() || 'Voided by user';
         const updatedNote = await tx.creditDebitNote.update({

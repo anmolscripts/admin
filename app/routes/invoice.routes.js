@@ -20,10 +20,13 @@ router.get('/dashboard/metrics', requirePermission('DASHBOARD', 'VIEW'), dashboa
 
 // Item Master API routes (must precede parameterized routes)
 router.get('/items/search', requirePermission('ITEMS', 'VIEW'), itemController.searchItems);
+router.post('/items/import/preview', requirePermission('ITEMS', 'CREATE'), itemController.previewImport);
+router.post('/items/import/commit', requirePermission('ITEMS', 'CREATE'), itemController.commitImport);
 router.get('/items', requirePermission('ITEMS', 'VIEW'), itemController.listItems);
 router.get('/items/:id', requirePermission('ITEMS', 'VIEW'), itemController.getItem);
 router.post('/items', requirePermission('ITEMS', 'CREATE'), itemController.createItem);
 router.put('/items/:id', requirePermission('ITEMS', 'EDIT'), itemController.updateItem);
+
 
 // Unit Master API routes (must precede parameterized routes)
 router.get('/units/active', requirePermission('UNITS', 'VIEW'), unitController.getActiveUnits);

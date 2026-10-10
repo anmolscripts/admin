@@ -178,3 +178,15 @@ The Doctor command checks:
 ```
 **Resolution:**
 - The installer automatically generates a 64-character hex secret. If manually overriding, ensure the secret is at least 32 characters long and not a default placeholder.
+
+---
+
+## Operational & Maintenance Commands
+
+| Command | Description |
+| :--- | :--- |
+| `npm run db:upgrade` | Non-destructive schema migration and Prisma client generation |
+| `npm run verify:all` | Comprehensive 10-point static, schema, doctor, and test verification |
+| `npm run package:release` | Verifies release exclusions and builds clean distribution archive |
+| `npm run doctor` | Performs 20-point production environment and database health check |
+| `npm test` | Runs the full test suite across all 143 test files |

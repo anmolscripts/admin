@@ -113,10 +113,48 @@ async function updateItem(req, res, next) {
     }
 }
 
+/**
+ * POST /api/items/import/preview
+ * Dry-run parse and validate CSV without database mutations
+ */
+async function previewImport(req, res, next) {
+    try {
+        const { csvContent } = req.body;
+        const result = await itemService.parseAndValidateItemCsv(csvContent);
+        return res.status(200).json({
+            success: true,
+            ...result
+        });
+    } catch (err) {
+        return handleControllerError(err, res, next);
+    }
+}
+
+/**
+ * POST /api/items/import/commit
+ * Transactionally commits validated import rows
+ */
+async function commitImport(req, res, next) {
+    try {
+        const { rows } = req.body;
+        const userId = req.session && req.session.user ? req.session.user.id : null;
+        const result = await itemService.importItemsFromCsv(rows, userId);
+        return res.status(200).json({
+            success: true,
+            ...result
+        });
+    } catch (err) {
+        return handleControllerError(err, res, next);
+    }
+}
+
 module.exports = {
     searchItems,
     listItems,
     getItem,
     createItem,
-    updateItem
+    updateItem,
+    previewImport,
+    commitImport
 };
+

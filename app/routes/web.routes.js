@@ -15,6 +15,11 @@ const activityService = require('../services/activity.service');
 const postingService = require('../services/accounting/posting.service');
 const creditDebitNoteService = require('../services/creditDebitNote.service');
 const reportController = require('../controllers/report.controller');
+const financialYearController = require('../controllers/financialYear.controller');
+const profileController = require('../controllers/profile.controller');
+const { uploadAvatar } = require('../middleware/upload.middleware');
+const purchaseController = require('../controllers/purchase.controller');
+const erpController = require('../controllers/erp.controller');
 
 const router = express.Router();
 
@@ -417,6 +422,13 @@ router.post('/settings', requireAuth, requirePermission('SETTINGS', 'EDIT'), asy
 });
 
 // -------------------------------------------------------------
+// USER PROFILE WEB ROUTES
+// -------------------------------------------------------------
+router.get('/profile', requireAuth, profileController.renderProfile);
+router.post('/profile', requireAuth, uploadAvatar.single('avatar'), profileController.updateProfile);
+router.post('/profile/password', requireAuth, profileController.changePassword);
+
+// -------------------------------------------------------------
 // ITEM MASTER WEB ROUTES
 // -------------------------------------------------------------
 router.get('/items', requireAuth, requirePermission('ITEMS', 'VIEW'), async (req, res, next) => {
@@ -579,5 +591,82 @@ router.get('/reports/profit-and-loss', requireAuth, requirePermission('REPORTS',
 router.get('/reports/balance-sheet', requireAuth, requirePermission('REPORTS', 'VIEW'), reportController.renderBalanceSheet);
 router.get('/reports/customer-receivables', requireAuth, requirePermission('REPORTS', 'VIEW'), reportController.renderCustomerReceivables);
 router.get('/reports/customer-statement/:clientId', requireAuth, requirePermission('REPORTS', 'VIEW'), reportController.renderCustomerStatement);
+
+// -------------------------------------------------------------
+// FINANCIAL YEAR CLOSING, OPENING BALANCES & PERIOD LOCKING (MILESTONE 8)
+// -------------------------------------------------------------
+router.get('/financial-years', requireAuth, requirePermission('FINANCIAL_YEARS', 'VIEW'), financialYearController.renderFinancialYearsList);
+router.get('/financial-years/:id', requireAuth, requirePermission('FINANCIAL_YEARS', 'VIEW'), financialYearController.renderFinancialYearDetail);
+router.get('/financial-years/:id/close-preview', requireAuth, requirePermission('FINANCIAL_YEARS', 'VIEW'), financialYearController.renderClosePreview);
+router.post('/financial-years/:id/close', requireAuth, requirePermission('FINANCIAL_YEARS', 'CLOSE'), financialYearController.executeClose);
+router.post('/financial-years/:id/reopen', requireAuth, requirePermission('FINANCIAL_YEARS', 'REOPEN'), financialYearController.executeReopen);
+router.get('/financial-years/:id/opening-balances', requireAuth, requirePermission('FINANCIAL_YEARS', 'VIEW'), financialYearController.renderOpeningBalances);
+router.post('/financial-years/:id/opening-balances', requireAuth, requirePermission('FINANCIAL_YEARS', 'MANAGE'), financialYearController.executeOpeningBalances);
+
+// -------------------------------------------------------------
+// PURCHASES, BILLS, EXPENSES & OTHER INCOME (PHASE 4)
+// -------------------------------------------------------------
+router.get('/purchases/orders', requireAuth, requirePermission('DOCUMENTS', 'VIEW'), purchaseController.renderPurchaseOrders);
+router.get('/purchases/orders/new', requireAuth, requirePermission('DOCUMENTS', 'CREATE'), purchaseController.renderNewPurchaseOrder);
+router.post('/api/purchase-orders', requireAuth, requirePermission('DOCUMENTS', 'CREATE'), purchaseController.createPurchaseOrder);
+router.get('/api/purchase-orders/:id', requireAuth, requirePermission('DOCUMENTS', 'VIEW'), purchaseController.getPurchaseOrder);
+router.post('/api/purchase-orders/:id/void', requireAuth, requirePermission('DOCUMENTS', 'VOID'), purchaseController.voidPurchaseOrder);
+
+router.get('/purchases/bills', requireAuth, requirePermission('DOCUMENTS', 'VIEW'), purchaseController.renderSupplierBills);
+router.get('/purchases/bills/new', requireAuth, requirePermission('DOCUMENTS', 'CREATE'), purchaseController.renderNewSupplierBill);
+router.post('/api/supplier-bills', requireAuth, requirePermission('DOCUMENTS', 'CREATE'), purchaseController.createSupplierBill);
+router.get('/api/supplier-bills/:id', requireAuth, requirePermission('DOCUMENTS', 'VIEW'), purchaseController.getSupplierBill);
+router.post('/api/supplier-bills/:id/void', requireAuth, requirePermission('DOCUMENTS', 'VOID'), purchaseController.voidSupplierBill);
+
+router.get('/financials/expenses', requireAuth, requirePermission('ACCOUNTS', 'VIEW'), purchaseController.renderExpenses);
+router.post('/api/expenses', requireAuth, requirePermission('ACCOUNTS', 'CREATE'), purchaseController.createExpense);
+
+router.get('/financials/other-income', requireAuth, requirePermission('ACCOUNTS', 'VIEW'), purchaseController.renderOtherIncome);
+router.post('/api/other-incomes', requireAuth, requirePermission('ACCOUNTS', 'CREATE'), purchaseController.createOtherIncome);
+
+router.get('/api/suppliers', requireAuth, requirePermission('CLIENTS', 'VIEW'), purchaseController.searchSuppliers);
+router.post('/api/suppliers', requireAuth, requirePermission('CLIENTS', 'CREATE'), purchaseController.createSupplier);
+
+// -------------------------------------------------------------
+// SUPPLIER PAYMENTS & ALLOCATIONS (PHASE 4 / TASK-204)
+// -------------------------------------------------------------
+router.get('/api/supplier-payments', requireAuth, requirePermission('DOCUMENTS', 'VIEW'), erpController.listSupplierPayments);
+router.post('/api/supplier-payments', requireAuth, requirePermission('DOCUMENTS', 'CREATE'), erpController.recordSupplierPayment);
+router.get('/api/supplier-payments/:id', requireAuth, requirePermission('DOCUMENTS', 'VIEW'), erpController.getSupplierPayment);
+router.post('/api/supplier-payments/:id/void', requireAuth, requirePermission('DOCUMENTS', 'VOID'), erpController.voidSupplierPayment);
+
+// -------------------------------------------------------------
+// INVENTORY MOVEMENTS & VALUATION (PHASE 5 / TASK-301-307)
+// -------------------------------------------------------------
+router.get('/api/inventory/movements', requireAuth, requirePermission('ITEMS', 'VIEW'), erpController.listStockMovements);
+router.post('/api/inventory/movements', requireAuth, requirePermission('ITEMS', 'CREATE'), erpController.recordStockMovement);
+router.get('/api/inventory/summary/:itemId', requireAuth, requirePermission('ITEMS', 'VIEW'), erpController.getItemStockSummary);
+router.get('/api/inventory/valuation', requireAuth, requirePermission('ITEMS', 'VIEW'), erpController.getInventoryValuation);
+
+// -------------------------------------------------------------
+// STATUTORY PAYROLL & EMPLOYEES (PHASE 6 / TASK-401-406)
+// -------------------------------------------------------------
+router.get('/api/payroll/employees', requireAuth, requirePermission('TEAM', 'VIEW'), erpController.listEmployees);
+router.post('/api/payroll/employees', requireAuth, requirePermission('TEAM', 'CREATE'), erpController.createEmployee);
+router.get('/api/payroll/employees/:id', requireAuth, requirePermission('TEAM', 'VIEW'), erpController.getEmployee);
+router.post('/api/payroll/employees/:id/salary-structure', requireAuth, requirePermission('TEAM', 'MANAGE'), erpController.setSalaryStructure);
+router.post('/api/payroll/periods/generate', requireAuth, requirePermission('ACCOUNTS', 'CREATE'), erpController.generatePayrollPeriod);
+router.post('/api/payroll/periods/:id/approve', requireAuth, requirePermission('ACCOUNTS', 'MANAGE'), erpController.approvePayrollPeriod);
+router.post('/api/payroll/periods/:id/post', requireAuth, requirePermission('ACCOUNTS', 'CLOSE'), erpController.postPayrollToLedger);
+router.get('/api/payroll/entries/:entryId/payslip', requireAuth, requirePermission('TEAM', 'VIEW'), erpController.getPayslip);
+router.post('/api/payroll/reimbursements', requireAuth, requirePermission('TEAM', 'CREATE'), erpController.createReimbursement);
+router.post('/api/payroll/reimbursements/:id/approve', requireAuth, requirePermission('TEAM', 'MANAGE'), erpController.approveReimbursement);
+
+// -------------------------------------------------------------
+// PROJECTS, TASKS & LABOUR COSTING (PHASE 7 / TASK-501-505)
+// -------------------------------------------------------------
+router.get('/api/projects', requireAuth, requirePermission('DOCUMENTS', 'VIEW'), erpController.listProjects);
+router.post('/api/projects', requireAuth, requirePermission('DOCUMENTS', 'CREATE'), erpController.createProject);
+router.get('/api/projects/:id', requireAuth, requirePermission('DOCUMENTS', 'VIEW'), erpController.getProject);
+router.post('/api/projects/:id/tasks', requireAuth, requirePermission('DOCUMENTS', 'CREATE'), erpController.createProjectTask);
+router.get('/api/projects/:id/tasks', requireAuth, requirePermission('DOCUMENTS', 'VIEW'), erpController.listProjectTasks);
+router.post('/api/timesheets', requireAuth, requirePermission('DOCUMENTS', 'CREATE'), erpController.logTimesheet);
+router.post('/api/timesheets/:id/approve', requireAuth, requirePermission('DOCUMENTS', 'MANAGE'), erpController.approveTimesheet);
+router.get('/api/projects/:id/financials', requireAuth, requirePermission('DOCUMENTS', 'VIEW'), erpController.getProjectFinancials);
 
 module.exports = router;

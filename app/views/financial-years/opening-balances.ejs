@@ -1,0 +1,177 @@
+<%- include('../layouts/header') %>
+
+<div class="content-wrapper p-4">
+  <!-- Page Header -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+      <div class="d-flex align-items-center gap-2">
+        <a href="/financial-years/<%= fy.id %>" class="btn btn-sm btn-light border" title="Back">
+          <i class="bi bi-arrow-left"></i>
+        </a>
+        <h1 class="h3 fw-bold mb-0">Initial Opening Balances — FY <%= fy.code %></h1>
+      </div>
+      <p class="text-muted small mt-1 mb-0">
+        Record initial opening balances for assets, liabilities, and equity at the inception of company accounting records.
+      </p>
+    </div>
+    <div>
+      <a href="/reports/trial-balance?financialYearId=<%= fy.id %>" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2">
+        <i class="bi bi-scale"></i>
+        <span>Trial Balance</span>
+      </a>
+    </div>
+  </div>
+
+  <% if (existingJournal) { %>
+    <!-- Existing Opening Balances Posted Banner -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="card-title fw-bold text-success mb-1">
+            <i class="bi bi-check-circle-fill me-2"></i>Opening Balances Already Posted
+          </h5>
+          <span class="text-muted small">Journal Entry: <strong class="font-monospace"><%= existingJournal.entryNumber %></strong></span>
+        </div>
+        <span class="badge bg-success-subtle text-success border px-3 py-2">
+          Effective on <%= new Date(existingJournal.entryDate).toLocaleDateString('en-IN') %>
+        </span>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 50px;">#</th>
+                <th>Account Code</th>
+                <th>Account Name</th>
+                <th>Type</th>
+                <th class="text-end" style="width: 160px;">Debit (₹)</th>
+                <th class="text-end" style="width: 160px;">Credit (₹)</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% existingJournal.lines.forEach(line => { %>
+                <tr>
+                  <td class="text-muted small"><%= line.lineNumber %></td>
+                  <td class="font-monospace fw-bold"><%= line.account.code %></td>
+                  <td><%= line.account.name %></td>
+                  <td><span class="badge bg-light text-dark border"><%= line.account.type %></span></td>
+                  <td class="text-end font-monospace <%= Number(line.debit) > 0 ? 'fw-bold' : 'text-muted' %>">
+                    <%= Number(line.debit) > 0 ? Number(line.debit).toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '—' %>
+                  </td>
+                  <td class="text-end font-monospace <%= Number(line.credit) > 0 ? 'fw-bold' : 'text-muted' %>">
+                    <%= Number(line.credit) > 0 ? Number(line.credit).toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '—' %>
+                  </td>
+                  <td class="small text-muted"><%= line.description || '—' %></td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  <% } else { %>
+    <!-- Entry Form -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white py-3 border-bottom">
+        <h5 class="card-title fw-bold mb-0">Initial Opening Balance Setup</h5>
+        <span class="text-muted small">Enter opening balances for permanent accounts. Total debits must equal total credits exactly.</span>
+      </div>
+      <div class="card-body p-4">
+        <form action="/financial-years/<%= fy.id %>/opening-balances" method="POST" id="openingBalancesForm">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+          <div class="mb-3">
+            <label for="narration" class="form-label small fw-bold">Journal Narration</label>
+            <input type="text" class="form-control form-control-sm" id="narration" name="narration" value="Initial Company Opening Balances for FY <%= fy.code %>">
+          </div>
+
+          <div class="table-responsive mb-3">
+            <table class="table table-bordered table-sm align-middle" id="accountsTable">
+              <thead class="table-light">
+                <tr>
+                  <th style="width: 100px;">Code</th>
+                  <th>Account Name</th>
+                  <th style="width: 120px;">Type</th>
+                  <th class="text-end" style="width: 160px;">Debit (₹)</th>
+                  <th class="text-end" style="width: 160px;">Credit (₹)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% accounts.forEach((acc, idx) => { %>
+                  <tr>
+                    <td class="font-monospace fw-bold"><%= acc.code %></td>
+                    <td><%= acc.name %></td>
+                    <td><span class="badge bg-light text-dark border"><%= acc.type %></span></td>
+                    <td>
+                      <input type="hidden" name="lines[<%= idx %>][accountId]" value="<%= acc.id %>">
+                      <input type="number" step="0.01" min="0" class="form-control form-control-sm text-end font-monospace dr-input" name="lines[<%= idx %>][debit]" placeholder="0.00" oninput="calculateBalance()">
+                    </td>
+                    <td>
+                      <input type="number" step="0.01" min="0" class="form-control form-control-sm text-end font-monospace cr-input" name="lines[<%= idx %>][credit]" placeholder="0.00" oninput="calculateBalance()">
+                    </td>
+                  </tr>
+                <% }); %>
+              </tbody>
+              <tfoot class="table-light font-monospace fw-bold">
+                <tr>
+                  <td colspan="3" class="text-end">Total:</td>
+                  <td class="text-end" id="totalDebitDisplay">₹0.00</td>
+                  <td class="text-end" id="totalCreditDisplay">₹0.00</td>
+                </tr>
+                <tr>
+                  <td colspan="3" class="text-end">Difference:</td>
+                  <td colspan="2" class="text-center" id="balanceStatus">
+                    <span class="text-muted">Enter amounts to check double-entry balance</span>
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <div class="d-flex justify-content-end gap-2">
+            <button type="submit" class="btn btn-primary px-4" id="submitBtn" disabled>
+              <i class="bi bi-save me-1"></i> Post Opening Balances
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      function calculateBalance() {
+        let totalDr = 0;
+        let totalCr = 0;
+        document.querySelectorAll('.dr-input').forEach(el => {
+          const val = parseFloat(el.value);
+          if (!isNaN(val) && val > 0) totalDr += Math.round(val * 100);
+        });
+        document.querySelectorAll('.cr-input').forEach(el => {
+          const val = parseFloat(el.value);
+          if (!isNaN(val) && val > 0) totalCr += Math.round(val * 100);
+        });
+
+        document.getElementById('totalDebitDisplay').textContent = '₹' + (totalDr / 100).toFixed(2);
+        document.getElementById('totalCreditDisplay').textContent = '₹' + (totalCr / 100).toFixed(2);
+
+        const statusEl = document.getElementById('balanceStatus');
+        const submitBtn = document.getElementById('submitBtn');
+
+        if (totalDr === 0 && totalCr === 0) {
+          statusEl.innerHTML = '<span class="text-muted">Enter amounts to check double-entry balance</span>';
+          submitBtn.disabled = true;
+        } else if (totalDr === totalCr) {
+          statusEl.innerHTML = '<span class="text-success"><i class="bi bi-check-circle-fill me-1"></i> Balanced: Difference ₹0.00</span>';
+          submitBtn.disabled = false;
+        } else {
+          const diff = Math.abs(totalDr - totalCr) / 100;
+          statusEl.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle-fill me-1"></i> Imbalance: Difference ₹' + diff.toFixed(2) + '</span>';
+          submitBtn.disabled = true;
+        }
+      }
+    </script>
+  <% } %>
+</div>
+
+<%- include('../layouts/footer') %>

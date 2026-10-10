@@ -4,17 +4,17 @@
 }) %>
 
 <div class="row justify-content-center">
-  <div class="col-12 col-xl-9">
+  <div class="col-12 col-xl-10">
     <% if (locals.success) { %>
-      <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+      <div class="alert alert-success alert-dismissible fade show mb-4 shadow-sm" role="alert">
         <i class="bi bi-check-circle-fill me-2"></i>
-        <strong>Success:</strong> Business profile and defaults updated successfully!
+        <strong>Success:</strong> Organization settings and defaults have been saved successfully!
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       </div>
     <% } %>
 
     <% if (locals.error) { %>
-      <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+      <div class="alert alert-danger alert-dismissible fade show mb-4 shadow-sm" role="alert">
         <i class="bi bi-exclamation-triangle-fill me-2"></i>
         <strong>Error:</strong> <%= error %>
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -23,150 +23,358 @@
 
     <div class="card border-0 shadow-sm rounded-3 p-4 bg-white mb-4">
       <div class="visually-hidden">Organization Profile & Defaults</div>
-      <form method="POST" action="/settings">
+      <form method="POST" action="/settings" id="settings-form">
         <% if (locals.csrfToken) { %>
           <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
         <% } %>
 
-        <div class="row g-3 mb-4">
-          <div class="col-12">
-            <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">Organization Identity</h5>
+        <!-- SECTION 1: Organization Identity & Branding -->
+        <div class="mb-4">
+          <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
+            <i class="bi bi-building text-primary fs-4 me-2"></i>
+            <div>
+              <h5 class="fw-bold mb-0 text-dark">Organization Identity & Branding</h5>
+              <small class="text-muted">Legal entity names and brand identity used in the application and documents.</small>
+            </div>
           </div>
 
-          <!-- Legal Name -->
-          <div class="col-12 col-md-6">
-            <label for="profile-legalName" class="form-label fw-semibold">Legal Entity Name <span class="text-danger">*</span></label>
-            <input
-              type="text"
-              class="form-control"
-              id="profile-legalName"
-              name="legalName"
-              value="<%= (profile && profile.legalName) || '' %>"
-              placeholder="e.g. Acme Technologies Private Limited"
-              required
-            />
-          </div>
+          <div class="row g-3">
+            <!-- Legal Entity Name -->
+            <div class="col-12 col-md-6">
+              <label for="profile-legalName" class="form-label fw-semibold">Legal Entity Name <span class="text-danger">*</span></label>
+              <input
+                type="text"
+                class="form-control"
+                id="profile-legalName"
+                name="legalName"
+                value="<%= (profile && profile.legalName) || '' %>"
+                placeholder="e.g. Acme Technologies Private Limited"
+                required
+              />
+              <div class="form-text">Used on official tax invoices, quotations, credit notes, and legal filings.</div>
+            </div>
 
-          <!-- Display Name -->
-          <div class="col-12 col-md-6">
-            <label for="profile-displayName" class="form-label fw-semibold">Brand / Trade Name</label>
-            <input
-              type="text"
-              class="form-control"
-              id="profile-displayName"
-              name="displayName"
-              value="<%= (profile && profile.displayName) || '' %>"
-              placeholder="e.g. Acme Tech"
-            />
-          </div>
+            <!-- Display / Trade Name -->
+            <div class="col-12 col-md-6">
+              <label for="profile-displayName" class="form-label fw-semibold">Trade / Display Name</label>
+              <input
+                type="text"
+                class="form-control"
+                id="profile-displayName"
+                name="displayName"
+                value="<%= (profile && profile.displayName) || '' %>"
+                placeholder="e.g. Acme Tech"
+              />
+              <div class="form-text">Customer-facing business name used across documents.</div>
+            </div>
 
-          <!-- Email -->
-          <div class="col-12 col-md-6">
-            <label for="profile-email" class="form-label fw-semibold">Billing Email</label>
-            <input
-              type="email"
-              class="form-control"
-              id="profile-email"
-              name="email"
-              value="<%= (profile && profile.email) || '' %>"
-              placeholder="e.g. accounts@acmetech.com"
-            />
-          </div>
+            <!-- Workspace Name -->
+            <div class="col-12 col-md-6">
+              <label for="profile-workspaceName" class="form-label fw-semibold">Application / Workspace Name</label>
+              <input
+                type="text"
+                class="form-control"
+                id="profile-workspaceName"
+                name="workspaceName"
+                value="<%= (profile && (profile.workspaceName || profile.displayName || profile.legalName)) || 'Spark Admin' %>"
+                placeholder="e.g. Acme ERP"
+              />
+              <div class="form-text">Displayed in sidebar, browser tabs, header, and system navigation.</div>
+            </div>
 
-          <!-- Phone -->
-          <div class="col-12 col-md-6">
-            <label for="profile-phone" class="form-label fw-semibold">Phone Number</label>
-            <input
-              type="text"
-              class="form-control"
-              id="profile-phone"
-              name="phone"
-              value="<%= (profile && profile.phone) || '' %>"
-              placeholder="e.g. +91 22 2345 6789"
-            />
-          </div>
+            <!-- Logo URL -->
+            <div class="col-12 col-md-6">
+              <label for="profile-logoUrl" class="form-label fw-semibold">Organization Logo URL</label>
+              <input
+                type="text"
+                class="form-control"
+                id="profile-logoUrl"
+                name="logoUrl"
+                value="<%= (profile && profile.logoUrl) || '' %>"
+                placeholder="e.g. /images/logo.png or https://example.com/logo.png"
+              />
+              <div class="form-text">Brand logo rendered in sidebar, invoices, and print headers.</div>
+            </div>
 
-          <!-- Address -->
-          <div class="col-12">
-            <label for="profile-address" class="form-label fw-semibold">Registered Business Address</label>
-            <textarea
-              class="form-control"
-              id="profile-address"
-              name="address"
-              rows="3"
-              placeholder="Registered office address for invoice headers..."
-            ><%= (profile && profile.address) || '' %></textarea>
+            <!-- Billing Email -->
+            <div class="col-12 col-md-4">
+              <label for="profile-email" class="form-label fw-semibold">Billing / Contact Email</label>
+              <input
+                type="email"
+                class="form-control"
+                id="profile-email"
+                name="email"
+                value="<%= (profile && profile.email) || '' %>"
+                placeholder="e.g. billing@acmetech.com"
+              />
+            </div>
+
+            <!-- Phone -->
+            <div class="col-12 col-md-4">
+              <label for="profile-phone" class="form-label fw-semibold">Phone Number</label>
+              <input
+                type="text"
+                class="form-control"
+                id="profile-phone"
+                name="phone"
+                value="<%= (profile && profile.phone) || '' %>"
+                placeholder="e.g. +91 22 2345 6789"
+              />
+            </div>
+
+            <!-- Website -->
+            <div class="col-12 col-md-4">
+              <label for="profile-website" class="form-label fw-semibold">Website</label>
+              <input
+                type="url"
+                class="form-control"
+                id="profile-website"
+                name="website"
+                value="<%= (profile && profile.website) || '' %>"
+                placeholder="e.g. https://acmetech.com"
+              />
+            </div>
+
+            <!-- Address -->
+            <div class="col-12">
+              <label for="profile-address" class="form-label fw-semibold">Registered Business Address</label>
+              <textarea
+                class="form-control"
+                id="profile-address"
+                name="address"
+                rows="2"
+                placeholder="Registered office address for tax invoices and document headers..."
+              ><%= (profile && profile.address) || '' %></textarea>
+            </div>
           </div>
         </div>
 
-        <div class="row g-3 mb-4">
-          <div class="col-12">
-            <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">GST Tax Registration</h5>
+        <!-- SECTION 2: GST Tax Registration -->
+        <div class="mb-4">
+          <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
+            <i class="bi bi-file-earmark-ruled text-success fs-4 me-2"></i>
+            <div>
+              <h5 class="fw-bold mb-0 text-dark">GST Tax Registration</h5>
+              <small class="text-muted">Indian Goods and Services Tax configuration for tax calculation and invoices.</small>
+            </div>
           </div>
 
-          <!-- GSTIN -->
-          <div class="col-12 col-md-6">
-            <label for="profile-gstin" class="form-label fw-semibold">GSTIN (15 Digits)</label>
-            <input
-              type="text"
-              class="form-control text-uppercase font-monospace"
-              id="profile-gstin"
-              name="gstin"
-              value="<%= (profile && profile.gstin) || '' %>"
-              placeholder="27ABCDE1234F1Z5"
-              maxlength="15"
-            />
-            <div class="form-text">Your organization's registered GST identification number.</div>
-          </div>
+          <div class="row g-3">
+            <!-- GSTIN -->
+            <div class="col-12 col-md-6">
+              <label for="profile-gstin" class="form-label fw-semibold">GSTIN (15 Characters)</label>
+              <input
+                type="text"
+                class="form-control text-uppercase font-monospace"
+                id="profile-gstin"
+                name="gstin"
+                value="<%= (profile && profile.gstin) || '' %>"
+                placeholder="27ABCDE1234F1Z5"
+                maxlength="15"
+              />
+              <div class="form-text">Your organization's registered 15-digit GST identification number.</div>
+            </div>
 
-          <!-- State Code -->
-          <div class="col-12 col-md-6">
-            <label for="profile-stateCode" class="form-label fw-semibold">Home State Code (2 Digits)</label>
-            <input
-              type="text"
-              class="form-control font-monospace"
-              id="profile-stateCode"
-              name="stateCode"
-              value="<%= (profile && profile.stateCode) || '' %>"
-              placeholder="e.g. 27"
-              maxlength="2"
-            />
-            <div class="form-text">Used to determine Inter-State (IGST) vs Intra-State (CGST + SGST) taxes.</div>
+            <!-- State Code -->
+            <div class="col-12 col-md-6">
+              <label for="profile-stateCode" class="form-label fw-semibold">Home State Code (2 Digits)</label>
+              <input
+                type="text"
+                class="form-control font-monospace"
+                id="profile-stateCode"
+                name="stateCode"
+                value="<%= (profile && profile.stateCode) || '27' %>"
+                placeholder="e.g. 27"
+                maxlength="2"
+              />
+              <div class="form-text">Must match the first 2 digits of your GSTIN (e.g. 27 for Maharashtra). Governs CGST/SGST vs IGST rules.</div>
+            </div>
           </div>
         </div>
 
-        <div class="row g-3 mb-4">
-          <div class="col-12">
-            <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">Default Document Terms & Remarks</h5>
+        <!-- SECTION 3: Banking & Payment Information -->
+        <div class="mb-4">
+          <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
+            <i class="bi bi-bank text-info fs-4 me-2"></i>
+            <div>
+              <h5 class="fw-bold mb-0 text-dark">Banking & Payment Information</h5>
+              <small class="text-muted">Settlement bank accounts and UPI coordinates printed on invoices for customer remittance.</small>
+            </div>
           </div>
 
-          <!-- Default Terms -->
-          <div class="col-12">
-            <label for="profile-defaultTerms" class="form-label fw-semibold">Default Terms & Conditions</label>
-            <textarea
-              class="form-control"
-              id="profile-defaultTerms"
-              name="defaultTerms"
-              rows="3"
-              placeholder="Standard payment terms, warranty, dispute jurisdiction..."
-            ><%= (profile && profile.defaultTerms) || '' %></textarea>
+          <div class="row g-3">
+            <!-- Bank Name -->
+            <div class="col-12 col-md-6">
+              <label for="profile-bankName" class="form-label fw-semibold">Bank Name</label>
+              <input
+                type="text"
+                class="form-control"
+                id="profile-bankName"
+                name="bankName"
+                value="<%= (profile && profile.bankName) || '' %>"
+                placeholder="e.g. HDFC Bank"
+              />
+            </div>
+
+            <!-- Account Holder -->
+            <div class="col-12 col-md-6">
+              <label for="profile-accountHolder" class="form-label fw-semibold">Account Holder Name</label>
+              <input
+                type="text"
+                class="form-control"
+                id="profile-accountHolder"
+                name="accountHolder"
+                value="<%= (profile && profile.accountHolder) || '' %>"
+                placeholder="e.g. Acme Technologies Pvt Ltd"
+              />
+            </div>
+
+            <!-- Account Number -->
+            <div class="col-12 col-md-4">
+              <label for="profile-accountNumber" class="form-label fw-semibold">Account Number</label>
+              <input
+                type="text"
+                class="form-control font-monospace"
+                id="profile-accountNumber"
+                name="accountNumber"
+                value="<%= (profile && profile.accountNumber) || '' %>"
+                placeholder="e.g. 50200012345678"
+              />
+            </div>
+
+            <!-- IFSC -->
+            <div class="col-12 col-md-4">
+              <label for="profile-ifsc" class="form-label fw-semibold">IFSC Code (11 Digits)</label>
+              <input
+                type="text"
+                class="form-control text-uppercase font-monospace"
+                id="profile-ifsc"
+                name="ifsc"
+                value="<%= (profile && profile.ifsc) || '' %>"
+                placeholder="e.g. HDFC0001234"
+                maxlength="11"
+              />
+            </div>
+
+            <!-- Branch -->
+            <div class="col-12 col-md-4">
+              <label for="profile-branch" class="form-label fw-semibold">Branch Name</label>
+              <input
+                type="text"
+                class="form-control"
+                id="profile-branch"
+                name="branch"
+                value="<%= (profile && profile.branch) || '' %>"
+                placeholder="e.g. BKC Branch, Mumbai"
+              />
+            </div>
+
+            <!-- UPI ID -->
+            <div class="col-12 col-md-6">
+              <label for="profile-upiId" class="form-label fw-semibold">UPI ID / VPA</label>
+              <input
+                type="text"
+                class="form-control"
+                id="profile-upiId"
+                name="upiId"
+                value="<%= (profile && profile.upiId) || '' %>"
+                placeholder="e.g. acmetech@hdfcbank"
+              />
+              <div class="form-text">Optional UPI handle for fast mobile payments.</div>
+            </div>
+
+            <!-- Payment Instructions -->
+            <div class="col-12 col-md-6">
+              <label for="profile-paymentInstructions" class="form-label fw-semibold">Payment Instructions</label>
+              <input
+                type="text"
+                class="form-control"
+                id="profile-paymentInstructions"
+                name="paymentInstructions"
+                value="<%= (profile && profile.paymentInstructions) || '' %>"
+                placeholder="e.g. Please quote invoice number during NEFT/RTGS transfer."
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 4: Document Defaults & Localization -->
+        <div class="mb-4">
+          <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
+            <i class="bi bi-file-earmark-text text-warning fs-4 me-2"></i>
+            <div>
+              <h5 class="fw-bold mb-0 text-dark">Document Defaults & Localization</h5>
+              <small class="text-muted">Default boilerplate terms and formatting applied to newly drafted documents.</small>
+            </div>
           </div>
 
-          <!-- Default Remarks -->
-          <div class="col-12">
-            <label for="profile-defaultRemarks" class="form-label fw-semibold">Default Remarks / Bank Details</label>
-            <textarea
-              class="form-control"
-              id="profile-defaultRemarks"
-              name="defaultRemarks"
-              rows="3"
-              placeholder="Bank account details, NEFT/RTGS instructions, thank you notes..."
-            ><%= (profile && profile.defaultRemarks) || '' %></textarea>
+          <div class="row g-3">
+            <!-- Currency -->
+            <div class="col-12 col-md-6">
+              <label for="profile-currency" class="form-label fw-semibold">Base Currency</label>
+              <select class="form-select" id="profile-currency" name="currency">
+                <option value="INR" <%= (!profile || profile.currency === 'INR') ? 'selected' : '' %>>INR — Indian Rupee (₹)</option>
+                <option value="USD" <%= (profile && profile.currency === 'USD') ? 'selected' : '' %>>USD — US Dollar ($)</option>
+                <option value="EUR" <%= (profile && profile.currency === 'EUR') ? 'selected' : '' %>>EUR — Euro (€)</option>
+                <option value="GBP" <%= (profile && profile.currency === 'GBP') ? 'selected' : '' %>>GBP — British Pound (£)</option>
+                <option value="AED" <%= (profile && profile.currency === 'AED') ? 'selected' : '' %>>AED — UAE Dirham</option>
+              </select>
+            </div>
+
+            <!-- Timezone -->
+            <div class="col-12 col-md-6">
+              <label for="profile-timeZone" class="form-label fw-semibold">Time Zone</label>
+              <select class="form-select" id="profile-timeZone" name="timeZone">
+                <option value="Asia/Kolkata" <%= (!profile || profile.timeZone === 'Asia/Kolkata') ? 'selected' : '' %>>Asia/Kolkata (IST +05:30)</option>
+                <option value="UTC" <%= (profile && profile.timeZone === 'UTC') ? 'selected' : '' %>>UTC (Coordinated Universal Time)</option>
+                <option value="Asia/Dubai" <%= (profile && profile.timeZone === 'Asia/Dubai') ? 'selected' : '' %>>Asia/Dubai (GST +04:00)</option>
+                <option value="Asia/Singapore" <%= (profile && profile.timeZone === 'Asia/Singapore') ? 'selected' : '' %>>Asia/Singapore (SGT +08:00)</option>
+                <option value="Europe/London" <%= (profile && profile.timeZone === 'Europe/London') ? 'selected' : '' %>>Europe/London (GMT/BST)</option>
+                <option value="America/New_York" <%= (profile && profile.timeZone === 'America/New_York') ? 'selected' : '' %>>America/New_York (EST/EDT)</option>
+              </select>
+            </div>
+
+            <!-- Default Terms -->
+            <div class="col-12">
+              <label for="profile-defaultTerms" class="form-label fw-semibold">Default Terms & Conditions</label>
+              <textarea
+                class="form-control"
+                id="profile-defaultTerms"
+                name="defaultTerms"
+                rows="3"
+                placeholder="Standard payment terms, warranty, dispute jurisdiction..."
+              ><%= (profile && profile.defaultTerms) || '' %></textarea>
+            </div>
+
+            <!-- Default Remarks -->
+            <div class="col-12">
+              <label for="profile-defaultRemarks" class="form-label fw-semibold">Default Remarks / Notes</label>
+              <textarea
+                class="form-control"
+                id="profile-defaultRemarks"
+                name="defaultRemarks"
+                rows="2"
+                placeholder="Thank you for your business notes..."
+              ><%= (profile && profile.defaultRemarks) || '' %></textarea>
+            </div>
+
+            <!-- Invoice Footer -->
+            <div class="col-12">
+              <label for="profile-invoiceFooter" class="form-label fw-semibold">Invoice Footer Text</label>
+              <input
+                type="text"
+                class="form-control"
+                id="profile-invoiceFooter"
+                name="invoiceFooter"
+                value="<%= (profile && profile.invoiceFooter) || '' %>"
+                placeholder="e.g. This is a computer generated invoice and does not require a physical signature."
+              />
+            </div>
           </div>
         </div>
 
         <div class="d-flex align-items-center justify-content-end pt-3 border-top">
-          <button type="submit" class="btn btn-primary px-4">
+          <button type="submit" class="btn btn-primary px-4 fw-semibold" id="btn-save-settings">
             <i class="bi bi-save me-1"></i> Save Organization Settings
           </button>
         </div>

@@ -659,7 +659,8 @@ async function getProfitAndLoss(filters = {}) {
 
     const whereLines = {
         journalEntry: {
-            status: { in: ['POSTED', 'REVERSED'] }
+            status: { in: ['POSTED', 'REVERSED'] },
+            sourceType: { notIn: ['YEAR_END_CLOSE', 'YEAR_END_CLOSE_REVERSAL'] }
         }
     };
 

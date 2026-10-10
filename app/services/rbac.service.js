@@ -17,7 +17,8 @@ const MODULES = [
     'ACCOUNTS',
     'JOURNALS',
     'CREDIT_NOTES',
-    'REPORTS'
+    'REPORTS',
+    'FINANCIAL_YEARS'
 ];
 
 /**
@@ -35,7 +36,9 @@ const ACTIONS = [
     'PRINT',
     'MANAGE',
     'ACTIVITY_VIEW',
-    'FULL_ACCESS'
+    'FULL_ACCESS',
+    'CLOSE',
+    'REOPEN'
 ];
 
 /**
@@ -55,7 +58,8 @@ const MODULE_ACTION_MATRIX = {
     ACCOUNTS: ['VIEW', 'CREATE', 'EDIT', 'DELETE', 'MANAGE', 'FULL_ACCESS'],
     JOURNALS: ['VIEW', 'CREATE', 'VOID', 'EXPORT', 'PRINT', 'MANAGE', 'FULL_ACCESS'],
     CREDIT_NOTES: ['VIEW', 'CREATE', 'EDIT', 'VOID', 'DELETE', 'EXPORT', 'PRINT', 'MANAGE', 'FULL_ACCESS'],
-    REPORTS: ['VIEW', 'EXPORT', 'PRINT', 'FULL_ACCESS']
+    REPORTS: ['VIEW', 'EXPORT', 'PRINT', 'FULL_ACCESS'],
+    FINANCIAL_YEARS: ['VIEW', 'CREATE', 'EDIT', 'CLOSE', 'REOPEN', 'MANAGE', 'FULL_ACCESS']
 };
 
 /**
@@ -138,7 +142,8 @@ async function seedPermissionsAndRoles() {
                 'CREDIT_NOTES:VIEW', 'CREDIT_NOTES:CREATE', 'CREDIT_NOTES:EDIT', 'CREDIT_NOTES:VOID', 'CREDIT_NOTES:PRINT', 'CREDIT_NOTES:EXPORT',
                 'REPORTS:VIEW', 'REPORTS:EXPORT', 'REPORTS:PRINT',
                 'AUDIT_LOGS:VIEW',
-                'TEAM:VIEW'
+                'TEAM:VIEW',
+                'FINANCIAL_YEARS:VIEW'
             ]
         },
         {

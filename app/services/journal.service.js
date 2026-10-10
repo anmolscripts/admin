@@ -243,41 +243,85 @@ async function postJournalEntry(params, externalTx = null) {
         const entryNumber = await generateJournalNumber(tx, fy);
 
         // Create JournalEntry
-        const journal = await tx.journalEntry.create({
-            data: {
-                entryNumber,
-                entryDate,
-                financialYearId: fy.id,
-                sourceType,
-                sourceId,
-                narration,
-                status: 'POSTED',
-                idempotencyKey: cleanIdempotencyKey,
-                postedAt: new Date(),
-                postedById: userId,
-                lines: {
-                    create: validatedLines.map(vl => ({
-                        lineNumber: vl.lineNumber,
-                        accountId: vl.accountId,
-                        debit: vl.debitStr,
-                        credit: vl.creditStr,
-                        description: vl.description,
-                        clientId: vl.clientId
-                    }))
-                }
-            },
-            include: {
-                lines: {
-                    include: {
-                        account: { select: { id: true, code: true, name: true, type: true, systemAccountKey: true } },
-                        client: { select: { id: true, name: true } }
+        const journal = await (async () => {
+            if (cleanIdempotencyKey) {
+                // Use upsert to ensure idempotent creation based on idempotencyKey
+                return await tx.journalEntry.upsert({
+                    where: { idempotencyKey: cleanIdempotencyKey },
+                    update: {}, // No update needed; existing entry is returned
+                    create: {
+                        entryNumber,
+                        entryDate,
+                        financialYearId: fy.id,
+                        sourceType,
+                        sourceId,
+                        narration,
+                        status: 'POSTED',
+                        idempotencyKey: cleanIdempotencyKey,
+                        postedAt: new Date(),
+                        postedById: userId,
+                        lines: {
+                            create: validatedLines.map(vl => ({
+                                lineNumber: vl.lineNumber,
+                                accountId: vl.accountId,
+                                debit: vl.debitStr,
+                                credit: vl.creditStr,
+                                description: vl.description,
+                                clientId: vl.clientId
+                            }))
+                        }
                     },
-                    orderBy: { lineNumber: 'asc' }
-                },
-                financialYear: { select: { id: true, code: true, status: true } },
-                postedBy: { select: { id: true, name: true, email: true } }
+                    include: {
+                        lines: {
+                            include: {
+                                account: { select: { id: true, code: true, name: true, type: true, systemAccountKey: true } },
+                                client: { select: { id: true, name: true } }
+                            },
+                            orderBy: { lineNumber: 'asc' }
+                        },
+                        financialYear: { select: { id: true, code: true, status: true } },
+                        postedBy: { select: { id: true, name: true, email: true } }
+                    }
+                });
+            } else {
+                // Regular create when no idempotency key
+                return await tx.journalEntry.create({
+                    data: {
+                        entryNumber,
+                        entryDate,
+                        financialYearId: fy.id,
+                        sourceType,
+                        sourceId,
+                        narration,
+                        status: 'POSTED',
+                        idempotencyKey: cleanIdempotencyKey,
+                        postedAt: new Date(),
+                        postedById: userId,
+                        lines: {
+                            create: validatedLines.map(vl => ({
+                                lineNumber: vl.lineNumber,
+                                accountId: vl.accountId,
+                                debit: vl.debitStr,
+                                credit: vl.creditStr,
+                                description: vl.description,
+                                clientId: vl.clientId
+                            }))
+                        }
+                    },
+                    include: {
+                        lines: {
+                            include: {
+                                account: { select: { id: true, code: true, name: true, type: true, systemAccountKey: true } },
+                                client: { select: { id: true, name: true } }
+                            },
+                            orderBy: { lineNumber: 'asc' }
+                        },
+                        financialYear: { select: { id: true, code: true, status: true } },
+                        postedBy: { select: { id: true, name: true, email: true } }
+                    }
+                });
             }
-        });
+        })();
 
         // Atomically adjust account balances
         for (const vl of validatedLines) {

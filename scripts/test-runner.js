@@ -16,9 +16,32 @@
  * ==============================================================================
  */
 // Load .env for database connection variables and dev credentials
+// Load test-specific environment first if running in test mode
+ // Load test environment first to ensure safe DB config
 require('dotenv').config();
-
+// Then load default env (development) for any other vars
+require('dotenv').config({ path: '.env.test', override: true });
+// Ensure NODE_ENV is set to 'test' for downstream logic
+process.env.NODE_ENV = 'test';
+const { validateTestEnv } = require('./guard');
+const { resolveDbTarget } = require('./db-target');
 const explicitPassword = process.env.SEED_ADMIN_PASSWORD;
+let prisma; // will be required after environment validation
+
+// Validate test environment before any Prisma client is instantiated
+validateTestEnv();
+// Load Prisma client only after static validation succeeded
+prisma = require('../app/config/prisma');
+const { applyTestFixtures } = require('./test-fixtures');
+// Perform live connection validation
+(async () => {
+  try {
+    await validateTestEnv(prisma);
+  } catch (err) {
+    console.error(err.message);
+    process.exit(1);
+  }
+})();
 
 if (!explicitPassword || !explicitPassword.trim()) {
     console.error('');
@@ -65,15 +88,58 @@ const testFiles = fs.readdirSync(testsDir)
     .sort()
     .map((f) => path.join('tests', f));
 
-if (testFiles.length === 0) {
-    console.error('No test files found in tests directory.');
-    process.exit(1);
+const cliArgs = process.argv.slice(2).filter((arg) => !arg.startsWith('--'));
+let selectedFiles = testFiles;
+if (cliArgs.length > 0) {
+    selectedFiles = testFiles.filter((file) => {
+        const normalized = file.replace(/\\/g, '/');
+        return cliArgs.some((arg) => {
+            const normalizedArg = arg.replace(/\\/g, '/');
+            return normalized.includes(normalizedArg) || normalizedArg.includes(normalized);
+        });
+    });
+    if (selectedFiles.length === 0) {
+        console.error(`No test files matched: ${cliArgs.join(', ')}`);
+        process.exit(1);
+    }
 }
 
-const { applyTestFixtures } = require('./test-fixtures');
-const prisma = require('../app/config/prisma');
+// Safety check: ensure test runner is not pointing at the production 'admin' database
+if (process.env.DATABASE_NAME && process.env.DATABASE_NAME.toLowerCase() === 'admin') {
+  console.error('\n[TEST RUNNER ERROR]: Detected DATABASE_NAME=admin. Abort to protect production data.');
+  process.exit(1);
+}
+// Additional validation: resolve effective DB target and verify it's not 'admin' and reachable
+const { database } = resolveDbTarget();
+if (database.toLowerCase() === 'admin') {
+  console.error('\n[TEST RUNNER ERROR]: Resolved database name is admin. Abort to protect production data.');
+  process.exit(1);
+}
+(async () => {
+  try { await prisma.$connect();
+    const result = await prisma.$queryRaw`SELECT DATABASE()`;
+    // Handle different result shapes (string, array of objects, or plain object)
+    let currentDb;
+    if (typeof result === 'string') {
+      currentDb = result;
+    } else if (Array.isArray(result) && result.length > 0) {
+      const row = result[0];
+      currentDb = row['DATABASE()'] ?? row.DATABASE ?? row.database;
+    } else {
+      currentDb = result['DATABASE()'] ?? result.DATABASE ?? result.database;
+    }
+    if (currentDb !== database) {
+      console.error('\n[TEST RUNNER ERROR]: Connected to unexpected database:', currentDb);
+      process.exit(1);
+    }
+  } catch (err) {
+    console.error('\n[TEST RUNNER ERROR]: Failed to query database for validation:', err);
+    process.exit(1);
+  }
+})();
 
-const args = ['--test', '--test-concurrency=1', ...testFiles];
+
+const args = ['--test', '--test-concurrency=1', ...selectedFiles];
 
 async function run() {
     try {

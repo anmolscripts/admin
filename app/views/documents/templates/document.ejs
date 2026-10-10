@@ -734,7 +734,11 @@
       <% if (!model.isQuotation) { %>
         <div class="strip-bank-info">
           <strong>Bank Transfer :</strong>
-          <%= model.seller.bankName %> (A/C: <%= model.seller.accountNumber %>, IFSC: <%= model.seller.ifscCode %><% if (model.seller.branch) { %>, <%= model.seller.branch %><% } %>)
+          <% if (model.seller.hasBankDetails) { %>
+            <%= model.seller.bankName %> (A/C: <%= model.seller.accountNumber %><% if (model.seller.ifscCode) { %>, IFSC: <%= model.seller.ifscCode %><% } %><% if (model.seller.branch) { %>, <%= model.seller.branch %><% } %>)
+          <% } else { %>
+            Pending settlement account configuration
+          <% } %>
         </div>
         <% if (model.seller.upiId) { %>
           <div class="strip-upi-info">
@@ -745,9 +749,6 @@
         <div class="strip-bank-info">
           <strong>Quotation Validity :</strong>
           Valid until <%= model.dates.dueOrExpiryDate %>. Upon acceptance, will convert to Tax Invoice.
-        </div>
-        <div class="strip-upi-info">
-          Spark ERP Validated Document
         </div>
       <% } %>
     </div>
@@ -760,7 +761,7 @@
     <!-- AUTHORIZED SIGNATORY -->
     <div class="doc-signatory-row">
       <div class="doc-auth-meta">
-        <div>Generated via Spark ERP • System-authenticated document</div>
+        <div>System-authenticated document</div>
         <div><%= model.invoiceNumber %></div>
       </div>
       <div class="doc-signatory-box">

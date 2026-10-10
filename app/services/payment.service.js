@@ -148,6 +148,9 @@ async function recordPayment(invoiceIdInput, paymentData, userId, meta = {}) {
         }
 
         const financialYear = await ensureFinancialYear(paymentDate);
+        if (financialYear && financialYear.status === 'CLOSED') {
+            throw new ValidationError(`Cannot record payment in CLOSED Financial Year ${financialYear.code}.`);
+        }
 
         const payment = await tx.payment.create({
             data: {
@@ -273,11 +276,15 @@ async function voidPayment(paymentIdInput, userId, reason = '', meta = {}) {
 
         const payment = await tx.payment.findUnique({
             where: { id: paymentId },
-            include: { invoice: true }
+            include: { invoice: true, financialYear: true }
         });
 
         if (!payment) {
             throw new NotFoundError(`Payment with ID ${paymentId} not found.`);
+        }
+
+        if (payment.financialYear && payment.financialYear.status === 'CLOSED') {
+            throw new ValidationError(`Cannot void payment in CLOSED Financial Year ${payment.financialYear.code}.`);
         }
 
         if (payment.status === 'VOID') {

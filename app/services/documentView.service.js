@@ -45,18 +45,20 @@ function buildDocumentViewModel(doc, businessProfile = {}) {
     const themeBorder = isQuotation ? '#bfdbfe' : '#bbf7d0';
 
     // Seller Information (server authoritative, falls back to profile defaults)
+    const hasBank = Boolean(businessProfile.bankName && businessProfile.accountNumber);
     const seller = {
-        name: doc.sellerName || businessProfile.legalName || 'Spark ERP Technologies Pvt Ltd',
-        gstin: doc.sellerGSTIN || businessProfile.gstin || '29AAAAA0000A1Z5',
-        address: doc.sellerAddress || businessProfile.address || 'Tech Park Tower, 4th Floor, MG Road, Bengaluru, Karnataka 560001',
-        email: doc.sellerEmail || businessProfile.email || 'billing@sparkadmin.com',
-        phone: doc.sellerPhone || businessProfile.phone || '+91 80 4000 1234',
-        stateCode: doc.sellerStateCode || '29',
-        bankName: businessProfile.bankName || 'HDFC Bank Ltd',
-        accountNumber: businessProfile.accountNumber || '50200012345678',
-        ifscCode: businessProfile.ifscCode || 'HDFC0001234',
-        branch: businessProfile.branch || 'Koramangala Branch',
-        upiId: businessProfile.upiId || 'sparkerp@hdfcbank'
+        name: doc.sellerName || businessProfile.legalName || 'Authorized Issuer',
+        gstin: doc.sellerGSTIN || businessProfile.gstin || '',
+        address: doc.sellerAddress || businessProfile.address || '',
+        email: doc.sellerEmail || businessProfile.email || '',
+        phone: doc.sellerPhone || businessProfile.phone || '',
+        stateCode: doc.sellerStateCode || businessProfile.stateCode || '',
+        bankName: businessProfile.bankName || '',
+        accountNumber: businessProfile.accountNumber || '',
+        ifscCode: businessProfile.ifsc || businessProfile.ifscCode || '',
+        branch: businessProfile.branch || '',
+        upiId: businessProfile.upiId || '',
+        hasBankDetails: hasBank
     };
 
     // Client Information

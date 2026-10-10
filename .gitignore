@@ -59,6 +59,9 @@ build/
 tmp/
 temp/
 .cache/
+.artifacts/
+assets/uploads/avatars/*
+!assets/uploads/avatars/.gitkeep
 
 
 # ==========================================

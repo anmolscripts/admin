@@ -59,6 +59,8 @@
             <option value="PAYMENT" <%= filters.sourceType === 'PAYMENT' ? 'selected' : '' %>>Payments</option>
             <option value="CREDIT_NOTE" <%= filters.sourceType === 'CREDIT_NOTE' ? 'selected' : '' %>>Credit Notes</option>
             <option value="DEBIT_NOTE" <%= filters.sourceType === 'DEBIT_NOTE' ? 'selected' : '' %>>Debit Notes</option>
+            <option value="YEAR_END_CLOSE" <%= filters.sourceType === 'YEAR_END_CLOSE' ? 'selected' : '' %>>Year-End Closing</option>
+            <option value="OPENING_BALANCE" <%= filters.sourceType === 'OPENING_BALANCE' ? 'selected' : '' %>>Opening Balances</option>
             <option value="MANUAL" <%= filters.sourceType === 'MANUAL' ? 'selected' : '' %>>Manual Journals</option>
           </select>
         </div>
@@ -188,6 +190,18 @@
                   <% } else if (entry.sourceType === 'DEBIT_NOTE') { %>
                     <span class="badge bg-info-subtle text-info border border-info-subtle">
                       <i class="bi bi-plus-circle me-1"></i> Debit Note
+                    </span>
+                  <% } else if (entry.sourceType === 'YEAR_END_CLOSE') { %>
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                      <i class="bi bi-lock-fill me-1"></i> Year-End Close
+                    </span>
+                  <% } else if (entry.sourceType === 'YEAR_END_CLOSE_REVERSAL') { %>
+                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle">
+                      <i class="bi bi-unlock-fill me-1"></i> Close Reversal
+                    </span>
+                  <% } else if (entry.sourceType === 'OPENING_BALANCE') { %>
+                    <span class="badge bg-purple-subtle text-primary border border-primary-subtle">
+                      <i class="bi bi-arrow-right-circle me-1"></i> Opening Balance
                     </span>
                   <% } else { %>
                     <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">

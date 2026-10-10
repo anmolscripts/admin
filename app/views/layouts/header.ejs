@@ -6,11 +6,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <title>
-    <%= pageTitle || 'Spark Admin' %>
+    <%= pageTitle || 'Spark Admin' %> | <%= (locals.branding && locals.branding.workspaceName) || 'Spark Admin' %>
   </title>
 
-  <meta name="description" content="Spark Admin - Premium Bootstrap 5 Admin Dashboard Template" />
-  <meta name="author" content="Spark Admin Team" />
+  <meta name="description" content="Spark Admin - Professional Accounting & Invoicing ERP" />
+  <meta name="author" content="Spark Admin" />
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="/images/favicon.ico" />
@@ -51,14 +51,19 @@
   // Permission resolution for dynamic navigation visibility
   const canViewTeam = typeof locals.hasPermission === 'function' ? locals.hasPermission('TEAM', 'VIEW') : (locals.user && (locals.user.role === 'ADMIN' || locals.user.role === 'OWNER'));
   const canViewReports = typeof locals.hasPermission === 'function' ? (locals.hasPermission('REPORTS', 'VIEW') || locals.hasPermission('JOURNALS', 'VIEW') || locals.hasPermission('ACCOUNTS', 'VIEW')) : true;
+  const canViewFinancialYears = typeof locals.hasPermission === 'function' ? locals.hasPermission('FINANCIAL_YEARS', 'VIEW') : true;
 %>
 
 <body>
   <div class="sidebar-wrapper" id="sidebar">
     <!-- Brand Logo / Identity -->
     <a href="/dashboard" class="sidebar-brand">
-      <i class="bi bi-asterisk"></i>
-      <span>Spark Admin</span>
+      <% if (locals.branding && locals.branding.logoUrl) { %>
+        <img src="<%= locals.branding.logoUrl %>" alt="Logo" class="sidebar-brand-logo me-2" style="max-height: 28px;" />
+      <% } else { %>
+        <i class="bi bi-asterisk"></i>
+      <% } %>
+      <span class="sidebar-brand-text"><%= (locals.branding && locals.branding.workspaceName) || 'Spark Admin' %></span>
     </a>
 
     <!-- Authoritative Navigation Menu -->
@@ -84,11 +89,31 @@
               <span>Credit & Debit Notes</span>
             </a>
           </li>
+          <li class="sidebar-menu-item">
+            <a href="/purchases/orders" class="sidebar-menu-link" id="menu-purchases" title="Purchases & Vendor Bills">
+              <i class="bi bi-cart-fill"></i>
+              <span>Purchases</span>
+            </a>
+          </li>
+          <li class="sidebar-menu-item">
+            <a href="/financials/expenses" class="sidebar-menu-link" id="menu-expenses" title="Operating Expenses & Other Income">
+              <i class="bi bi-wallet2"></i>
+              <span>Expenses</span>
+            </a>
+          </li>
           <% if (canViewReports) { %>
           <li class="sidebar-menu-item">
             <a href="/reports" class="sidebar-menu-link <%= isReports ? 'active' : '' %>" id="menu-reports" title="Accounting & Reports">
               <i class="bi bi-bar-chart-line-fill"></i>
               <span>Reports & Accounting</span>
+            </a>
+          </li>
+          <% } %>
+          <% if (canViewFinancialYears) { %>
+          <li class="sidebar-menu-item">
+            <a href="/financial-years" class="sidebar-menu-link <%= locals.isFinancialYears ? 'active' : '' %>" id="menu-financial-years" title="Financial Years & Period Closing">
+              <i class="bi bi-calendar2-range"></i>
+              <span>Financial Years</span>
             </a>
           </li>
           <% } %>
@@ -129,14 +154,20 @@
     </div>
 
     <!-- Sidebar Profile Card (Dynamic Footer) -->
-    <div class="sidebar-profile">
-      <img src="/images/avatar.png" alt="Administrator" class="sidebar-profile-img"
-        onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=256&auto=format&fit=crop'">
-      <div class="sidebar-profile-info">
-        <div class="sidebar-profile-name"><%= locals.user ? locals.user.name : 'Administrator' %></div>
-        <div class="sidebar-profile-email"><%= locals.user ? locals.user.email : 'admin@email.com' %></div>
+    <a href="/profile" class="sidebar-profile text-decoration-none">
+      <% if (locals.user && locals.user.avatarUrl) { %>
+        <img src="<%= locals.user.avatarUrl %>" alt="<%= locals.user.name || 'Administrator' %>" class="sidebar-profile-img" />
+      <% } else { %>
+        <div class="sidebar-profile-avatar-fallback rounded-circle bg-success text-white d-flex align-items-center justify-content-center fw-bold me-2" style="width: 40px; height: 40px; min-width: 40px; font-size: 1rem;">
+          <%= (locals.user && locals.user.name) ? locals.user.name.charAt(0).toUpperCase() : 'A' %>
+        </div>
+      <% } %>
+      <div class="sidebar-profile-info text-truncate">
+        <div class="sidebar-profile-name text-white fw-semibold"><%= locals.user ? locals.user.name : 'Administrator' %></div>
+        <div class="sidebar-profile-email text-muted small"><%= locals.user ? locals.user.email : 'admin@email.com' %></div>
+        <div class="sidebar-profile-role text-muted" style="font-size: 0.7rem;"><%= (locals.user && (locals.user.role === 'ADMIN' || locals.user.role === 'OWNER')) ? 'Administrator' : (locals.user ? locals.user.role : 'Guest') %></div>
       </div>
-    </div>
+    </a>
   </div>
 
 
@@ -163,6 +194,16 @@
             <li>
               <a class="dropdown-item" href="/documents/new?type=QUOTATION">
                 <i class="bi bi-file-earmark-text text-info me-2"></i> New Quotation
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item" href="/purchases/orders/new">
+                <i class="bi bi-cart-plus text-primary me-2"></i> New Purchase Order
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item" href="/purchases/bills/new">
+                <i class="bi bi-receipt-cutoff text-danger me-2"></i> New Supplier Bill
               </a>
             </li>
             <li><hr class="dropdown-divider" /></li>
@@ -234,85 +275,35 @@
         <!-- Notifications -->
         <div class="dropdown">
           <button class="navbar-action-btn dropdown-toggle" type="button" data-bs-toggle="dropdown"
-            aria-expanded="false" id="btn-notifications">
+            aria-expanded="false" id="btn-notifications" aria-label="Notifications">
             <i class="bi bi-bell"></i>
-
-            <span class="navbar-action-badge"></span>
           </button>
 
-          <div class="dropdown-menu dropdown-menu-end dropdown-menu-notification p-0">
-            <div class="notification-header">
-              <h6 class="notification-title">Notifications</h6>
-
-              <button class="btn-clear-all" type="button">
-                Mark all read
-              </button>
+          <div class="dropdown-menu dropdown-menu-end dropdown-menu-notification p-0 shadow-sm" style="min-width: 280px;">
+            <div class="notification-header p-3 border-bottom d-flex justify-content-between align-items-center">
+              <h6 class="notification-title mb-0 fw-bold">Notifications</h6>
+              <span class="badge bg-light text-muted fw-normal">0 unread</span>
             </div>
 
-            <div class="notification-list">
-              <a href="#" class="notification-item">
-                <div class="notification-icon bg-success text-white">
-                  <i class="bi bi-wallet2"></i>
-                </div>
-
-                <div class="notification-content">
-                  <p class="notification-text">
-                    New sale received:
-                    <strong>$150.00</strong>
-                  </p>
-
-                  <span class="notification-time"> 2 mins ago </span>
-                </div>
-
-                <span class="notification-unread-dot"></span>
-              </a>
-
-              <a href="#" class="notification-item">
-                <div class="notification-icon bg-primary text-white">
-                  <i class="bi bi-person-plus-fill"></i>
-                </div>
-
-                <div class="notification-content">
-                  <p class="notification-text">
-                    New user registered:
-                    <strong><span class="profile-name">
-                        <%= locals.user ? locals.user.name : 'Guest' %>
-                      </span></strong>
-                  </p>
-
-                  <span class="notification-time"> 1 hour ago </span>
-                </div>
-
-                <span class="notification-unread-dot"></span>
-              </a>
-
-              <a href="#" class="notification-item">
-                <div class="notification-icon bg-warning text-dark">
-                  <i class="bi bi-box-seam-fill"></i>
-                </div>
-
-                <div class="notification-content">
-                  <p class="notification-text">
-                    Stock running low:
-                    <strong>Hoodie</strong>
-                  </p>
-
-                  <span class="notification-time"> 3 hours ago </span>
-                </div>
-              </a>
+            <div class="notification-list p-4 text-center text-muted">
+              <i class="bi bi-bell-slash fs-3 d-block mb-2 text-secondary opacity-50"></i>
+              <p class="mb-0 small fw-medium">No new notifications</p>
+              <small class="text-muted">You are all caught up.</small>
             </div>
-
-            <a href="#" class="notification-footer">
-              View All Notifications
-            </a>
           </div>
         </div>
 
         <!-- Profile -->
         <div class="dropdown ms-2">
-          <button class="navbar-profile-btn dropdown-toggle" type="button" data-bs-toggle="dropdown"
+          <button class="navbar-profile-btn dropdown-toggle d-flex align-items-center" type="button" data-bs-toggle="dropdown"
             aria-expanded="false" id="profile-dropdown">
-            <img src="/images/avatar.png" alt="Profile Image" class="navbar-profile-img" />
+            <% if (locals.user && locals.user.avatarUrl) { %>
+              <img src="<%= locals.user.avatarUrl %>" alt="<%= locals.user.name %>" class="navbar-profile-img me-2" />
+            <% } else { %>
+              <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold me-2" style="width: 32px; height: 32px; font-size: 0.85rem;">
+                <%= (locals.user && locals.user.name) ? locals.user.name.charAt(0).toUpperCase() : 'U' %>
+              </div>
+            <% } %>
 
             <span class="navbar-profile-name d-none d-md-inline">
               <span class="profile-name">
@@ -320,43 +311,37 @@
               </span>
             </span>
 
-            <i class="bi bi-chevron-down navbar-profile-caret"></i>
+            <i class="bi bi-chevron-down navbar-profile-caret ms-1"></i>
           </button>
 
-          <ul class="dropdown-menu dropdown-menu-end dropdown-menu-profile">
-            <li class="dropdown-header">Welcome !</li>
+          <ul class="dropdown-menu dropdown-menu-end dropdown-menu-profile shadow-sm">
+            <li class="dropdown-header border-bottom pb-2 mb-1">
+              <div class="fw-bold text-dark"><%= locals.user ? locals.user.name : 'User' %></div>
+              <div class="text-muted small text-truncate"><%= locals.user ? locals.user.email : '' %></div>
+            </li>
 
             <li>
-              <a class="dropdown-item" href="#">
-                <i class="bi bi-person"></i>
-                <span class="profile-email">
-                  <%= locals.user ? locals.user.email : '' %>
-                </span>
+              <a class="dropdown-item py-2" href="/profile" id="user-profile-link">
+                <i class="bi bi-person me-2 text-primary"></i>
+                My Profile
               </a>
             </li>
 
             <li>
-              <a class="dropdown-item" href="/settings">
-                <i class="bi bi-gear"></i>
+              <a class="dropdown-item py-2" href="/settings" id="user-settings-link">
+                <i class="bi bi-gear me-2 text-secondary"></i>
                 Settings
               </a>
             </li>
 
             <li>
-              <a class="dropdown-item" href="#">
-                <i class="bi bi-lock"></i>
-                Lock Screen
-              </a>
-            </li>
-
-            <li>
-              <hr class="dropdown-divider" />
+              <hr class="dropdown-divider my-1" />
             </li>
 
             <li>
               <form action="/logout" method="POST" class="m-0 p-0" id="logout-form">
                 <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>">
-                <button type="submit" class="dropdown-item">
+                <button type="submit" class="dropdown-item py-2 text-danger">
                   <i class="bi bi-box-arrow-right me-2"></i>
                   Logout
                 </button>
@@ -388,7 +373,7 @@
           <i class="bi bi-calendar4-event"></i>
 
           <span id="selected-date-range">
-            January 12, 2026 - January 23, 2026
+            <%= new Date().toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }) %>
           </span>
 
           <i class="bi bi-chevron-down ms-1"></i>

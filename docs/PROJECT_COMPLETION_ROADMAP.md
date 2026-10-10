@@ -42,8 +42,9 @@
 | **Milestone 4** | Invoice Accounting Posting | **COMMITTED** | `750233b` | `postInvoice`, `reverseInvoice`, idempotency `INVOICE:<id>`, Dr AR / Cr Sales / Cr Output GST / Round Off, multi-state lifecycle integration. |
 | **Milestone 5** | Payment Accounting Posting | **COMMITTED** | `42c99c8` | `postPayment`, `reversePayment`, cash/bank mapping (`1111`/`1112`), subledger crediting, partial payment support, voiding reversal. |
 | **Milestone 6** | Credit & Debit Notes | **COMMITTED** | `1cc39d4` | `CreditDebitNote`, `CreditDebitNoteItem`, sequence numbering, GL posting (`postCreditDebitNote`), void reversal, multi-note adjustment limits, 503 passing tests. |
-| **Milestone 7** | Core Financial Reports & Accounting Reconciliation | **TESTS PASSED / REVIEW PENDING** | — | Journal Register, General Ledger, Trial Balance, Profit & Loss, Balance Sheet, Customer Receivables Ageing & Subledger Reconciliation. Full suite 537/537 passed. |
-| **Milestone 8** | Financial Year Closing & Opening Balances | **NOT STARTED** | — | Year-end closing procedure, carry-forward balances, period locking. |
+| **Milestone 7** | Core Financial Reports & Accounting Reconciliation | **COMPLETE AND VERIFIED** | `8aa20d3` | Journal Register, General Ledger, Trial Balance, Profit & Loss, Balance Sheet, Customer Receivables Ageing & Subledger Reconciliation. Full suite passed. |
+| **Milestone 8** | Financial Year Closing & Opening Balances | **COMPLETE AND VERIFIED** | — | Year-end closing procedure, carry-forward balances, period locking, double-entry closing journals. |
+| **Product Readiness** | Productisation, Security, Search & Release Hardening | **COMPLETE AND VERIFIED** | — | Universal Global Search (Ctrl+K), Organization Settings & Branding, User Profile & Avatar Magic Bytes, Unification across HTML/Print/PDF/Excel, Guarded DB scripts (`db:upgrade`, `db:reset`), Release Packaging (`package:release`), Master Verification (`verify:all`, 597/597 tests passing). |
 | **Milestone 9** | Statutory Tax Reports (GST Summary) | **NOT STARTED** | — | CGST, SGST, IGST tax return summaries, sales vs credit note tax adjustments. |
 | **Milestone 10** | Production Hardening & Operational Audit | **NOT STARTED** | — | Cross-module reconciliation, production runbook, disaster recovery validation. |
 

@@ -41,6 +41,9 @@ const STANDARD_ACCOUNTS = [
     { code: '1131', name: 'Input CGST', type: 'ASSET', subtype: 'INPUT_CGST', parentCode: '1130', level: 4, isGroup: false, allowPosting: true, systemAccount: true, systemAccountKey: 'INPUT_CGST', openingBalanceType: 'DEBIT' },
     { code: '1132', name: 'Input SGST', type: 'ASSET', subtype: 'INPUT_SGST', parentCode: '1130', level: 4, isGroup: false, allowPosting: true, systemAccount: true, systemAccountKey: 'INPUT_SGST', openingBalanceType: 'DEBIT' },
     { code: '1133', name: 'Input IGST', type: 'ASSET', subtype: 'INPUT_IGST', parentCode: '1130', level: 4, isGroup: false, allowPosting: true, systemAccount: true, systemAccountKey: 'INPUT_IGST', openingBalanceType: 'DEBIT' },
+    { code: '1140', name: 'Inventories & Stock Assets', type: 'ASSET', subtype: 'INVENTORY', parentCode: '1100', level: 3, isGroup: true, allowPosting: false, description: 'Inventory Assets Group' },
+    { code: '1141', name: 'Stock in Hand / Inventory Asset', type: 'ASSET', subtype: 'INVENTORY', parentCode: '1140', level: 4, isGroup: false, allowPosting: true, systemAccount: true, systemAccountKey: 'INVENTORY_ASSET', openingBalanceType: 'DEBIT' },
+
 
     // 2000 LIABILITIES
     { code: '2000', name: 'Liabilities', type: 'LIABILITY', subtype: 'LIABILITY', level: 1, isGroup: true, allowPosting: false, description: 'Master Liabilities Group' },
@@ -51,6 +54,11 @@ const STANDARD_ACCOUNTS = [
     { code: '2113', name: 'Output IGST', type: 'LIABILITY', subtype: 'OUTPUT_IGST', parentCode: '2110', level: 4, isGroup: false, allowPosting: true, systemAccount: true, systemAccountKey: 'OUTPUT_IGST', openingBalanceType: 'CREDIT' },
     { code: '2120', name: 'Trade Payables (Creditors)', type: 'LIABILITY', subtype: 'PAYABLE', parentCode: '2100', level: 3, isGroup: true, allowPosting: false },
     { code: '2121', name: 'Accounts Payable (Vendors)', type: 'LIABILITY', subtype: 'ACCOUNTS_PAYABLE', parentCode: '2120', level: 4, isGroup: false, isControlAccount: true, allowPosting: true, systemAccount: true, systemAccountKey: 'ACCOUNTS_PAYABLE', openingBalanceType: 'CREDIT' },
+    { code: '2130', name: 'Salaries & Wages Payable', type: 'LIABILITY', subtype: 'CURRENT_LIABILITY', parentCode: '2100', level: 3, isGroup: false, allowPosting: true, systemAccount: true, systemAccountKey: 'SALARIES_PAYABLE', openingBalanceType: 'CREDIT' },
+    { code: '2131', name: 'EPF Contributions Payable', type: 'LIABILITY', subtype: 'CURRENT_LIABILITY', parentCode: '2100', level: 3, isGroup: false, allowPosting: true, systemAccount: true, systemAccountKey: 'EPF_PAYABLE', openingBalanceType: 'CREDIT' },
+    { code: '2132', name: 'ESI Contributions Payable', type: 'LIABILITY', subtype: 'CURRENT_LIABILITY', parentCode: '2100', level: 3, isGroup: false, allowPosting: true, systemAccount: true, systemAccountKey: 'ESI_PAYABLE', openingBalanceType: 'CREDIT' },
+    { code: '2133', name: 'Professional Tax Payable', type: 'LIABILITY', subtype: 'CURRENT_LIABILITY', parentCode: '2100', level: 3, isGroup: false, allowPosting: true, systemAccount: true, systemAccountKey: 'PT_PAYABLE', openingBalanceType: 'CREDIT' },
+    { code: '2134', name: 'TDS on Salaries Payable', type: 'LIABILITY', subtype: 'CURRENT_LIABILITY', parentCode: '2100', level: 3, isGroup: false, allowPosting: true, systemAccount: true, systemAccountKey: 'TDS_PAYABLE', openingBalanceType: 'CREDIT' },
 
     // 3000 EQUITY
     { code: '3000', name: 'Equity & Capital', type: 'EQUITY', subtype: 'EQUITY', level: 1, isGroup: true, allowPosting: false, description: 'Master Equity Group' },
@@ -72,7 +80,9 @@ const STANDARD_ACCOUNTS = [
     { code: '5200', name: 'Operating & Administrative Expenses', type: 'EXPENSE', subtype: 'OPERATING_EXPENSE', parentCode: '5000', level: 2, isGroup: true, allowPosting: false },
     { code: '5210', name: 'Office & Administrative Expenses', type: 'EXPENSE', subtype: 'ADMIN_EXPENSE', parentCode: '5200', level: 3, isGroup: false, allowPosting: true, systemAccount: false, openingBalanceType: 'DEBIT' },
     { code: '5220', name: 'Bank Charges & Fees', type: 'EXPENSE', subtype: 'FINANCE_EXPENSE', parentCode: '5200', level: 3, isGroup: false, allowPosting: true, systemAccount: true, systemAccountKey: 'BANK_CHARGES', openingBalanceType: 'DEBIT' },
-    { code: '5230', name: 'Round Off Discrepancy', type: 'EXPENSE', subtype: 'ROUND_OFF', parentCode: '5200', level: 3, isGroup: false, allowPosting: true, systemAccount: true, systemAccountKey: 'ROUND_OFF', openingBalanceType: 'DEBIT' }
+    { code: '5230', name: 'Round Off Discrepancy', type: 'EXPENSE', subtype: 'ROUND_OFF', parentCode: '5200', level: 3, isGroup: false, allowPosting: true, systemAccount: true, systemAccountKey: 'ROUND_OFF', openingBalanceType: 'DEBIT' },
+    { code: '5240', name: 'Salaries & Employee Compensation', type: 'EXPENSE', subtype: 'ADMIN_EXPENSE', parentCode: '5200', level: 3, isGroup: false, allowPosting: true, systemAccount: true, systemAccountKey: 'SALARIES_EXPENSE', openingBalanceType: 'DEBIT' },
+    { code: '5241', name: 'Employer Statutory Contributions', type: 'EXPENSE', subtype: 'ADMIN_EXPENSE', parentCode: '5200', level: 3, isGroup: false, allowPosting: true, systemAccount: true, systemAccountKey: 'EMPLOYER_CONTRIBUTIONS', openingBalanceType: 'DEBIT' }
 ];
 
 /**

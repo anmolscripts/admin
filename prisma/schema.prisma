@@ -1,12 +1,794 @@
-// This is your Prisma schema file,
-// learn more about the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "mysql"
+}
+
+model User {
+  id                    Int               @id @default(autoincrement())
+  name                  String            @db.VarChar(100)
+  email                 String            @unique @db.VarChar(150)
+  password              String            @db.VarChar(255)
+  role                  String            @default("ADMIN") @db.VarChar(30)
+  active                Boolean           @default(true)
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  lastActivityAt        DateTime?
+  lastLoginAt           DateTime?
+  roleId                Int?
+  status                String            @default("ACTIVE") @db.VarChar(20)
+  avatarUrl             String?           @db.VarChar(255)
+  phone                 String?           @db.VarChar(50)
+  accountsCreated       ChartOfAccount[]  @relation("AccountCreatedBy")
+  clientsCreated        Client[]          @relation("ClientCreatedBy")
+  notesCreated          CreditDebitNote[] @relation("NoteCreatedBy")
+  notesUpdated          CreditDebitNote[] @relation("NoteUpdatedBy")
+  notesVoided           CreditDebitNote[] @relation("NoteVoidedBy")
+  financialYearsClosed  FinancialYear[]   @relation("FinancialYearClosedBy")
+  invitationsSent       Invitation[]      @relation("InvitationCreatedBy")
+  invitation            Invitation?       @relation("UserInvitation")
+  revisionsCreated      InvoiceRevision[] @relation("RevisionChangedBy")
+  invoicesCreated       Invoice[]         @relation("InvoiceCreatedBy")
+  invoicesDeleted       Invoice[]         @relation("InvoiceDeletedBy")
+  invoicesUpdated       Invoice[]         @relation("InvoiceUpdatedBy")
+  itemsCreated          Item[]            @relation("ItemCreatedBy")
+  journalsPosted        JournalEntry[]    @relation("JournalPostedBy")
+  paymentsCreated       Payment[]         @relation("PaymentCreatedBy")
+  purchaseOrdersCreated PurchaseOrder[]   @relation("PurchaseOrderCreatedBy")
+  purchaseOrdersUpdated PurchaseOrder[]   @relation("PurchaseOrderUpdatedBy")
+  suppliersCreated      Supplier[]        @relation("SupplierCreatedBy")
+  unitsCreated          Unit[]            @relation("UnitCreatedBy")
+  activities            UserActivityLog[] @relation("UserActivities")
+  supplierBillsCreated   SupplierBill[]      @relation("SupplierBillCreatedBy")
+  supplierBillsUpdated   SupplierBill[]      @relation("SupplierBillUpdatedBy")
+  expensesCreated        Expense[]           @relation("ExpenseCreatedBy")
+  expensesUpdated        Expense[]           @relation("ExpenseUpdatedBy")
+  otherIncomesCreated    OtherIncome[]       @relation("OtherIncomeCreatedBy")
+  otherIncomesUpdated    OtherIncome[]       @relation("OtherIncomeUpdatedBy")
+  supplierPaymentsCreated SupplierPayment[]  @relation("SupplierPaymentCreatedBy")
+  stockMovementsCreated   StockMovement[]    @relation("StockMovementCreatedBy")
+  employeesCreated        Employee[]         @relation("EmployeeCreatedBy")
+  salaryStructuresCreated SalaryStructure[]  @relation("SalaryStructureCreatedBy")
+  payrollPeriodsCreated   PayrollPeriod[]    @relation("PayrollPeriodCreatedBy")
+  payrollPeriodsApproved  PayrollPeriod[]    @relation("PayrollPeriodApprovedBy")
+  reimbursementsApproved  EmployeeReimbursement[] @relation("ReimbursementApprovedBy")
+  projectsCreated         Project[]          @relation("ProjectCreatedBy")
+  tasksAssigned           ProjectTask[]      @relation("TaskAssignedTo")
+  timesheetEntries        TimesheetEntry[]   @relation("TimesheetUser")
+  timesheetsApproved      TimesheetEntry[]   @relation("TimesheetApprovedBy")
+  userPermissions       UserPermission[]
+  assignedRole          Role?             @relation(fields: [roleId], references: [id])
+
+  @@index([roleId])
+  @@index([status])
+  @@map("users")
+}
+
+model Client {
+  id               Int                @id @default(autoincrement())
+  name             String
+  email            String?
+  phone            String?            @db.VarChar(50)
+  gstin            String?            @db.VarChar(20)
+  stateCode        String?            @db.VarChar(5)
+  billingAddress   String?            @db.Text
+  shippingAddress  String?            @db.Text
+  active           Boolean            @default(true)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  createdById      Int?
+  createdBy        User?              @relation("ClientCreatedBy", fields: [createdById], references: [id])
+  creditDebitNotes CreditDebitNote[]
+  invoices         Invoice[]
+  journalLines     JournalEntryLine[]
+  projects         Project[]
+
+  @@index([name])
+  @@index([email])
+  @@index([active])
+  @@index([createdById])
+  @@map("clients")
+}
+
+model Supplier {
+  id             Int             @id @default(autoincrement())
+  name           String
+  email          String?
+  phone          String?         @db.VarChar(50)
+  gstin          String?         @db.VarChar(20)
+  stateCode      String?         @db.VarChar(5)
+  address        String?         @db.Text
+  active         Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  createdById    Int?
+  purchaseOrders PurchaseOrder[]
+  createdBy      User?           @relation("SupplierCreatedBy", fields: [createdById], references: [id])
+  supplierBills  SupplierBill[]
+  supplierPayments SupplierPayment[]
+
+  @@index([name])
+  @@index([email])
+  @@index([active])
+  @@index([createdById])
+  @@map("suppliers")
+}
+
+model PurchaseOrder {
+  id                     Int                 @id @default(autoincrement())
+  orderNumber            String              @unique @db.VarChar(50)
+  supplierId             Int?
+  supplierName           String              @db.VarChar(255)
+  supplierGSTIN          String?             @db.VarChar(20)
+  placeOfSupplyStateCode String?             @db.VarChar(5)
+  termsAndConditions     String?             @db.Text
+  remarks                String?             @db.Text
+  orderDate              DateTime            @db.Date
+  dueDate                DateTime?           @db.Date
+  status                 String              @default("ACTIVE") @db.VarChar(20)
+  financialYearId        Int?
+  createdById            Int
+  updatedById            Int
+  version                Int                 @default(1)
+  items                  PurchaseOrderItem[]
+  createdBy              User                @relation("PurchaseOrderCreatedBy", fields: [createdById], references: [id])
+  financialYear          FinancialYear?      @relation(fields: [financialYearId], references: [id])
+  supplier               Supplier?           @relation(fields: [supplierId], references: [id])
+  updatedBy              User                @relation("PurchaseOrderUpdatedBy", fields: [updatedById], references: [id])
+
+  @@index([supplierId])
+  @@index([orderDate])
+  @@index([status])
+  @@index([createdById], map: "purchase_orders_createdById_fkey")
+  @@index([financialYearId], map: "purchase_orders_financialYearId_fkey")
+  @@index([updatedById], map: "purchase_orders_updatedById_fkey")
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id              Int           @id @default(autoincrement())
+  purchaseOrderId Int
+  lineNumber      Int
+  name            String        @db.VarChar(255)
+  hsnSac          String?       @db.VarChar(20)
+  quantity        Decimal       @db.Decimal(10, 2)
+  unit            String        @default("PCS") @db.VarChar(30)
+  rate            Decimal       @db.Decimal(12, 2)
+  amount          Decimal       @db.Decimal(12, 2)
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+
+  @@index([purchaseOrderId])
+  @@map("purchase_order_items")
+}
+
+model PurchaseOrderNumberSequence {
+  id            Int      @id @default(autoincrement())
+  year          Int      @unique
+  currentNumber Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("purchase_order_number_sequences")
+}
+
+model SupplierBill {
+  id                     Int                 @id @default(autoincrement())
+  billNumber              String              @unique @db.VarChar(50)
+  supplierId              Int?
+  supplierName            String              @db.VarChar(255)
+  supplierGSTIN           String?             @db.VarChar(20)
+  billDate                DateTime            @db.Date
+  dueDate                 DateTime?           @db.Date
+  status                  String              @default("ACTIVE") @db.VarChar(20)
+  totalAmount             Decimal             @db.Decimal(12, 2)
+  financialYearId         Int?
+  createdById             Int
+  updatedById             Int
+  version                 Int                 @default(1)
+  items                   SupplierBillItem[]
+  createdBy               User                @relation("SupplierBillCreatedBy", fields: [createdById], references: [id])
+  updatedBy               User                @relation("SupplierBillUpdatedBy", fields: [updatedById], references: [id])
+  financialYear           FinancialYear?      @relation(fields: [financialYearId], references: [id])
+  supplier                Supplier?           @relation(fields: [supplierId], references: [id])
+  supplierPayments        SupplierPayment[]
+
+  @@index([supplierId])
+  @@index([billDate])
+  @@index([status])
+  @@map("supplier_bills")
+}
+
+model SupplierBillItem {
+  id               Int          @id @default(autoincrement())
+  supplierBillId   Int
+  lineNumber       Int
+  name             String       @db.VarChar(255)
+  hsnSac           String?      @db.VarChar(20)
+  quantity         Decimal      @db.Decimal(10, 2)
+  unit             String       @default("PCS") @db.VarChar(30)
+  rate             Decimal      @db.Decimal(12, 2)
+  amount           Decimal      @db.Decimal(12, 2)
+  supplierBill     SupplierBill @relation(fields: [supplierBillId], references: [id], onDelete: Cascade)
+
+  @@index([supplierBillId])
+  @@map("supplier_bill_items")
+}
+
+model Expense {
+  id               Int          @id @default(autoincrement())
+  expenseDate      DateTime     @db.Date
+  amount           Decimal      @db.Decimal(12, 2)
+  description      String?      @db.Text
+  category         String?      @db.VarChar(100)
+  financialYearId  Int?
+  createdById      Int
+  updatedById      Int
+  version          Int          @default(1)
+  createdBy        User         @relation("ExpenseCreatedBy", fields: [createdById], references: [id])
+  updatedBy        User         @relation("ExpenseUpdatedBy", fields: [updatedById], references: [id])
+  financialYear    FinancialYear? @relation(fields: [financialYearId], references: [id])
+
+  @@index([expenseDate])
+  @@map("expenses")
+}
+
+model OtherIncome {
+  id               Int          @id @default(autoincrement())
+  incomeDate       DateTime     @db.Date
+  amount           Decimal      @db.Decimal(12, 2)
+  description      String?      @db.Text
+  source           String?      @db.VarChar(100)
+  financialYearId  Int?
+  createdById      Int
+  updatedById      Int
+  version          Int          @default(1)
+  createdBy        User         @relation("OtherIncomeCreatedBy", fields: [createdById], references: [id])
+  updatedBy        User         @relation("OtherIncomeUpdatedBy", fields: [updatedById], references: [id])
+  financialYear    FinancialYear? @relation(fields: [financialYearId], references: [id])
+
+  @@index([incomeDate])
+  @@map("other_incomes")
+}
+
+model BusinessProfile {
+  id                  Int      @id @default(autoincrement())
+  legalName           String
+  displayName         String?
+  gstin               String?  @db.VarChar(20)
+  stateCode           String?  @db.VarChar(5)
+  email               String?
+  phone               String?  @db.VarChar(50)
+  address             String?  @db.Text
+  defaultTerms        String?  @db.Text
+  defaultRemarks      String?  @db.Text
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  accountHolder       String?
+  accountNumber       String?  @db.VarChar(50)
+  bankName            String?
+  branch              String?
+  currency            String?  @default("INR") @db.VarChar(10)
+  ifsc                String?  @db.VarChar(20)
+  invoiceFooter       String?  @db.Text
+  logoUrl             String?  @db.VarChar(255)
+  paymentInstructions String?  @db.Text
+  timeZone            String?  @default("Asia/Kolkata") @db.VarChar(50)
+  upiId               String?  @db.VarChar(100)
+  website             String?
+  workspaceName       String?
+
+  @@map("business_profiles")
+}
+
+model Invoice {
+  id                         Int               @id @default(autoincrement())
+  invoiceNumber              String            @unique @db.VarChar(50)
+  clientName                 String            @db.VarChar(255)
+  invoiceDate                DateTime          @db.Date
+  gstEnabled                 Boolean           @default(false)
+  gstRate                    Decimal           @default(0.00) @db.Decimal(5, 2)
+  subtotal                   Decimal           @db.Decimal(12, 2)
+  gstAmount                  Decimal           @db.Decimal(12, 2)
+  roundOff                   Decimal           @db.Decimal(12, 2)
+  grandTotal                 Decimal           @db.Decimal(12, 2)
+  status                     InvoiceStatus     @default(ACTIVE)
+  version                    Int               @default(1)
+  createdById                Int
+  updatedById                Int
+  createdAt                  DateTime          @default(now())
+  updatedAt                  DateTime          @updatedAt
+  deleteReason               String?           @db.Text
+  deletedAt                  DateTime?
+  deletedById                Int?
+  documentType               DocumentType      @default(INVOICE)
+  previousStatusBeforeDelete InvoiceStatus?
+  sourceQuotationId          Int?              @unique
+  billingAddress             String?           @db.Text
+  clientEmail                String?           @db.VarChar(255)
+  clientPhone                String?           @db.VarChar(50)
+  remarks                    String?           @db.Text
+  shippingAddress            String?           @db.Text
+  termsAndConditions         String?           @db.Text
+  cgstAmount                 Decimal           @default(0.00) @db.Decimal(12, 2)
+  clientGSTIN                String?           @db.VarChar(20)
+  clientId                   Int?
+  igstAmount                 Decimal           @default(0.00) @db.Decimal(12, 2)
+  outstandingAmount          Decimal           @default(0.00) @db.Decimal(12, 2)
+  paidAmount                 Decimal           @default(0.00) @db.Decimal(12, 2)
+  placeOfSupplyStateCode     String?           @db.VarChar(5)
+  sellerAddress              String?           @db.Text
+  sellerEmail                String?
+  sellerGSTIN                String?           @db.VarChar(20)
+  sellerName                 String?
+  sellerPhone                String?           @db.VarChar(50)
+  sellerStateCode            String?           @db.VarChar(5)
+  sgstAmount                 Decimal           @default(0.00) @db.Decimal(12, 2)
+  dueDate                    DateTime?         @db.Date
+  validUntil                 DateTime?         @db.Date
+  financialYearId            Int?
+  creditDebitNotes           CreditDebitNote[]
+  items                      InvoiceItem[]
+  revisions                  InvoiceRevision[]
+  client                     Client?           @relation(fields: [clientId], references: [id])
+  createdBy                  User              @relation("InvoiceCreatedBy", fields: [createdById], references: [id])
+  deletedBy                  User?             @relation("InvoiceDeletedBy", fields: [deletedById], references: [id])
+  financialYear              FinancialYear?    @relation(fields: [financialYearId], references: [id])
+  sourceQuotation            Invoice?          @relation("QuotationToInvoice", fields: [sourceQuotationId], references: [id])
+  convertedInvoice           Invoice?          @relation("QuotationToInvoice")
+  updatedBy                  User              @relation("InvoiceUpdatedBy", fields: [updatedById], references: [id])
+  payments                   Payment[]
+
+  @@index([documentType])
+  @@index([clientId])
+  @@index([clientName])
+  @@index([status])
+  @@index([invoiceDate])
+  @@index([createdById])
+  @@index([updatedById])
+  @@index([deletedById])
+  @@index([financialYearId])
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id                   Int                   @id @default(autoincrement())
+  invoiceId            Int
+  lineNumber           Int
+  name                 String                @db.VarChar(255)
+  quantity             Decimal               @db.Decimal(10, 2)
+  unit                 String                @default("PCS") @db.VarChar(30)
+  rate                 Decimal               @db.Decimal(12, 2)
+  amount               Decimal               @db.Decimal(12, 2)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  hsnSac               String?               @db.VarChar(20)
+  creditDebitNoteItems CreditDebitNoteItem[]
+  invoice              Invoice               @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@map("invoice_items")
+}
+
+model Item {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique @db.VarChar(255)
+  description String?  @db.Text
+  unit        String   @default("PCS") @db.VarChar(30)
+  rate        Decimal  @default(0.00) @db.Decimal(12, 2)
+  hsnSac      String?  @db.VarChar(20)
+  gstRate     Decimal  @default(0.00) @db.Decimal(5, 2)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById Int?
+  createdBy   User?    @relation("ItemCreatedBy", fields: [createdById], references: [id])
+  stockMovements StockMovement[]
+
+  @@index([active])
+  @@index([createdById])
+  @@map("items")
+}
+
+model Unit {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(100)
+  symbol      String   @unique @db.VarChar(30)
+  description String?  @db.Text
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById Int?
+  createdBy   User?    @relation("UnitCreatedBy", fields: [createdById], references: [id])
+
+  @@index([active])
+  @@index([createdById])
+  @@map("units")
+}
+
+model InvoiceRevision {
+  id          Int      @id @default(autoincrement())
+  invoiceId   Int
+  revisionNo  Int
+  action      String   @db.VarChar(50)
+  changedById Int
+  changedAt   DateTime @default(now())
+  changes     Json
+  snapshot    Json
+  ipAddress   String?  @db.VarChar(45)
+  userAgent   String?  @db.VarChar(255)
+  changedBy   User     @relation("RevisionChangedBy", fields: [changedById], references: [id])
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@unique([invoiceId, revisionNo])
+  @@index([invoiceId])
+  @@index([changedById])
+  @@map("invoice_revisions")
+}
+
+model Payment {
+  id              Int            @id @default(autoincrement())
+  invoiceId       Int
+  paymentDate     DateTime       @db.Date
+  amount          Decimal        @db.Decimal(12, 2)
+  method          String         @default("BANK_TRANSFER") @db.VarChar(50)
+  reference       String?
+  notes           String?        @db.Text
+  status          String         @default("POSTED") @db.VarChar(20)
+  createdById     Int?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  financialYearId Int?
+  createdBy       User?          @relation("PaymentCreatedBy", fields: [createdById], references: [id])
+  financialYear   FinancialYear? @relation(fields: [financialYearId], references: [id])
+  invoice         Invoice        @relation(fields: [invoiceId], references: [id])
+
+  @@index([invoiceId])
+  @@index([status])
+  @@index([paymentDate])
+  @@index([createdById])
+  @@index([financialYearId])
+  @@map("payments")
+}
+
+model InvoiceNumberSequence {
+  id            Int          @id @default(autoincrement())
+  year          Int
+  currentNumber Int          @default(0)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  documentType  DocumentType @default(INVOICE)
+
+  @@unique([documentType, year])
+  @@map("invoice_number_sequences")
+}
+
+model Role {
+  id              Int              @id @default(autoincrement())
+  name            String           @unique @db.VarChar(50)
+  description     String?          @db.VarChar(255)
+  isSystem        Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  rolePermissions RolePermission[]
+  users           User[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id              Int              @id @default(autoincrement())
+  module          String           @db.VarChar(50)
+  action          String           @db.VarChar(50)
+  description     String?          @db.VarChar(255)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  rolePermissions RolePermission[]
+  userPermissions UserPermission[]
+
+  @@unique([module, action])
+  @@index([module])
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           Int        @id @default(autoincrement())
+  roleId       Int
+  permissionId Int
+  createdAt    DateTime   @default(now())
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+model UserPermission {
+  id           Int        @id @default(autoincrement())
+  userId       Int
+  permissionId Int
+  createdAt    DateTime   @default(now())
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, permissionId])
+  @@index([userId])
+  @@index([permissionId])
+  @@map("user_permissions")
+}
+
+model Invitation {
+  id          Int       @id @default(autoincrement())
+  userId      Int       @unique
+  tokenHash   String    @unique @db.VarChar(64)
+  status      String    @default("PENDING") @db.VarChar(20)
+  expiresAt   DateTime
+  invitedById Int
+  acceptedAt  DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  invitedBy   User      @relation("InvitationCreatedBy", fields: [invitedById], references: [id], onDelete: Cascade)
+  user        User      @relation("UserInvitation", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tokenHash])
+  @@index([status])
+  @@index([invitedById])
+  @@map("invitations")
+}
+
+model UserActivityLog {
+  id              Int      @id @default(autoincrement())
+  actorUserId     Int?
+  action          String   @db.VarChar(50)
+  module          String   @db.VarChar(50)
+  targetType      String?  @db.VarChar(50)
+  targetId        String?  @db.VarChar(50)
+  targetReference String?  @db.VarChar(100)
+  ipAddress       String?  @db.VarChar(45)
+  userAgent       String?  @db.VarChar(500)
+  metadata        Json?
+  createdAt       DateTime @default(now())
+  actorUser       User?    @relation("UserActivities", fields: [actorUserId], references: [id])
+
+  @@index([actorUserId])
+  @@index([createdAt])
+  @@index([module])
+  @@index([action])
+  @@index([targetType, targetId])
+  @@map("user_activity_logs")
+}
+
+model FinancialYear {
+  id                       Int                       @id @default(autoincrement())
+  code                     String                    @unique @db.VarChar(20)
+  startDate                DateTime
+  endDate                  DateTime
+  status                   String                    @default("OPEN") @db.VarChar(10)
+  isCurrent                Boolean                   @default(false)
+  closedAt                 DateTime?
+  closedById               Int?
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime                  @updatedAt
+  creditDebitNoteSequences CreditDebitNoteSequence[]
+  creditDebitNotes         CreditDebitNote[]
+  closedBy                 User?                     @relation("FinancialYearClosedBy", fields: [closedById], references: [id])
+  invoices                 Invoice[]
+  journalEntries           JournalEntry[]
+  journalSequence          JournalNumberSequence?
+  payments                 Payment[]
+  purchaseOrders           PurchaseOrder[]
+  supplierBills            SupplierBill[]
+  expenses                 Expense[]
+  otherIncomes             OtherIncome[]
+  supplierPayments         SupplierPayment[]
+  payrollPeriods           PayrollPeriod[]
+  reimbursements           EmployeeReimbursement[]
+
+  @@index([closedById])
+  @@map("financial_years")
+}
+
+model ChartOfAccount {
+  id                 Int                @id @default(autoincrement())
+  code               String             @unique @db.VarChar(50)
+  name               String
+  type               AccountType
+  subtype            String?            @db.VarChar(100)
+  parentId           Int?
+  level              Int                @default(1)
+  isGroup            Boolean            @default(false)
+  isControlAccount   Boolean            @default(false)
+  allowPosting       Boolean            @default(true)
+  openingBalance     Decimal            @default(0.00) @db.Decimal(15, 2)
+  openingBalanceType String             @default("DEBIT") @db.VarChar(10)
+  currentBalance     Decimal            @default(0.00) @db.Decimal(15, 2)
+  active             Boolean            @default(true)
+  systemAccount      Boolean            @default(false)
+  systemAccountKey   String?            @unique @db.VarChar(50)
+  description        String?            @db.Text
+  createdById        Int?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  createdBy          User?              @relation("AccountCreatedBy", fields: [createdById], references: [id])
+  parent             ChartOfAccount?    @relation("AccountHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
+  children           ChartOfAccount[]   @relation("AccountHierarchy")
+  journalLines       JournalEntryLine[]
+
+  @@index([type])
+  @@index([parentId])
+  @@index([isGroup])
+  @@index([active])
+  @@index([createdById])
+  @@map("chart_of_accounts")
+}
+
+model JournalEntry {
+  id              Int                @id @default(autoincrement())
+  entryNumber     String             @unique @db.VarChar(50)
+  entryDate       DateTime           @db.Date
+  financialYearId Int
+  sourceType      String             @default("MANUAL") @db.VarChar(50)
+  sourceId        Int?
+  narration       String             @db.Text
+  status          String             @default("POSTED") @db.VarChar(20)
+  idempotencyKey  String?            @unique @db.VarChar(100)
+  postedAt        DateTime           @default(now())
+  postedById      Int?
+  reversedEntryId Int?               @unique
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  financialYear   FinancialYear      @relation(fields: [financialYearId], references: [id])
+  postedBy        User?              @relation("JournalPostedBy", fields: [postedById], references: [id])
+  reversedEntry   JournalEntry?      @relation("JournalReversal", fields: [reversedEntryId], references: [id], onDelete: Restrict)
+  reversingEntry  JournalEntry?      @relation("JournalReversal")
+  lines           JournalEntryLine[]
+  payrollPeriods  PayrollPeriod[]
+  projectCosts    ProjectCost[]
+
+  @@index([entryDate])
+  @@index([financialYearId])
+  @@index([sourceType, sourceId])
+  @@index([status])
+  @@index([postedById])
+  @@map("journal_entries")
+}
+
+model JournalEntryLine {
+  id             Int            @id @default(autoincrement())
+  journalEntryId Int
+  accountId      Int
+  lineNumber     Int
+  debit          Decimal        @default(0.00) @db.Decimal(15, 2)
+  credit         Decimal        @default(0.00) @db.Decimal(15, 2)
+  description    String?        @db.Text
+  clientId       Int?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  account        ChartOfAccount @relation(fields: [accountId], references: [id])
+  client         Client?        @relation(fields: [clientId], references: [id])
+  journalEntry   JournalEntry   @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+
+  @@index([journalEntryId])
+  @@index([accountId])
+  @@index([clientId])
+  @@map("journal_entry_lines")
+}
+
+model JournalNumberSequence {
+  id              Int           @id @default(autoincrement())
+  financialYearId Int           @unique
+  currentNumber   Int           @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  financialYear   FinancialYear @relation(fields: [financialYearId], references: [id])
+
+  @@map("journal_number_sequences")
+}
+
+model CreditDebitNote {
+  id                        Int                   @id @default(autoincrement())
+  noteNumber                String                @unique @db.VarChar(50)
+  noteType                  NoteType
+  invoiceId                 Int
+  clientId                  Int?
+  financialYearId           Int
+  noteDate                  DateTime              @db.Date
+  status                    NoteStatus            @default(ISSUED)
+  reason                    String                @db.Text
+  currency                  String                @default("INR") @db.VarChar(10)
+  clientName                String                @db.VarChar(255)
+  clientEmail               String?               @db.VarChar(255)
+  clientPhone               String?               @db.VarChar(50)
+  clientGSTIN               String?               @db.VarChar(20)
+  placeOfSupplyStateCode    String?               @db.VarChar(5)
+  billingAddress            String?               @db.Text
+  shippingAddress           String?               @db.Text
+  sellerName                String
+  sellerGSTIN               String?               @db.VarChar(20)
+  sellerStateCode           String?               @db.VarChar(5)
+  sellerAddress             String?               @db.Text
+  originalInvoiceNumber     String                @db.VarChar(50)
+  originalInvoiceDate       DateTime              @db.Date
+  originalInvoiceGrandTotal Decimal               @db.Decimal(12, 2)
+  gstEnabled                Boolean               @default(false)
+  gstRate                   Decimal               @default(0.00) @db.Decimal(5, 2)
+  subtotal                  Decimal               @db.Decimal(12, 2)
+  cgstAmount                Decimal               @default(0.00) @db.Decimal(12, 2)
+  sgstAmount                Decimal               @default(0.00) @db.Decimal(12, 2)
+  igstAmount                Decimal               @default(0.00) @db.Decimal(12, 2)
+  gstAmount                 Decimal               @default(0.00) @db.Decimal(12, 2)
+  roundOff                  Decimal               @default(0.00) @db.Decimal(12, 2)
+  grandTotal                Decimal               @db.Decimal(12, 2)
+  remarks                   String?               @db.Text
+  createdById               Int
+  updatedById               Int?
+  voidedById                Int?
+  voidReason                String?               @db.Text
+  voidedAt                  DateTime?
+  createdAt                 DateTime              @default(now())
+  updatedAt                 DateTime              @updatedAt
+  items                     CreditDebitNoteItem[]
+  client                    Client?               @relation(fields: [clientId], references: [id])
+  createdBy                 User                  @relation("NoteCreatedBy", fields: [createdById], references: [id])
+  financialYear             FinancialYear         @relation(fields: [financialYearId], references: [id])
+  invoice                   Invoice               @relation(fields: [invoiceId], references: [id])
+  updatedBy                 User?                 @relation("NoteUpdatedBy", fields: [updatedById], references: [id])
+  voidedBy                  User?                 @relation("NoteVoidedBy", fields: [voidedById], references: [id])
+
+  @@index([noteType])
+  @@index([invoiceId])
+  @@index([clientId])
+  @@index([financialYearId])
+  @@index([noteDate])
+  @@index([status])
+  @@index([createdById], map: "credit_debit_notes_createdById_fkey")
+  @@index([updatedById], map: "credit_debit_notes_updatedById_fkey")
+  @@index([voidedById], map: "credit_debit_notes_voidedById_fkey")
+  @@map("credit_debit_notes")
+}
+
+model CreditDebitNoteItem {
+  id            Int             @id @default(autoincrement())
+  noteId        Int
+  invoiceItemId Int?
+  lineNumber    Int
+  name          String          @db.VarChar(255)
+  description   String?         @db.Text
+  hsnSac        String?         @db.VarChar(20)
+  quantity      Decimal         @db.Decimal(10, 2)
+  unit          String          @default("PCS") @db.VarChar(30)
+  rate          Decimal         @db.Decimal(12, 2)
+  amount        Decimal         @db.Decimal(12, 2)
+  taxRate       Decimal         @default(0.00) @db.Decimal(5, 2)
+  cgstAmount    Decimal         @default(0.00) @db.Decimal(12, 2)
+  sgstAmount    Decimal         @default(0.00) @db.Decimal(12, 2)
+  igstAmount    Decimal         @default(0.00) @db.Decimal(12, 2)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  invoiceItem   InvoiceItem?    @relation(fields: [invoiceItemId], references: [id])
+  note          CreditDebitNote @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@index([noteId])
+  @@index([invoiceItemId])
+  @@map("credit_debit_note_items")
+}
+
+model CreditDebitNoteSequence {
+  id              Int           @id @default(autoincrement())
+  noteType        NoteType
+  financialYearId Int
+  currentNumber   Int           @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  financialYear   FinancialYear @relation(fields: [financialYearId], references: [id], onDelete: Cascade)
+
+  @@unique([noteType, financialYearId])
+  @@index([financialYearId], map: "credit_debit_note_sequences_financialYearId_fkey")
+  @@map("credit_debit_note_sequences")
 }
 
 enum DocumentType {
@@ -40,577 +822,278 @@ enum AccountType {
   EXPENSE
 }
 
-model User {
-  id                   Int               @id @default(autoincrement())
-  name                 String            @db.VarChar(100)
-  email                String            @unique @db.VarChar(150)
-  password             String            @db.VarChar(255)
-  role                 String            @default("ADMIN") @db.VarChar(30)
-  roleId               Int?
-  assignedRole         Role?             @relation(fields: [roleId], references: [id], onDelete: SetNull)
-  status               String            @default("ACTIVE") @db.VarChar(20)
-  active               Boolean           @default(true)
-  lastLoginAt          DateTime?
-  lastActivityAt       DateTime?
-  createdAt            DateTime          @default(now())
-  updatedAt            DateTime          @updatedAt
-  invoicesCreated      Invoice[]         @relation("InvoiceCreatedBy")
-  invoicesUpdated      Invoice[]         @relation("InvoiceUpdatedBy")
-  invoicesDeleted      Invoice[]         @relation("InvoiceDeletedBy")
-  revisionsCreated     InvoiceRevision[] @relation("RevisionChangedBy")
-  clientsCreated       Client[]          @relation("ClientCreatedBy")
-  paymentsCreated      Payment[]         @relation("PaymentCreatedBy")
-  itemsCreated         Item[]            @relation("ItemCreatedBy")
-  unitsCreated         Unit[]            @relation("UnitCreatedBy")
-  financialYearsClosed FinancialYear[]   @relation("FinancialYearClosedBy")
-  accountsCreated      ChartOfAccount[]  @relation("AccountCreatedBy")
-  journalsPosted       JournalEntry[]    @relation("JournalPostedBy")
-  notesCreated         CreditDebitNote[] @relation("NoteCreatedBy")
-  notesUpdated         CreditDebitNote[] @relation("NoteUpdatedBy")
-  notesVoided          CreditDebitNote[] @relation("NoteVoidedBy")
-  userPermissions      UserPermission[]
-  invitation           Invitation?       @relation("UserInvitation")
-  invitationsSent      Invitation[]      @relation("InvitationCreatedBy")
-  activities           UserActivityLog[] @relation("UserActivities")
-
-  @@index([roleId])
-  @@index([status])
-  @@map("users")
-}
-
-model Client {
-  id               Int                @id @default(autoincrement())
-  name             String             @db.VarChar(191)
-  email            String?            @db.VarChar(191)
-  phone            String?            @db.VarChar(50)
-  gstin            String?            @db.VarChar(20)
-  stateCode        String?            @db.VarChar(5)
-  billingAddress   String?            @db.Text
-  shippingAddress  String?            @db.Text
-  active           Boolean            @default(true)
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
-  createdById      Int?
-  createdBy        User?              @relation("ClientCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  invoices         Invoice[]
-  creditDebitNotes CreditDebitNote[]
-  journalLines     JournalEntryLine[]
-
-  @@index([name])
-  @@index([email])
-  @@index([active])
-  @@index([createdById])
-  @@map("clients")
-}
-
-model BusinessProfile {
-  id             Int      @id @default(autoincrement())
-  legalName      String   @db.VarChar(191)
-  displayName    String?  @db.VarChar(191)
-  gstin          String?  @db.VarChar(20)
-  stateCode      String?  @db.VarChar(5)
-  email          String?  @db.VarChar(191)
-  phone          String?  @db.VarChar(50)
-  address        String?  @db.Text
-  defaultTerms   String?  @db.Text
-  defaultRemarks String?  @db.Text
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  @@map("business_profiles")
-}
-
-model Invoice {
-  id                         Int               @id @default(autoincrement())
-  documentType               DocumentType      @default(INVOICE)
-  invoiceNumber              String            @unique @db.VarChar(50)
-  clientId                   Int?
-  client                     Client?           @relation(fields: [clientId], references: [id], onDelete: SetNull)
-  clientName                 String            @db.VarChar(255)
-  clientEmail                String?           @db.VarChar(255)
-  clientPhone                String?           @db.VarChar(50)
-  clientGSTIN                String?           @db.VarChar(20)
-  placeOfSupplyStateCode     String?           @db.VarChar(5)
-  sellerName                 String?           @db.VarChar(191)
-  sellerGSTIN                String?           @db.VarChar(20)
-  sellerStateCode            String?           @db.VarChar(5)
-  sellerEmail                String?           @db.VarChar(191)
-  sellerPhone                String?           @db.VarChar(50)
-  sellerAddress              String?           @db.Text
-  billingAddress             String?           @db.Text
-  shippingAddress            String?           @db.Text
-  termsAndConditions         String?           @db.Text
-  remarks                    String?           @db.Text
-  invoiceDate                DateTime          @db.Date
-  dueDate                    DateTime?         @db.Date
-  validUntil                 DateTime?         @db.Date
-  gstEnabled                 Boolean           @default(false)
-  gstRate                    Decimal           @default(0.00) @db.Decimal(5, 2)
-  subtotal                   Decimal           @db.Decimal(12, 2)
-  gstAmount                  Decimal           @db.Decimal(12, 2)
-  cgstAmount                 Decimal           @default(0.00) @db.Decimal(12, 2)
-  sgstAmount                 Decimal           @default(0.00) @db.Decimal(12, 2)
-  igstAmount                 Decimal           @default(0.00) @db.Decimal(12, 2)
-  roundOff                   Decimal           @db.Decimal(12, 2)
-  grandTotal                 Decimal           @db.Decimal(12, 2)
-  paidAmount                 Decimal           @default(0.00) @db.Decimal(12, 2)
-  outstandingAmount          Decimal           @default(0.00) @db.Decimal(12, 2)
-  status                     InvoiceStatus     @default(ACTIVE)
-  previousStatusBeforeDelete InvoiceStatus?
-  deletedAt                  DateTime?
-  deletedById                Int?
-  deleteReason               String?           @db.Text
-  version                    Int               @default(1)
-  sourceQuotationId          Int?              @unique
-  financialYearId            Int?
-  createdById                Int
-  updatedById                Int
-  createdAt                  DateTime          @default(now())
-  updatedAt                  DateTime          @updatedAt
-  financialYear              FinancialYear?    @relation(fields: [financialYearId], references: [id], onDelete: SetNull)
-  createdBy                  User              @relation("InvoiceCreatedBy", fields: [createdById], references: [id])
-  updatedBy                  User              @relation("InvoiceUpdatedBy", fields: [updatedById], references: [id])
-  deletedBy                  User?             @relation("InvoiceDeletedBy", fields: [deletedById], references: [id])
-  sourceQuotation            Invoice?          @relation("QuotationToInvoice", fields: [sourceQuotationId], references: [id], onDelete: Restrict)
-  convertedInvoice           Invoice?          @relation("QuotationToInvoice")
-  items                      InvoiceItem[]
-  revisions                  InvoiceRevision[]
-  payments                   Payment[]
-  creditDebitNotes           CreditDebitNote[]
-
-  @@index([documentType])
-  @@index([clientId])
-  @@index([clientName])
-  @@index([status])
-  @@index([invoiceDate])
-  @@index([createdById])
-  @@index([updatedById])
-  @@index([deletedById])
-  @@index([financialYearId])
-  @@map("invoices")
-}
-
-model InvoiceItem {
-  id                   Int                   @id @default(autoincrement())
-  invoiceId            Int
-  lineNumber           Int
-  name                 String                @db.VarChar(255)
-  hsnSac               String?               @db.VarChar(20)
-  quantity             Decimal               @db.Decimal(10, 2)
-  unit                 String                @default("PCS") @db.VarChar(30)
-  rate                 Decimal               @db.Decimal(12, 2)
-  amount               Decimal               @db.Decimal(12, 2)
-  createdAt            DateTime              @default(now())
-  updatedAt            DateTime              @updatedAt
-  invoice              Invoice               @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  creditDebitNoteItems CreditDebitNoteItem[]
-
-  @@index([invoiceId])
-  @@map("invoice_items")
-}
-
-model Item {
-  id          Int      @id @default(autoincrement())
-  name        String   @unique @db.VarChar(255)
-  description String?  @db.Text
-  unit        String   @default("PCS") @db.VarChar(30)
-  rate        Decimal  @default(0.00) @db.Decimal(12, 2)
-  hsnSac      String?  @db.VarChar(20)
-  gstRate     Decimal  @default(0.00) @db.Decimal(5, 2)
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  createdById Int?
-  createdBy   User?    @relation("ItemCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-
-  @@index([active])
-  @@index([createdById])
-  @@map("items")
-}
-
-model Unit {
-  id          Int      @id @default(autoincrement())
-  name        String   @db.VarChar(100)
-  symbol      String   @unique @db.VarChar(30)
-  description String?  @db.Text
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  createdById Int?
-  createdBy   User?    @relation("UnitCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-
-  @@index([active])
-  @@index([createdById])
-  @@map("units")
-}
-
-model InvoiceRevision {
-  id          Int      @id @default(autoincrement())
-  invoiceId   Int
-  revisionNo  Int
-  action      String   @db.VarChar(50)
-  changedById Int
-  ipAddress   String?  @db.VarChar(45)
-  userAgent   String?  @db.VarChar(255)
-  changedAt   DateTime @default(now())
-  changes     Json
-  snapshot    Json
-  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  changedBy   User     @relation("RevisionChangedBy", fields: [changedById], references: [id])
-
-  @@unique([invoiceId, revisionNo])
-  @@index([invoiceId])
-  @@index([changedById])
-  @@map("invoice_revisions")
-}
-
-model Payment {
+model SupplierPayment {
   id              Int            @id @default(autoincrement())
-  invoiceId       Int
+  paymentNumber   String         @unique @db.VarChar(50)
+  supplierId      Int
+  supplierBillId  Int?
   paymentDate     DateTime       @db.Date
   amount          Decimal        @db.Decimal(12, 2)
   method          String         @default("BANK_TRANSFER") @db.VarChar(50)
-  reference       String?        @db.VarChar(191)
+  reference       String?        @db.VarChar(255)
   notes           String?        @db.Text
   status          String         @default("POSTED") @db.VarChar(20)
-  createdById     Int?
+  financialYearId Int?
+  createdById     Int
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  createdBy       User           @relation("SupplierPaymentCreatedBy", fields: [createdById], references: [id])
+  financialYear   FinancialYear? @relation(fields: [financialYearId], references: [id])
+  supplier        Supplier       @relation(fields: [supplierId], references: [id])
+  supplierBill    SupplierBill?  @relation(fields: [supplierBillId], references: [id])
+
+  @@index([supplierId])
+  @@index([supplierBillId])
+  @@index([paymentDate])
+  @@index([status])
+  @@map("supplier_payments")
+}
+
+model StockMovement {
+  id             Int      @id @default(autoincrement())
+  movementNumber String   @unique @db.VarChar(50)
+  itemId         Int
+  movementType   String   @db.VarChar(30)
+  quantity       Decimal  @db.Decimal(10, 2)
+  unitCost       Decimal  @default(0.00) @db.Decimal(12, 2)
+  totalCost      Decimal  @default(0.00) @db.Decimal(12, 2)
+  referenceType  String?  @db.VarChar(50)
+  referenceId    Int?
+  movementDate   DateTime @db.Date
+  notes          String?  @db.Text
+  createdById    Int
+  createdAt      DateTime @default(now())
+  createdBy      User     @relation("StockMovementCreatedBy", fields: [createdById], references: [id])
+  item           Item     @relation(fields: [itemId], references: [id])
+
+  @@index([itemId])
+  @@index([movementDate])
+  @@index([movementType])
+  @@map("stock_movements")
+}
+
+model Employee {
+  id                Int                     @id @default(autoincrement())
+  employeeCode      String                  @unique @db.VarChar(50)
+  firstName         String                  @db.VarChar(100)
+  lastName          String                  @db.VarChar(100)
+  email             String                  @unique @db.VarChar(150)
+  phone             String?                 @db.VarChar(50)
+  department        String?                 @db.VarChar(100)
+  designation       String?                 @db.VarChar(100)
+  dateOfJoining     DateTime                @db.Date
+  dateOfLeaving     DateTime?               @db.Date
+  panNumber         String?                 @db.VarChar(20)
+  uanNumber         String?                 @db.VarChar(30)
+  bankAccountNumber String?                 @db.VarChar(50)
+  bankIfsc          String?                 @db.VarChar(20)
+  bankName          String?                 @db.VarChar(100)
+  status            String                  @default("ACTIVE") @db.VarChar(20)
+  createdById       Int
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  createdBy         User                    @relation("EmployeeCreatedBy", fields: [createdById], references: [id])
+  salaryStructures  SalaryStructure[]
+  payrollEntries    PayrollEntry[]
+  reimbursements    EmployeeReimbursement[]
+
+  @@index([status])
+  @@index([department])
+  @@map("employees")
+}
+
+model SalaryStructure {
+  id               Int      @id @default(autoincrement())
+  employeeId       Int
+  effectiveFrom    DateTime @db.Date
+  basicSalary      Decimal  @db.Decimal(12, 2)
+  hra              Decimal  @default(0.00) @db.Decimal(12, 2)
+  conveyance       Decimal  @default(0.00) @db.Decimal(12, 2)
+  specialAllowance Decimal  @default(0.00) @db.Decimal(12, 2)
+  epfApplicable    Boolean  @default(true)
+  esiApplicable    Boolean  @default(false)
+  ptApplicable     Boolean  @default(true)
+  tdsMonthly       Decimal  @default(0.00) @db.Decimal(12, 2)
+  createdById      Int
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  createdBy        User     @relation("SalaryStructureCreatedBy", fields: [createdById], references: [id])
+  employee         Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@index([effectiveFrom])
+  @@map("salary_structures")
+}
+
+model PayrollPeriod {
+  id              Int            @id @default(autoincrement())
+  financialYearId Int
+  periodCode      String         @unique @db.VarChar(20)
+  month           Int
+  year            Int
+  startDate       DateTime       @db.Date
+  endDate         DateTime       @db.Date
+  status          String         @default("DRAFT") @db.VarChar(20)
+  approvedById    Int?
+  approvedAt      DateTime?
+  journalEntryId  Int?
+  createdById     Int
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  approvedBy      User?          @relation("PayrollPeriodApprovedBy", fields: [approvedById], references: [id])
+  createdBy       User           @relation("PayrollPeriodCreatedBy", fields: [createdById], references: [id])
+  financialYear   FinancialYear  @relation(fields: [financialYearId], references: [id])
+  journalEntry    JournalEntry?  @relation(fields: [journalEntryId], references: [id])
+  entries         PayrollEntry[]
+
+  @@index([financialYearId])
+  @@index([status])
+  @@map("payroll_periods")
+}
+
+model PayrollEntry {
+  id               Int           @id @default(autoincrement())
+  payrollPeriodId  Int
+  employeeId       Int
+  basicSalary      Decimal       @db.Decimal(12, 2)
+  hra              Decimal       @default(0.00) @db.Decimal(12, 2)
+  allowances       Decimal       @default(0.00) @db.Decimal(12, 2)
+  grossEarnings    Decimal       @db.Decimal(12, 2)
+  employeeEpf      Decimal       @default(0.00) @db.Decimal(12, 2)
+  employerEpf      Decimal       @default(0.00) @db.Decimal(12, 2)
+  employeeEsi      Decimal       @default(0.00) @db.Decimal(12, 2)
+  employerEsi      Decimal       @default(0.00) @db.Decimal(12, 2)
+  professionalTax  Decimal       @default(0.00) @db.Decimal(12, 2)
+  tds              Decimal       @default(0.00) @db.Decimal(12, 2)
+  totalDeductions  Decimal       @db.Decimal(12, 2)
+  netPay           Decimal       @db.Decimal(12, 2)
+  status           String        @default("DRAFT") @db.VarChar(20)
+  paymentMethod    String?       @default("BANK_TRANSFER") @db.VarChar(50)
+  paymentDate      DateTime?     @db.Date
+  paymentReference String?       @db.VarChar(100)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  employee         Employee      @relation(fields: [employeeId], references: [id])
+  payrollPeriod    PayrollPeriod @relation(fields: [payrollPeriodId], references: [id], onDelete: Cascade)
+
+  @@unique([payrollPeriodId, employeeId])
+  @@index([payrollPeriodId])
+  @@index([employeeId])
+  @@map("payroll_entries")
+}
+
+model EmployeeReimbursement {
+  id              Int            @id @default(autoincrement())
+  employeeId      Int
+  expenseDate     DateTime       @db.Date
+  amount          Decimal        @db.Decimal(12, 2)
+  category        String         @db.VarChar(100)
+  description     String?        @db.Text
+  receiptUrl      String?        @db.VarChar(255)
+  status          String         @default("PENDING") @db.VarChar(20)
+  approvedById    Int?
   financialYearId Int?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
-  invoice         Invoice        @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
-  createdBy       User?          @relation("PaymentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  financialYear   FinancialYear? @relation(fields: [financialYearId], references: [id], onDelete: SetNull)
+  approvedBy      User?          @relation("ReimbursementApprovedBy", fields: [approvedById], references: [id])
+  employee        Employee       @relation(fields: [employeeId], references: [id])
+  financialYear   FinancialYear? @relation(fields: [financialYearId], references: [id])
 
-  @@index([invoiceId])
+  @@index([employeeId])
   @@index([status])
-  @@index([paymentDate])
-  @@index([createdById])
-  @@index([financialYearId])
-  @@map("payments")
+  @@map("employee_reimbursements")
 }
 
-model InvoiceNumberSequence {
-  id            Int          @id @default(autoincrement())
-  documentType  DocumentType @default(INVOICE)
-  year          Int
-  currentNumber Int          @default(0)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+model Project {
+  id               Int              @id @default(autoincrement())
+  code             String           @unique @db.VarChar(50)
+  name             String           @db.VarChar(255)
+  description      String?          @db.Text
+  clientId         Int?
+  status           String           @default("ACTIVE") @db.VarChar(20)
+  startDate        DateTime         @db.Date
+  endDate          DateTime?        @db.Date
+  budgetAmount     Decimal          @default(0.00) @db.Decimal(14, 2)
+  hourlyRate       Decimal          @default(0.00) @db.Decimal(10, 2)
+  billingType      String           @default("TIME_AND_MATERIALS") @db.VarChar(30)
+  createdById      Int
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  client           Client?          @relation(fields: [clientId], references: [id])
+  createdBy        User             @relation("ProjectCreatedBy", fields: [createdById], references: [id])
+  costs            ProjectCost[]
+  tasks            ProjectTask[]
+  timesheetEntries TimesheetEntry[]
 
-  @@unique([documentType, year])
-  @@map("invoice_number_sequences")
+  @@index([clientId])
+  @@index([status])
+  @@map("projects")
 }
 
-model Role {
-  id              Int              @id @default(autoincrement())
-  name            String           @unique @db.VarChar(50)
-  description     String?          @db.VarChar(255)
-  isSystem        Boolean          @default(false)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  users           User[]
-  rolePermissions RolePermission[]
+model ProjectTask {
+  id               Int              @id @default(autoincrement())
+  projectId        Int
+  title            String           @db.VarChar(255)
+  description      String?          @db.Text
+  status           String           @default("TODO") @db.VarChar(20)
+  estimatedHours   Decimal          @default(0.00) @db.Decimal(8, 2)
+  actualHours      Decimal          @default(0.00) @db.Decimal(8, 2)
+  assignedToUserId Int?
+  dueDate          DateTime?        @db.Date
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  assignedTo       User?            @relation("TaskAssignedTo", fields: [assignedToUserId], references: [id])
+  project          Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  timesheetEntries TimesheetEntry[]
 
-  @@map("roles")
+  @@index([projectId])
+  @@index([status])
+  @@map("project_tasks")
 }
 
-model Permission {
-  id              Int              @id @default(autoincrement())
-  module          String           @db.VarChar(50)
-  action          String           @db.VarChar(50)
-  description     String?          @db.VarChar(255)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  rolePermissions RolePermission[]
-  userPermissions UserPermission[]
-
-  @@unique([module, action])
-  @@index([module])
-  @@map("permissions")
-}
-
-model RolePermission {
-  id           Int        @id @default(autoincrement())
-  roleId       Int
-  permissionId Int
-  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-  createdAt    DateTime   @default(now())
-
-  @@unique([roleId, permissionId])
-  @@index([roleId])
-  @@index([permissionId])
-  @@map("role_permissions")
-}
-
-model UserPermission {
-  id           Int        @id @default(autoincrement())
+model TimesheetEntry {
+  id           Int          @id @default(autoincrement())
+  projectId    Int
+  taskId       Int?
   userId       Int
-  permissionId Int
-  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-  createdAt    DateTime   @default(now())
+  entryDate    DateTime     @db.Date
+  hours        Decimal      @db.Decimal(6, 2)
+  hourlyRate   Decimal      @db.Decimal(10, 2)
+  costAmount   Decimal      @db.Decimal(12, 2)
+  isBillable   Boolean      @default(true)
+  status       String       @default("DRAFT") @db.VarChar(20)
+  approvedById Int?
+  approvedAt   DateTime?
+  notes        String?      @db.Text
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  approvedBy   User?        @relation("TimesheetApprovedBy", fields: [approvedById], references: [id])
+  project      Project      @relation(fields: [projectId], references: [id])
+  task         ProjectTask? @relation(fields: [taskId], references: [id])
+  user         User         @relation("TimesheetUser", fields: [userId], references: [id])
 
-  @@unique([userId, permissionId])
+  @@index([projectId])
   @@index([userId])
-  @@index([permissionId])
-  @@map("user_permissions")
-}
-
-model Invitation {
-  id          Int       @id @default(autoincrement())
-  userId      Int       @unique
-  user        User      @relation("UserInvitation", fields: [userId], references: [id], onDelete: Cascade)
-  tokenHash   String    @unique @db.VarChar(64)
-  status      String    @default("PENDING") @db.VarChar(20)
-  expiresAt   DateTime
-  invitedById Int
-  invitedBy   User      @relation("InvitationCreatedBy", fields: [invitedById], references: [id], onDelete: Cascade)
-  acceptedAt  DateTime?
-  revokedAt   DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  @@index([tokenHash])
-  @@index([status])
-  @@index([invitedById])
-  @@map("invitations")
-}
-
-model UserActivityLog {
-  id              Int      @id @default(autoincrement())
-  actorUserId     Int?
-  actorUser       User?    @relation("UserActivities", fields: [actorUserId], references: [id], onDelete: SetNull)
-  action          String   @db.VarChar(50)
-  module          String   @db.VarChar(50)
-  targetType      String?  @db.VarChar(50)
-  targetId        String?  @db.VarChar(50)
-  targetReference String?  @db.VarChar(100)
-  ipAddress       String?  @db.VarChar(45)
-  userAgent       String?  @db.VarChar(500)
-  metadata        Json?
-  createdAt       DateTime @default(now())
-
-  @@index([actorUserId])
-  @@index([createdAt])
-  @@index([module])
-  @@index([action])
-  @@index([targetType, targetId])
-  @@map("user_activity_logs")
-}
-
-model FinancialYear {
-  id                       Int                       @id @default(autoincrement())
-  code                     String                    @unique @db.VarChar(20)
-  startDate                DateTime
-  endDate                  DateTime
-  status                   String                    @default("OPEN") @db.VarChar(10)
-  isCurrent                Boolean                   @default(false)
-  closedAt                 DateTime?
-  closedById               Int?
-  createdAt                DateTime                  @default(now())
-  updatedAt                DateTime                  @updatedAt
-  closedBy                 User?                     @relation("FinancialYearClosedBy", fields: [closedById], references: [id], onDelete: SetNull)
-  invoices                 Invoice[]
-  payments                 Payment[]
-  journalEntries           JournalEntry[]
-  journalSequence          JournalNumberSequence?
-  creditDebitNotes         CreditDebitNote[]
-  creditDebitNoteSequences CreditDebitNoteSequence[]
-
-  @@index([closedById])
-  @@map("financial_years")
-}
-
-model ChartOfAccount {
-  id                 Int                @id @default(autoincrement())
-  code               String             @unique @db.VarChar(50)
-  name               String             @db.VarChar(191)
-  type               AccountType
-  subtype            String?            @db.VarChar(100)
-  parentId           Int?
-  level              Int                @default(1)
-  isGroup            Boolean            @default(false)
-  isControlAccount   Boolean            @default(false)
-  allowPosting       Boolean            @default(true)
-  openingBalance     Decimal            @default(0.00) @db.Decimal(15, 2)
-  openingBalanceType String             @default("DEBIT") @db.VarChar(10)
-  currentBalance     Decimal            @default(0.00) @db.Decimal(15, 2)
-  active             Boolean            @default(true)
-  systemAccount      Boolean            @default(false)
-  systemAccountKey   String?            @unique @db.VarChar(50)
-  description        String?            @db.Text
-  createdById        Int?
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-  parent             ChartOfAccount?    @relation("AccountHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
-  children           ChartOfAccount[]   @relation("AccountHierarchy")
-  createdBy          User?              @relation("AccountCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  journalLines       JournalEntryLine[]
-
-  @@index([type])
-  @@index([parentId])
-  @@index([isGroup])
-  @@index([active])
-  @@index([createdById])
-  @@map("chart_of_accounts")
-}
-
-model JournalEntry {
-  id              Int                @id @default(autoincrement())
-  entryNumber     String             @unique @db.VarChar(50)
-  entryDate       DateTime           @db.Date
-  financialYearId Int
-  sourceType      String             @default("MANUAL") @db.VarChar(50)
-  sourceId        Int?
-  narration       String             @db.Text
-  status          String             @default("POSTED") @db.VarChar(20)
-  idempotencyKey  String?            @unique @db.VarChar(100)
-  postedAt        DateTime           @default(now())
-  postedById      Int?
-  reversedEntryId Int?               @unique
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
-  financialYear   FinancialYear      @relation(fields: [financialYearId], references: [id], onDelete: Restrict)
-  postedBy        User?              @relation("JournalPostedBy", fields: [postedById], references: [id], onDelete: SetNull)
-  reversedEntry   JournalEntry?      @relation("JournalReversal", fields: [reversedEntryId], references: [id], onDelete: Restrict)
-  reversingEntry  JournalEntry?      @relation("JournalReversal")
-  lines           JournalEntryLine[]
-
   @@index([entryDate])
-  @@index([financialYearId])
-  @@index([sourceType, sourceId])
   @@index([status])
-  @@index([postedById])
-  @@map("journal_entries")
+  @@map("timesheet_entries")
 }
 
-model JournalEntryLine {
-  id             Int            @id @default(autoincrement())
-  journalEntryId Int
-  accountId      Int
-  lineNumber     Int
-  debit          Decimal        @default(0.00) @db.Decimal(15, 2)
-  credit         Decimal        @default(0.00) @db.Decimal(15, 2)
-  description    String?        @db.Text
-  clientId       Int?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  journalEntry   JournalEntry   @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
-  account        ChartOfAccount @relation(fields: [accountId], references: [id], onDelete: Restrict)
-  client         Client?        @relation(fields: [clientId], references: [id], onDelete: SetNull)
-
-  @@index([journalEntryId])
-  @@index([accountId])
-  @@index([clientId])
-  @@map("journal_entry_lines")
-}
-
-model JournalNumberSequence {
+model ProjectCost {
   id              Int           @id @default(autoincrement())
-  financialYearId Int           @unique
-  currentNumber   Int           @default(0)
+  projectId       Int
+  costType        String        @db.VarChar(30)
+  sourceReference String?       @db.VarChar(100)
+  amount          Decimal       @db.Decimal(12, 2)
+  costDate        DateTime      @db.Date
+  description     String?       @db.Text
+  journalEntryId  Int?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
-  financialYear   FinancialYear @relation(fields: [financialYearId], references: [id], onDelete: Restrict)
+  journalEntry    JournalEntry? @relation(fields: [journalEntryId], references: [id])
+  project         Project       @relation(fields: [projectId], references: [id])
 
-  @@map("journal_number_sequences")
-}
-
-model CreditDebitNote {
-  id                        Int                   @id @default(autoincrement())
-  noteNumber                String                @unique @db.VarChar(50)
-  noteType                  NoteType
-  invoiceId                 Int
-  clientId                  Int?
-  financialYearId           Int
-  noteDate                  DateTime              @db.Date
-  status                    NoteStatus            @default(ISSUED)
-  reason                    String                @db.Text
-  currency                  String                @default("INR") @db.VarChar(10)
-  clientName                String                @db.VarChar(255)
-  clientEmail               String?               @db.VarChar(255)
-  clientPhone               String?               @db.VarChar(50)
-  clientGSTIN               String?               @db.VarChar(20)
-  placeOfSupplyStateCode    String?               @db.VarChar(5)
-  billingAddress            String?               @db.Text
-  shippingAddress           String?               @db.Text
-  sellerName                String                @db.VarChar(191)
-  sellerGSTIN               String?               @db.VarChar(20)
-  sellerStateCode           String?               @db.VarChar(5)
-  sellerAddress             String?               @db.Text
-  originalInvoiceNumber     String                @db.VarChar(50)
-  originalInvoiceDate       DateTime              @db.Date
-  originalInvoiceGrandTotal Decimal               @db.Decimal(12, 2)
-  gstEnabled                Boolean               @default(false)
-  gstRate                   Decimal               @default(0.00) @db.Decimal(5, 2)
-  subtotal                  Decimal               @db.Decimal(12, 2)
-  cgstAmount                Decimal               @default(0.00) @db.Decimal(12, 2)
-  sgstAmount                Decimal               @default(0.00) @db.Decimal(12, 2)
-  igstAmount                Decimal               @default(0.00) @db.Decimal(12, 2)
-  gstAmount                 Decimal               @default(0.00) @db.Decimal(12, 2)
-  roundOff                  Decimal               @default(0.00) @db.Decimal(12, 2)
-  grandTotal                Decimal               @db.Decimal(12, 2)
-  remarks                   String?               @db.Text
-  createdById               Int
-  updatedById               Int?
-  voidedById                Int?
-  voidReason                String?               @db.Text
-  voidedAt                  DateTime?
-  createdAt                 DateTime              @default(now())
-  updatedAt                 DateTime              @updatedAt
-  invoice                   Invoice               @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
-  client                    Client?               @relation(fields: [clientId], references: [id], onDelete: SetNull)
-  financialYear             FinancialYear         @relation(fields: [financialYearId], references: [id], onDelete: Restrict)
-  createdBy                 User                  @relation("NoteCreatedBy", fields: [createdById], references: [id])
-  updatedBy                 User?                 @relation("NoteUpdatedBy", fields: [updatedById], references: [id])
-  voidedBy                  User?                 @relation("NoteVoidedBy", fields: [voidedById], references: [id])
-  items                     CreditDebitNoteItem[]
-
-  @@index([noteType])
-  @@index([invoiceId])
-  @@index([clientId])
-  @@index([financialYearId])
-  @@index([noteDate])
-  @@index([status])
-  @@map("credit_debit_notes")
-}
-
-model CreditDebitNoteItem {
-  id            Int             @id @default(autoincrement())
-  noteId        Int
-  invoiceItemId Int?
-  lineNumber    Int
-  name          String          @db.VarChar(255)
-  description   String?         @db.Text
-  hsnSac        String?         @db.VarChar(20)
-  quantity      Decimal         @db.Decimal(10, 2)
-  unit          String          @default("PCS") @db.VarChar(30)
-  rate          Decimal         @db.Decimal(12, 2)
-  amount        Decimal         @db.Decimal(12, 2)
-  taxRate       Decimal         @default(0.00) @db.Decimal(5, 2)
-  cgstAmount    Decimal         @default(0.00) @db.Decimal(12, 2)
-  sgstAmount    Decimal         @default(0.00) @db.Decimal(12, 2)
-  igstAmount    Decimal         @default(0.00) @db.Decimal(12, 2)
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  note          CreditDebitNote @relation(fields: [noteId], references: [id], onDelete: Cascade)
-  invoiceItem   InvoiceItem?    @relation(fields: [invoiceItemId], references: [id], onDelete: SetNull)
-
-  @@index([noteId])
-  @@index([invoiceItemId])
-  @@map("credit_debit_note_items")
-}
-
-model CreditDebitNoteSequence {
-  id              Int           @id @default(autoincrement())
-  noteType        NoteType
-  financialYearId Int
-  currentNumber   Int           @default(0)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  financialYear   FinancialYear @relation(fields: [financialYearId], references: [id], onDelete: Cascade)
-
-  @@unique([noteType, financialYearId])
-  @@map("credit_debit_note_sequences")
+  @@index([projectId])
+  @@index([costDate])
+  @@map("project_costs")
 }

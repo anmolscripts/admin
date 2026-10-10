@@ -13,7 +13,11 @@
     "test": "node scripts/test-runner.js",
     "dev:install": "node scripts/setup.js --mode=development",
     "prod:install": "node scripts/setup.js --mode=production",
-    "doctor": "node scripts/doctor.js"
+    "doctor": "node scripts/doctor.js",
+    "db:upgrade": "node scripts/db-upgrade.js",
+    "db:reset": "node scripts/db-reset.js",
+    "package:release": "node scripts/package-release.js",
+    "verify:all": "node scripts/verify-all.js"
   },
   "keywords": [],
   "author": "",
@@ -23,11 +27,12 @@
     "@prisma/adapter-mariadb": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "bcrypt": "^6.0.0",
-    "dotenv": "^18.0.1",
+    "dotenv": "^18.0.6",
     "ejs": "^6.0.1",
     "exceljs": "^4.4.0",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
+    "multer": "^2.4.0",
     "pdfkit": "^0.20.2",
     "prisma": "^7.10.0"
   },

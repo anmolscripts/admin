@@ -1,0 +1,16 @@
+/* assets/css/components/_alerts.css */
+.alert-custom {
+  position: relative;
+  padding: 0.75rem 1.25rem;
+  margin-bottom: 1rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.alert-custom-primary {background-color: var(--color-primary-light); border-color: var(--color-primary); color: var(--color-primary-dark);}
+.alert-custom-success {background-color: var(--color-success-light); border-color: var(--color-success); color: var(--color-success-dark);}
+.alert-custom-danger {background-color: var(--color-danger-light); border-color: var(--color-danger); color: var(--color-danger-dark);}
+.alert-custom-warning {background-color: var(--color-warning-light); border-color: var(--color-warning); color: var(--color-warning-dark);}
+.alert-custom-info {background-color: var(--color-info-light); border-color: var(--color-info); color: var(--color-info-dark);}

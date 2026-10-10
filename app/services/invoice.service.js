@@ -446,6 +446,10 @@ async function createDocument(data, userId, meta = {}) {
         const invoiceNumber = await generateDocumentNumber(tx, documentType, invoiceDate);
         const financialYear = await ensureFinancialYear(invoiceDate);
 
+        if (documentType === 'INVOICE' && financialYear && financialYear.status === 'CLOSED') {
+            throw new ValidationError(`Cannot create invoice in CLOSED Financial Year ${financialYear.code}.`);
+        }
+
         const doc = await tx.invoice.create({
             data: {
                 documentType,
@@ -667,11 +671,15 @@ async function updateInvoice(id, data, userId, meta = {}) {
     const updatedDoc = await prisma.$transaction(async (tx) => {
         const existing = await tx.invoice.findUnique({
             where: { id: numericId },
-            include: { items: true }
+            include: { items: true, financialYear: true }
         });
 
         if (!existing) {
             throw new NotFoundError(`Document with ID ${numericId} was not found.`);
+        }
+
+        if (existing.documentType === 'INVOICE' && existing.financialYear && existing.financialYear.status === 'CLOSED') {
+            throw new ValidationError(`Cannot modify invoice in CLOSED Financial Year ${existing.financialYear.code}.`);
         }
 
         const clientId = data.clientId !== undefined ? (data.clientId ? parseInt(data.clientId, 10) : null) : existing.clientId;
@@ -754,6 +762,9 @@ async function updateInvoice(id, data, userId, meta = {}) {
 
         // Ensure financial year for invoice date
         const financialYear = await ensureFinancialYear(invoiceDate);
+        if (existing.documentType === 'INVOICE' && financialYear && financialYear.status === 'CLOSED') {
+            throw new ValidationError(`Cannot move invoice into CLOSED Financial Year ${financialYear.code}.`);
+        }
 
         // Atomic database update condition: WHERE id = ? AND version = ?
         const updateResult = await tx.invoice.updateMany({
@@ -962,11 +973,15 @@ async function updateInvoiceStatus(id, newStatusInput, userIdOrReason, optionsOr
     return prisma.$transaction(async (tx) => {
         const existing = await tx.invoice.findUnique({
             where: { id: numericId },
-            include: { items: true }
+            include: { items: true, financialYear: true }
         });
 
         if (!existing) {
             throw new NotFoundError(`Document with ID ${numericId} was not found.`);
+        }
+
+        if (existing.documentType === 'INVOICE' && existing.financialYear && existing.financialYear.status === 'CLOSED') {
+            throw new ValidationError(`Cannot change status of invoice in CLOSED Financial Year ${existing.financialYear.code}.`);
         }
 
         // Disallow ANY transition from VOID (VOID -> ACTIVE, VOID -> INACTIVE, VOID -> VOID, VOID -> DELETED)
@@ -1096,11 +1111,16 @@ async function softDeleteDocument(id, deleteReason, userId, options = {}, meta =
 
     return prisma.$transaction(async (tx) => {
         const existing = await tx.invoice.findUnique({
-            where: { id: numericId }
+            where: { id: numericId },
+            include: { financialYear: true }
         });
 
         if (!existing) {
             throw new NotFoundError(`Document with ID ${numericId} was not found.`);
+        }
+
+        if (existing.documentType === 'INVOICE' && existing.financialYear && existing.financialYear.status === 'CLOSED') {
+            throw new ValidationError(`Cannot delete invoice in CLOSED Financial Year ${existing.financialYear.code}.`);
         }
 
         // Enforce optimistic concurrency version check if provided
@@ -1216,11 +1236,16 @@ async function restoreDocument(id, userId, options = {}, meta = {}) {
 
     return prisma.$transaction(async (tx) => {
         const existing = await tx.invoice.findUnique({
-            where: { id: numericId }
+            where: { id: numericId },
+            include: { financialYear: true }
         });
 
         if (!existing) {
             throw new NotFoundError(`Document with ID ${numericId} was not found.`);
+        }
+
+        if (existing.documentType === 'INVOICE' && existing.financialYear && existing.financialYear.status === 'CLOSED') {
+            throw new ValidationError(`Cannot restore invoice in CLOSED Financial Year ${existing.financialYear.code}.`);
         }
 
         // Enforce optimistic concurrency version check if provided

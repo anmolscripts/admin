@@ -1,5 +1,8 @@
+'use strict';
+
 const ExcelJS = require('exceljs');
 const prisma = require('../config/prisma');
+const businessProfileService = require('./businessProfile.service');
 
 /**
  * Format date to YYYY-MM-DD
@@ -9,6 +12,18 @@ function formatDate(dateVal) {
     const d = new Date(dateVal);
     if (isNaN(d.getTime())) return '';
     return d.toISOString().split('T')[0];
+}
+
+/**
+ * Sanitize cell values against Excel formula injection (=, +, -, @, \t, \r)
+ */
+function sanitizeCell(val) {
+    if (val === null || val === undefined) return '';
+    const str = String(val);
+    if (/^[=+\-@\t\r]/.test(str)) {
+        return `'${str}`;
+    }
+    return str;
 }
 
 /**
@@ -61,8 +76,10 @@ async function generateInvoicesExcel(filters = {}) {
         }
     });
 
+    const branding = await businessProfileService.getBranding().catch(() => ({ workspaceName: 'Spark Admin ERP' }));
+
     const workbook = new ExcelJS.Workbook();
-    workbook.creator = 'Spark Admin ERP';
+    workbook.creator = branding.displayName || branding.legalName || 'Spark Admin ERP';
     workbook.created = new Date();
 
     // -----------------------------------------------------------------
@@ -106,20 +123,20 @@ async function generateInvoicesExcel(filters = {}) {
         if (doc.convertedInvoice) relatedDoc = `To: ${doc.convertedInvoice.invoiceNumber}`;
 
         const row = docSheet.addRow({
-            invoiceNumber: doc.invoiceNumber,
+            invoiceNumber: sanitizeCell(doc.invoiceNumber),
             documentType: doc.documentType,
             status: doc.status,
             invoiceDate: formatDate(doc.invoiceDate),
-            clientName: doc.clientName,
-            clientEmail: doc.clientEmail || '',
-            clientPhone: doc.clientPhone || '',
+            clientName: sanitizeCell(doc.clientName),
+            clientEmail: sanitizeCell(doc.clientEmail || ''),
+            clientPhone: sanitizeCell(doc.clientPhone || ''),
             subtotal: Number(doc.subtotal) || 0,
             gstRate: doc.gstEnabled ? Number(doc.gstRate) || 0 : 0,
             gstAmount: Number(doc.gstAmount) || 0,
             roundOff: Number(doc.roundOff) || 0,
             grandTotal: Number(doc.grandTotal) || 0,
-            relatedDoc,
-            createdBy: doc.createdBy ? (doc.createdBy.name || doc.createdBy.email) : ''
+            relatedDoc: sanitizeCell(relatedDoc),
+            createdBy: sanitizeCell(doc.createdBy ? (doc.createdBy.name || doc.createdBy.email) : '')
         });
 
         // Numeric column formats
@@ -160,12 +177,12 @@ async function generateInvoicesExcel(filters = {}) {
     documents.forEach((doc) => {
         (doc.items || []).forEach((item) => {
             const itemRow = itemSheet.addRow({
-                invoiceNumber: doc.invoiceNumber,
+                invoiceNumber: sanitizeCell(doc.invoiceNumber),
                 documentType: doc.documentType,
                 lineNumber: item.lineNumber,
-                name: item.name,
+                name: sanitizeCell(item.name),
                 quantity: Number(item.quantity) || 0,
-                unit: item.unit || 'PCS',
+                unit: sanitizeCell(item.unit || 'PCS'),
                 rate: Number(item.rate) || 0,
                 amount: Number(item.amount) || 0
             });
@@ -180,5 +197,6 @@ async function generateInvoicesExcel(filters = {}) {
 }
 
 module.exports = {
-    generateInvoicesExcel
+    generateInvoicesExcel,
+    sanitizeCell
 };

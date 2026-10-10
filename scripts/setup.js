@@ -249,11 +249,45 @@ async function main() {
         process.exit(1);
     }
     logger.pass('Prisma Client generated successfully.');
+    // -------------------------------------------------------------------------
+    // [7/9] Validating production database cleanliness
+    // -------------------------------------------------------------------------
+    if (isProduction) {
+        logger.step('Ensuring production database contains no demo data');
+        // Ensure fresh Prisma client after generation
+        delete require.cache[require.resolve('@prisma/client')];
+        delete require.cache[require.resolve('../app/config/prisma')];
+        const prisma = require('../app/config/prisma');
+        const [itemCount, clientCount, invoiceCount, quotationCount, paymentCount, revisionCount, activityLogCount, businessProfileCount] = await Promise.all([
+            prisma.$queryRaw`SELECT COUNT(*) as count FROM items`.then(r => Number(r[0].count)),
+            prisma.$queryRaw`SELECT COUNT(*) as count FROM clients`.then(r => Number(r[0].count)),
+            prisma.$queryRaw`SELECT COUNT(*) as count FROM invoices`.then(r => Number(r[0].count)),
+            prisma.$queryRaw`SELECT COUNT(*) as count FROM invoices WHERE document_type = 'QUOTATION'`.then(r => Number(r[0].count)),
+            prisma.$queryRaw`SELECT COUNT(*) as count FROM payments`.then(r => Number(r[0].count)),
+            prisma.$queryRaw`SELECT COUNT(*) as count FROM invoice_revisions`.then(r => Number(r[0].count)),
+            prisma.$queryRaw`SELECT COUNT(*) as count FROM user_activity_logs`.then(r => Number(r[0].count)),
+            prisma.$queryRaw`SELECT COUNT(*) as count FROM business_profiles`.then(r => Number(r[0].count))
+        ]);
+        const violations = [];
+        if (itemCount > 0) violations.push(`items(${itemCount})`);
+        if (clientCount > 0) violations.push(`clients(${clientCount})`);
+        if (invoiceCount > 0) violations.push(`invoices(${invoiceCount})`);
+        if (quotationCount > 0) violations.push(`quotations(${quotationCount})`);
+        if (paymentCount > 0) violations.push(`payments(${paymentCount})`);
+        if (revisionCount > 0) violations.push(`revisions(${revisionCount})`);
+        if (activityLogCount > 0) violations.push(`activity_logs(${activityLogCount})`);
+        if (businessProfileCount > 0) violations.push(`business_profiles(${businessProfileCount})`);
+        if (violations.length > 0) {
+            logger.fail(`Production database is not clean. Non-empty tables: ${violations.join(', ')}`);
+            process.exit(1);
+        }
+        logger.pass('Production database clean: no demo data present.');
+    }
 
     // -------------------------------------------------------------------------
-    // [7/8] Seeding data
+    // [8/9] Seeding data
     // -------------------------------------------------------------------------
-    logger.section(7, 8, 'Seeding data');
+    logger.section(8, 9, 'Seeding data');
 
     // Dynamically load prisma and seed router now that dependencies exist
     const seedModule = require('../prisma/seed');
@@ -272,9 +306,9 @@ async function main() {
     }
 
     // -------------------------------------------------------------------------
-    // [8/8] Verifying installation
+    // [9/9] Verifying installation
     // -------------------------------------------------------------------------
-    logger.section(8, 8, 'Verifying installation');
+    logger.section(9, 9, 'Verifying installation');
 
     const prismaInstance = require('../app/config/prisma');
     let verifyResult;

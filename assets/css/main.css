@@ -50,6 +50,10 @@
 /* ---------------------------------------------------------------------
    2. Design System Variables
 --------------------------------------------------------------------- */
+@import url('theme.css');
+@import url('components/_buttons.css');
+@import url('components/_alerts.css');
+
 :root {
     /* Colors */
     --bs-body-bg: #F4F6F5; /* Canvas background: light, warm grayish-green */
@@ -98,6 +102,11 @@
 /* ---------------------------------------------------------------------
    3. Base Overrides & Typography
 --------------------------------------------------------------------- */
+
+
+
+
+
 body {
     background-color: var(--bs-body-bg);
     color: var(--text-main);

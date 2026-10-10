@@ -75,9 +75,20 @@ app.use(sessionMiddleware);
 app.use(csrfProtection);
 
 // Global EJS variables & RBAC permission resolution
-app.use((req, res, next) => {
+const businessProfileService = require('./services/businessProfile.service');
+app.use(async (req, res, next) => {
     res.locals.user = req.session ? req.session.user || null : null;
     res.locals.currentPath = req.path;
+    try {
+        res.locals.branding = await businessProfileService.getBranding();
+    } catch (_) {
+        res.locals.branding = {
+            workspaceName: 'Spark Admin',
+            displayName: 'Spark Admin',
+            legalName: 'Spark Admin',
+            companyName: 'Spark Admin'
+        };
+    }
     next();
 });
 app.use(attachUserPermissions);

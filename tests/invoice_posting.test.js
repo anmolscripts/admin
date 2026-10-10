@@ -435,11 +435,11 @@ describe('Milestone 4: Invoice Accounting Posting & Double-Entry Ledger Integrat
         });
 
         it('5.4 should reject posting an invoice into a CLOSED Financial Year', async () => {
-            // Closed FY setup
+            // Ensure FY is OPEN first to create invoice
             const closedFy = await ensureFinancialYear(new Date('2024-06-01'));
             await prisma.financialYear.update({
                 where: { id: closedFy.id },
-                data: { status: 'CLOSED' }
+                data: { status: 'OPEN' }
             });
 
             const oldInvoice = await invoiceService.createInvoice({
@@ -453,6 +453,11 @@ describe('Milestone 4: Invoice Accounting Posting & Double-Entry Ledger Integrat
                     { name: 'Historical Service', quantity: 1, rate: 4000, unit: 'PCS' }
                 ]
             }, testAdmin ? testAdmin.id : 1);
+
+            await prisma.financialYear.update({
+                where: { id: closedFy.id },
+                data: { status: 'CLOSED' }
+            });
 
             await assert.rejects(async () => {
                 await postingService.postInvoice(oldInvoice.id);

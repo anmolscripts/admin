@@ -117,13 +117,51 @@ async function setCurrentFinancialYear(id) {
  */
 async function listFinancialYears() {
   return await prisma.financialYear.findMany({
-    orderBy: { startDate: 'desc' }
+    orderBy: { startDate: 'desc' },
+    include: {
+      closedBy: { select: { id: true, name: true, email: true } },
+      _count: {
+        select: {
+          journalEntries: true,
+          invoices: true,
+          payments: true,
+          creditDebitNotes: true
+        }
+      }
+    }
+  });
+}
+
+/**
+ * Get Financial Year by ID.
+ * @param {number|string} id
+ * @returns {Promise<Object>}
+ */
+async function getFinancialYearById(id) {
+  const numId = parseInt(id, 10);
+  if (isNaN(numId) || numId <= 0) {
+    throw new Error('Invalid Financial Year ID.');
+  }
+  return await prisma.financialYear.findUnique({
+    where: { id: numId },
+    include: {
+      closedBy: { select: { id: true, name: true, email: true } },
+      _count: {
+        select: {
+          journalEntries: true,
+          invoices: true,
+          payments: true,
+          creditDebitNotes: true
+        }
+      }
+    }
   });
 }
 
 module.exports = {
   computeFinancialYear,
   getFinancialYearForDate,
+  getFinancialYearById,
   createFinancialYear,
   ensureFinancialYear,
   setCurrentFinancialYear,

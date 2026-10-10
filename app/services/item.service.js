@@ -415,6 +415,173 @@ async function ensureItemsExistFromDocument(items, userId, tx = prisma) {
     }
 }
 
+/**
+ * Parse CSV content and validate for dry-run preview (Phase 5 Inventory import).
+ * Zero database mutations occur during preview.
+ */
+async function parseAndValidateItemCsv(csvContent) {
+    if (!csvContent || typeof csvContent !== 'string') {
+        throw new ValidationError('CSV content is required.');
+    }
+
+    const lines = csvContent.split(/\r?\n/).filter(line => line.trim().length > 0);
+    if (lines.length < 2) {
+        throw new ValidationError('CSV must contain a header row and at least one data row.');
+    }
+
+    const header = lines[0].split(',').map(h => h.trim().toLowerCase());
+    const nameIdx = header.indexOf('name');
+    const unitIdx = header.indexOf('unit');
+    const rateIdx = header.indexOf('rate');
+    const hsnIdx = header.indexOf('hsnsac') !== -1 ? header.indexOf('hsnsac') : header.indexOf('hsn');
+    const descIdx = header.indexOf('description');
+    const gstIdx = header.indexOf('gstrate') !== -1 ? header.indexOf('gstrate') : header.indexOf('gst');
+
+    if (nameIdx === -1) {
+        throw new ValidationError('CSV header must contain "name" column.');
+    }
+
+    const preview = [];
+    const errors = [];
+    const seenNamesInCsv = new Set();
+
+    // Fetch existing items for delta check
+    const existingItems = await prisma.item.findMany({ select: { name: true, id: true } });
+    const existingMap = new Map(existingItems.map(i => [i.name.toLowerCase(), i.id]));
+
+    let newCount = 0;
+    let updateCount = 0;
+
+    for (let i = 1; i < lines.length; i++) {
+        const rowNum = i + 1;
+        const cols = lines[i].split(',').map(c => c.trim());
+        const rawName = cols[nameIdx] || '';
+        const name = normaliseItemName(rawName);
+
+        if (!name) {
+            errors.push({ row: rowNum, error: 'Item name is required.' });
+            continue;
+        }
+
+        if (name.length > 255) {
+            errors.push({ row: rowNum, error: 'Item name must not exceed 255 characters.' });
+            continue;
+        }
+
+        const lowerName = name.toLowerCase();
+        if (seenNamesInCsv.has(lowerName)) {
+            errors.push({ row: rowNum, error: `Duplicate item name "${name}" within CSV.` });
+            continue;
+        }
+        seenNamesInCsv.add(lowerName);
+
+        const unit = unitIdx !== -1 && cols[unitIdx] ? cols[unitIdx] : 'PCS';
+        let rate = 0;
+        if (rateIdx !== -1 && cols[rateIdx]) {
+            rate = parseFloat(cols[rateIdx]);
+            if (isNaN(rate) || rate < 0) {
+                errors.push({ row: rowNum, error: 'Rate must be a non-negative number.' });
+                continue;
+            }
+        }
+
+        const hsnSac = hsnIdx !== -1 && cols[hsnIdx] ? cols[hsnIdx] : null;
+        const description = descIdx !== -1 && cols[descIdx] ? cols[descIdx] : null;
+        let gstRate = 0;
+        if (gstIdx !== -1 && cols[gstIdx]) {
+            gstRate = parseFloat(cols[gstIdx]);
+            if (isNaN(gstRate) || gstRate < 0 || gstRate > 100) {
+                errors.push({ row: rowNum, error: 'GST rate must be between 0 and 100.' });
+                continue;
+            }
+        }
+
+        const isUpdate = existingMap.has(lowerName);
+        if (isUpdate) updateCount++;
+        else newCount++;
+
+        preview.push({
+            row: rowNum,
+            name,
+            unit,
+            rate,
+            hsnSac,
+            description,
+            gstRate,
+            action: isUpdate ? 'UPDATE' : 'CREATE',
+            existingId: isUpdate ? existingMap.get(lowerName) : null
+        });
+    }
+
+    return {
+        summary: {
+            totalRows: lines.length - 1,
+            validCount: preview.length,
+            invalidCount: errors.length,
+            newCount,
+            updateCount
+        },
+        preview,
+        errors
+    };
+}
+
+/**
+ * Commits previously validated CSV import rows transactionally.
+ */
+async function importItemsFromCsv(validRows = [], userId = null) {
+    if (!Array.isArray(validRows) || validRows.length === 0) {
+        throw new ValidationError('No valid rows provided for import.');
+    }
+
+    return prisma.$transaction(async (tx) => {
+        let created = 0;
+        let updated = 0;
+
+        for (const row of validRows) {
+            if (row.action === 'UPDATE' && row.existingId) {
+                await tx.item.update({
+                    where: { id: row.existingId },
+                    data: {
+                        unit: row.unit || 'PCS',
+                        rate: row.rate || 0,
+                        hsnSac: row.hsnSac || null,
+                        description: row.description || null,
+                        gstRate: row.gstRate || 0
+                    }
+                });
+                updated++;
+            } else {
+                await tx.item.create({
+                    data: {
+                        name: row.name,
+                        unit: row.unit || 'PCS',
+                        rate: row.rate || 0,
+                        hsnSac: row.hsnSac || null,
+                        description: row.description || null,
+                        gstRate: row.gstRate || 0,
+                        active: true,
+                        createdById: userId
+                    }
+                });
+                created++;
+            }
+        }
+
+        if (userId) {
+            await activityService.log({
+                actorUserId: userId,
+                action: 'CREATE',
+                module: 'ITEMS',
+                targetType: 'ITEM',
+                description: `Imported ${created} new items, updated ${updated} existing items via CSV`
+            });
+        }
+
+        return { created, updated, total: created + updated };
+    });
+}
+
 module.exports = {
     ValidationError,
     NotFoundError,
@@ -425,5 +592,8 @@ module.exports = {
     getItemById,
     createItem,
     updateItem,
-    ensureItemsExistFromDocument
+    ensureItemsExistFromDocument,
+    parseAndValidateItemCsv,
+    importItemsFromCsv
 };
+

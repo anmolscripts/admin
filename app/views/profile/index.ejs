@@ -1,0 +1,172 @@
+<%- include('../layouts/header', {
+    pageTitle: 'My Profile',
+    pageSubtitle: 'Manage your personal account information, security credentials, and avatar.'
+}) %>
+
+<div class="row justify-content-center">
+  <div class="col-12 col-xl-10">
+
+    <% if (locals.success) { %>
+      <div class="alert alert-success alert-dismissible fade show mb-4 shadow-sm" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        <strong>Success:</strong> Profile information updated successfully!
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    <% } %>
+
+    <% if (locals.passwordSuccess) { %>
+      <div class="alert alert-success alert-dismissible fade show mb-4 shadow-sm" role="alert">
+        <i class="bi bi-shield-check me-2"></i>
+        <strong>Success:</strong> Your password has been changed successfully!
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    <% } %>
+
+    <% if (locals.error) { %>
+      <div class="alert alert-danger alert-dismissible fade show mb-4 shadow-sm" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <strong>Error:</strong> <%= error %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    <% } %>
+
+    <% if (locals.passwordError) { %>
+      <div class="alert alert-danger alert-dismissible fade show mb-4 shadow-sm" role="alert">
+        <i class="bi bi-shield-x me-2"></i>
+        <strong>Password Error:</strong> <%= passwordError %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    <% } %>
+
+    <div class="row g-4">
+      <!-- Left Column: Personal Information & Avatar -->
+      <div class="col-12 col-lg-7">
+        <div class="card border-0 shadow-sm rounded-3 p-4 bg-white mb-4">
+          <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
+            <i class="bi bi-person-circle text-primary fs-4 me-2"></i>
+            <div>
+              <h5 class="fw-bold mb-0 text-dark">Personal Information</h5>
+              <small class="text-muted">Update your display name, contact information, and profile picture.</small>
+            </div>
+          </div>
+
+          <form method="POST" action="/profile" enctype="multipart/form-data" id="profile-form">
+            <% if (locals.csrfToken) { %>
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <% } %>
+
+            <!-- Avatar Preview & Upload -->
+            <div class="d-flex align-items-center mb-4 p-3 bg-light rounded-3">
+              <div class="position-relative me-3">
+                <% if (profile && profile.avatarUrl) { %>
+                  <img src="<%= profile.avatarUrl %>" alt="Avatar" class="rounded-circle border" style="width: 72px; height: 72px; object-fit: cover;" id="avatar-preview" />
+                <% } else { %>
+                  <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fs-2 fw-bold" style="width: 72px; height: 72px;" id="avatar-placeholder">
+                    <%= (profile && profile.name) ? profile.name.charAt(0).toUpperCase() : 'U' %>
+                  </div>
+                <% } %>
+              </div>
+              <div>
+                <label for="avatar" class="form-label fw-semibold mb-1">Profile Photo</label>
+                <input class="form-control form-control-sm" type="file" id="avatar" name="avatar" accept="image/png, image/jpeg, image/webp" />
+                <div class="form-text">Supported: PNG, JPEG, or WebP (max 2MB).</div>
+              </div>
+            </div>
+
+            <!-- Full Name -->
+            <div class="mb-3">
+              <label for="name" class="form-label fw-semibold">Full Name <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="name" name="name" value="<%= (profile && profile.name) || '' %>" required minlength="2" maxlength="100" />
+            </div>
+
+            <!-- Email Address -->
+            <div class="mb-3">
+              <label for="email" class="form-label fw-semibold">Email Address <span class="text-danger">*</span></label>
+              <input type="email" class="form-control" id="email" name="email" value="<%= (profile && profile.email) || '' %>" required />
+            </div>
+
+            <!-- Phone Number -->
+            <div class="mb-3">
+              <label for="phone" class="form-label fw-semibold">Phone Number</label>
+              <input type="text" class="form-control" id="phone" name="phone" value="<%= (profile && profile.phone) || '' %>" placeholder="e.g. +91 98765 43210" />
+            </div>
+
+            <!-- Assigned Role (Read-only) -->
+            <div class="mb-4">
+              <label class="form-label fw-semibold">Assigned Role</label>
+              <div>
+                <span class="badge bg-secondary px-3 py-2 fs-6">
+                  <i class="bi bi-shield-lock me-1"></i>
+                  <%= (profile && profile.role) || 'ADMIN' %>
+                </span>
+                <span class="text-muted ms-2 small">Role permissions are managed centrally by the workspace Owner.</span>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-end pt-3 border-top">
+              <button type="submit" class="btn btn-primary px-4 fw-semibold" id="btn-save-profile">
+                <i class="bi bi-save me-1"></i> Save Profile Details
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Right Column: Change Password & Security Info -->
+      <div class="col-12 col-lg-5">
+        <div class="card border-0 shadow-sm rounded-3 p-4 bg-white mb-4">
+          <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
+            <i class="bi bi-shield-lock text-danger fs-4 me-2"></i>
+            <div>
+              <h5 class="fw-bold mb-0 text-dark">Security & Password</h5>
+              <small class="text-muted">Ensure your account is using a strong, unique password.</small>
+            </div>
+          </div>
+
+          <form method="POST" action="/profile/password" id="password-form">
+            <% if (locals.csrfToken) { %>
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <% } %>
+
+            <!-- Current Password -->
+            <div class="mb-3">
+              <label for="currentPassword" class="form-label fw-semibold">Current Password <span class="text-danger">*</span></label>
+              <input type="password" class="form-control" id="currentPassword" name="currentPassword" required />
+            </div>
+
+            <!-- New Password -->
+            <div class="mb-3">
+              <label for="newPassword" class="form-label fw-semibold">New Password <span class="text-danger">*</span></label>
+              <input type="password" class="form-control" id="newPassword" name="newPassword" minlength="8" required />
+              <div class="form-text">Minimum 8 characters.</div>
+            </div>
+
+            <!-- Confirm New Password -->
+            <div class="mb-4">
+              <label for="confirmPassword" class="form-label fw-semibold">Confirm New Password <span class="text-danger">*</span></label>
+              <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" minlength="8" required />
+            </div>
+
+            <div class="d-flex justify-content-end pt-3 border-top">
+              <button type="submit" class="btn btn-danger px-4 fw-semibold" id="btn-change-password">
+                <i class="bi bi-key me-1"></i> Update Password
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-3 p-4 bg-light">
+          <h6 class="fw-bold text-dark mb-2"><i class="bi bi-info-circle me-1 text-primary"></i> Account Summary</h6>
+          <ul class="list-unstyled mb-0 small text-muted">
+            <li class="mb-1"><strong>Account ID:</strong> #<%= (profile && profile.id) || '-' %></li>
+            <li class="mb-1"><strong>Member Since:</strong> <%= (profile && profile.createdAt) ? new Date(profile.createdAt).toLocaleDateString() : 'N/A' %></li>
+            <li><strong>Status:</strong> <span class="text-success fw-medium">Active</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<%- include('../layouts/footer') %>

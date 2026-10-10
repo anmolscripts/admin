@@ -1,0 +1,27 @@
+/* assets/css/theme.css */
+:root {
+  /* Primary colour */
+  --color-primary: #2A9D8F;
+  --color-primary-light: #6FC3A1;
+  --color-primary-dark: #1B6F5D;
+  /* Secondary colour */
+  --color-secondary: #E9C46A;
+  --color-secondary-light: #F2D79A;
+  --color-secondary-dark: #CFA044;
+  /* Success */
+  --color-success: #2E7D32;
+  --color-success-light: #A5D6A7;
+  --color-success-dark: #1B5E20;
+  /* Danger */
+  --color-danger: #C62828;
+  --color-danger-light: #EF9A9A;
+  --color-danger-dark: #8E0000;
+  /* Warning */
+  --color-warning: #F57C00;
+  --color-warning-light: #FFCC80;
+  --color-warning-dark: #E65100;
+  /* Info */
+  --color-info: #0288D1;
+  --color-info-light: #81D4FA;
+  --color-info-dark: #01579B;
+}
