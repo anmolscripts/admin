@@ -626,10 +626,12 @@ test('Payroll Calculation & GL Posting Integration Test Suite', async (t) => {
 
     await t.test('Actual Salary TDS Calculation Engine: Section 202 Slabs, Section 156 Rebates, Cess, Revisions & Scope (TASK 1-4)', async () => {
         // =========================================================================
-        // PART A: TAX YEAR 2026-27 — INCOME-TAX ACT, 2025 (SECTION 202 DEFAULT REGIME)
+        // PART A: AY 2026-27 DEFAULT REGIME (SLAB BANDS, REBATES & MARGINAL RELIEF)
+        // (Applies to both FY 2025-26 under amended 1961 Act and TY 2026-27 under 2025 Act)
         // =========================================================================
 
         // --- 1. SLAB BOUNDARY 1: At ₹4,00,000 (0% band) ---
+        // Expected: Slab tax = ₹0, Rebate = ₹0, Net Tax = ₹0
         const b1At = payrollService.calculateSalaryTds({
             grossMonthlyEarnings: 475000 / 12,
             month: 4,
@@ -646,6 +648,7 @@ test('Payroll Calculation & GL Posting Integration Test Suite', async (t) => {
         assert.equal(b1At.monthlyTds, 0);
 
         // --- 2. SLAB BOUNDARY 1: Immediately Above at ₹4,00,100 (5% band) ---
+        // Expected: Slab tax = 100 * 5% = ₹5. Resident Rebate = ₹5. Net Tax = ₹0
         const b1Above = payrollService.calculateSalaryTds({
             grossMonthlyEarnings: 475100 / 12,
             month: 4,
@@ -653,12 +656,13 @@ test('Payroll Calculation & GL Posting Integration Test Suite', async (t) => {
             options: { taxRegime: 'DEFAULT', projectedAnnualGross: 475100 } // 400,100 taxable
         });
         assert.equal(b1Above.netTaxableIncome, 400100);
-        assert.equal(b1Above.grossAnnualTax, 5); // 100 * 5%
-        assert.equal(b1Above.section156Rebate, 5, 'Section 156 rebate covers 100% of tax when taxable <= 12L');
+        assert.equal(b1Above.grossAnnualTax, 5);
+        assert.equal(b1Above.section156Rebate, 5);
         assert.equal(b1Above.netAnnualTax, 0);
         assert.equal(b1Above.monthlyTds, 0);
 
         // --- 3. SLAB BOUNDARY 2: At ₹8,00,000 (5% band top) ---
+        // Expected: Slab tax = 4,00,000 * 5% = ₹20,000. Resident Rebate = ₹20,000. Net Tax = ₹0
         const b2At = payrollService.calculateSalaryTds({
             grossMonthlyEarnings: 875000 / 12,
             month: 4,
@@ -666,11 +670,12 @@ test('Payroll Calculation & GL Posting Integration Test Suite', async (t) => {
             options: { taxRegime: 'DEFAULT', projectedAnnualGross: 875000 } // 8.00L taxable
         });
         assert.equal(b2At.netTaxableIncome, 800000);
-        assert.equal(b2At.grossAnnualTax, 20000); // 4L @ 5% = 20,000
+        assert.equal(b2At.grossAnnualTax, 20000);
         assert.equal(b2At.section156Rebate, 20000);
         assert.equal(b2At.netAnnualTax, 0);
 
         // --- 4. SLAB BOUNDARY 2: Immediately Above at ₹8,00,100 (10% band) ---
+        // Expected: Slab tax = 20,000 + (100 * 10%) = ₹20,010. Resident Rebate = ₹20,010. Net Tax = ₹0
         const b2Above = payrollService.calculateSalaryTds({
             grossMonthlyEarnings: 875100 / 12,
             month: 4,
@@ -678,43 +683,88 @@ test('Payroll Calculation & GL Posting Integration Test Suite', async (t) => {
             options: { taxRegime: 'DEFAULT', projectedAnnualGross: 875100 } // 800,100 taxable
         });
         assert.equal(b2Above.netTaxableIncome, 800100);
-        assert.equal(b2Above.grossAnnualTax, 20010); // 20,000 + (100 * 10%)
+        assert.equal(b2Above.grossAnnualTax, 20010);
         assert.equal(b2Above.section156Rebate, 20010);
         assert.equal(b2Above.netAnnualTax, 0);
 
-        // --- 5. SLAB BOUNDARY 3: At ₹12,00,000 (Section 156 Rebate Ceiling - Exactly 100% Tax Rebated) ---
-        // Gross ₹12,75,000 - 75k std ded = ₹12,00,000 taxable.
+        // --- 5. MID-BAND 3: At ₹10,00,000 Taxable Income (AY 2026-27 Statutory Requirement) ---
+        // Slabs: 0-4L (0) + 4L-8L (4L * 5% = 20k) + 8L-10L (2L * 10% = 20k) = ₹40,000 gross tax.
+        // Resident Individual: Taxable 10L <= 12L threshold -> Full rebate of ₹40,000 -> Net Tax = ₹0!
+        const b10LResident = payrollService.calculateSalaryTds({
+            grossMonthlyEarnings: 1075000 / 12,
+            month: 4,
+            year: 2026,
+            options: { taxRegime: 'DEFAULT', isResident: true, projectedAnnualGross: 1075000 }
+        });
+        assert.equal(b10LResident.netTaxableIncome, 1000000);
+        assert.equal(b10LResident.grossAnnualTax, 40000, 'Slab tax before rebate must be ₹40,000 at ₹10L taxable income');
+        assert.equal(b10LResident.section156Rebate, 40000, 'Eligible resident rebate reduces ₹40,000 tax to zero');
+        assert.equal(b10LResident.taxAfterRebate, 0);
+        assert.equal(b10LResident.cess, 0);
+        assert.equal(b10LResident.netAnnualTax, 0);
+        assert.equal(b10LResident.monthlyTds, 0);
+
+        // Non-Resident Individual at ₹10,00,000 Taxable Income:
+        // Ineligible for rebate: Gross Tax = ₹40,000, Rebate = ₹0, Cess (4%) = ₹1,600, Net Tax = ₹41,600, Monthly TDS = ₹3,467
+        const b10LNonResident = payrollService.calculateSalaryTds({
+            grossMonthlyEarnings: 1075000 / 12,
+            month: 4,
+            year: 2026,
+            options: { taxRegime: 'DEFAULT', isResident: false, projectedAnnualGross: 1075000 }
+        });
+        assert.equal(b10LNonResident.netTaxableIncome, 1000000);
+        assert.equal(b10LNonResident.grossAnnualTax, 40000);
+        assert.equal(b10LNonResident.section156Rebate, 0, 'Non-resident is statutorily ineligible for rebate');
+        assert.equal(b10LNonResident.cess, 1600);
+        assert.equal(b10LNonResident.netAnnualTax, 41600);
+        assert.equal(b10LNonResident.monthlyTds, 3467);
+
+        // --- 6. SLAB BOUNDARY 3: At ₹12,00,000 (Rebate Ceiling - 100% Tax Rebated) ---
+        // Gross ₹12,75,000 - ₹75k std ded = ₹12,00,000 taxable.
         // Tax: 4L @ 5% (20k) + 4L @ 10% (40k) = ₹60,000 gross tax.
-        // Section 156 rebate = ₹60,000. Net tax = ₹0!
-        const b3At = payrollService.calculateSalaryTds({
+        // Resident Individual: Full rebate of ₹60,000 -> Net Tax = ₹0, Final Liability = ₹0!
+        const b12LResident = payrollService.calculateSalaryTds({
             grossMonthlyEarnings: 1275000 / 12,
             month: 4,
             year: 2026,
             paymentDate: '2026-04-30',
-            options: { taxRegime: 'DEFAULT', projectedAnnualGross: 1275000 }
+            options: { taxRegime: 'DEFAULT', isResident: true, projectedAnnualGross: 1275000 }
         });
-        assert.equal(b3At.netTaxableIncome, 1200000);
-        assert.equal(b3At.grossAnnualTax, 60000);
-        assert.equal(b3At.section156Rebate, 60000, 'Resident with taxable <= 12L gets 100% Section 156 rebate (max 60k)');
-        assert.equal(b3At.taxAfterRebate, 0);
-        assert.equal(b3At.cess, 0);
-        assert.equal(b3At.netAnnualTax, 0);
-        assert.equal(b3At.monthlyTds, 0);
-        assert.equal(b3At.provision.section, 'Section 392(1)');
+        assert.equal(b12LResident.netTaxableIncome, 1200000);
+        assert.equal(b12LResident.grossAnnualTax, 60000, 'Slab tax before rebate must be ₹60,000 at ₹12L taxable income');
+        assert.equal(b12LResident.section156Rebate, 60000, 'Resident with taxable <= 12L gets 100% rebate (max 60k)');
+        assert.equal(b12LResident.taxAfterRebate, 0);
+        assert.equal(b12LResident.cess, 0);
+        assert.equal(b12LResident.netAnnualTax, 0);
+        assert.equal(b12LResident.monthlyTds, 0);
+        assert.equal(b12LResident.provision.section, 'Section 392(1)');
 
-        // --- 6. MARGINAL RELIEF ON REBATE: At ₹12,10,000 (Excess Income = ₹10,000) ---
+        // Non-Resident Individual at ₹12,00,000 Taxable Income:
+        // Ineligible for rebate: Gross Tax = ₹60,000, Rebate = ₹0, Cess (4%) = ₹2,400, Net Tax = ₹62,400, Monthly TDS = ₹5,200
+        const b12LNonResident = payrollService.calculateSalaryTds({
+            grossMonthlyEarnings: 1275000 / 12,
+            month: 4,
+            year: 2026,
+            options: { taxRegime: 'DEFAULT', isResident: false, projectedAnnualGross: 1275000 }
+        });
+        assert.equal(b12LNonResident.netTaxableIncome, 1200000);
+        assert.equal(b12LNonResident.grossAnnualTax, 60000);
+        assert.equal(b12LNonResident.section156Rebate, 0);
+        assert.equal(b12LNonResident.cess, 2400);
+        assert.equal(b12LNonResident.netAnnualTax, 62400);
+        assert.equal(b12LNonResident.monthlyTds, 5200);
+
+        // --- 7. MARGINAL RELIEF ON REBATE: At ₹12,10,000 (Excess Income = ₹10,000) ---
         // Gross tax = 60,000 + (10,000 * 15%) = 61,500.
         // Excess over 12L = 10,000.
         // Tax before cess cannot exceed excess income (10,000).
-        // Section 156 marginal relief = 61,500 - 10,000 = 51,500.
-        // Tax after rebate = 10,000.
-        // Cess (4%) = 400.
-        // Net annual tax = 10,400. Monthly TDS (12 months) = 867.
+        // Marginal relief = 61,500 - 10,000 = 51,500.
+        // Tax after relief = 10,000. Cess (4%) = 400. Net annual tax = 10,400. Monthly TDS = 867.
         const marginalRelief = payrollService.calculateSalaryTds({
             grossMonthlyEarnings: 1285000 / 12,
             month: 4,
             year: 2026,
-            options: { taxRegime: 'DEFAULT', projectedAnnualGross: 1285000 } // 12,10,000 taxable
+            options: { taxRegime: 'DEFAULT', isResident: true, projectedAnnualGross: 1285000 } // 12,10,000 taxable
         });
         assert.equal(marginalRelief.netTaxableIncome, 1210000);
         assert.equal(marginalRelief.grossAnnualTax, 61500);
@@ -724,11 +774,24 @@ test('Payroll Calculation & GL Posting Integration Test Suite', async (t) => {
         assert.equal(marginalRelief.netAnnualTax, 10400);
         assert.equal(marginalRelief.monthlyTds, 867);
 
-        // --- 7. SLAB BOUNDARY 4: At ₹15,00,000 Taxable (Above Rebate Zone) ---
+        // Non-Resident at ₹12,10,000 (No Marginal Relief):
+        // Gross tax = 61,500, Relief = 0, Cess = 2,460, Net annual tax = 63,960, Monthly TDS = 5,330
+        const nonResidentMarginal = payrollService.calculateSalaryTds({
+            grossMonthlyEarnings: 1285000 / 12,
+            month: 4,
+            year: 2026,
+            options: { taxRegime: 'DEFAULT', isResident: false, projectedAnnualGross: 1285000 }
+        });
+        assert.equal(nonResidentMarginal.netTaxableIncome, 1210000);
+        assert.equal(nonResidentMarginal.grossAnnualTax, 61500);
+        assert.equal(nonResidentMarginal.section156Rebate, 0);
+        assert.equal(nonResidentMarginal.cess, 2460);
+        assert.equal(nonResidentMarginal.netAnnualTax, 63960);
+        assert.equal(nonResidentMarginal.monthlyTds, 5330);
+
+        // --- 8. SLAB BOUNDARY 4: At ₹15,00,000 Taxable (Above Rebate Zone) ---
         // Gross Tax: 4L@5% (20k) + 4L@10% (40k) + 3L@15% (45k) = 1,05,000.
-        // Rebate = 0 (excess income 3L > tax 1.05L).
-        // Cess = 1,05,000 * 0.04 = 4,200.
-        // Net Tax = 1,09,200. Monthly TDS = 9,100.
+        // Rebate = 0. Cess (4%) = 4,200. Net Tax = 1,09,200. Monthly TDS = 9,100.
         const b15L = payrollService.calculateSalaryTds({
             grossMonthlyEarnings: 1575000 / 12,
             month: 4,
@@ -742,7 +805,7 @@ test('Payroll Calculation & GL Posting Integration Test Suite', async (t) => {
         assert.equal(b15L.netAnnualTax, 109200);
         assert.equal(b15L.monthlyTds, 9100);
 
-        // --- 8. SLAB BOUNDARY 5: At ₹16,00,000 (15% band top) ---
+        // --- 9. SLAB BOUNDARY 5: At ₹16,00,000 (15% band top) ---
         // Gross Tax: 20k + 40k + 4L@15% (60k) = 1,20,000.
         // Cess (4%) = 4,800. Net = 1,24,800. Monthly TDS = 10,400.
         const b16L = payrollService.calculateSalaryTds({
@@ -757,7 +820,7 @@ test('Payroll Calculation & GL Posting Integration Test Suite', async (t) => {
         assert.equal(b16L.netAnnualTax, 124800);
         assert.equal(b16L.monthlyTds, 10400);
 
-        // --- 9. SLAB BOUNDARY 6: At ₹20,00,000 (20% band top) ---
+        // --- 10. SLAB BOUNDARY 6: At ₹20,00,000 (20% band top) ---
         // Gross Tax: 1,20,000 + 4L@20% (80k) = 2,00,000.
         // Cess = 8,000. Net = 2,08,000. Monthly TDS = 17,333.
         const b20L = payrollService.calculateSalaryTds({
@@ -773,7 +836,7 @@ test('Payroll Calculation & GL Posting Integration Test Suite', async (t) => {
         assert.equal(b20L.netAnnualTax, 208000);
         assert.equal(b20L.monthlyTds, 17333);
 
-        // --- 10. SLAB BOUNDARY 7: At ₹24,00,000 (25% band top) ---
+        // --- 11. SLAB BOUNDARY 7: At ₹24,00,000 (25% band top) ---
         // Gross Tax: 2,00,000 + 4L@25% (1,00,000) = 3,00,000.
         // Cess = 12,000. Net = 3,12,000. Monthly TDS = 26,000.
         const b24L = payrollService.calculateSalaryTds({
@@ -788,7 +851,7 @@ test('Payroll Calculation & GL Posting Integration Test Suite', async (t) => {
         assert.equal(b24L.netAnnualTax, 312000);
         assert.equal(b24L.monthlyTds, 26000);
 
-        // --- 11. ABOVE ₹24 LAKH: At ₹30,00,000 (30% band) ---
+        // --- 12. ABOVE ₹24 LAKH: At ₹30,00,000 (30% band) ---
         // Gross Tax: 3,00,000 + 6L@30% (1,80,000) = 4,80,000.
         // Cess = 19,200. Net = 4,99,200. Monthly TDS = 41,600.
         const b30L = payrollService.calculateSalaryTds({
@@ -802,22 +865,6 @@ test('Payroll Calculation & GL Posting Integration Test Suite', async (t) => {
         assert.equal(b30L.cess, 19200);
         assert.equal(b30L.netAnnualTax, 499200);
         assert.equal(b30L.monthlyTds, 41600);
-
-        // --- 12. NON-RESIDENT EXCLUSION FROM SECTION 156 REBATE ---
-        // Non-resident with ₹12,00,000 taxable income does NOT receive rebate.
-        // Gross Tax = 60,000. Rebate = 0. Cess = 2,400. Net = 62,400. Monthly = 5,200.
-        const nonResidentTds = payrollService.calculateSalaryTds({
-            grossMonthlyEarnings: 1275000 / 12,
-            month: 4,
-            year: 2026,
-            options: { taxRegime: 'DEFAULT', isResident: false, projectedAnnualGross: 1275000 }
-        });
-        assert.equal(nonResidentTds.netTaxableIncome, 1200000);
-        assert.equal(nonResidentTds.grossAnnualTax, 60000);
-        assert.equal(nonResidentTds.section156Rebate, 0, 'Non-residents cannot claim Section 156 rebate');
-        assert.equal(nonResidentTds.cess, 2400);
-        assert.equal(nonResidentTds.netAnnualTax, 62400);
-        assert.equal(nonResidentTds.monthlyTds, 5200);
 
         // --- 13. MID-YEAR SALARY INCREMENT & PRIOR DEDUCTION RECONCILIATION ---
         // In November (5 remaining months), projected annual gross is ₹18,00,000.
@@ -848,40 +895,73 @@ test('Payroll Calculation & GL Posting Integration Test Suite', async (t) => {
         assert.equal(midYearRevision.monthlyTds, 16160);
 
         // =========================================================================
-        // PART B: HISTORICAL TAX YEAR 2025-26 STABILITY (INCOME-TAX ACT, 1961)
+        // PART B: THREE-PERIOD VERSIONED TAX RULES MATRIX VERIFICATION
         // =========================================================================
 
-        // --- 14. TY 2025-26 NEW REGIME (SECTION 115BAC / SECTION 192) ---
-        // Gross ₹12,00,000. Std Ded ₹75,000 -> Taxable ₹11,25,000.
-        // Slabs: 3L@0% + 4L@5%(20k) + 3L@10%(30k) + 1.25L@15%(18,750) = 68,750.
-        // Cess (4%) = 2,750. Net Annual Tax = 71,500. Monthly TDS = 5,958.
-        const historical115bac = payrollService.calculateSalaryTds({
-            grossMonthlyEarnings: 100000,
-            month: 4,
+        // --- 14. PERIOD 2: FY 2025-26 / AY 2026-27 (INCOME-TAX ACT, 1961 AS AMENDED) ---
+        // Rules: Income-tax Act, 1961, Section 115BAC amended slabs (4L/8L/12L/16L/20L/24L),
+        // Section 87A amended rebate (₹12L ceiling, max ₹60,000), Withholding: Section 192.
+        
+        // 14A. Resident Employee with ₹10,00,000 Taxable Income in FY 2025-26:
+        // Slab Tax: 4L@5% (20k) + 2L@10% (20k) = ₹40,000 gross tax.
+        // Section 87A rebate covers ₹40,000 -> Net Tax = ₹0!
+        const fy25Resident10L = payrollService.calculateSalaryTds({
+            grossMonthlyEarnings: 1075000 / 12,
+            month: 5,
             year: 2025,
-            paymentDate: '2025-04-30',
-            options: { taxRegime: 'NEW', taxYear: '2025-26' }
+            paymentDate: '2025-05-31',
+            options: { taxRegime: 'NEW', taxYear: '2025-26', isResident: true, projectedAnnualGross: 1075000 }
         });
-        assert.equal(historical115bac.taxYear, '2025-26');
-        assert.equal(historical115bac.governingAct, 'Income-tax Act, 1961');
-        assert.equal(historical115bac.computationSection, 'Section 115BAC');
-        assert.equal(historical115bac.provision.section, 'Section 192');
-        assert.equal(historical115bac.netTaxableIncome, 1125000);
-        assert.equal(historical115bac.grossAnnualTax, 68750);
-        assert.equal(historical115bac.cess, 2750);
-        assert.equal(historical115bac.netAnnualTax, 71500);
-        assert.equal(historical115bac.monthlyTds, 5958);
+        assert.equal(fy25Resident10L.taxYear, '2025-26');
+        assert.equal(fy25Resident10L.governingAct, 'Income-tax Act, 1961');
+        assert.equal(fy25Resident10L.computationSection, 'Section 115BAC');
+        assert.equal(fy25Resident10L.provision.section, 'Section 192');
+        assert.equal(fy25Resident10L.netTaxableIncome, 1000000);
+        assert.equal(fy25Resident10L.grossAnnualTax, 40000, 'FY 2025-26 uses amended ₹4L/₹8L/₹12L slabs');
+        assert.equal(fy25Resident10L.section87aRebate, 40000, 'FY 2025-26 Section 87A rebate covers up to ₹12L');
+        assert.equal(fy25Resident10L.netAnnualTax, 0);
+        assert.equal(fy25Resident10L.monthlyTds, 0);
 
-        // --- 15. TY 2025-26 OLD REGIME WITH CHAPTER VI-A DEDUCTIONS ---
+        // 14B. Resident Employee with ₹12,00,000 Taxable Income in FY 2025-26:
+        // Slab Tax: 4L@5% (20k) + 4L@10% (40k) = ₹60,000 gross tax.
+        // Section 87A rebate covers ₹60,000 -> Net Tax = ₹0!
+        const fy25Resident12L = payrollService.calculateSalaryTds({
+            grossMonthlyEarnings: 1275000 / 12,
+            month: 5,
+            year: 2025,
+            paymentDate: '2025-05-31',
+            options: { taxRegime: 'NEW', taxYear: '2025-26', isResident: true, projectedAnnualGross: 1275000 }
+        });
+        assert.equal(fy25Resident12L.netTaxableIncome, 1200000);
+        assert.equal(fy25Resident12L.grossAnnualTax, 60000);
+        assert.equal(fy25Resident12L.section87aRebate, 60000);
+        assert.equal(fy25Resident12L.netAnnualTax, 0);
+
+        // 14C. Non-Resident with ₹10,00,000 Taxable Income in FY 2025-26:
+        // Ineligible for Section 87A rebate: Gross Tax = ₹40,000, Rebate = 0, Cess = ₹1,600, Net = ₹41,600
+        const fy25NonResident10L = payrollService.calculateSalaryTds({
+            grossMonthlyEarnings: 1075000 / 12,
+            month: 5,
+            year: 2025,
+            paymentDate: '2025-05-31',
+            options: { taxRegime: 'NEW', taxYear: '2025-26', isResident: false, projectedAnnualGross: 1075000 }
+        });
+        assert.equal(fy25NonResident10L.netTaxableIncome, 1000000);
+        assert.equal(fy25NonResident10L.grossAnnualTax, 40000);
+        assert.equal(fy25NonResident10L.section87aRebate, 0);
+        assert.equal(fy25NonResident10L.cess, 1600);
+        assert.equal(fy25NonResident10L.netAnnualTax, 41600);
+
+        // 14D. Old Regime in FY 2025-26 with Chapter VI-A Deductions:
         // Gross ₹12,00,000. Std Ded ₹50,000. PT ₹2,400. 80C ₹1,50,000. 80D ₹25,000.
         // Total Deductions = 2,27,400. Taxable = 9,72,600.
         // Slabs: 2.5L@0% + 2.5L@5%(12.5k) + 4.726L@20%(94,520) = 1,07,020.
         // Cess = 4,280.80. Net = 1,11,300.80.
-        const oldRegimeTds = payrollService.calculateSalaryTds({
+        const fy25OldRegime = payrollService.calculateSalaryTds({
             grossMonthlyEarnings: 100000,
-            month: 4,
+            month: 5,
             year: 2025,
-            paymentDate: '2025-04-30',
+            paymentDate: '2025-05-31',
             options: {
                 taxRegime: 'OLD',
                 taxYear: '2025-26',
@@ -890,19 +970,79 @@ test('Payroll Calculation & GL Posting Integration Test Suite', async (t) => {
                 declaredPtAnnual: 2400
             }
         });
-        assert.equal(oldRegimeTds.taxYear, '2025-26');
-        assert.equal(oldRegimeTds.standardDeduction, 50000);
-        assert.equal(oldRegimeTds.totalDeductions, 227400);
-        assert.equal(oldRegimeTds.netTaxableIncome, 972600);
-        assert.equal(oldRegimeTds.grossAnnualTax, 107020);
-        assert.equal(oldRegimeTds.provision.section, 'Section 192');
+        assert.equal(fy25OldRegime.taxYear, '2025-26');
+        assert.equal(fy25OldRegime.standardDeduction, 50000);
+        assert.equal(fy25OldRegime.totalDeductions, 227400);
+        assert.equal(fy25OldRegime.netTaxableIncome, 972600);
+        assert.equal(fy25OldRegime.grossAnnualTax, 107020);
+        assert.equal(fy25OldRegime.provision.section, 'Section 192');
+
+        // --- 15. PERIOD 1: HISTORICAL FY 2024-25 / AY 2025-26 (INCOME-TAX ACT, 1961) ---
+        // Rules: Income-tax Act, 1961, Section 115BAC slabs (₹3L, ₹7L, ₹10L, ₹12L, ₹15L),
+        // Section 87A rebate ceiling ₹7,00,000 (max ₹25,000), Withholding: Section 192.
+
+        // 15A. At Historical Rebate Ceiling: Taxable Income ₹7,00,000:
+        // Slabs: 0-3L (0) + 3L-7L (4L @ 5% = 20,000) = ₹20,000. Section 87A Rebate = ₹20,000. Net Tax = ₹0
+        const fy24RebateAt7L = payrollService.calculateSalaryTds({
+            grossMonthlyEarnings: 775000 / 12,
+            month: 4,
+            year: 2024,
+            paymentDate: '2024-04-30',
+            options: { taxRegime: 'NEW', taxYear: '2024-25', isResident: true, projectedAnnualGross: 775000 }
+        });
+        assert.equal(fy24RebateAt7L.taxYear, '2024-25');
+        assert.equal(fy24RebateAt7L.governingAct, 'Income-tax Act, 1961');
+        assert.equal(fy24RebateAt7L.computationSection, 'Section 115BAC');
+        assert.equal(fy24RebateAt7L.provision.section, 'Section 192');
+        assert.equal(fy24RebateAt7L.netTaxableIncome, 700000);
+        assert.equal(fy24RebateAt7L.grossAnnualTax, 20000);
+        assert.equal(fy24RebateAt7L.section87aRebate, 20000);
+        assert.equal(fy24RebateAt7L.netAnnualTax, 0);
+
+        // 15B. Above Historical Rebate Ceiling: Taxable Income ₹10,00,000:
+        // Slabs: 3L@0% + 4L@5%(20k) + 3L@10%(30k) = ₹50,000. Rebate = ₹0 (taxable > 7L).
+        // Cess (4%) = ₹2,000. Net Annual Tax = ₹52,000.
+        const fy24Above7L = payrollService.calculateSalaryTds({
+            grossMonthlyEarnings: 1075000 / 12,
+            month: 4,
+            year: 2024,
+            paymentDate: '2024-04-30',
+            options: { taxRegime: 'NEW', taxYear: '2024-25', isResident: true, projectedAnnualGross: 1075000 }
+        });
+        assert.equal(fy24Above7L.taxYear, '2024-25');
+        assert.equal(fy24Above7L.netTaxableIncome, 1000000);
+        assert.equal(fy24Above7L.grossAnnualTax, 50000);
+        assert.equal(fy24Above7L.section87aRebate, 0, 'In FY 2024-25, Section 87A rebate ceases above ₹7L');
+        assert.equal(fy24Above7L.cess, 2000);
+        assert.equal(fy24Above7L.netAnnualTax, 52000);
+
+        // 15C. Historical ₹71,500 Test Case (Properly Verified Under FY 2024-25):
+        // Gross ₹12,00,000. Std Ded ₹75,000 -> Taxable ₹11,25,000.
+        // Slabs: 3L@0% + 4L@5%(20k) + 3L@10%(30k) + 1.25L@15%(18,750) = ₹68,750.
+        // Cess (4%) = ₹2,750. Net Annual Tax = ₹71,500. Monthly TDS = ₹5,958.
+        const fy24Historical71500 = payrollService.calculateSalaryTds({
+            grossMonthlyEarnings: 100000,
+            month: 4,
+            year: 2024,
+            paymentDate: '2024-04-30',
+            options: { taxRegime: 'NEW', taxYear: '2024-25' }
+        });
+        assert.equal(fy24Historical71500.taxYear, '2024-25');
+        assert.equal(fy24Historical71500.governingAct, 'Income-tax Act, 1961');
+        assert.equal(fy24Historical71500.computationSection, 'Section 115BAC');
+        assert.equal(fy24Historical71500.provision.section, 'Section 192');
+        assert.equal(fy24Historical71500.netTaxableIncome, 1125000);
+        assert.equal(fy24Historical71500.grossAnnualTax, 68750);
+        assert.equal(fy24Historical71500.cess, 2750);
+        assert.equal(fy24Historical71500.netAnnualTax, 71500, 'Historical ₹71,500 tax belongs strictly to FY 2024-25 rules');
+        assert.equal(fy24Historical71500.monthlyTds, 5958);
 
         // =========================================================================
         // PART C: SCOPE TRANSPARENCY & INPUT VALIDATIONS
         // =========================================================================
 
-        assert.ok(b3At.statutoryScopeLimitation.includes('Salary TDS engine estimates progressive withholding'));
-        assert.ok(b3At.statutoryCitation.includes('Section 202, Income-tax Act, 2025'));
+        assert.ok(b12LResident.statutoryScopeLimitation.includes('Salary TDS engine estimates progressive withholding'));
+        assert.ok(b12LResident.statutoryCitation.includes('Section 202, Income-tax Act, 2025'));
 
         assert.throws(() => {
             payrollService.calculateSalaryTds({

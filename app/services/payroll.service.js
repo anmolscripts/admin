@@ -259,10 +259,13 @@ const STATUTORY_RULES = {
         taxYears: {
             '2026-27': {
                 taxYear: '2026-27',
+                financialYear: '2026-27',
+                assessmentYear: '2027-28',
                 governingAct: 'Income-tax Act, 2025',
                 defaultRegimeSection: 'Section 202',
                 optionalRegimeSection: 'Section 202(4)',
                 rebateSection: 'Section 156',
+                withholdingSection: 'Section 392(1)',
                 cessRate: 0.04,
                 regimes: {
                     DEFAULT: {
@@ -323,10 +326,80 @@ const STATUTORY_RULES = {
             },
             '2025-26': {
                 taxYear: '2025-26',
+                financialYear: '2025-26',
+                assessmentYear: '2026-27',
+                governingAct: 'Income-tax Act, 1961',
+                defaultRegimeSection: 'Section 115BAC (as amended for AY 2026-27)',
+                optionalRegimeSection: 'Normal Provisions',
+                rebateSection: 'Section 87A (as amended for AY 2026-27)',
+                withholdingSection: 'Section 192',
+                cessRate: 0.04,
+                regimes: {
+                    DEFAULT: {
+                        name: 'NEW',
+                        section: 'Section 115BAC',
+                        act: 'Income-tax Act, 1961',
+                        standardDeduction: 75000,
+                        slabs: [
+                            { upTo: 400000, rate: 0.00, label: 'Up to ₹4,00,000' },
+                            { upTo: 800000, rate: 0.05, label: '₹4,00,001–₹8,00,000' },
+                            { upTo: 1200000, rate: 0.10, label: '₹8,00,001–₹12,00,000' },
+                            { upTo: 1600000, rate: 0.15, label: '₹12,00,001–₹16,00,000' },
+                            { upTo: 2000000, rate: 0.20, label: '₹16,00,001–₹20,00,000' },
+                            { upTo: 2400000, rate: 0.25, label: '₹20,00,001–₹24,00,000' },
+                            { upTo: Infinity, rate: 0.30, label: 'Above ₹24,00,000' }
+                        ],
+                        rebate: {
+                            section: 'Section 87A',
+                            residentOnly: true,
+                            threshold: 1200000,
+                            maxRebate: 60000,
+                            hasMarginalRelief: true
+                        },
+                        surcharge: [
+                            { threshold: 5000000, rate: 0.10 },
+                            { threshold: 10000000, rate: 0.15 },
+                            { threshold: 20000000, rate: 0.25 }
+                        ],
+                        allowChapterVia: false
+                    },
+                    OPTIONAL: {
+                        name: 'OLD',
+                        section: 'Normal Provisions',
+                        act: 'Income-tax Act, 1961',
+                        standardDeduction: 50000,
+                        slabs: [
+                            { upTo: 250000, rate: 0.00, label: 'Up to ₹2,50,000' },
+                            { upTo: 500000, rate: 0.05, label: '₹2,50,001–₹5,00,000' },
+                            { upTo: 1000000, rate: 0.20, label: '₹5,00,001–₹10,00,000' },
+                            { upTo: Infinity, rate: 0.30, label: 'Above ₹10,00,000' }
+                        ],
+                        rebate: {
+                            section: 'Section 87A',
+                            residentOnly: true,
+                            threshold: 500000,
+                            maxRebate: 12500,
+                            hasMarginalRelief: false
+                        },
+                        surcharge: [
+                            { threshold: 5000000, rate: 0.10 },
+                            { threshold: 10000000, rate: 0.15 },
+                            { threshold: 20000000, rate: 0.25 },
+                            { threshold: 50000000, rate: 0.37 }
+                        ],
+                        allowChapterVia: true
+                    }
+                }
+            },
+            '2024-25': {
+                taxYear: '2024-25',
+                financialYear: '2024-25',
+                assessmentYear: '2025-26',
                 governingAct: 'Income-tax Act, 1961',
                 defaultRegimeSection: 'Section 115BAC',
                 optionalRegimeSection: 'Normal Provisions',
                 rebateSection: 'Section 87A',
+                withholdingSection: 'Section 192',
                 cessRate: 0.04,
                 regimes: {
                     DEFAULT: {
@@ -393,28 +466,33 @@ const STATUTORY_RULES = {
  */
 function resolveTaxYear({ taxYear, paymentDate, month, year }) {
     if (taxYear && typeof taxYear === 'string') {
-        const clean = taxYear.trim();
-        if (clean === '2026-27' || clean === '2025-26') return clean;
-        if (clean === '2026') return '2026-27';
-        if (clean === '2025') return '2025-26';
-        throw new ValidationError(`Unsupported tax year "${taxYear}". Supported tax years: "2026-27", "2025-26".`);
+        const clean = taxYear.trim().toUpperCase();
+        if (clean === '2024-25' || clean === 'FY 2024-25' || clean === 'AY 2025-26' || clean === '2024') return '2024-25';
+        if (clean === '2025-26' || clean === 'FY 2025-26' || clean === 'AY 2026-27' || clean === '2025') return '2025-26';
+        if (clean === '2026-27' || clean === 'FY 2026-27' || clean === 'AY 2027-28' || clean === '2026' || clean === '2026-2027') return '2026-27';
+        throw new ValidationError(`Unsupported tax year "${taxYear}". Supported tax years: "2024-25", "2025-26", "2026-27".`);
     }
 
     if (paymentDate !== null && paymentDate !== undefined && paymentDate !== '') {
         const parsed = (paymentDate instanceof Date) ? paymentDate : new Date(paymentDate);
         if (!isNaN(parsed.getTime())) {
             const dateStr = parsed.toISOString().slice(0, 10);
-            return (dateStr >= '2026-04-01') ? '2026-27' : '2025-26';
+            if (dateStr < '2025-04-01') return '2024-25';
+            if (dateStr < '2026-04-01') return '2025-26';
+            return '2026-27';
         }
     }
 
     const m = parseInt(month, 10);
     const y = parseInt(year, 10);
     if (!isNaN(m) && !isNaN(y)) {
-        if (y > 2026 || (y === 2026 && m >= 4)) {
-            return '2026-27';
+        if (y < 2025 || (y === 2025 && m < 4)) {
+            return '2024-25';
         }
-        return '2025-26';
+        if ((y === 2025 && m >= 4) || (y === 2026 && m < 4)) {
+            return '2025-26';
+        }
+        return '2026-27';
     }
 
     return '2026-27';
@@ -667,7 +745,7 @@ function calculateSalaryTds({
         grossAnnualTax,
         slabBreakdown: slabResult.breakdown,
         section156Rebate: taxYear === '2026-27' ? rebate : 0,
-        section87aRebate: taxYear === '2025-26' ? rebate : 0,
+        section87aRebate: (taxYear === '2025-26' || taxYear === '2024-25') ? rebate : 0,
         rebateAmount: rebate,
         taxAfterRebate,
         surcharge,
@@ -680,7 +758,7 @@ function calculateSalaryTds({
         isResident,
         isEstimated: true,
         statutoryCitation: `${regimeConfig.section}, ${taxYearConfig.governingAct} (Tax Year ${taxYear}) [Withholding: ${tdsProvision.section}]`,
-        statutoryScopeLimitation: 'Salary TDS engine estimates progressive withholding for payroll operations under Section 202 / Section 392(1) (Income-tax Act, 2025) or Section 115BAC / Section 192 (Income-tax Act, 1961). It incorporates Standard Deduction (₹75k Default / ₹50k Optional), declared deductions, Section 156/87A rebates with marginal relief, surcharge, and 4% Cess. Dynamic payroll estimation does not constitute statutory annual tax filing (Form 16/Form 24Q/Form 12BB), nor does it account for external non-salary income unless explicitly declared.'
+        statutoryScopeLimitation: 'Salary TDS engine estimates progressive withholding for payroll operations across FY 2024–25 (AY 2025–26), FY 2025–26 (AY 2026–27) under the Income-tax Act, 1961, and Tax Year 2026–27 onwards under the Income-tax Act, 2025. It incorporates Standard Deduction (₹75k Default / ₹50k Optional), declared deductions, Section 87A/156 rebates with marginal relief, surcharge, and 4% Cess. Dynamic payroll estimation does not constitute statutory annual tax filing (Form 16/Form 24Q/Form 12BB), nor does it account for external non-salary income unless explicitly declared.'
     };
 }
 
