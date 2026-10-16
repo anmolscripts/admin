@@ -232,7 +232,7 @@ test('ERP Workflow Integration & Controller Route Test Suite (TASK-FINAL-005)', 
         const mo = 4; // April
         const periodCode = `PAY-${yr}-${String(mo).padStart(2, '0')}`;
         await prisma.payrollPeriod.deleteMany({ where: { periodCode } });
-        const period = await payrollService.generatePayrollPeriod({ month: mo, year: yr }, adminUser.id);
+        const period = await payrollService.generatePayrollPeriod({ businessId: 1, month: mo, year: yr }, adminUser.id);
         assert.equal(period.status, 'DRAFT');
 
         const approved = await payrollService.approvePayrollPeriod(period.id, adminUser.id);

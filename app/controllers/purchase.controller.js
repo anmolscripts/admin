@@ -74,7 +74,10 @@ async function renderNewPurchaseOrder(req, res, next) {
 async function createPurchaseOrder(req, res, next) {
     try {
         const userId = req.session ? req.session.userId : null;
-        const po = await purchaseOrderService.createPurchaseOrder(req.body, userId);
+        const po = await purchaseOrderService.createPurchaseOrder({
+            ...req.body,
+            businessId: req.body.businessId || req.businessId
+        }, userId);
         return res.status(201).json({ success: true, purchaseOrder: po });
     } catch (err) {
         return handleError(err, res, next);
@@ -150,7 +153,10 @@ async function renderNewSupplierBill(req, res, next) {
 async function createSupplierBill(req, res, next) {
     try {
         const userId = req.session ? req.session.userId : null;
-        const bill = await supplierBillService.createSupplierBill(req.body, userId);
+        const bill = await supplierBillService.createSupplierBill({
+            ...req.body,
+            businessId: req.body.businessId || req.businessId
+        }, userId);
         return res.status(201).json({ success: true, supplierBill: bill });
     } catch (err) {
         return handleError(err, res, next);
@@ -209,7 +215,10 @@ async function renderExpenses(req, res, next) {
 async function createExpense(req, res, next) {
     try {
         const userId = req.session ? req.session.userId : null;
-        const expense = await expenseService.createExpense(req.body, userId);
+        const expense = await expenseService.createExpense({
+            ...req.body,
+            businessId: req.body.businessId || req.businessId
+        }, userId);
         return res.status(201).json({ success: true, expense });
     } catch (err) {
         return handleError(err, res, next);
@@ -249,7 +258,10 @@ async function renderOtherIncome(req, res, next) {
 async function createOtherIncome(req, res, next) {
     try {
         const userId = req.session ? req.session.userId : null;
-        const income = await otherIncomeService.createOtherIncome(req.body, userId);
+        const income = await otherIncomeService.createOtherIncome({
+            ...req.body,
+            businessId: req.body.businessId || req.businessId
+        }, userId);
         return res.status(201).json({ success: true, income });
     } catch (err) {
         return handleError(err, res, next);
@@ -260,7 +272,7 @@ async function createOtherIncome(req, res, next) {
 
 async function searchSuppliers(req, res, next) {
     try {
-        const list = await supplierService.searchSuppliers(req.query.q || '', 50);
+        const list = await supplierService.searchSuppliers(req.query.q || '', 50, req.businessId);
         return res.status(200).json({ success: true, suppliers: list });
     } catch (err) {
         return handleError(err, res, next);
@@ -270,7 +282,11 @@ async function searchSuppliers(req, res, next) {
 async function createSupplier(req, res, next) {
     try {
         const userId = req.session ? req.session.userId : null;
-        const s = await supplierService.createSupplier(req.body, userId);
+        const payload = {
+            ...req.body,
+            businessId: req.body.businessId || req.businessId
+        };
+        const s = await supplierService.createSupplier(payload, userId);
         return res.status(201).json({ success: true, supplier: s });
     } catch (err) {
         return handleError(err, res, next);

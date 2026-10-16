@@ -476,7 +476,7 @@ describe('Production Hardening & Release Audit (Phase 7) Test Suite', () => {
             assert.strictEqual(res.status, 201);
             const data = await res.json();
             assert.notStrictEqual(data.data.invoiceNumber, 'INV-FAKE-9999');
-            assert.match(data.data.invoiceNumber, /^INV-2026-\d{4}$/);
+            assert.match(data.data.invoiceNumber, /^INVO\/2026\/03\/\d+$/);
         });
 
         it('concurrent document creation generates unique, monotonically increasing numbers', async () => {
@@ -503,7 +503,7 @@ describe('Production Hardening & Release Audit (Phase 7) Test Suite', () => {
 
             // Check format
             for (const num of numbers) {
-                assert.match(num, /^QTN-2026-\d{4}$/);
+                assert.match(num, /^QUOT\/2026\/03\/\d+$/);
             }
         });
     });

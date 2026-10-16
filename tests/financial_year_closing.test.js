@@ -103,6 +103,7 @@ describe('Milestone 8: Financial Year Closing, Opening Balances & Period Locking
         await prisma.journalEntryLine.deleteMany({
             where: { journalEntry: { financialYearId: { in: isolatedFyIds } } }
         });
+        await prisma.$executeRawUnsafe('UPDATE journal_entries SET reversedEntryId = NULL');
         await prisma.journalEntry.deleteMany({
             where: { financialYearId: { in: isolatedFyIds } }
         });
@@ -140,6 +141,16 @@ describe('Milestone 8: Financial Year Closing, Opening Balances & Period Locking
                     ]
                 }
             }
+        });
+        await prisma.journalEntry.updateMany({
+            where: {
+                financialYearId: fy2025.id,
+                OR: [
+                    { sourceType: { in: ['YEAR_END_CLOSE', 'YEAR_END_CLOSE_REVERSAL'] } },
+                    { narration: 'Activity in 2025-26' }
+                ]
+            },
+            data: { reversedEntryId: null }
         });
         await prisma.journalEntry.deleteMany({
             where: {
@@ -181,7 +192,7 @@ describe('Milestone 8: Financial Year Closing, Opening Balances & Period Locking
         before(async () => {
             salesAccount = await coaService.getSystemAccount('SALES_REVENUE');
             cogsAccount = await coaService.getSystemAccount('COGS');
-            adminExpenseAccount = await prisma.chartOfAccount.findUnique({ where: { code: '5210' } });
+            adminExpenseAccount = await prisma.chartOfAccount.findFirst({ where: { code: '5210' } });
 
             // Post accounting transactions in FY 2024-25:
             // 1. Revenue: ₹100,000 (Dr Cash / Cr Sales)
@@ -263,14 +274,14 @@ describe('Milestone 8: Financial Year Closing, Opening Balances & Period Locking
             const journalsBefore = await prisma.journalEntry.count();
             const logCountBefore = await prisma.userActivityLog.count();
             const fyBefore = await prisma.financialYear.findUnique({ where: { id: fy2024.id } });
-            const reAccBefore = await prisma.chartOfAccount.findUnique({ where: { code: '3120' } });
+            const reAccBefore = await prisma.chartOfAccount.findFirst({ where: { code: '3120' } });
 
             await closingService.previewCloseFinancialYear(fy2024.id);
 
             const journalsAfter = await prisma.journalEntry.count();
             const logCountAfter = await prisma.userActivityLog.count();
             const fyAfter = await prisma.financialYear.findUnique({ where: { id: fy2024.id } });
-            const reAccAfter = await prisma.chartOfAccount.findUnique({ where: { code: '3120' } });
+            const reAccAfter = await prisma.chartOfAccount.findFirst({ where: { code: '3120' } });
 
             assert.strictEqual(journalsAfter, journalsBefore, 'Preview must not create journal entries');
             assert.strictEqual(logCountAfter, logCountBefore, 'Preview must not log audit events');
@@ -284,7 +295,7 @@ describe('Milestone 8: Financial Year Closing, Opening Balances & Period Locking
         let initialRetainedEarnings = null;
 
         before(async () => {
-            const reAcc = await prisma.chartOfAccount.findUnique({ where: { code: '3120' } });
+            const reAcc = await prisma.chartOfAccount.findFirst({ where: { code: '3120' } });
             initialRetainedEarnings = Number(reAcc.currentBalance);
 
             closingResult = await closingService.closeFinancialYear(fy2024.id, testAdmin.id, {
@@ -321,7 +332,7 @@ describe('Milestone 8: Financial Year Closing, Opening Balances & Period Locking
         });
 
         it('should update Retained Earnings (3120) by exactly the net profit', async () => {
-            const reAcc = await prisma.chartOfAccount.findUnique({ where: { code: '3120' } });
+            const reAcc = await prisma.chartOfAccount.findFirst({ where: { code: '3120' } });
             const expectedBalance = initialRetainedEarnings + 45000;
             assert.strictEqual(Number(reAcc.currentBalance), expectedBalance);
         });

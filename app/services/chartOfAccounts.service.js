@@ -90,20 +90,25 @@ const STANDARD_ACCOUNTS = [
  * @param {number|null} [adminUserId=null]
  * @returns {Promise<number>} Number of accounts ensured/created
  */
-async function ensureSystemAccounts(adminUserId = null) {
+async function ensureSystemAccounts(adminUserId = null, businessId = null) {
+    const activeBusinessId = (businessId !== null && businessId !== undefined) ? parseInt(businessId, 10) : null;
     let createdCount = 0;
     for (const item of STANDARD_ACCOUNTS) {
         let parentId = null;
         if (item.parentCode) {
-            const parent = await prisma.chartOfAccount.findUnique({
-                where: { code: item.parentCode },
+            const parentWhere = { code: item.parentCode };
+            if (activeBusinessId) parentWhere.businessId = activeBusinessId;
+            const parent = await prisma.chartOfAccount.findFirst({
+                where: parentWhere,
                 select: { id: true }
             });
             if (parent) parentId = parent.id;
         }
 
-        const existing = await prisma.chartOfAccount.findUnique({
-            where: { code: item.code }
+        const existingWhere = { code: item.code };
+        if (activeBusinessId) existingWhere.businessId = activeBusinessId;
+        const existing = await prisma.chartOfAccount.findFirst({
+            where: existingWhere
         });
 
         if (!existing) {
@@ -125,6 +130,7 @@ async function ensureSystemAccounts(adminUserId = null) {
                     systemAccount: item.systemAccount || false,
                     systemAccountKey: item.systemAccountKey || null,
                     description: item.description || null,
+                    businessId: activeBusinessId,
                     createdById: adminUserId
                 }
             });
@@ -145,11 +151,11 @@ async function ensureSystemAccounts(adminUserId = null) {
 /**
  * Get account by unique system key (e.g. 'ACCOUNTS_RECEIVABLE', 'SALES_REVENUE')
  */
-async function getSystemAccount(systemAccountKey) {
+async function getSystemAccount(systemAccountKey, businessId = null) {
     if (!systemAccountKey) throw new ValidationError('systemAccountKey is required.');
-    const account = await prisma.chartOfAccount.findUnique({
-        where: { systemAccountKey }
-    });
+    const where = { systemAccountKey };
+    if (businessId) where.businessId = businessId;
+    const account = await prisma.chartOfAccount.findFirst({ where });
     if (!account) {
         throw new NotFoundError(`System account '${systemAccountKey}' not found.`);
     }
@@ -180,11 +186,11 @@ async function getAccountById(id) {
 /**
  * Get account by unique code (e.g. '1121')
  */
-async function getAccountByCode(code) {
+async function getAccountByCode(code, businessId = null) {
     if (!code) throw new ValidationError('Account code is required.');
-    const account = await prisma.chartOfAccount.findUnique({
-        where: { code: String(code).trim() }
-    });
+    const where = { code: String(code).trim() };
+    if (businessId) where.businessId = businessId;
+    const account = await prisma.chartOfAccount.findFirst({ where });
     return account;
 }
 
@@ -261,7 +267,12 @@ async function createAccount(data, userId = null) {
     const code = String(data.code).trim();
     const name = String(data.name).trim();
 
-    const existing = await prisma.chartOfAccount.findUnique({ where: { code } });
+    const existing = await prisma.chartOfAccount.findFirst({
+        where: {
+            code,
+            ...(data.businessId ? { businessId: parseInt(data.businessId, 10) } : {})
+        }
+    });
     if (existing) {
         throw new ConflictError(`Account code '${code}' is already in use.`);
     }
@@ -339,7 +350,12 @@ async function updateAccount(id, data, userId = null) {
     }
 
     if (data.code && data.code !== existing.code) {
-        const codeConflict = await prisma.chartOfAccount.findUnique({ where: { code: data.code } });
+        const codeConflict = await prisma.chartOfAccount.findFirst({
+            where: {
+                code: String(data.code).trim(),
+                businessId: existing.businessId
+            }
+        });
         if (codeConflict) throw new ConflictError(`Account code '${data.code}' is already in use.`);
     }
 

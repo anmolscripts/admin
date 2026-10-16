@@ -78,7 +78,12 @@ async function main() {
         { name: 'Syntax_Search_Service', cmd: 'node', args: ['--check', 'app/services/search.service.js'] },
         { name: 'Syntax_Profile_Service', cmd: 'node', args: ['--check', 'app/services/profile.service.js'] },
         { name: 'Syntax_Business_Profile', cmd: 'node', args: ['--check', 'app/services/businessProfile.service.js'] },
+        { name: 'Syntax_Business_Service', cmd: 'node', args: ['--check', 'app/services/business.service.js'] },
+        { name: 'Syntax_Numbering_Service', cmd: 'node', args: ['--check', 'app/services/numbering.service.js'] },
+        { name: 'Syntax_Reporting_Workbench', cmd: 'node', args: ['--check', 'app/services/reportingWorkbench.service.js'] },
+        { name: 'Syntax_Schema_Readiness', cmd: 'node', args: ['--check', 'app/config/schemaReadiness.js'] },
         { name: 'Syntax_Navigation_Service', cmd: 'node', args: ['--check', 'app/services/navigation.service.js'] },
+        { name: 'Syntax_Payroll_Service', cmd: 'node', args: ['--check', 'app/services/payroll.service.js'] },
 
         // 2. Prisma Schema Validation
         { name: 'Prisma_Schema_Validation', cmd: 'node', args: ['scripts/prisma-test.js', 'validate'] },
@@ -90,7 +95,10 @@ async function main() {
         { name: 'Doctor_Health_Check', cmd: 'node', args: ['scripts/doctor.js'] },
 
         // 5. Automated Regression Test Suite
-        { name: 'Complete_Test_Suite', cmd: 'node', args: ['scripts/test-runner.js'] }
+        { name: 'Complete_Test_Suite', cmd: 'node', args: ['scripts/test-runner.js'] },
+
+        // 6. Genuine Forward Upgrade Proof (Migration 16 -> 17 -> 18 -> 19)
+        { name: 'Migration_16_Upgrade_Proof', cmd: 'node', args: ['scripts/test-upgrade-from-m16.js'] }
     ];
 
     const results = [];

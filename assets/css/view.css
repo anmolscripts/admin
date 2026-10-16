@@ -6,16 +6,21 @@
  */
 
 :root {
-  --forest-dark: #1b382b;
-  --pine-green: #234d38;
-  --mint-light: #eaf3ed;
-  --amber-soft: #fbf3d5;
-  --lime-accent: #c4f276;
-  --text-main: #13241b;
-  --text-muted-green: #4f6b5b;
-  --border-subtle: #dce7e1;
-  --card-bg: #ffffff;
-  --surface-alt: #f8faf9;
+  --forest-dark: var(--sa-primary, #635BFF);
+  --pine-green: var(--sa-primary-hover, #4840C8);
+  --mint-light: var(--sa-primary-subtle, #EEEDFF);
+  --amber-soft: var(--sa-amber-subtle, #FFFBEB);
+  --lime-accent: var(--sa-primary, #635BFF);
+  --text-main: var(--sa-text-main, #171B2D);
+  --text-muted-green: var(--sa-text-secondary, #667085);
+  --border-subtle: var(--sa-border, #E7EAF2);
+  --card-bg: var(--sa-surface, #ffffff);
+  --surface-alt: var(--sa-surface-secondary, #f8fafd);
+}
+
+[data-theme="dark"] {
+  --card-bg: var(--sa-surface, #121826);
+  --surface-alt: var(--sa-surface-secondary, #161F33);
 }
 
 /* Container */

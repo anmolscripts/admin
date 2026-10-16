@@ -1,5 +1,7 @@
 const prisma = require('../config/prisma');
 const activityService = require('./activity.service');
+const numberingService = require('./numbering.service');
+const businessService = require('./business.service');
 
 class ValidationError extends Error {
     constructor(message) {
@@ -37,18 +39,25 @@ function normaliseItemName(name) {
  * @param {boolean} options.activeOnly - Filter by active status (default: true)
  * @param {number} options.limit - Max records to return (default: 10)
  */
-async function searchItems({ query = '', activeOnly = true, limit = 10 } = {}) {
+async function searchItems({ query = '', activeOnly = true, limit = 10, businessId } = {}) {
     const q = (query || '').trim();
     const where = {};
+
+    if (businessId) {
+        where.businessId = parseInt(businessId, 10);
+    }
 
     if (activeOnly) {
         where.active = true;
     }
 
     if (q) {
-        where.name = {
-            contains: q
-        };
+        where.OR = [
+            { itemCode: { contains: q } },
+            { name: { contains: q } },
+            { description: { contains: q } },
+            { hsnSac: { contains: q } }
+        ];
     }
 
     const items = await prisma.item.findMany({
@@ -76,12 +85,15 @@ async function searchItems({ query = '', activeOnly = true, limit = 10 } = {}) {
 /**
  * List items with pagination, filtering, and search for the directory view
  */
-async function listItems({ search = '', active, page = 1, limit = 20 } = {}) {
+async function listItems({ search = '', active, page = 1, limit = 20, businessId } = {}) {
     const pageNum = Math.max(parseInt(page, 10) || 1, 1);
     const pageSize = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
     const skip = (pageNum - 1) * pageSize;
 
     const where = {};
+    if (businessId) {
+        where.businessId = parseInt(businessId, 10);
+    }
     if (active !== undefined && active !== '') {
         where.active = active === 'true' || active === true;
     }
@@ -89,6 +101,7 @@ async function listItems({ search = '', active, page = 1, limit = 20 } = {}) {
     const q = (search || '').trim();
     if (q) {
         where.OR = [
+            { itemCode: { contains: q } },
             { name: { contains: q } },
             { description: { contains: q } },
             { hsnSac: { contains: q } }
@@ -111,6 +124,7 @@ async function listItems({ search = '', active, page = 1, limit = 20 } = {}) {
     return {
         data: items.map((item) => ({
             id: item.id,
+            itemCode: item.itemCode || null,
             name: item.name,
             description: item.description,
             unit: item.unit,
@@ -153,6 +167,7 @@ async function getItemById(id) {
 
     return {
         id: item.id,
+        itemCode: item.itemCode || null,
         name: item.name,
         description: item.description,
         unit: item.unit,
@@ -197,9 +212,25 @@ async function createItem(data, userId) {
     const hsnSac = data.hsnSac ? data.hsnSac.toString().trim() : null;
     const active = data.active !== undefined ? (data.active === 'true' || data.active === true) : true;
 
-    // Check if an item with identical name already exists
+    let rawBizId = data.businessId;
+    if (!rawBizId && userId) {
+        try {
+            const accessible = await businessService.getUserAccessibleBusinesses(userId);
+            if (accessible.length === 1) rawBizId = accessible[0].id;
+        } catch (e) {}
+    }
+    if (!rawBizId && (process.env.NODE_ENV === 'test' || !process.env.NODE_ENV || process.env.NODE_ENV === 'development')) {
+        rawBizId = 1;
+    }
+    if (!rawBizId || isNaN(parseInt(rawBizId, 10)) || parseInt(rawBizId, 10) <= 0) {
+        throw new ValidationError('A valid businessId is required to create an item.');
+    }
+    const businessId = parseInt(rawBizId, 10);
+
+    // Check if an item with identical name already exists for this business
     const existing = await prisma.item.findFirst({
         where: {
+            businessId,
             name: { equals: name }
         }
     });
@@ -208,18 +239,39 @@ async function createItem(data, userId) {
         throw new ConflictError(`Item with name "${name}" already exists.`);
     }
 
+    let itemCode = (data.itemCode || data.sku || '').trim().toUpperCase();
+
     try {
-        const item = await prisma.item.create({
-            data: {
-                name,
-                description,
-                unit,
-                rate,
-                hsnSac,
-                gstRate,
-                active,
-                createdById: userId || null
+        const item = await prisma.$transaction(async (tx) => {
+            if (!itemCode) {
+                itemCode = await numberingService.allocateNumber({
+                    businessId,
+                    entityType: 'ITEM',
+                    tx
+                });
             }
+
+            const existingCode = await tx.item.findFirst({
+                where: { businessId, itemCode }
+            });
+            if (existingCode) {
+                throw new ConflictError(`Item code "${itemCode}" already exists.`);
+            }
+
+            return await tx.item.create({
+                data: {
+                    businessId,
+                    itemCode,
+                    name,
+                    description,
+                    unit,
+                    rate,
+                    hsnSac,
+                    gstRate,
+                    active,
+                    createdById: userId || null
+                }
+            });
         });
 
         if (userId) {
@@ -229,12 +281,13 @@ async function createItem(data, userId) {
                 module: 'ITEMS',
                 targetType: 'ITEM',
                 targetId: item.id,
-                targetReference: item.name
+                targetReference: `${item.name} (${item.itemCode})`
             }).catch(() => {});
         }
 
         return {
             id: item.id,
+            itemCode: item.itemCode || null,
             name: item.name,
             description: item.description,
             unit: item.unit,
@@ -243,11 +296,12 @@ async function createItem(data, userId) {
             gstRate: Number(item.gstRate),
             active: item.active,
             createdAt: item.createdAt,
-            updatedAt: item.updatedAt
+            updatedAt: item.updatedAt,
+            createdBy: item.createdBy
         };
     } catch (err) {
         if (err.code === 'P2002' || (err.message && err.message.includes('Unique constraint'))) {
-            throw new ConflictError(`Item with name "${name}" already exists.`);
+            throw new ConflictError(`Item with name "${name}" or code "${itemCode}" already exists.`);
         }
         throw err;
     }
@@ -374,7 +428,7 @@ async function updateItem(id, data, userId) {
  * @param {number} userId - ID of the creating user
  * @param {Object} tx - Active Prisma transaction client
  */
-async function ensureItemsExistFromDocument(items, userId, tx = prisma) {
+async function ensureItemsExistFromDocument(items, userId, tx = prisma, businessId = null) {
     if (!Array.isArray(items) || items.length === 0) return;
 
     for (const item of items) {
@@ -383,9 +437,15 @@ async function ensureItemsExistFromDocument(items, userId, tx = prisma) {
         if (!name) continue;
 
         try {
-            // Check if item already exists with matching name
-            const existing = await tx.item.findUnique({
-                where: { name }
+            const bId = businessId !== null && businessId !== undefined
+                ? parseInt(businessId, 10)
+                : (item.businessId ? parseInt(item.businessId, 10) : 1);
+
+            const existing = await tx.item.findFirst({
+                where: {
+                    businessId: bId,
+                    name
+                }
             });
 
             if (!existing) {
@@ -397,6 +457,7 @@ async function ensureItemsExistFromDocument(items, userId, tx = prisma) {
 
                 await tx.item.create({
                     data: {
+                        businessId: bId,
                         name,
                         unit,
                         rate,

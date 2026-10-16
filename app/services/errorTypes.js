@@ -23,4 +23,12 @@ class ConflictError extends Error {
   }
 }
 
-module.exports = { ValidationError, NotFoundError, ConflictError };
+class ForbiddenError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'ForbiddenError';
+    this.statusCode = 403;
+  }
+}
+
+module.exports = { ValidationError, NotFoundError, ConflictError, ForbiddenError };

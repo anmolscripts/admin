@@ -5,28 +5,30 @@ const activityService = require('./activity.service');
 const { ensureFinancialYear } = require('./financialYear.service');
 const journalService = require('./journal.service');
 const { ValidationError, NotFoundError, ConflictError } = require('./errorTypes');
+const businessService = require('./business.service');
 
 const ALLOWED_METHODS = ['BANK_TRANSFER', 'UPI', 'CASH', 'CHEQUE', 'CARD'];
 
-/**
- * Generate sequential payment number: SPAY-YYYYMMDD-XXXX
- */
-async function generatePaymentNumber() {
-    const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const prefix = `SPAY-${todayStr}-`;
-    const lastPayment = await prisma.supplierPayment.findFirst({
-        where: { paymentNumber: { startsWith: prefix } },
-        orderBy: { paymentNumber: 'desc' },
-        select: { paymentNumber: true }
-    });
+const numberingService = require('./numbering.service');
 
-    let nextSeq = 1;
-    if (lastPayment && lastPayment.paymentNumber) {
-        const parts = lastPayment.paymentNumber.split('-');
-        const seqNum = parseInt(parts[parts.length - 1], 10);
-        if (!isNaN(seqNum)) nextSeq = seqNum + 1;
+/**
+ * Generate sequential payment number: SPAY/YYYY/MM/INCREMENT
+ */
+async function generatePaymentNumber(paymentDate = new Date(), businessId, tx = null) {
+    let rawBizId = businessId;
+    if (!rawBizId && (process.env.NODE_ENV === 'test' || !process.env.NODE_ENV || process.env.NODE_ENV === 'development')) {
+        rawBizId = 1;
     }
-    return `${prefix}${String(nextSeq).padStart(4, '0')}`;
+    if (!rawBizId || isNaN(parseInt(rawBizId, 10)) || parseInt(rawBizId, 10) <= 0) {
+        throw new ValidationError('A valid businessId is required for payment number generation.');
+    }
+    const activeBusinessId = parseInt(rawBizId, 10);
+    return await numberingService.allocateNumber({
+        businessId: activeBusinessId,
+        entityType: 'SUPPLIER_PAYMENT',
+        date: paymentDate,
+        tx
+    });
 }
 
 /**
@@ -35,6 +37,21 @@ async function generatePaymentNumber() {
  * Credit: Bank Account (BANK_ACCOUNT / 1112) or Cash (CASH_ON_HAND / 1111)
  */
 async function recordSupplierPayment(data = {}, userId) {
+    let rawBizId = data.businessId;
+    if (!rawBizId && userId) {
+        try {
+            const accessible = await businessService.getUserAccessibleBusinesses(userId);
+            if (accessible.length === 1) rawBizId = accessible[0].id;
+        } catch (e) {}
+    }
+    if (!rawBizId && (process.env.NODE_ENV === 'test' || !process.env.NODE_ENV || process.env.NODE_ENV === 'development')) {
+        rawBizId = 1;
+    }
+    if (!rawBizId || isNaN(parseInt(rawBizId, 10)) || parseInt(rawBizId, 10) <= 0) {
+        throw new ValidationError('A valid businessId is required to record a supplier payment.');
+    }
+    const activeBusinessId = parseInt(rawBizId, 10);
+
     const supplierId = parseInt(data.supplierId, 10);
     if (isNaN(supplierId) || supplierId <= 0) {
         throw new ValidationError('Valid supplier ID is required.');
@@ -43,6 +60,9 @@ async function recordSupplierPayment(data = {}, userId) {
     const supplier = await prisma.supplier.findUnique({ where: { id: supplierId } });
     if (!supplier) {
         throw new NotFoundError(`Supplier with ID ${supplierId} not found.`);
+    }
+    if (supplier.businessId && supplier.businessId !== activeBusinessId) {
+        throw new ValidationError(`Supplier ${supplierId} does not belong to authorized business ${activeBusinessId}. Cross-business access denied.`);
     }
 
     const rawAmount = parseFloat(data.amount);
@@ -57,7 +77,7 @@ async function recordSupplierPayment(data = {}, userId) {
     }
 
     // Enforce open financial year
-    const fy = await ensureFinancialYear(paymentDate);
+    const fy = await ensureFinancialYear(paymentDate, activeBusinessId);
     if (fy.status === 'CLOSED') {
         throw new ValidationError(`Cannot record payment into closed Financial Year ${fy.code}.`);
     }
@@ -81,6 +101,9 @@ async function recordSupplierPayment(data = {}, userId) {
         if (!bill) {
             throw new NotFoundError(`Supplier Bill with ID ${supplierBillId} not found.`);
         }
+        if (bill.businessId && bill.businessId !== activeBusinessId) {
+            throw new ValidationError(`Supplier bill ${bill.id} does not belong to authorized business ${activeBusinessId}. Cross-business access denied.`);
+        }
         if (bill.supplierId !== supplierId) {
             throw new ValidationError(`Supplier Bill ${bill.billNumber} does not belong to supplier ${supplier.name}.`);
         }
@@ -100,11 +123,12 @@ async function recordSupplierPayment(data = {}, userId) {
     }
 
     return prisma.$transaction(async (tx) => {
-        const paymentNumber = await generatePaymentNumber();
+        const paymentNumber = await generatePaymentNumber(paymentDate, activeBusinessId, tx);
 
         // 1. Create SupplierPayment
         const payment = await tx.supplierPayment.create({
             data: {
+                businessId: activeBusinessId,
                 paymentNumber,
                 supplierId,
                 supplierBillId,
@@ -185,12 +209,15 @@ async function recordSupplierPayment(data = {}, userId) {
 /**
  * Get supplier payment by ID
  */
-async function getSupplierPaymentById(id) {
+async function getSupplierPaymentById(id, businessId = null) {
     const numId = parseInt(id, 10);
     if (isNaN(numId) || numId <= 0) throw new ValidationError('Invalid supplier payment ID.');
 
-    const payment = await prisma.supplierPayment.findUnique({
-        where: { id: numId },
+    const where = { id: numId };
+    if (businessId) where.businessId = Number(businessId);
+
+    const payment = await prisma.supplierPayment.findFirst({
+        where,
         include: {
             supplier: true,
             supplierBill: true,
@@ -206,8 +233,9 @@ async function getSupplierPaymentById(id) {
 /**
  * List supplier payments with filtering & pagination
  */
-async function listSupplierPayments({ supplierId, supplierBillId, status, dateFrom, dateTo, search, page = 1, limit = 20 } = {}) {
+async function listSupplierPayments({ businessId, supplierId, supplierBillId, status, dateFrom, dateTo, search, page = 1, limit = 20 } = {}) {
     const where = {};
+    if (businessId) where.businessId = Number(businessId);
     if (supplierId) where.supplierId = parseInt(supplierId, 10);
     if (supplierBillId) where.supplierBillId = parseInt(supplierBillId, 10);
     if (status) where.status = status;

@@ -23,9 +23,10 @@ function validateTestEnv(prismaClient) {
     throw new Error('DATABASE_NAME is not set in environment.');
   }
 
-  // 3. Reject production database
-  if (DATABASE_NAME.toLowerCase() === 'admin') {
-    throw new Error('Use of production database "admin" is prohibited in test mode.');
+  // 3. Reject protected databases
+  const protectedDbs = ['admin', 'spark_admin', 'spark_admin_test', 'spark_admin_prod_test'];
+  if (protectedDbs.includes(DATABASE_NAME.toLowerCase())) {
+    throw new Error(`Use of protected database "${DATABASE_NAME}" is prohibited in test mode.`);
   }
 
   // 4. Resolve effective target using the same logic as Prisma config

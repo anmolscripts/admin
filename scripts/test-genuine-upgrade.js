@@ -44,7 +44,8 @@ async function run() {
     const timestamp = Date.now();
     const upgDb = `spark_upg_${timestamp}`;
     const upgDbUrl = `mysql://${DATABASE_USER}:${DATABASE_PASSWORD}@${DATABASE_HOST}:${DATABASE_PORT}/${upgDb}`;
-    const shadowDbUrl = `mysql://${DATABASE_USER}:${DATABASE_PASSWORD}@${DATABASE_HOST}:${DATABASE_PORT}/spark_admin_test_shadow`;
+    const shadowDb = `spark_upg_shadow_${timestamp}`;
+    const shadowDbUrl = `mysql://${DATABASE_USER}:${DATABASE_PASSWORD}@${DATABASE_HOST}:${DATABASE_PORT}/${shadowDb}`;
 
     let rootPool;
     try {
@@ -316,8 +317,9 @@ async function run() {
         console.log(`\n[STAGE 8] Tearing down disposable database ${upgDb}...`);
         await upgConn.end();
         await upgPool.end();
-        await rootConn.query(`DROP DATABASE \`${upgDb}\``);
-        console.log(`✔ Disposable database ${upgDb} dropped cleanly.`);
+        await rootConn.query(`DROP DATABASE IF EXISTS \`${upgDb}\``);
+        await rootConn.query(`DROP DATABASE IF EXISTS \`${shadowDb}\``);
+        console.log(`✔ Disposable database ${upgDb} and shadow database ${shadowDb} dropped cleanly.`);
 
         // Confirm admin is untouched
         const adminCheck = await rootConn.query(`
@@ -335,6 +337,7 @@ async function run() {
             try {
                 const conn = await rootPool.getConnection();
                 await conn.query(`DROP DATABASE IF EXISTS \`${upgDb}\``);
+                await conn.query(`DROP DATABASE IF EXISTS \`${shadowDb}\``);
                 await conn.end();
                 await rootPool.end();
             } catch (_) {}

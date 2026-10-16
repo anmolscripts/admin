@@ -32,7 +32,7 @@ test('Project Management, Timesheets & Labour Costing Test Suite', async (t) => 
     });
 
     await t.test('Create project and validate configurations', async () => {
-        const projCode = `PRJ-${Date.now().toString().slice(-4)}`;
+        const projCode = `PRJ-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
         project = await projectService.createProject({
             code: projCode,
             name: 'Cloud Migration & Modernization',

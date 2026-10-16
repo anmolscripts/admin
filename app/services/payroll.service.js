@@ -5,7 +5,9 @@ const activityService = require('./activity.service');
 const { ensureFinancialYear } = require('./financialYear.service');
 const journalService = require('./journal.service');
 const { ensureSystemAccounts } = require('./chartOfAccounts.service');
-const { ValidationError, NotFoundError, ConflictError } = require('./errorTypes');
+const { ValidationError, NotFoundError, ConflictError, ForbiddenError } = require('./errorTypes');
+const businessService = require('./business.service');
+const numberingService = require('./numbering.service');
 
 /**
  * -------------------------------------------------------------
@@ -13,8 +15,19 @@ const { ValidationError, NotFoundError, ConflictError } = require('./errorTypes'
  * -------------------------------------------------------------
  */
 async function createEmployee(data = {}, userId) {
-    const employeeCode = (data.employeeCode || '').trim().toUpperCase();
-    if (!employeeCode) throw new ValidationError('Employee code is required.');
+    const businessId = data.businessId ? parseInt(data.businessId, 10) : 1;
+    if (!data.dateOfJoining) throw new ValidationError('Date of joining is required.');
+    const dateOfJoining = new Date(data.dateOfJoining);
+    if (isNaN(dateOfJoining.getTime())) throw new ValidationError('Invalid date of joining.');
+
+    let employeeCode = (data.employeeCode || '').trim().toUpperCase();
+    if (!employeeCode) {
+        employeeCode = await numberingService.allocateNumber({
+            businessId,
+            entityType: 'EMPLOYEE',
+            date: dateOfJoining
+        });
+    }
 
     const firstName = (data.firstName || '').trim();
     const lastName = (data.lastName || '').trim();
@@ -23,18 +36,15 @@ async function createEmployee(data = {}, userId) {
     const email = (data.email || '').trim().toLowerCase();
     if (!email) throw new ValidationError('Employee email is required.');
 
-    if (!data.dateOfJoining) throw new ValidationError('Date of joining is required.');
-    const dateOfJoining = new Date(data.dateOfJoining);
-    if (isNaN(dateOfJoining.getTime())) throw new ValidationError('Invalid date of joining.');
-
-    const existingCode = await prisma.employee.findUnique({ where: { employeeCode } });
+    const existingCode = await prisma.employee.findFirst({ where: { businessId, employeeCode } });
     if (existingCode) throw new ConflictError(`Employee code "${employeeCode}" already exists.`);
 
-    const existingEmail = await prisma.employee.findUnique({ where: { email } });
+    const existingEmail = await prisma.employee.findFirst({ where: { businessId, email } });
     if (existingEmail) throw new ConflictError(`Employee email "${email}" already exists.`);
 
     const employee = await prisma.employee.create({
         data: {
+            businessId,
             employeeCode,
             firstName,
             lastName,
@@ -82,8 +92,9 @@ async function getEmployeeById(id) {
     return emp;
 }
 
-async function listEmployees({ department, status, search, page = 1, limit = 20 } = {}) {
+async function listEmployees({ businessId, department, status, search, page = 1, limit = 20 } = {}) {
     const where = {};
+    if (businessId) where.businessId = parseInt(businessId, 10);
     if (department) where.department = department;
     if (status) where.status = status;
     if (search) {
@@ -1072,27 +1083,60 @@ function calculateStatutoryPayroll(structure, month, year, paymentDate = null, e
  * 4. PAYROLL PERIOD LIFECYCLE & LEDGER POSTING
  * -------------------------------------------------------------
  */
-async function generatePayrollPeriod({ month, year }, userId) {
+async function generatePayrollPeriod(data = {}, userId) {
+    const { month, year } = data;
     const m = parseInt(month, 10);
     const y = parseInt(year, 10);
     if (isNaN(m) || m < 1 || m > 12) throw new ValidationError('Month must be between 1 and 12.');
     if (isNaN(y) || y < 2000 || y > 2100) throw new ValidationError('Invalid year.');
 
+    const rawBizId = data.businessId;
+    const activeBusinessId = parseInt(rawBizId, 10);
+    if (rawBizId === undefined || rawBizId === null || isNaN(activeBusinessId) || activeBusinessId <= 0) {
+        throw new ValidationError('A valid, positive integer businessId is required to generate a payroll period.');
+    }
+
+    // Validate that the business exists and is active
+    await businessService.assertBusinessActive(activeBusinessId);
+
+    // Validate user authorization for this business if userId is provided
+    if (userId) {
+        const user = await prisma.user.findUnique({ where: { id: parseInt(userId, 10) } });
+        if (user && user.role !== 'ADMIN') {
+            const membership = await prisma.businessMembership.findFirst({
+                where: {
+                    userId: user.id,
+                    businessId: activeBusinessId,
+                    status: 'ACTIVE'
+                }
+            });
+            if (!membership) {
+                throw new ForbiddenError(`User is not authorized for business ID ${activeBusinessId}.`);
+            }
+        }
+    }
+
     const periodCode = `PAY-${y}-${String(m).padStart(2, '0')}`;
-    const existing = await prisma.payrollPeriod.findUnique({ where: { periodCode } });
-    if (existing) throw new ConflictError(`Payroll period ${periodCode} already generated.`);
+    const existing = await prisma.payrollPeriod.findFirst({
+        where: {
+            businessId: activeBusinessId,
+            periodCode
+        }
+    });
+    if (existing) throw new ConflictError(`Payroll period ${periodCode} already generated for this organization.`);
 
     const startDate = new Date(Date.UTC(y, m - 1, 1));
     const endDate = new Date(Date.UTC(y, m, 0)); // last day of month
 
-    const fy = await ensureFinancialYear(endDate);
+    const fy = await ensureFinancialYear(endDate, activeBusinessId);
     if (fy.status === 'CLOSED') {
         throw new ValidationError(`Cannot generate payroll into closed Financial Year ${fy.code}.`);
     }
 
-    // Fetch active employees
+    // Fetch active employees belonging to this business
     const activeEmployees = await prisma.employee.findMany({
         where: {
+            businessId: activeBusinessId,
             status: 'ACTIVE',
             dateOfJoining: { lte: endDate }
         }
@@ -1105,6 +1149,7 @@ async function generatePayrollPeriod({ month, year }, userId) {
     return prisma.$transaction(async (tx) => {
         const period = await tx.payrollPeriod.create({
             data: {
+                businessId: activeBusinessId,
                 periodCode,
                 month: m,
                 year: y,
@@ -1168,6 +1213,30 @@ async function approvePayrollPeriod(periodId, userId) {
         include: { entries: true }
     });
     if (!period) throw new NotFoundError(`Payroll period ${numId} not found.`);
+
+    const periodBizId = parseInt(period.businessId, 10);
+    if (!period.businessId || isNaN(periodBizId) || periodBizId <= 0) {
+        throw new ValidationError(`Payroll period ${numId} is missing or has invalid business ownership (businessId: ${period.businessId}).`);
+    }
+
+    await businessService.assertBusinessActive(periodBizId);
+
+    if (userId) {
+        const user = await prisma.user.findUnique({ where: { id: parseInt(userId, 10) } });
+        if (user && user.role !== 'ADMIN') {
+            const membership = await prisma.businessMembership.findFirst({
+                where: {
+                    userId: user.id,
+                    businessId: periodBizId,
+                    status: 'ACTIVE'
+                }
+            });
+            if (!membership) {
+                throw new ForbiddenError(`User is not authorized for business ID ${periodBizId}.`);
+            }
+        }
+    }
+
     if (period.status !== 'DRAFT') throw new ConflictError(`Only DRAFT payroll periods can be approved. Current: ${period.status}`);
     if (period.entries.length === 0) throw new ValidationError('Cannot approve payroll period with zero entries.');
 
@@ -1207,19 +1276,57 @@ async function postPayrollToLedger(periodId, userId) {
 
     const period = await prisma.payrollPeriod.findUnique({
         where: { id: numId },
-        include: { entries: true, financialYear: true }
+        include: { entries: { include: { employee: true } }, financialYear: true }
     });
     if (!period) throw new NotFoundError(`Payroll period ${numId} not found.`);
+
+    const periodBizId = parseInt(period.businessId, 10);
+    if (!period.businessId || isNaN(periodBizId) || periodBizId <= 0) {
+        throw new ValidationError(`Payroll period ${numId} is missing or has invalid business ownership (businessId: ${period.businessId}). Cannot post to ledger.`);
+    }
+
+    // Validate that the business exists and is active
+    await businessService.assertBusinessActive(periodBizId);
+
+    // Validate user authorization if userId is provided
+    if (userId) {
+        const user = await prisma.user.findUnique({ where: { id: parseInt(userId, 10) } });
+        if (user && user.role !== 'ADMIN') {
+            const membership = await prisma.businessMembership.findFirst({
+                where: {
+                    userId: user.id,
+                    businessId: periodBizId,
+                    status: 'ACTIVE'
+                }
+            });
+            if (!membership) {
+                throw new ForbiddenError(`User is not authorized for business ID ${periodBizId}.`);
+            }
+        }
+    }
+
     if (period.status !== 'APPROVED') {
         throw new ValidationError(`Payroll period must be in APPROVED status to post to ledger. Current: ${period.status}`);
     }
 
-    const fy = await ensureFinancialYear(period.endDate);
+    // Validate that all employee entries belong to the same business
+    for (const entry of period.entries) {
+        if (entry.employee && entry.employee.businessId !== periodBizId) {
+            throw new ConflictError(`Integrity violation: Payroll entry ${entry.id} belongs to employee from business ${entry.employee.businessId}, but period belongs to business ${periodBizId}.`);
+        }
+    }
+
+    // Validate financial year business context
+    if (period.financialYear && period.financialYear.businessId && period.financialYear.businessId !== periodBizId) {
+        throw new ConflictError(`Integrity violation: Financial Year belongs to business ${period.financialYear.businessId}, but period belongs to business ${periodBizId}.`);
+    }
+
+    const fy = await ensureFinancialYear(period.endDate, periodBizId);
     if (fy.status === 'CLOSED') {
         throw new ValidationError(`Cannot post payroll into closed Financial Year ${fy.code}.`);
     }
 
-    await ensureSystemAccounts(userId);
+    await ensureSystemAccounts(userId, periodBizId);
 
     // Aggregate entries
     let totalGross = 0;
@@ -1252,17 +1359,17 @@ async function postPayrollToLedger(periodId, userId) {
     totalNet = Math.round(totalNet * 100) / 100;
 
     return prisma.$transaction(async (tx) => {
-        // Find required accounts
-        const salariesExp = await tx.chartOfAccount.findFirst({ where: { systemAccountKey: 'SALARIES_EXPENSE' } });
-        const employerContribExp = await tx.chartOfAccount.findFirst({ where: { systemAccountKey: 'EMPLOYER_CONTRIBUTIONS' } });
-        const salariesPayable = await tx.chartOfAccount.findFirst({ where: { systemAccountKey: 'SALARIES_PAYABLE' } });
-        const epfPayable = await tx.chartOfAccount.findFirst({ where: { systemAccountKey: 'EPF_PAYABLE' } });
-        const esiPayable = await tx.chartOfAccount.findFirst({ where: { systemAccountKey: 'ESI_PAYABLE' } });
-        const ptPayable = await tx.chartOfAccount.findFirst({ where: { systemAccountKey: 'PT_PAYABLE' } });
-        const tdsPayable = await tx.chartOfAccount.findFirst({ where: { systemAccountKey: 'TDS_PAYABLE' } });
+        // Find required accounts strictly scoped to periodBizId
+        const salariesExp = await tx.chartOfAccount.findFirst({ where: { businessId: periodBizId, systemAccountKey: 'SALARIES_EXPENSE' } });
+        const employerContribExp = await tx.chartOfAccount.findFirst({ where: { businessId: periodBizId, systemAccountKey: 'EMPLOYER_CONTRIBUTIONS' } });
+        const salariesPayable = await tx.chartOfAccount.findFirst({ where: { businessId: periodBizId, systemAccountKey: 'SALARIES_PAYABLE' } });
+        const epfPayable = await tx.chartOfAccount.findFirst({ where: { businessId: periodBizId, systemAccountKey: 'EPF_PAYABLE' } });
+        const esiPayable = await tx.chartOfAccount.findFirst({ where: { businessId: periodBizId, systemAccountKey: 'ESI_PAYABLE' } });
+        const ptPayable = await tx.chartOfAccount.findFirst({ where: { businessId: periodBizId, systemAccountKey: 'PT_PAYABLE' } });
+        const tdsPayable = await tx.chartOfAccount.findFirst({ where: { businessId: periodBizId, systemAccountKey: 'TDS_PAYABLE' } });
 
         if (!salariesExp || !salariesPayable) {
-            throw new Error('System chart of accounts missing Salaries Expense or Salaries Payable account.');
+            throw new ValidationError(`Chart of accounts for business ${periodBizId} missing Salaries Expense or Salaries Payable account.`);
         }
 
         const journalLines = [
@@ -1336,8 +1443,9 @@ async function postPayrollToLedger(periodId, userId) {
             });
         }
 
-        // Post Journal Entry
+        // Post Journal Entry strictly with verified periodBizId
         const journal = await journalService.postJournalEntry({
+            businessId: periodBizId,
             entryDate: period.endDate,
             financialYearId: fy.id,
             sourceType: 'PAYROLL',
@@ -1515,6 +1623,11 @@ async function createReimbursement(data = {}, userId) {
     const employeeId = parseInt(data.employeeId, 10);
     if (isNaN(employeeId) || employeeId <= 0) throw new ValidationError('Valid employee ID is required.');
 
+    const employee = await prisma.employee.findUnique({ where: { id: employeeId } });
+    if (!employee) throw new NotFoundError(`Employee ${employeeId} not found.`);
+
+    const businessId = employee.businessId;
+
     const rawAmount = parseFloat(data.amount);
     if (isNaN(rawAmount) || rawAmount <= 0) throw new ValidationError('Amount must be greater than 0.');
     const amount = Math.round(rawAmount * 100) / 100;
@@ -1523,11 +1636,22 @@ async function createReimbursement(data = {}, userId) {
     if (isNaN(expenseDate.getTime())) throw new ValidationError('Invalid expense date.');
 
     const category = (data.category || 'Travel').trim();
-    const fy = await ensureFinancialYear(expenseDate);
+    const fy = await ensureFinancialYear(expenseDate, businessId);
+
+    let claimNumber = (data.claimNumber || '').trim().toUpperCase();
+    if (!claimNumber) {
+        claimNumber = await numberingService.allocateNumber({
+            businessId,
+            entityType: 'REIMBURSEMENT',
+            date: expenseDate
+        });
+    }
 
     const reimb = await prisma.employeeReimbursement.create({
         data: {
+            businessId,
             employeeId,
+            claimNumber,
             expenseDate,
             amount,
             category,

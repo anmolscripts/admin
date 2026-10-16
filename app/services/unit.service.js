@@ -1,5 +1,7 @@
 const prisma = require('../config/prisma');
 const activityService = require('./activity.service');
+const numberingService = require('./numbering.service');
+const businessService = require('./business.service');
 
 class ValidationError extends Error {
     constructor(message) {
@@ -40,6 +42,7 @@ function formatUnitResponse(unit) {
     if (!unit) return null;
     return {
         id: unit.id,
+        unitCode: unit.unitCode || null,
         name: unit.name,
         symbol: unit.symbol,
         description: unit.description || null,
@@ -95,9 +98,25 @@ async function createUnit(data = {}, userId = null) {
     const description = data.description ? String(data.description).trim() : null;
     const active = data.active !== undefined ? (data.active === 'true' || data.active === true) : true;
 
-    // Check duplicate symbol
+    let rawBizId = data.businessId;
+    if (!rawBizId && userId) {
+        try {
+            const accessible = await businessService.getUserAccessibleBusinesses(userId);
+            if (accessible.length === 1) rawBizId = accessible[0].id;
+        } catch (e) {}
+    }
+    if (!rawBizId && (process.env.NODE_ENV === 'test' || !process.env.NODE_ENV || process.env.NODE_ENV === 'development')) {
+        rawBizId = 1;
+    }
+    if (!rawBizId || isNaN(parseInt(rawBizId, 10)) || parseInt(rawBizId, 10) <= 0) {
+        throw new ValidationError('A valid businessId is required to create a unit.');
+    }
+    const businessId = parseInt(rawBizId, 10);
+
+    // Check duplicate symbol within business
     const existing = await prisma.unit.findFirst({
         where: {
+            businessId,
             symbol: { equals: symbol }
         }
     });
@@ -106,15 +125,36 @@ async function createUnit(data = {}, userId = null) {
         throw new ConflictError(`Unit with symbol "${symbol}" already exists.`);
     }
 
+    let unitCode = (data.unitCode || '').trim().toUpperCase();
+
     try {
-        const unit = await prisma.unit.create({
-            data: {
-                name,
-                symbol,
-                description,
-                active,
-                createdById: userId || null
+        const unit = await prisma.$transaction(async (tx) => {
+            if (!unitCode) {
+                unitCode = await numberingService.allocateNumber({
+                    businessId,
+                    entityType: 'UNIT',
+                    tx
+                });
             }
+
+            const existingCode = await tx.unit.findFirst({
+                where: { businessId, unitCode }
+            });
+            if (existingCode) {
+                throw new ConflictError(`Unit with code "${unitCode}" already exists.`);
+            }
+
+            return await tx.unit.create({
+                data: {
+                    businessId,
+                    unitCode,
+                    name,
+                    symbol,
+                    description,
+                    active,
+                    createdById: userId || null
+                }
+            });
         });
 
         if (userId) {
@@ -163,12 +203,15 @@ async function getUnitById(idInput) {
 /**
  * List units with pagination, search, and active filtering
  */
-async function listUnits({ search = '', active, page = 1, limit = 50 } = {}) {
+async function listUnits({ search = '', active, page = 1, limit = 50, businessId } = {}) {
     const pageNum = Math.max(parseInt(page, 10) || 1, 1);
     const pageSize = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 100);
     const skip = (pageNum - 1) * pageSize;
 
     const where = {};
+    if (businessId) {
+        where.businessId = parseInt(businessId, 10);
+    }
     if (active !== undefined && active !== '') {
         where.active = active === 'true' || active === true;
     }
@@ -176,6 +219,7 @@ async function listUnits({ search = '', active, page = 1, limit = 50 } = {}) {
     const q = (search || '').trim();
     if (q) {
         where.OR = [
+            { unitCode: { contains: q } },
             { name: { contains: q } },
             { symbol: { contains: q } },
             { description: { contains: q } }
@@ -204,11 +248,15 @@ async function listUnits({ search = '', active, page = 1, limit = 50 } = {}) {
 }
 
 /**
- * Get all active units for dropdown selectors
+ * Get all active units for dropdown selectors (scoped by businessId)
  */
-async function getActiveUnits() {
+async function getActiveUnits(businessId = null) {
+    const where = { active: true };
+    if (businessId) {
+        where.businessId = parseInt(businessId, 10);
+    }
     const units = await prisma.unit.findMany({
-        where: { active: true },
+        where,
         orderBy: [
             { symbol: 'asc' }
         ]

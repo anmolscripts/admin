@@ -1,128 +1,16 @@
 <%- include('../layouts/header', {
     pageTitle: 'Business Analytics Dashboard',
-    pageSubtitle: 'Real-time financial performance, document operations, and quotation conversion metrics.',
-    extraCss: `
-      <style>
-        .kpi-card {
-          border: none;
-          border-radius: 12px;
-          background: #ffffff;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1);
-          transition: transform 0.15s ease, box-shadow 0.15s ease;
-          overflow: hidden;
-          position: relative;
-        }
-        .kpi-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -2px rgba(0,0,0,0.04);
-        }
-        .kpi-accent-bar {
-          height: 4px;
-          width: 100%;
-          position: absolute;
-          top: 0;
-          left: 0;
-        }
-        .accent-green { background: #16a34a; }
-        .accent-blue { background: #2563eb; }
-        .accent-amber { background: #d97706; }
-        .accent-red { background: #dc2626; }
-        .accent-purple { background: #7c3aed; }
-        .accent-cyan { background: #0891b2; }
-
-        .kpi-label {
-          font-size: 0.75rem;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          color: #64748b;
-        }
-        .kpi-value {
-          font-size: 1.75rem;
-          font-weight: 800;
-          color: #0f172a;
-          line-height: 1.2;
-          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-        }
-        .kpi-subtext {
-          font-size: 0.8rem;
-          color: #64748b;
-          margin-top: 4px;
-        }
-        .kpi-icon-circle {
-          width: 44px;
-          height: 44px;
-          border-radius: 10px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 1.25rem;
-        }
-
-        .filter-pill-btn {
-          border-radius: 20px;
-          padding: 6px 14px;
-          font-size: 0.82rem;
-          font-weight: 600;
-          border: 1px solid #e2e8f0;
-          background: #ffffff;
-          color: #475569;
-          transition: all 0.15s ease;
-          text-decoration: none;
-        }
-        .filter-pill-btn:hover {
-          background: #f8fafc;
-          border-color: #cbd5e1;
-          color: #1e293b;
-        }
-        .filter-pill-btn.active {
-          background: #1b5e20;
-          color: #ffffff;
-          border-color: #1b5e20;
-          box-shadow: 0 2px 4px rgba(27,94,32,0.25);
-        }
-
-        .chart-card {
-          border: none;
-          border-radius: 12px;
-          background: #ffffff;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-          padding: 20px;
-          height: 100%;
-        }
-        .chart-title {
-          font-size: 0.95rem;
-          font-weight: 700;
-          color: #1e293b;
-        }
-        .chart-subtitle {
-          font-size: 0.78rem;
-          color: #64748b;
-        }
-
-        .dashboard-loading-overlay {
-          position: absolute;
-          inset: 0;
-          background: rgba(255,255,255,0.7);
-          backdrop-filter: blur(2px);
-          z-index: 50;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 12px;
-        }
-      </style>
-    `
+    pageSubtitle: 'Real-time financial performance, document operations, and quotation conversion metrics.'
 }) %>
 
 <!-- ===================================================================
-     TOP FILTER BAR: DATE RANGE & CONTROLS
+     TOP FILTER BAR: DATE RANGE & CONTROLS (GLASS PANEL)
      =================================================================== -->
-<div class="card border-0 shadow-sm rounded-3 p-3 mb-4 bg-white">
+<div class="card-glass p-3 mb-4">
   <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
     <!-- Date Range Quick Select Pills -->
     <div class="d-flex flex-wrap align-items-center gap-2" id="date-range-pills" role="toolbar" aria-label="Date Range Filters">
-      <span class="small fw-bold text-muted text-uppercase me-1" style="font-size: 0.72rem;">Period:</span>
+      <span class="small fw-bold text-muted text-uppercase me-1" style="font-size: 0.72rem; letter-spacing: 0.5px;">Period:</span>
       <button type="button" class="filter-pill-btn <%= metrics.range === 'today' ? 'active' : '' %>" data-range="today">Today</button>
       <button type="button" class="filter-pill-btn <%= metrics.range === 'this_week' ? 'active' : '' %>" data-range="this_week">This Week</button>
       <button type="button" class="filter-pill-btn <%= metrics.range === 'this_month' ? 'active' : '' %>" data-range="this_month">This Month</button>
@@ -133,7 +21,7 @@
 
     <!-- Actions: Refresh Button -->
     <div class="d-flex align-items-center gap-2">
-      <button type="button" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" id="btn-refresh-dashboard">
+      <button type="button" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2 rounded-pill px-3" id="btn-refresh-dashboard">
         <i class="bi bi-arrow-repeat" id="refresh-icon"></i>
         <span>Refresh</span>
       </button>
@@ -152,7 +40,7 @@
         <input type="date" class="form-control form-control-sm" id="custom-date-to" value="<%= metrics.dateFilter.endDate ? metrics.dateFilter.endDate.split('T')[0] : '' %>" required>
       </div>
       <div class="col-sm-4 col-md-3">
-        <button type="submit" class="btn btn-sm btn-success w-100" id="btn-apply-custom-range">
+        <button type="submit" class="btn btn-sm btn-primary w-100" id="btn-apply-custom-range">
           <i class="bi bi-check2"></i> Apply Range
         </button>
       </div>
@@ -162,192 +50,233 @@
 
 <div id="dashboard-content-container" class="position-relative">
   <div id="dashboard-loading" class="dashboard-loading-overlay d-none">
-    <div class="spinner-border text-success" role="status">
+    <div class="spinner-border text-primary" role="status">
       <span class="visually-hidden">Loading metrics...</span>
     </div>
   </div>
 
   <!-- ===================================================================
-       ROW 1: FINANCIAL & CASH-FLOW KPIS
+       EXECUTIVE AURORA GLASS FINANCIAL & OPERATIONAL KPIS
        =================================================================== -->
   <div class="row g-3 mb-4">
-    <!-- Total Invoiced -->
-    <div class="col-12 col-sm-6 col-xl-3">
-      <div class="card kpi-card p-3">
-        <div class="kpi-accent-bar accent-blue"></div>
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <span class="kpi-label">Total Invoiced</span>
-          <div class="kpi-icon-circle bg-primary-subtle text-primary">
-            <i class="bi bi-receipt"></i>
+    <!-- Executive Hero Card: Cash Realization & Net Invoiced Revenue -->
+    <div class="col-12 col-xl-5">
+      <div class="hero-kpi-card dashboard-tone-aqua d-flex flex-column justify-content-between">
+        <div>
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge bg-success-subtle text-success rounded-pill px-2 py-1 small fw-bold text-uppercase" style="font-size: 0.68rem; letter-spacing: 0.5px;">Realization Core</span>
+              <span class="small text-muted">Financial Health</span>
+            </div>
+            <div class="kpi-icon-circle" style="background: rgba(22, 184, 175, 0.12); color: #16B8AF;">
+              <i class="bi bi-wallet2"></i>
+            </div>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <span class="kpi-label d-block text-muted">Total Invoiced</span>
+              <div class="kpi-value text-primary fs-3" id="kpi-total-invoiced">₹<%= metrics.kpis.financials.totalInvoiced.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></div>
+              <span class="small text-muted" style="font-size: 0.75rem;">Active & issued invoices</span>
+            </div>
+            <div class="col-6 border-start ps-3" style="border-color: var(--sa-border) !important;">
+              <span class="kpi-label d-block text-muted">Total Collected</span>
+              <div class="kpi-value text-success fs-3" id="kpi-total-collected">₹<%= metrics.kpis.financials.paidAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></div>
+              <span class="small text-success fw-medium" style="font-size: 0.75rem;">Realized receipts</span>
+            </div>
+          </div>
+
+          <!-- Realization Progress Bar -->
+          <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center small mb-1">
+              <span class="text-muted fw-medium" style="font-size: 0.75rem;">Collection Realization Rate</span>
+              <span class="fw-bold font-monospace text-success" id="kpi-collection-rate-val"><%= metrics.kpis.invoices.collectionRate %>%</span>
+            </div>
+            <div class="progress" style="height: 6px; background-color: var(--sa-surface-secondary); border-radius: 9999px;">
+              <div class="progress-bar" id="kpi-realization-progress" role="progressbar" style="width: <%= Math.min(100, Math.max(0, metrics.kpis.invoices.collectionRate)) %>%; background: linear-gradient(90deg, #16B8AF, #B8F16A);" aria-valuenow="<%= metrics.kpis.invoices.collectionRate %>" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
           </div>
         </div>
-        <div class="kpi-value" id="kpi-total-invoiced">₹<%= metrics.kpis.financials.totalInvoiced.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></div>
-        <div class="kpi-subtext">Across active & issued invoices</div>
+
+        <!-- Settlement Status Footer -->
+        <div class="pt-2 border-top d-flex justify-content-between align-items-center" style="border-color: var(--sa-border) !important;">
+          <div>
+            <span class="small text-muted d-block" style="font-size: 0.72rem;">Outstanding Balance</span>
+            <span class="fw-bold font-monospace text-warning small" id="kpi-outstanding">₹<%= metrics.kpis.financials.outstandingAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></span>
+          </div>
+          <div class="text-end">
+            <span class="small text-muted d-block" style="font-size: 0.72rem;">Overdue (>30 Days)</span>
+            <span class="fw-bold font-monospace text-danger small" id="kpi-overdue">₹<%= metrics.kpis.financials.overdueAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></span>
+            <span class="badge bg-danger-subtle text-danger rounded-pill font-monospace ms-1" style="font-size: 0.65rem;" id="kpi-overdue-count"><%= metrics.kpis.financials.overdueCount %> invoice<%= metrics.kpis.financials.overdueCount === 1 ? '' : 's' %></span>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Payments Collected -->
-    <div class="col-12 col-sm-6 col-xl-3">
-      <div class="card kpi-card p-3">
-        <div class="kpi-accent-bar accent-green"></div>
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <span class="kpi-label">Total Collected</span>
-          <div class="kpi-icon-circle bg-success-subtle text-success">
-            <i class="bi bi-cash-stack"></i>
+    <!-- Operational Pipeline & Activity Grid (4 Specialized High-Density Cards) -->
+    <div class="col-12 col-xl-7">
+      <div class="row g-3 h-100">
+        <!-- 1. Quotations Pipeline -->
+        <div class="col-12 col-sm-6">
+          <div class="kpi-card dashboard-tone-sky">
+            <div class="kpi-accent-bar accent-blue"></div>
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <span class="kpi-label">Quotations Pipeline</span>
+              <div class="kpi-icon-circle" style="background: rgba(101, 188, 232, 0.12); color: #65BCE8;">
+                <i class="bi bi-file-earmark-text"></i>
+              </div>
+            </div>
+            <div class="kpi-value text-info" id="kpi-total-quotations"><%= metrics.kpis.quotations.total %></div>
+            <div class="kpi-subtext">
+              <span class="fw-semibold text-info" id="kpi-active-quotations"><%= metrics.kpis.quotations.active %></span> Active in pipeline
+            </div>
           </div>
         </div>
-        <div class="kpi-value text-success" id="kpi-total-collected">₹<%= metrics.kpis.financials.paidAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></div>
-        <div class="kpi-subtext">Paid receipts recorded</div>
-      </div>
-    </div>
 
-    <!-- Outstanding Balance -->
-    <div class="col-12 col-sm-6 col-xl-3">
-      <div class="card kpi-card p-3">
-        <div class="kpi-accent-bar accent-amber"></div>
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <span class="kpi-label">Outstanding Balance</span>
-          <div class="kpi-icon-circle bg-warning-subtle text-warning">
-            <i class="bi bi-hourglass-split"></i>
+        <!-- 2. Quotation Conversion Rate -->
+        <div class="col-12 col-sm-6">
+          <div class="kpi-card dashboard-tone-mint">
+            <div class="kpi-accent-bar accent-mint"></div>
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <span class="kpi-label">Quote Conversion</span>
+              <div class="kpi-icon-circle" style="background: rgba(184, 241, 106, 0.15); color: #19460E;">
+                <i class="bi bi-arrow-repeat"></i>
+              </div>
+            </div>
+            <div class="kpi-value text-success" id="kpi-conversion-rate"><%= metrics.kpis.quotations.conversionRate %>%</div>
+            <div class="kpi-subtext">
+              <span class="fw-semibold text-success" id="kpi-converted-quotations"><%= metrics.kpis.quotations.converted %></span> converted to invoices
+            </div>
           </div>
         </div>
-        <div class="kpi-value text-warning" id="kpi-outstanding">₹<%= metrics.kpis.financials.outstandingAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></div>
-        <div class="kpi-subtext">Awaiting client payment</div>
-      </div>
-    </div>
 
-    <!-- Overdue Amount -->
-    <div class="col-12 col-sm-6 col-xl-3">
-      <div class="card kpi-card p-3">
-        <div class="kpi-accent-bar accent-red"></div>
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <span class="kpi-label">Overdue (>30 Days)</span>
-          <div class="kpi-icon-circle bg-danger-subtle text-danger">
-            <i class="bi bi-exclamation-triangle"></i>
+        <!-- 3. Total Invoices Issued -->
+        <div class="col-12 col-sm-6">
+          <div class="kpi-card dashboard-tone-violet">
+            <div class="kpi-accent-bar accent-teal"></div>
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <span class="kpi-label">Total Invoices</span>
+              <div class="kpi-icon-circle" style="background: rgba(19, 94, 90, 0.12); color: #135E5A;">
+                <i class="bi bi-receipt-cutoff"></i>
+              </div>
+            </div>
+            <div class="kpi-value text-primary" id="kpi-total-invoices"><%= metrics.kpis.invoices.total %></div>
+            <div class="kpi-subtext">
+              <span class="fw-semibold text-primary" id="kpi-active-invoices"><%= metrics.kpis.invoices.active %></span> Active invoices
+            </div>
           </div>
         </div>
-        <div class="kpi-value text-danger" id="kpi-overdue">₹<%= metrics.kpis.financials.overdueAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></div>
-        <div class="kpi-subtext">
-          <span class="badge bg-danger-subtle text-danger rounded-pill font-monospace" id="kpi-overdue-count"><%= metrics.kpis.financials.overdueCount %> invoice<%= metrics.kpis.financials.overdueCount === 1 ? '' : 's' %></span> overdue
+
+        <!-- 4. Operating Expenses & Outflow -->
+        <div class="col-12 col-sm-6">
+          <div class="kpi-card dashboard-tone-peach">
+            <div class="kpi-accent-bar accent-coral"></div>
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <span class="kpi-label">Operating Expenses</span>
+              <div class="kpi-icon-circle" style="background: rgba(255, 137, 111, 0.12); color: #FF896F;">
+                <i class="bi bi-wallet2"></i>
+              </div>
+            </div>
+            <div class="kpi-value text-danger" id="kpi-total-expenses">₹<%= metrics.kpis.financials.totalExpenses.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></div>
+            <div class="kpi-subtext">
+              <span class="badge bg-secondary-subtle text-secondary rounded-pill font-monospace" id="kpi-expenses-count"><%= metrics.kpis.financials.expensesCount %> record<%= metrics.kpis.financials.expensesCount === 1 ? '' : 's' %></span> logged
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
   <!-- ===================================================================
-       ROW 2: DOCUMENT & CONVERSION KPIS
+       TIME-BASED ANALYTICS & PROMINENT TREND CHARTS
        =================================================================== -->
   <div class="row g-3 mb-4">
-    <!-- Quotations KPI -->
-    <div class="col-12 col-sm-6 col-xl-3">
-      <div class="card kpi-card p-3">
-        <div class="kpi-accent-bar accent-cyan"></div>
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <span class="kpi-label">Total Quotations</span>
-          <div class="kpi-icon-circle bg-info-subtle text-info">
-            <i class="bi bi-file-earmark-text"></i>
-          </div>
-        </div>
-        <div class="kpi-value" id="kpi-total-quotations"><%= metrics.kpis.quotations.total %></div>
-        <div class="kpi-subtext">
-          <span class="fw-semibold text-info" id="kpi-active-quotations"><%= metrics.kpis.quotations.active %></span> Active
-        </div>
-      </div>
-    </div>
-
-    <!-- Quotation Conversion Rate -->
-    <div class="col-12 col-sm-6 col-xl-3">
-      <div class="card kpi-card p-3">
-        <div class="kpi-accent-bar accent-purple"></div>
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <span class="kpi-label">Quote Conversion</span>
-          <div class="kpi-icon-circle bg-purple-subtle text-purple" style="background:#f3e8ff; color:#7c3aed;">
-            <i class="bi bi-arrow-repeat"></i>
-          </div>
-        </div>
-        <div class="kpi-value text-purple" style="color:#7c3aed;" id="kpi-conversion-rate"><%= metrics.kpis.quotations.conversionRate %>%</div>
-        <div class="kpi-subtext">
-          <span class="fw-semibold text-dark" id="kpi-converted-quotations"><%= metrics.kpis.quotations.converted %></span> converted to invoice
-        </div>
-      </div>
-    </div>
-
-    <!-- Total Invoices -->
-    <div class="col-12 col-sm-6 col-xl-3">
-      <div class="card kpi-card p-3">
-        <div class="kpi-accent-bar accent-green"></div>
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <span class="kpi-label">Total Invoices</span>
-          <div class="kpi-icon-circle bg-success-subtle text-success">
-            <i class="bi bi-receipt-cutoff"></i>
-          </div>
-        </div>
-        <div class="kpi-value" id="kpi-total-invoices"><%= metrics.kpis.invoices.total %></div>
-        <div class="kpi-subtext">
-          <span class="fw-semibold text-success" id="kpi-active-invoices"><%= metrics.kpis.invoices.active %></span> Active Invoices
-        </div>
-      </div>
-    </div>
-
-    <!-- Void & Inactive Invoices -->
-    <div class="col-12 col-sm-6 col-xl-3">
-      <div class="card kpi-card p-3">
-        <div class="kpi-accent-bar accent-red"></div>
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <span class="kpi-label">Void Invoices</span>
-          <div class="kpi-icon-circle bg-secondary-subtle text-secondary">
-            <i class="bi bi-slash-circle"></i>
-          </div>
-        </div>
-        <div class="kpi-value text-secondary" id="kpi-void-invoices"><%= metrics.kpis.invoices.void %></div>
-        <div class="kpi-subtext">Canceled or voided</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===================================================================
-       ROW 3: TIME-BASED ANALYTICS & TREND CHARTS
-       =================================================================== -->
-  <div class="row g-3 mb-4">
-    <!-- Chart 1: Revenue vs Collection Trend -->
-    <div class="col-12 col-lg-7">
-      <div class="chart-card">
+    <!-- Chart 1: Prominent Revenue vs Collection Trend (8 Cols) -->
+    <div class="col-12 col-lg-8">
+      <div class="chart-card dashboard-tone-cloud">
         <div class="d-flex align-items-center justify-content-between mb-3">
           <div>
             <div class="chart-title">Revenue & Payment Collection Trend</div>
-            <div class="chart-subtitle">Comparison of invoiced revenue and collections realized over time</div>
+            <div class="chart-subtitle">Authoritative comparison of invoiced revenue and collections realized over time</div>
           </div>
-          <span class="badge bg-light text-muted border font-monospace" style="font-size: 0.72rem;">INR (₹)</span>
+          <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace" style="font-size: 0.72rem;">INR (₹)</span>
         </div>
-        <div id="chart-revenue-collections" style="min-height: 280px;"></div>
+        <div id="chart-revenue-collections" style="min-height: 300px;"></div>
       </div>
     </div>
 
-    <!-- Chart 2: Quotations & Conversions Trend -->
-    <div class="col-12 col-lg-5">
-      <div class="chart-card">
+    <!-- Chart 2: Quotations & Conversions Pipeline (4 Cols) -->
+    <div class="col-12 col-lg-4">
+      <div class="chart-card dashboard-tone-lavender">
         <div class="d-flex align-items-center justify-content-between mb-3">
           <div>
             <div class="chart-title">Quotation Pipeline & Conversions</div>
             <div class="chart-subtitle">Quotes issued vs converted to invoices</div>
           </div>
-          <span class="badge bg-light text-muted border font-monospace" style="font-size: 0.72rem;">Volume</span>
+          <span class="badge bg-info-subtle text-info border border-info-subtle font-monospace" style="font-size: 0.72rem;">Volume</span>
         </div>
-        <div id="chart-quotes-conversion" style="min-height: 280px;"></div>
+        <div id="chart-quotes-conversion" style="min-height: 300px;"></div>
       </div>
     </div>
   </div>
 
   <!-- ===================================================================
-       ROW 4: RECENT ACTIVITY TABLE
+       COMPOSITION & RISK VISUALISATIONS (DONUTS & AGEING)
        =================================================================== -->
-  <div class="card border-0 shadow-sm rounded-3 overflow-hidden bg-white mb-4">
-    <div class="card-header bg-white py-3 px-4 d-flex align-items-center justify-content-between border-bottom">
+  <div class="row g-3 mb-4">
+    <!-- Chart 3: Invoice Status Distribution (Donut) -->
+    <div class="col-12 col-md-4">
+      <div class="chart-card dashboard-tone-mint-soft">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div>
+            <div class="chart-title">Invoice Status Breakdown</div>
+            <div class="chart-subtitle">Payment lifecycle distribution</div>
+          </div>
+          <i class="bi bi-pie-chart text-muted"></i>
+        </div>
+        <div id="chart-invoice-status" style="min-height: 270px;"></div>
+      </div>
+    </div>
+
+    <!-- Chart 4: Expense Categories (Donut) -->
+    <div class="col-12 col-md-4">
+      <div class="chart-card dashboard-tone-peach-soft">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div>
+            <div class="chart-title">Operating Expenses by Category</div>
+            <div class="chart-subtitle">Cost allocation by category</div>
+          </div>
+          <i class="bi bi-tag text-muted"></i>
+        </div>
+        <div id="chart-expense-categories" style="min-height: 270px;"></div>
+      </div>
+    </div>
+
+    <!-- Chart 5: Receivables Ageing Schedule (Bar) -->
+    <div class="col-12 col-md-4">
+      <div class="chart-card dashboard-tone-sky-soft">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div>
+            <div class="chart-title">Receivables Ageing Schedule</div>
+            <div class="chart-subtitle">Outstanding balances by age bracket</div>
+          </div>
+          <i class="bi bi-calendar-range text-muted"></i>
+        </div>
+        <div id="chart-receivables-ageing" style="min-height: 270px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================
+       ROW 5: RECENT ACTIVITY TABLE (GLASS PANEL)
+       =================================================================== -->
+  <div class="card-glass dashboard-tone-cloud overflow-hidden mb-4">
+    <div class="py-3 px-4 d-flex align-items-center justify-content-between border-bottom">
       <div>
         <h5 class="mb-0 fw-bold text-dark" style="font-size: 1rem;">Recent Document Activity</h5>
-        <span class="text-muted small">Latest generated documents within selected period</span>
+        <span class="text-muted small">Latest documents issued or updated in this workspace</span>
       </div>
-      <a href="/documents" class="btn btn-sm btn-outline-success">View All Documents</a>
+      <a href="/documents" class="btn btn-sm btn-outline-primary rounded-pill px-3">View All Documents</a>
     </div>
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0" id="table-recent-activity">
@@ -367,23 +296,23 @@
             <% metrics.recentActivity.forEach((doc) => { %>
               <tr>
                 <td class="ps-4">
-                  <span class="badge <%= doc.documentType === 'QUOTATION' ? 'bg-info-subtle text-info' : 'bg-primary-subtle text-primary' %> font-monospace">
+                  <span class="badge <%= doc.documentType === 'QUOTATION' ? 'bg-info-subtle text-info border border-info-subtle' : 'bg-primary-subtle text-primary border border-primary-subtle' %> font-monospace">
                     <%= doc.documentType %>
                   </span>
                 </td>
                 <td class="fw-bold font-monospace">
                   <a href="/documents/<%= doc.id %>" class="text-decoration-none text-dark"><%= doc.invoiceNumber %></a>
                 </td>
-                <td><%= doc.clientName %></td>
+                <td class="fw-medium"><%= doc.clientName %></td>
                 <td class="small text-muted"><%= new Date(doc.invoiceDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) %></td>
                 <td class="text-end font-monospace fw-bold">₹<%= Number(doc.grandTotal).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></td>
                 <td class="text-center">
-                  <span class="badge <%= doc.status === 'ACTIVE' ? 'bg-success-subtle text-success' : (doc.status === 'VOID' ? 'bg-danger-subtle text-danger' : 'bg-secondary-subtle text-secondary') %>">
+                  <span class="badge <%= doc.status === 'ACTIVE' ? 'bg-success-subtle text-success border border-success-subtle' : (doc.status === 'VOID' ? 'bg-danger-subtle text-danger border border-danger-subtle' : 'bg-secondary-subtle text-secondary border') %>">
                     <%= doc.status %>
                   </span>
                 </td>
                 <td class="text-end pe-4">
-                  <a href="/documents/<%= doc.id %>" class="btn btn-sm btn-light border" title="View Document">
+                  <a href="/documents/<%= doc.id %>" class="btn btn-sm btn-light border rounded-circle" title="View Document">
                     <i class="bi bi-eye"></i>
                   </a>
                 </td>
@@ -391,9 +320,9 @@
             <% }); %>
           <% } else { %>
             <tr>
-              <td colspan="7" class="text-center py-4 text-muted">
-                <i class="bi bi-inbox fs-3 d-block mb-1"></i>
-                No documents found for the selected period.
+              <td colspan="7" class="text-center py-5 text-muted">
+                <i class="bi bi-inbox fs-2 d-block mb-2 text-muted"></i>
+                <span>No documents found for the selected period.</span>
               </td>
             </tr>
           <% } %>
@@ -408,50 +337,81 @@
     <script>
       (function() {
         let currentRange = '${metrics.range}';
-        let initialTrends = ${JSON.stringify(metrics.trends)};
+        let initialTrends = ${JSON.stringify(metrics.trends || {})};
+        let initialStatus = ${JSON.stringify(metrics.statusBreakdown || (metrics.charts && metrics.charts.statusBreakdown) || { labels: [], series: [] })};
+        let initialExpenses = ${JSON.stringify(metrics.expenseCategories || (metrics.charts && metrics.charts.expenseCategories) || { labels: [], series: [] })};
+        let initialAgeing = ${JSON.stringify(metrics.receivablesAgeing || (metrics.charts && metrics.charts.receivablesAgeing) || { labels: [], series: [] })};
 
         let chartRevenue = null;
         let chartQuotes = null;
+        let chartStatus = null;
+        let chartExpenses = null;
+        let chartAgeing = null;
 
-        function initCharts(trends) {
+        function initCharts() {
+          if (!window.ApexCharts) return;
+
+          const isInitialDark = document.documentElement.getAttribute('data-theme') === 'dark';
+          const initGridColor = isInitialDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(226, 232, 240, 0.7)';
+          const initTextColor = isInitialDark ? '#94A3B8' : '#64748B';
+          const initTooltipTheme = isInitialDark ? 'dark' : 'light';
+          const donutStrokeColor = isInitialDark ? '#121826' : '#ffffff';
+
           // 1. Revenue & Collections Area Chart
           const revenueOptions = {
             series: [
-              { name: 'Invoiced Revenue', data: trends.revenue },
-              { name: 'Collections Realized', data: trends.collections }
+              { name: 'Invoiced Revenue', data: initialTrends.revenue || [] },
+              { name: 'Collections Realized', data: initialTrends.collections || [] }
             ],
             chart: {
               type: 'area',
-              height: 280,
+              height: 300,
+              background: 'transparent',
               toolbar: { show: false },
-              animations: { enabled: true }
+              animations: { enabled: true, speed: 600 },
+              fontFamily: 'inherit'
             },
-            colors: ['#2563eb', '#16a34a'],
+            theme: { mode: initTooltipTheme },
+            colors: isInitialDark ? ['#28D3C5', '#B8F16A'] : ['#135E5A', '#B8F16A'],
             fill: {
               type: 'gradient',
-              gradient: { shadeIntensity: 1, opacityFrom: 0.45, opacityTo: 0.05, stops: [20, 100] }
+              gradient: { shadeIntensity: 1, opacityFrom: 0.45, opacityTo: 0.04, stops: [20, 100] }
             },
             dataLabels: { enabled: false },
-            stroke: { curve: 'smooth', width: 2 },
+            stroke: { curve: 'smooth', width: 2.5 },
             xaxis: {
-              categories: trends.labels,
-              labels: { style: { fontSize: '11px', colors: '#64748b' } }
+              categories: initialTrends.labels || [],
+              labels: { style: { fontSize: '11px', colors: initTextColor } },
+              axisBorder: { show: false },
+              axisTicks: { show: false }
             },
             yaxis: {
               labels: {
                 formatter: function(val) {
                   return '₹' + (val >= 1000 ? (val / 1000).toFixed(0) + 'k' : val.toFixed(0));
                 },
-                style: { fontSize: '11px', colors: '#64748b' }
+                style: { fontSize: '11px', colors: initTextColor }
               }
             },
+            grid: {
+              borderColor: initGridColor,
+              strokeDashArray: 4
+            },
+            legend: {
+              position: 'top',
+              horizontalAlign: 'right',
+              fontSize: '12px',
+              labels: { colors: initTextColor }
+            },
             tooltip: {
+              theme: initTooltipTheme,
               y: {
                 formatter: function(val) {
                   return '₹' + Number(val).toLocaleString('en-IN', { minimumFractionDigits: 2 });
                 }
               }
-            }
+            },
+            noData: { text: 'No trend data for this period', align: 'center', verticalAlign: 'middle', style: { color: '#889ba6' } }
           };
 
           const chartRevenueEl = document.getElementById('chart-revenue-collections');
@@ -464,26 +424,43 @@
           // 2. Quotes vs Conversions Bar Chart
           const quoteOptions = {
             series: [
-              { name: 'Quotations Created', data: trends.quotations },
-              { name: 'Converted Invoices', data: trends.conversions }
+              { name: 'Quotations Created', data: initialTrends.quotations || [] },
+              { name: 'Converted Invoices', data: initialTrends.conversions || [] }
             ],
             chart: {
               type: 'bar',
-              height: 280,
-              toolbar: { show: false }
+              height: 300,
+              background: 'transparent',
+              toolbar: { show: false },
+              fontFamily: 'inherit'
             },
-            colors: ['#0891b2', '#7c3aed'],
+            theme: { mode: initTooltipTheme },
+            colors: ['#65BCE8', '#16B8AF'],
             plotOptions: {
-              bar: { horizontal: false, columnWidth: '45%', borderRadius: 4 }
+              bar: { horizontal: false, columnWidth: '42%', borderRadius: 5 }
             },
             dataLabels: { enabled: false },
             xaxis: {
-              categories: trends.labels,
-              labels: { style: { fontSize: '11px', colors: '#64748b' } }
+              categories: initialTrends.labels || [],
+              labels: { style: { fontSize: '11px', colors: initTextColor } },
+              axisBorder: { show: false },
+              axisTicks: { show: false }
             },
             yaxis: {
-              labels: { style: { fontSize: '11px', colors: '#64748b' } }
-            }
+              labels: { style: { fontSize: '11px', colors: initTextColor } }
+            },
+            grid: {
+              borderColor: initGridColor,
+              strokeDashArray: 4
+            },
+            legend: {
+              position: 'top',
+              horizontalAlign: 'right',
+              fontSize: '12px',
+              labels: { colors: initTextColor }
+            },
+            tooltip: { theme: initTooltipTheme },
+            noData: { text: 'No quotation activity in this period', align: 'center', verticalAlign: 'middle', style: { color: '#889ba6' } }
           };
 
           const chartQuotesEl = document.getElementById('chart-quotes-conversion');
@@ -492,12 +469,206 @@
             chartQuotes = new ApexCharts(chartQuotesEl, quoteOptions);
             chartQuotes.render();
           }
+
+          // 3. Invoice Status Donut Chart
+          const statusHasData = (initialStatus.series || []).some(v => v > 0);
+          const statusOptions = {
+            series: statusHasData ? initialStatus.series : [],
+            labels: initialStatus.labels || ['Fully Paid', 'Partially Paid', 'Unpaid', 'Voided'],
+            chart: {
+              type: 'donut',
+              height: 270,
+              background: 'transparent',
+              fontFamily: 'inherit'
+            },
+            theme: { mode: initTooltipTheme },
+            colors: ['#B8F16A', '#65BCE8', '#F59E0B', '#FF896F'],
+            plotOptions: {
+              pie: {
+                donut: {
+                  size: '72%',
+                  labels: {
+                    show: true,
+                    total: {
+                      show: true,
+                      label: 'Total Invoices',
+                      fontSize: '12px',
+                      color: initTextColor,
+                      formatter: function(w) {
+                        return w.globals.seriesTotals.reduce((a, b) => a + b, 0);
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            dataLabels: { enabled: false },
+            legend: { position: 'bottom', fontSize: '11px', labels: { colors: initTextColor } },
+            stroke: { width: 2, colors: [donutStrokeColor] },
+            noData: { text: 'No invoices recorded for this period', align: 'center', verticalAlign: 'middle', style: { color: '#889ba6', fontSize: '12px' } }
+          };
+
+          const chartStatusEl = document.getElementById('chart-invoice-status');
+          if (chartStatusEl) {
+            chartStatusEl.innerHTML = '';
+            chartStatus = new ApexCharts(chartStatusEl, statusOptions);
+            chartStatus.render();
+          }
+
+          // 4. Expense Categories Donut Chart
+          const expenseHasData = (initialExpenses.series || []).some(v => v > 0);
+          const expenseOptions = {
+            series: expenseHasData ? initialExpenses.series : [],
+            labels: expenseHasData ? initialExpenses.labels : [],
+            chart: {
+              type: 'donut',
+              height: 270,
+              background: 'transparent',
+              fontFamily: 'inherit'
+            },
+            theme: { mode: initTooltipTheme },
+            colors: ['#135E5A', '#16B8AF', '#65BCE8', '#9B8AFB', '#FF896F', '#B8F16A'],
+            plotOptions: {
+              pie: {
+                donut: {
+                  size: '72%',
+                  labels: {
+                    show: true,
+                    total: {
+                      show: true,
+                      label: 'Total Spent',
+                      fontSize: '11px',
+                      color: initTextColor,
+                      formatter: function(w) {
+                        const sum = w.globals.seriesTotals.reduce((a, b) => a + b, 0);
+                        return '₹' + (sum >= 1000 ? (sum / 1000).toFixed(1) + 'k' : sum.toFixed(0));
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            dataLabels: { enabled: false },
+            legend: { position: 'bottom', fontSize: '11px', labels: { colors: initTextColor } },
+            stroke: { width: 2, colors: [donutStrokeColor] },
+            tooltip: {
+              theme: initTooltipTheme,
+              y: {
+                formatter: function(val) {
+                  return '₹' + Number(val).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+                }
+              }
+            },
+            noData: { text: 'No expenses recorded for this period', align: 'center', verticalAlign: 'middle', style: { color: '#889ba6', fontSize: '12px' } }
+          };
+
+          const chartExpensesEl = document.getElementById('chart-expense-categories');
+          if (chartExpensesEl) {
+            chartExpensesEl.innerHTML = '';
+            chartExpenses = new ApexCharts(chartExpensesEl, expenseOptions);
+            chartExpenses.render();
+          }
+
+          // 5. Receivables Ageing Bar Chart
+          const ageingOptions = {
+            series: [{
+              name: 'Outstanding Amount',
+              data: initialAgeing.series || [0, 0, 0, 0]
+            }],
+            chart: {
+              type: 'bar',
+              height: 270,
+              background: 'transparent',
+              toolbar: { show: false },
+              fontFamily: 'inherit'
+            },
+            theme: { mode: initTooltipTheme },
+            colors: ['#B8F16A', '#65BCE8', '#F59E0B', '#FF896F'],
+            plotOptions: {
+              bar: {
+                borderRadius: 5,
+                columnWidth: '45%',
+                distributed: true
+              }
+            },
+            dataLabels: { enabled: false },
+            xaxis: {
+              categories: initialAgeing.labels || ['Current (0-30d)', '31-60 Days', '61-90 Days', 'Over 90 Days'],
+              labels: { style: { fontSize: '10px', colors: initTextColor } },
+              axisBorder: { show: false },
+              axisTicks: { show: false }
+            },
+            yaxis: {
+              labels: {
+                formatter: function(val) {
+                  return '₹' + (val >= 1000 ? (val / 1000).toFixed(0) + 'k' : val.toFixed(0));
+                },
+                style: { fontSize: '11px', colors: initTextColor }
+              }
+            },
+            grid: {
+              borderColor: initGridColor,
+              strokeDashArray: 4
+            },
+            legend: { show: false },
+            tooltip: {
+              theme: initTooltipTheme,
+              y: {
+                formatter: function(val) {
+                  return '₹' + Number(val).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+                }
+              }
+            },
+            noData: { text: 'No outstanding receivables', align: 'center', verticalAlign: 'middle', style: { color: '#889ba6', fontSize: '12px' } }
+          };
+
+          const chartAgeingEl = document.getElementById('chart-receivables-ageing');
+          if (chartAgeingEl) {
+            chartAgeingEl.innerHTML = '';
+            chartAgeing = new ApexCharts(chartAgeingEl, ageingOptions);
+            chartAgeing.render();
+          }
         }
 
         // Initialize on load
         if (window.ApexCharts) {
-          initCharts(initialTrends);
+          initCharts();
+        } else {
+          window.addEventListener('load', initCharts);
         }
+
+        // Re-theme dashboard charts dynamically on theme toggle
+        window.addEventListener('spark:theme-changed', function(e) {
+          const isDark = e.detail && e.detail.theme === 'dark';
+          const gridColor = isDark ? 'rgba(211, 235, 245, 0.08)' : 'rgba(32, 70, 82, 0.08)';
+          const textColor = isDark ? '#A6BBC5' : '#667985';
+          const tooltipTheme = isDark ? 'dark' : 'light';
+          const strokeColor = isDark ? '#192731' : '#ffffff';
+
+          const baseThemeOpts = {
+            chart: { background: 'transparent' },
+            theme: { mode: tooltipTheme },
+            grid: { borderColor: gridColor },
+            xaxis: { labels: { style: { colors: textColor } } },
+            yaxis: { labels: { style: { colors: textColor } } },
+            legend: { labels: { colors: textColor } },
+            stroke: { colors: [strokeColor] },
+            tooltip: { theme: tooltipTheme }
+          };
+
+          if (chartRevenue && typeof chartRevenue.updateOptions === 'function') {
+            chartRevenue.updateOptions({
+              ...baseThemeOpts,
+              colors: isDark ? ['#28D3C5', '#B8F16A'] : ['#135E5A', '#B8F16A']
+            }, false, false);
+          }
+
+          [chartQuotes, chartStatus, chartExpenses, chartAgeing].forEach(ch => {
+            if (ch && typeof ch.updateOptions === 'function') {
+              try { ch.updateOptions(baseThemeOpts, false, false); } catch (err) {}
+            }
+          });
+        });
 
         // Date Range Pill Click Handler
         const pillsContainer = document.getElementById('date-range-pills');
@@ -573,6 +744,12 @@
           document.getElementById('kpi-overdue').textContent = fmt(k.financials.overdueAmount);
           document.getElementById('kpi-overdue-count').textContent = k.financials.overdueCount + (k.financials.overdueCount === 1 ? ' invoice' : ' invoices');
 
+          const collRate = Math.min(100, Math.max(0, k.invoices.collectionRate || 0));
+          const progEl = document.getElementById('kpi-realization-progress');
+          if (progEl) { progEl.style.width = collRate + '%'; progEl.setAttribute('aria-valuenow', collRate); }
+          const rateValEl = document.getElementById('kpi-collection-rate-val');
+          if (rateValEl) rateValEl.textContent = collRate + '%';
+
           document.getElementById('kpi-total-quotations').textContent = k.quotations.total;
           document.getElementById('kpi-active-quotations').textContent = k.quotations.active;
           document.getElementById('kpi-conversion-rate').textContent = k.quotations.conversionRate + '%';
@@ -580,23 +757,59 @@
 
           document.getElementById('kpi-total-invoices').textContent = k.invoices.total;
           document.getElementById('kpi-active-invoices').textContent = k.invoices.active;
-          document.getElementById('kpi-void-invoices').textContent = k.invoices.void;
+          document.getElementById('kpi-total-expenses').textContent = fmt(k.financials.totalExpenses);
+          document.getElementById('kpi-expenses-count').textContent = k.financials.expensesCount + (k.financials.expensesCount === 1 ? ' record' : ' records');
 
-          if (chartRevenue && chartQuotes && data.trends) {
+          // Update Chart 1 & 2 (Trends)
+          if (chartRevenue && data.trends) {
             chartRevenue.updateOptions({
-              xaxis: { categories: data.trends.labels },
+              xaxis: { categories: data.trends.labels || [] },
               series: [
-                { name: 'Invoiced Revenue', data: data.trends.revenue },
-                { name: 'Collections Realized', data: data.trends.collections }
+                { name: 'Invoiced Revenue', data: data.trends.revenue || [] },
+                { name: 'Collections Realized', data: data.trends.collections || [] }
               ]
             });
+          }
 
+          if (chartQuotes && data.trends) {
             chartQuotes.updateOptions({
-              xaxis: { categories: data.trends.labels },
+              xaxis: { categories: data.trends.labels || [] },
               series: [
-                { name: 'Quotations Created', data: data.trends.quotations },
-                { name: 'Converted Invoices', data: data.trends.conversions }
+                { name: 'Quotations Created', data: data.trends.quotations || [] },
+                { name: 'Converted Invoices', data: data.trends.conversions || [] }
               ]
+            });
+          }
+
+          // Update Chart 3: Status Breakdown
+          const statusPayload = data.statusBreakdown || (data.charts && data.charts.statusBreakdown);
+          if (chartStatus && statusPayload) {
+            const hasData = (statusPayload.series || []).some(v => v > 0);
+            chartStatus.updateOptions({
+              labels: statusPayload.labels || ['Fully Paid', 'Partially Paid', 'Unpaid', 'Voided'],
+              series: hasData ? statusPayload.series : []
+            });
+          }
+
+          // Update Chart 4: Expense Categories
+          const expensesPayload = data.expenseCategories || (data.charts && data.charts.expenseCategories);
+          if (chartExpenses && expensesPayload) {
+            const hasData = (expensesPayload.series || []).some(v => v > 0);
+            chartExpenses.updateOptions({
+              labels: hasData ? expensesPayload.labels : [],
+              series: hasData ? expensesPayload.series : []
+            });
+          }
+
+          // Update Chart 5: Receivables Ageing
+          const ageingPayload = data.receivablesAgeing || (data.charts && data.charts.receivablesAgeing);
+          if (chartAgeing && ageingPayload) {
+            chartAgeing.updateOptions({
+              xaxis: { categories: ageingPayload.labels || [] },
+              series: [{
+                name: 'Outstanding Amount',
+                data: ageingPayload.series || []
+              }]
             });
           }
 
@@ -606,23 +819,23 @@
             tbody.innerHTML = data.recentActivity.map(doc => \`
               <tr>
                 <td class="ps-4">
-                  <span class="badge \${doc.documentType === 'QUOTATION' ? 'bg-info-subtle text-info' : 'bg-primary-subtle text-primary'} font-monospace">
+                  <span class="badge \${doc.documentType === 'QUOTATION' ? 'bg-info-subtle text-info border border-info-subtle' : 'bg-primary-subtle text-primary border border-primary-subtle'} font-monospace">
                     \${doc.documentType}
                   </span>
                 </td>
                 <td class="fw-bold font-monospace">
                   <a href="/documents/\${doc.id}" class="text-decoration-none text-dark">\${doc.invoiceNumber}</a>
                 </td>
-                <td>\${doc.clientName}</td>
+                <td class="fw-medium">\${doc.clientName}</td>
                 <td class="small text-muted">\${new Date(doc.invoiceDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
                 <td class="text-end font-monospace fw-bold">₹\${Number(doc.grandTotal).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                 <td class="text-center">
-                  <span class="badge \${doc.status === 'ACTIVE' ? 'bg-success-subtle text-success' : (doc.status === 'VOID' ? 'bg-danger-subtle text-danger' : 'bg-secondary-subtle text-secondary')}">
+                  <span class="badge \${doc.status === 'ACTIVE' ? 'bg-success-subtle text-success border border-success-subtle' : (doc.status === 'VOID' ? 'bg-danger-subtle text-danger border border-danger-subtle' : 'bg-secondary-subtle text-secondary border')}">
                     \${doc.status}
                   </span>
                 </td>
                 <td class="text-end pe-4">
-                  <a href="/documents/\${doc.id}" class="btn btn-sm btn-light border" title="View Document">
+                  <a href="/documents/\${doc.id}" class="btn btn-sm btn-light border rounded-circle" title="View Document">
                     <i class="bi bi-eye"></i>
                   </a>
                 </td>
@@ -631,9 +844,9 @@
           } else {
             tbody.innerHTML = \`
               <tr>
-                <td colspan="7" class="text-center py-4 text-muted">
-                  <i class="bi bi-inbox fs-3 d-block mb-1"></i>
-                  No documents found for the selected period.
+                <td colspan="7" class="text-center py-5 text-muted">
+                  <i class="bi bi-inbox fs-2 d-block mb-2 text-muted"></i>
+                  <span>No documents found for the selected period.</span>
                 </td>
               </tr>
             \`;

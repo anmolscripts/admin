@@ -44,9 +44,10 @@ const ALLOWED_ROOT_FILES = [
 
 function isForbidden(relPath) {
     const norm = relPath.replace(/\\/g, '/');
-    if (norm === '.env.example' || norm === '.env.production.example') return false;
+    const base = path.basename(norm);
+    if (base === '.env.example' || base === '.env.production.example') return false;
     if (norm === '.gitignore' || norm.endsWith('/.gitkeep') || norm === '.gitkeep') return false;
-    if (norm === '.env' || norm.startsWith('.env.')) return true;
+    if (base.startsWith('.env') || /(^|\/)\.env/i.test(norm)) return true;
     return FORBIDDEN_PATTERNS.some(pat => pat.test(norm));
 }
 
@@ -129,7 +130,7 @@ if (require.main === module) {
     const isWin = process.platform === 'win32';
     if (isWin) {
         const zipCmd = 'powershell';
-// Archive contents of staging directory without a top‑level folder
+        // Archive contents of staging directory without a top-level folder
         const zipArgs = ['-Command', `Set-Location '${STAGING_DIR}'; Compress-Archive -Path * -DestinationPath '${zipPath}' -Force`];
         console.log('Creating release ZIP at', zipPath);
         const zipResult = spawnSync(zipCmd, zipArgs, { stdio: 'inherit', shell: true });
@@ -147,6 +148,33 @@ if (require.main === module) {
             process.exit(1);
         }
     }
+
+    // Generate release-manifest.json
+    const crypto = require('node:crypto');
+    const zipBytes = fs.readFileSync(zipPath);
+    const zipSha256 = crypto.createHash('sha256').update(zipBytes).digest('hex');
+    const pkg = JSON.parse(fs.readFileSync(path.join(ROOT_DIR, 'package.json'), 'utf8'));
+
+    let headCommit = 'unknown';
+    try {
+        headCommit = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT_DIR, encoding: 'utf8' }).stdout.trim();
+    } catch (_) {}
+
+    const manifest = {
+        name: pkg.name || 'spark-admin',
+        version: pkg.version || '1.0.0',
+        commit: headCommit,
+        packagedAt: new Date().toISOString(),
+        archiveName: 'spark-admin-release.zip',
+        archiveSizeBytes: zipBytes.length,
+        archiveSha256: zipSha256,
+        fileCount: result.files.length,
+        files: result.files
+    };
+
+    const manifestPath = path.join(DIST_DIR, 'release-manifest.json');
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
+    console.log(`✔ Release manifest written to ${manifestPath}`);
 
     console.log(`\n✔ Release ZIP created at ${zipPath}`);
     process.exit(0);

@@ -195,23 +195,33 @@
         }
         const vpHeight = window.innerHeight;
         const vpWidth = window.innerWidth;
-        const portalWidth = Math.max(rect.width, 380);
+
+        // Suggestion panel width: 620px desktop suggestion portal, adapting safely to viewport
+        const targetWidth = Math.max(620, rect.width);
+        let portalWidth = Math.min(targetWidth, vpWidth - 24);
+        if (vpWidth <= 768) {
+            portalWidth = vpWidth - 24;
+        }
+
         let left = rect.left;
         if (left + portalWidth > vpWidth - 12) {
             left = Math.max(12, vpWidth - portalWidth - 12);
         }
+        if (left < 12) {
+            left = 12;
+        }
 
         const spaceBelow = vpHeight - rect.bottom;
         const spaceAbove = rect.top;
-        const estimatedHeight = Math.min(autocompletePortalEl.scrollHeight || 240, 280);
+        const estimatedHeight = Math.min(autocompletePortalEl.scrollHeight || 300, 320);
 
         let top;
         if (spaceBelow >= estimatedHeight + 8 || spaceBelow >= spaceAbove) {
             top = rect.bottom + 4;
-            autocompletePortalEl.style.maxHeight = `${Math.min(280, Math.max(100, spaceBelow - 16))}px`;
+            autocompletePortalEl.style.maxHeight = `${Math.min(320, Math.max(120, spaceBelow - 16))}px`;
         } else {
             top = Math.max(8, rect.top - estimatedHeight - 4);
-            autocompletePortalEl.style.maxHeight = `${Math.min(280, Math.max(100, spaceAbove - 16))}px`;
+            autocompletePortalEl.style.maxHeight = `${Math.min(320, Math.max(120, spaceAbove - 16))}px`;
         }
 
         autocompletePortalEl.style.position = 'fixed';
@@ -259,20 +269,40 @@
             itemDiv.setAttribute('id', `item-opt-${idx}`);
             itemDiv.setAttribute('aria-selected', 'false');
 
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'item-autocomplete-content';
+
             const nameSpan = document.createElement('span');
             nameSpan.className = 'item-autocomplete-item-name';
             nameSpan.textContent = item.name;
+            contentDiv.appendChild(nameSpan);
+
+            if (item.hsnSac) {
+                const hsnSpan = document.createElement('span');
+                hsnSpan.className = 'item-autocomplete-item-hsn';
+                hsnSpan.textContent = `HSN/SAC: ${item.hsnSac}`;
+                contentDiv.appendChild(hsnSpan);
+            }
 
             const metaSpan = document.createElement('span');
             metaSpan.className = 'item-autocomplete-item-meta';
 
             const badgeSpan = document.createElement('span');
             badgeSpan.className = 'item-autocomplete-price-badge font-monospace';
-            const rateFormatted = Number(item.rate).toFixed(2);
-            badgeSpan.textContent = `₹ ${rateFormatted} / ${item.unit || 'PCS'}`;
+
+            const rateNum = document.createElement('span');
+            rateNum.className = 'badge-rate-num';
+            rateNum.textContent = formatIndianCurrency(item.rate);
+
+            const rateUnit = document.createElement('span');
+            rateUnit.className = 'badge-rate-unit';
+            rateUnit.textContent = ` / ${item.unit || 'PCS'}`;
+
+            badgeSpan.appendChild(rateNum);
+            badgeSpan.appendChild(rateUnit);
             metaSpan.appendChild(badgeSpan);
 
-            itemDiv.appendChild(nameSpan);
+            itemDiv.appendChild(contentDiv);
             itemDiv.appendChild(metaSpan);
 
             itemDiv.addEventListener('mousedown', (e) => {

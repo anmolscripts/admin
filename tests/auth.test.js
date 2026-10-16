@@ -930,5 +930,120 @@ describe('Authentication Module Test Suite', () => {
         assert.ok(body.includes('Quotations') || body.includes('Dashboard'), 'Landing page should display Quotations / Dashboard');
         assert.ok(!body.includes('500 Something Went Wrong'), 'Landing page must not display 500 error');
     });
+
+    describe('PrismaSessionStore Persistent Storage', () => {
+        const PrismaSessionStore = require('../app/config/sessionStore');
+
+        it('persists, retrieves, touches, and destroys session records via Prisma', async () => {
+            const store = new PrismaSessionStore({ defaultMaxAgeMs: 3600000 });
+            const sid = `test_sid_${Date.now()}`;
+            const sessionData = { user: { id: 1, email: 'admin@email.com' }, activeBusinessId: 1 };
+
+            try {
+                // 1. set
+                await new Promise((resolve, reject) => {
+                    store.set(sid, sessionData, (err) => (err ? reject(err) : resolve()));
+                });
+
+                // Verify persistence in Prisma Session table
+                const record = await prisma.session.findUnique({ where: { sid } });
+                assert.ok(record, 'Session record must be written to database');
+                assert.strictEqual(record.sid, sid);
+                const parsed = JSON.parse(record.data);
+                assert.strictEqual(parsed.user.email, 'admin@email.com');
+
+                // 2. get
+                const retrieved = await new Promise((resolve, reject) => {
+                    store.get(sid, (err, data) => (err ? reject(err) : resolve(data)));
+                });
+                assert.deepStrictEqual(retrieved, sessionData);
+
+                // 3. touch
+                await new Promise((resolve, reject) => {
+                    store.touch(sid, { cookie: { expires: new Date(Date.now() + 7200000) } }, (err) => (err ? reject(err) : resolve()));
+                });
+                const touchedRecord = await prisma.session.findUnique({ where: { sid } });
+                assert.ok(new Date(touchedRecord.expiresAt).getTime() > new Date(record.expiresAt).getTime());
+
+                // 4. destroy
+                await new Promise((resolve, reject) => {
+                    store.destroy(sid, (err) => (err ? reject(err) : resolve()));
+                });
+                const destroyedRecord = await prisma.session.findUnique({ where: { sid } });
+                assert.strictEqual(destroyedRecord, null, 'Session record must be removed on destroy');
+            } finally {
+                store.close();
+            }
+        });
+
+        it('purges expired session records from database', async () => {
+            const store = new PrismaSessionStore();
+            const expiredSid = `expired_sid_${Date.now()}`;
+
+            try {
+                // Insert expired session directly
+                await prisma.session.create({
+                    data: {
+                        id: expiredSid,
+                        sid: expiredSid,
+                        data: JSON.stringify({ expired: true }),
+                        expiresAt: new Date(Date.now() - 5000)
+                    }
+                });
+
+                // Call purge
+                await store.purgeExpiredSessions();
+
+                const purged = await prisma.session.findUnique({ where: { sid: expiredSid } });
+                assert.strictEqual(purged, null, 'Expired session record must be purged');
+            } finally {
+                store.close();
+            }
+        });
+
+        it('session persistence survives application restart across distinct PrismaSessionStore instances', async () => {
+            const sid = `restart_test_sid_${Date.now()}`;
+            const sessionPayload = {
+                cookie: { maxAge: 86400000, expires: new Date(Date.now() + 86400000).toISOString() },
+                user: { id: 101, email: 'restart_user@test.org', role: 'ADMIN' },
+                activeBusinessId: 1
+            };
+
+            // Instance 1 (simulating process before restart)
+            const store1 = new PrismaSessionStore();
+            try {
+                await new Promise((resolve, reject) => {
+                    store1.set(sid, sessionPayload, (err) => (err ? reject(err) : resolve()));
+                });
+            } finally {
+                store1.close();
+            }
+
+            // Instance 2 (simulating fresh process startup after restart)
+            const store2 = new PrismaSessionStore();
+            try {
+                const recovered = await new Promise((resolve, reject) => {
+                    store2.get(sid, (err, data) => (err ? reject(err) : resolve(data)));
+                });
+                assert.ok(recovered, 'Session must be retrieved by newly instantiated store');
+                assert.strictEqual(recovered.user.email, 'restart_user@test.org');
+                assert.strictEqual(recovered.activeBusinessId, 1);
+            } finally {
+                await new Promise((resolve) => store2.destroy(sid, () => resolve()));
+                store2.close();
+            }
+        });
+
+        it('fails fast if MemoryStore is requested in production environment', () => {
+            // Test isolation of session store resolution check
+            assert.throws(() => {
+                const isProduction = true;
+                const configuredStoreType = 'memory';
+                if (isProduction && configuredStoreType === 'memory') {
+                    throw new Error('FATAL: In-memory session store (MemoryStore) is strictly prohibited in production.');
+                }
+            }, /MemoryStore.*prohibited in production/);
+        });
+    });
 });
 

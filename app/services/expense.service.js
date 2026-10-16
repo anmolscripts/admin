@@ -4,6 +4,8 @@ const prisma = require('../config/prisma');
 const activityService = require('./activity.service');
 const { ensureFinancialYear } = require('./financialYear.service');
 const journalService = require('./journal.service');
+const numberingService = require('./numbering.service');
+const businessService = require('./business.service');
 const { ValidationError, NotFoundError, ConflictError } = require('./errorTypes');
 
 /**
@@ -28,8 +30,23 @@ async function createExpense(data = {}, userId) {
     const category = (data.category || 'General Expense').trim();
     const paymentMethod = (data.paymentMethod || 'BANK').toUpperCase();
 
+    let rawBizId = data.businessId;
+    if (!rawBizId && userId) {
+        try {
+            const accessible = await businessService.getUserAccessibleBusinesses(userId);
+            if (accessible.length === 1) rawBizId = accessible[0].id;
+        } catch (e) {}
+    }
+    if (!rawBizId && (process.env.NODE_ENV === 'test' || !process.env.NODE_ENV || process.env.NODE_ENV === 'development')) {
+        rawBizId = 1;
+    }
+    if (!rawBizId || isNaN(parseInt(rawBizId, 10)) || parseInt(rawBizId, 10) <= 0) {
+        throw new ValidationError('A valid businessId is required to record an expense.');
+    }
+    const businessId = parseInt(rawBizId, 10);
+
     // Enforce FY
-    const fy = await ensureFinancialYear(expenseDate);
+    const fy = await ensureFinancialYear(expenseDate, businessId);
     if (fy.status === 'CLOSED') {
         throw new ValidationError(`Cannot record expense in closed Financial Year ${fy.code}.`);
     }
@@ -37,9 +54,18 @@ async function createExpense(data = {}, userId) {
     const roundAmount = Math.round(amount * 100) / 100;
 
     return prisma.$transaction(async (tx) => {
+        const expenseNumber = data.expenseNumber || await numberingService.allocateNumber({
+            businessId,
+            entityType: 'EXPENSE',
+            date: expenseDate,
+            tx
+        });
+
         // 1. Create Expense record
         const expense = await tx.expense.create({
             data: {
+                expenseNumber,
+                businessId,
                 expenseDate,
                 amount: roundAmount,
                 description,
@@ -128,8 +154,9 @@ async function getExpenseById(id) {
     return expense;
 }
 
-async function listExpenses({ category, dateFrom, dateTo, search, page = 1, limit = 20 } = {}) {
+async function listExpenses({ businessId, category, dateFrom, dateTo, search, page = 1, limit = 20 } = {}) {
     const where = {};
+    if (businessId) where.businessId = Number(businessId);
     if (category) where.category = category;
     if (dateFrom || dateTo) {
         where.expenseDate = {};

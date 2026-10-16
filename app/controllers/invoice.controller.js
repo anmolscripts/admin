@@ -8,7 +8,7 @@ function getRequestMeta(req) {
     const forwarded = req.headers['x-forwarded-for'];
     const ip = forwarded ? forwarded.split(',')[0].trim() : (req.socket ? req.socket.remoteAddress : null);
     const userAgent = req.headers['user-agent'] ? req.headers['user-agent'].substring(0, 255) : null;
-    return { ipAddress: ip || '127.0.0.1', userAgent };
+    return { ipAddress: ip || '127.0.0.1', userAgent, businessId: req.businessId };
 }
 
 function handleControllerError(err, res, next) {

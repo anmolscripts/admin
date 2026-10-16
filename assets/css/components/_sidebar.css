@@ -1,0 +1,314 @@
+/* ==========================================================================
+   SPARK ADMIN ERP — AURORA GLASS NAVIGATION RAIL & SIDEBAR COMPONENT
+   Deep Ocean Teal & Frosted Glass Navigation System (Expanded & Collapsed Rail)
+   ========================================================================== */
+
+.sidebar-wrapper {
+  width: var(--sidebar-width, 270px);
+  background: rgba(12, 20, 28, 0.96);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  color: var(--sa-nav-text, #A6BBC5);
+  border-right: 1px solid var(--sa-nav-border, rgba(22, 184, 175, 0.12));
+  box-shadow: 4px 0 28px 0 rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1030;
+  padding: 1.25rem 1rem 1rem 1rem;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.sidebar-wrapper::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* --------------------------------------------------------------------------
+   Sidebar Nav Container: Smooth Scrolling Without Visible Scrollbars
+   -------------------------------------------------------------------------- */
+.sidebar-nav-container {
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE / Edge */
+  padding-right: 1px;
+}
+
+.sidebar-nav-container::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* --------------------------------------------------------------------------
+   Brand Identity Section
+   -------------------------------------------------------------------------- */
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.25rem 0.5rem 1.15rem 0.5rem;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 1.25rem;
+  transition: var(--sa-transition);
+}
+
+.sidebar-brand:hover {
+  text-decoration: none;
+}
+
+.sidebar-brand i {
+  color: var(--sa-turquoise, #16B8AF);
+  font-size: 1.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 0 10px rgba(22, 184, 175, 0.75));
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), filter 0.3s ease;
+}
+
+.sidebar-brand:hover i {
+  transform: rotate(90deg) scale(1.1);
+  filter: drop-shadow(0 0 14px rgba(184, 241, 106, 0.9));
+}
+
+.sidebar-brand-text {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------------
+   Navigation Menu Sections & Links
+   -------------------------------------------------------------------------- */
+.sidebar-menu-section {
+  margin-bottom: 1.25rem;
+}
+
+.sidebar-menu-title {
+  color: var(--sa-nav-section-title, #536976);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.75rem 0.5rem 0.75rem;
+}
+
+.sidebar-menu-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-menu-item {
+  margin-bottom: 0.25rem;
+}
+
+.sidebar-menu-link {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.68rem 0.85rem;
+  color: var(--sa-nav-text, #A6BBC5);
+  border-radius: var(--sa-radius-md, 10px);
+  font-weight: 500;
+  font-size: 0.885rem;
+  text-decoration: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.sidebar-menu-link i {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.12rem;
+  flex-shrink: 0;
+  color: var(--sa-nav-text, #A6BBC5);
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.sidebar-menu-link:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.06);
+  color: #FFFFFF;
+  transform: translateX(3px);
+  text-decoration: none;
+}
+
+.sidebar-menu-link:hover:not(.active) i {
+  color: var(--sa-turquoise, #28D3C5);
+}
+
+/* Aurora Glass Active State with Deep Teal & Turquoise Gradient and Mint Accent Dot */
+.sidebar-menu-link.active {
+  background: linear-gradient(135deg, #135E5A 0%, #16B8AF 100%) !important;
+  color: #FFFFFF !important;
+  font-weight: 600;
+  box-shadow: 0 4px 16px rgba(19, 94, 90, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.25) !important;
+}
+
+.sidebar-menu-link.active::after {
+  content: '';
+  position: absolute;
+  right: 12px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #B8F16A;
+  box-shadow: 0 0 8px #B8F16A;
+}
+
+.sidebar-menu-link.active i {
+  color: #B8F16A !important;
+}
+
+/* --------------------------------------------------------------------------
+   Profile & User Footer Card
+   -------------------------------------------------------------------------- */
+.sidebar-profile {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: var(--sa-radius-md, 12px);
+  padding: 0.75rem 0.85rem;
+  margin-top: auto;
+  text-decoration: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-profile:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(40, 211, 197, 0.4);
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+
+.sidebar-profile-img {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--sa-radius-md, 10px);
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.sidebar-profile-info {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.sidebar-profile-name {
+  color: #FFFFFF;
+  font-weight: 600;
+  font-size: 0.875rem;
+  line-height: 1.25;
+}
+
+.sidebar-profile-email {
+  color: #94A3B8;
+  font-size: 0.72rem;
+  line-height: 1.25;
+}
+
+.sidebar-profile-role {
+  color: #64748B;
+  font-size: 0.68rem;
+  margin-top: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   Minimized Sidebar Rail (80px Icon-Rail Mode)
+   -------------------------------------------------------------------------- */
+body.sidebar-minimized {
+  --sidebar-width: 80px;
+}
+
+body.sidebar-minimized .sidebar-wrapper {
+  padding: 1.25rem 0.5rem 1rem 0.5rem;
+  align-items: center;
+}
+
+body.sidebar-minimized .sidebar-brand {
+  justify-content: center;
+  padding: 0.25rem 0 1.15rem 0;
+  width: 100%;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+body.sidebar-minimized .sidebar-brand span,
+body.sidebar-minimized .sidebar-brand-text,
+body.sidebar-minimized .sidebar-menu-title,
+body.sidebar-minimized .sidebar-menu-link span,
+body.sidebar-minimized .sidebar-menu-badge,
+body.sidebar-minimized .dropdown-caret,
+body.sidebar-minimized .sidebar-submenu,
+body.sidebar-minimized .sidebar-profile-info {
+  display: none !important;
+}
+
+body.sidebar-minimized .sidebar-nav-container {
+  width: 100%;
+}
+
+body.sidebar-minimized .sidebar-menu-item {
+  display: flex;
+  justify-content: center;
+}
+
+body.sidebar-minimized .sidebar-menu-link {
+  width: 48px;
+  height: 48px;
+  margin: 0.3rem auto;
+  padding: 0;
+  justify-content: center;
+  align-items: center;
+  border-radius: 12px;
+  transform: none !important;
+}
+
+body.sidebar-minimized .sidebar-menu-link i {
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+body.sidebar-minimized .sidebar-menu-link.active {
+  box-shadow: 0 4px 14px rgba(22, 184, 175, 0.45) !important;
+}
+
+body.sidebar-minimized .sidebar-profile {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  margin: 0 auto;
+  justify-content: center;
+  align-items: center;
+  border: none;
+  background: transparent;
+}
+
+body.sidebar-minimized .sidebar-profile-avatar-fallback {
+  margin: 0 auto !important;
+  width: 42px !important;
+  height: 42px !important;
+}
+
+body.sidebar-minimized .sidebar-profile-img {
+  margin: 0 auto !important;
+  width: 42px !important;
+  height: 42px !important;
+}

@@ -4,6 +4,7 @@ const { recordFailedLogin, resetLoginAttempts } = require('../middleware/rateLim
 const { SESSION_COOKIE_NAME, cookieOptions } = require('../config/session');
 const prisma = require('../config/prisma');
 const activityService = require('../services/activity.service');
+const businessService = require('../services/business.service');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -99,31 +100,52 @@ async function login(req, res, next) {
         });
 
         // Prevent session fixation by regenerating session
-        req.session.regenerate((err) => {
-            if (err) {
-                console.error('[AUTH] Session regeneration failure:', err);
-                return next(err);
-            }
-
-            // Store minimal, safe user data in session (NEVER store password/hash)
-            req.session.user = {
-                id: result.user.id,
-                name: result.user.name,
-                email: result.user.email,
-                role: result.user.role
-            };
-
-            // Issue new CSRF token for the authenticated session
-            refreshCsrfToken(req);
-
-            req.session.save((saveErr) => {
-                if (saveErr) {
-                    console.error('[AUTH] Session save failure:', saveErr);
-                    return next(saveErr);
-                }
-                res.redirect('/');
+        if (typeof req.session.regenerate === 'function') {
+            await new Promise((resolve, reject) => {
+                req.session.regenerate((err) => (err ? reject(err) : resolve()));
             });
-        });
+        }
+
+        // Store minimal, safe user data in session (NEVER store password/hash)
+        req.session.user = {
+            id: result.user.id,
+            name: result.user.name,
+            email: result.user.email,
+            role: result.user.role
+        };
+
+        // Automatic business selection / routing
+        let redirectUrl = '/';
+        try {
+            const accessibleBusinesses = await businessService.getUserAccessibleBusinesses(result.user.id, result.user.role);
+            if (accessibleBusinesses.length === 1) {
+                req.session.activeBusinessId = accessibleBusinesses[0].id;
+            } else if (accessibleBusinesses.length > 1) {
+                const defaultBiz = accessibleBusinesses.find(b => b.isDefault);
+                if (defaultBiz) {
+                    req.session.activeBusinessId = defaultBiz.id;
+                } else if (result.user.role === 'ADMIN') {
+                    req.session.activeBusinessId = accessibleBusinesses.find(b => b.id === 1)?.id || accessibleBusinesses[0].id;
+                } else {
+                    redirectUrl = '/select-business';
+                }
+            } else if (result.user.role === 'ADMIN') {
+                req.session.activeBusinessId = 1;
+            }
+        } catch (bizErr) {
+            console.warn('[AUTH] Warning resolving accessible businesses:', bizErr.message);
+        }
+
+        // Issue new CSRF token for the authenticated session
+        refreshCsrfToken(req);
+
+        if (typeof req.session.save === 'function') {
+            await new Promise((resolve, reject) => {
+                req.session.save((err) => (err ? reject(err) : resolve()));
+            });
+        }
+
+        res.redirect(redirectUrl);
     } catch (error) {
         console.error('[AUTH] Unexpected authentication error:', error);
         return res.status(500).render('errors/500', {

@@ -1,0 +1,427 @@
+<%
+  const wbHeaderAction = `
+    <div class="d-flex gap-2">
+      <a href="/reports/workbench/export?${new URLSearchParams({ ...filters, format: 'excel' }).toString()}" class="btn btn-outline-success d-inline-flex align-items-center gap-2 rounded-pill px-3">
+        <i class="bi bi-file-earmark-excel"></i>
+        <span>Export Excel</span>
+      </a>
+      <a href="/reports/workbench/export?${new URLSearchParams({ ...filters, format: 'csv' }).toString()}" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2 rounded-pill px-3">
+        <i class="bi bi-file-earmark-spreadsheet"></i>
+        <span>Export CSV</span>
+      </a>
+      <a href="/reports/workbench/export?${new URLSearchParams({ ...filters, format: 'pdf' }).toString()}" class="btn btn-outline-danger d-inline-flex align-items-center gap-2 rounded-pill px-3">
+        <i class="bi bi-file-earmark-pdf"></i>
+        <span>Export PDF</span>
+      </a>
+    </div>
+  `;
+%>
+
+<%- include('../layouts/header', {
+    pageTitle: pageTitle || 'Reporting & Analytics Workbench',
+    pageSubtitle: pageSubtitle || 'Interactive financial analytics, document trends, and multi-dimensional exploration.',
+    headerAction: wbHeaderAction
+}) %>
+
+<div class="content-wrapper p-4">
+
+  <% if (reportData.error) { %>
+    <div class="alert alert-warning d-flex align-items-center gap-2 mb-4 rounded-3 border-0 shadow-sm" role="alert">
+      <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+      <div><strong>Filter Notice:</strong> <%= reportData.error %></div>
+    </div>
+  <% } %>
+
+  <!-- Filter & Control Panel (Glass Panel) -->
+  <div class="card-glass p-4 mb-4">
+    <form method="GET" action="/reports/workbench" id="workbenchFilterForm">
+      <div class="row g-3">
+        <!-- Dataset Family -->
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold text-muted">Dataset Domain</label>
+          <select name="dataset" class="form-select form-select-sm" onchange="this.form.submit()">
+            <% Object.values(reportFamilies).forEach(fam => { %>
+              <option value="<%= fam.id %>" <%= selectedDataset === fam.id ? 'selected' : '' %>>
+                <%= fam.name %> (<%= fam.category %>)
+              </option>
+            <% }); %>
+          </select>
+        </div>
+
+        <!-- Business Scope -->
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold text-muted">Business Scope</label>
+          <select name="businessIds" class="form-select form-select-sm">
+            <option value="">All Accessible Businesses (<%= accessibleBusinesses.length %>)</option>
+            <% accessibleBusinesses.forEach(b => { %>
+              <option value="<%= b.id %>" <%= filters.businessIds == b.id ? 'selected' : '' %>>
+                <%= b.name %>
+              </option>
+            <% }); %>
+          </select>
+        </div>
+
+        <!-- Grouping Dimension -->
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold text-muted">Grouping</label>
+          <select name="grouping" class="form-select form-select-sm">
+            <option value="none" <%= reportData.grouping === 'none' ? 'selected' : '' %>>None (Flat List)</option>
+            <option value="byBusiness" <%= reportData.grouping === 'byBusiness' ? 'selected' : '' %>>By Business</option>
+            <option value="byMonth" <%= reportData.grouping === 'byMonth' ? 'selected' : '' %>>By Month</option>
+            <option value="byStatus" <%= reportData.grouping === 'byStatus' ? 'selected' : '' %>>By Status</option>
+            <option value="byCustomer" <%= reportData.grouping === 'byCustomer' ? 'selected' : '' %>>By Party / Name</option>
+          </select>
+        </div>
+
+        <!-- Date From -->
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold text-muted">From Date</label>
+          <input type="date" name="dateFrom" class="form-control form-control-sm" value="<%= filters.dateFrom || '' %>">
+        </div>
+
+        <!-- Date To -->
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold text-muted">To Date</label>
+          <input type="date" name="dateTo" class="form-control form-control-sm" value="<%= filters.dateTo || '' %>">
+        </div>
+
+        <!-- Search Query -->
+        <div class="col-md-4">
+          <label class="form-label small fw-semibold text-muted">Search Keywords</label>
+          <input type="text" name="search" class="form-control form-control-sm" placeholder="Ref #, client, party..." value="<%= filters.search || '' %>">
+        </div>
+
+        <!-- Status Filter -->
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold text-muted">Status</label>
+          <select name="status" class="form-select form-select-sm">
+            <option value="">All Statuses</option>
+            <option value="ACTIVE" <%= filters.status === 'ACTIVE' ? 'selected' : '' %>>Active / Issued</option>
+            <option value="PAID" <%= filters.status === 'PAID' ? 'selected' : '' %>>Paid</option>
+            <option value="PARTIALLY_PAID" <%= filters.status === 'PARTIALLY_PAID' ? 'selected' : '' %>>Partially Paid</option>
+            <option value="OVERDUE" <%= filters.status === 'OVERDUE' ? 'selected' : '' %>>Overdue</option>
+            <option value="POSTED" <%= filters.status === 'POSTED' ? 'selected' : '' %>>Posted</option>
+            <option value="VOID" <%= filters.status === 'VOID' ? 'selected' : '' %>>Void / Canceled</option>
+          </select>
+        </div>
+
+        <!-- Sort By -->
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold text-muted">Sort By</label>
+          <select name="sortBy" class="form-select form-select-sm">
+            <option value="date" <%= filters.sortBy === 'date' ? 'selected' : '' %>>Date</option>
+            <option value="grandTotal" <%= filters.sortBy === 'grandTotal' ? 'selected' : '' %>>Grand Total</option>
+            <option value="referenceNumber" <%= filters.sortBy === 'referenceNumber' ? 'selected' : '' %>>Ref Number</option>
+          </select>
+        </div>
+
+        <!-- Sort Order -->
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold text-muted">Order</label>
+          <select name="sortOrder" class="form-select form-select-sm">
+            <option value="desc" <%= filters.sortOrder === 'desc' ? 'selected' : '' %>>Descending</option>
+            <option value="asc" <%= filters.sortOrder === 'asc' ? 'selected' : '' %>>Ascending</option>
+          </select>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="col-md-2 d-flex align-items-end gap-2">
+          <button type="submit" class="btn btn-sm btn-primary flex-grow-1 rounded-pill">
+            <i class="bi bi-funnel-fill me-1"></i> Apply
+          </button>
+          <a href="/reports/workbench?dataset=<%= selectedDataset %>" class="btn btn-sm btn-outline-secondary rounded-pill px-3" title="Reset Filters">
+            <i class="bi bi-arrow-counterclockwise"></i>
+          </a>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- KPI Metrics Cards (Glass KPI Cards) -->
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="kpi-card">
+        <div class="kpi-accent-bar accent-blue"></div>
+        <div class="kpi-label">Total Records</div>
+        <div class="kpi-value text-primary mt-2"><%= reportData.summary.totalRecords.toLocaleString() %></div>
+        <div class="kpi-subtext">Filtered record volume</div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="kpi-card">
+        <div class="kpi-accent-bar accent-cyan"></div>
+        <div class="kpi-label">Subtotal (Excl. Tax)</div>
+        <div class="kpi-value mt-2">₹<%= reportData.summary.subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></div>
+        <div class="kpi-subtext">Net base transactions</div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="kpi-card">
+        <div class="kpi-accent-bar accent-purple"></div>
+        <div class="kpi-label">Total GST / Tax</div>
+        <div class="kpi-value text-secondary mt-2">₹<%= reportData.summary.taxAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></div>
+        <div class="kpi-subtext">Tax collected or billed</div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="kpi-card">
+        <div class="kpi-accent-bar accent-green"></div>
+        <div class="kpi-label">Consolidated Total</div>
+        <div class="kpi-value text-success mt-2">₹<%= reportData.summary.grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></div>
+        <div class="kpi-subtext">Grand total aggregate</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Workbench Visual Analysis Chart -->
+  <div class="row g-3 mb-4">
+    <div class="col-12">
+      <div class="chart-card">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div>
+            <div class="chart-title">Visual Aggregate Analysis (<%= reportData.grouping !== 'none' ? 'Grouped by ' + reportData.grouping : 'Taxable vs Tax Allocation' %>)</div>
+            <div class="chart-subtitle">Real-time dynamic visualization of filtered workbench dataset</div>
+          </div>
+          <i class="bi bi-graph-up text-muted"></i>
+        </div>
+        <div id="chart-workbench-analysis" style="min-height: 280px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results Table or Grouped Subtotals (Glass Panel) -->
+  <% if (reportData.grouped && reportData.grouped.length > 0) { %>
+    <!-- Grouped Table View -->
+    <div class="card-glass overflow-hidden mb-4">
+      <div class="py-3 px-4 border-bottom bg-white">
+        <h5 class="fw-bold mb-0 text-dark">Grouped Analysis Results (<%= reportData.grouping %>)</h5>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-4">Group Dimension</th>
+              <th class="text-center">Record Count</th>
+              <th class="text-end">Subtotal</th>
+              <th class="text-end">Tax Amount</th>
+              <th class="text-end pe-4">Grand Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% reportData.grouped.forEach(g => { %>
+              <tr>
+                <td class="ps-4 fw-bold text-dark"><%= g.groupKey %></td>
+                <td class="text-center"><span class="badge bg-light text-dark border rounded-pill px-3"><%= g.count %></span></td>
+                <td class="text-end font-monospace">₹<%= g.subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 }) %></td>
+                <td class="text-end font-monospace text-secondary">₹<%= g.taxAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) %></td>
+                <td class="text-end pe-4 fw-bold font-monospace text-primary">₹<%= g.grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 }) %></td>
+              </tr>
+            <% }); %>
+          </tbody>
+          <tfoot class="table-light fw-bold border-top">
+            <tr>
+              <td class="ps-4">TOTALS</td>
+              <td class="text-center"><%= reportData.summary.totalRecords %></td>
+              <td class="text-end">₹<%= reportData.summary.subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 }) %></td>
+              <td class="text-end">₹<%= reportData.summary.taxAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) %></td>
+              <td class="text-end pe-4 text-primary">₹<%= reportData.summary.grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 }) %></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  <% } else { %>
+    <!-- Detailed Rows Table View -->
+    <div class="card-glass overflow-hidden mb-4">
+      <div class="py-3 px-4 border-bottom bg-white d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0 text-dark">Detailed Records (<%= reportData.total %> found)</h5>
+        <span class="text-muted small">Showing page <%= reportData.page %> of <%= reportData.totalPages %></span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-4">Business Entity</th>
+              <th>Reference Number</th>
+              <th>Date</th>
+              <th>Party / Description</th>
+              <th>Type</th>
+              <th>Status</th>
+              <th class="text-end">Subtotal</th>
+              <th class="text-end">Tax</th>
+              <th class="text-end pe-4">Grand Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (reportData.records.length === 0) { %>
+              <tr>
+                <td colspan="9" class="text-center py-5 text-muted">
+                  <i class="bi bi-inbox fs-2 d-block mb-2 text-muted"></i>
+                  <span>No matching records found for the applied filter criteria.</span>
+                </td>
+              </tr>
+            <% } else { %>
+              <% reportData.records.forEach(r => { %>
+                <tr>
+                  <td class="ps-4">
+                    <span class="badge bg-light text-primary border rounded-pill px-2"><%= r.businessName %></span>
+                  </td>
+                  <td class="fw-semibold text-dark font-monospace"><%= r.referenceNumber %></td>
+                  <td class="small text-muted"><%= r.date %></td>
+                  <td class="fw-medium"><%= r.partyName %></td>
+                  <td><span class="badge bg-light text-secondary border font-monospace"><%= r.documentType %></span></td>
+                  <td>
+                    <% if (r.status === 'PAID') { %>
+                      <span class="badge bg-success-subtle text-success border border-success-subtle">Paid</span>
+                    <% } else if (r.status === 'VOID') { %>
+                      <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Void</span>
+                    <% } else { %>
+                      <span class="badge bg-primary-subtle text-primary border border-primary-subtle"><%= r.status %></span>
+                    <% } %>
+                  </td>
+                  <td class="text-end font-monospace">₹<%= r.subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 }) %></td>
+                  <td class="text-end font-monospace text-secondary">₹<%= r.taxAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) %></td>
+                  <td class="text-end pe-4 fw-bold font-monospace text-dark">₹<%= r.grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 }) %></td>
+                </tr>
+              <% }); %>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <% if (reportData.totalPages > 1) { %>
+        <div class="py-3 px-4 bg-white border-top d-flex justify-content-between align-items-center">
+          <span class="text-muted small">Total: <%= reportData.total %> records</span>
+          <nav>
+            <ul class="pagination pagination-sm mb-0">
+              <% for (let p = 1; p <= reportData.totalPages; p++) { %>
+                <li class="page-item <%= p === reportData.page ? 'active' : '' %>">
+                  <a class="page-link" href="/reports/workbench?<%= new URLSearchParams({ ...filters, page: p }).toString() %>"><%= p %></a>
+                </li>
+              <% } %>
+            </ul>
+          </nav>
+        </div>
+      <% } %>
+    </div>
+  <% } %>
+</div>
+
+<%- include('../layouts/footer', {
+  extraJs: `
+    <script>
+      (function() {
+        if (!window.ApexCharts) return;
+
+        const isGrouped = ${Boolean(reportData.grouped && reportData.grouped.length > 0)};
+        const chartEl = document.getElementById('chart-workbench-analysis');
+        if (!chartEl) return;
+
+        if (isGrouped) {
+          const groupedData = ${JSON.stringify(reportData.grouped || [])};
+          const categories = groupedData.map(g => g.groupKey || 'Unknown');
+          const subtotals = groupedData.map(g => g.subtotal || 0);
+          const grandTotals = groupedData.map(g => g.grandTotal || 0);
+
+          const groupedOptions = {
+            series: [
+              { name: 'Subtotal (Base)', data: subtotals },
+              { name: 'Grand Total', data: grandTotals }
+            ],
+            chart: {
+              type: 'bar',
+              height: 280,
+              toolbar: { show: false },
+              fontFamily: 'inherit'
+            },
+            colors: ['#06B6D4', '#635BFF'],
+            plotOptions: {
+              bar: {
+                horizontal: false,
+                columnWidth: '45%',
+                borderRadius: 4
+              }
+            },
+            dataLabels: { enabled: false },
+            xaxis: {
+              categories: categories,
+              labels: { style: { fontSize: '11px', colors: '#64748B' } }
+            },
+            yaxis: {
+              labels: {
+                formatter: function(val) {
+                  return '₹' + (val >= 1000 ? (val / 1000).toFixed(0) + 'k' : val.toFixed(0));
+                },
+                style: { fontSize: '11px', colors: '#64748B' }
+              }
+            },
+            grid: {
+              borderColor: 'rgba(226, 232, 240, 0.7)',
+              strokeDashArray: 4
+            },
+            tooltip: {
+              y: {
+                formatter: function(val) {
+                  return '₹' + Number(val).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+                }
+              }
+            }
+          };
+
+          const chart = new ApexCharts(chartEl, groupedOptions);
+          chart.render();
+        } else {
+          // Flat Records: Subtotal vs Tax composition
+          const subtotal = ${reportData.summary.subtotal || 0};
+          const tax = ${reportData.summary.taxAmount || 0};
+          const hasData = subtotal > 0 || tax > 0;
+
+          const flatOptions = {
+            series: hasData ? [subtotal, tax] : [],
+            labels: ['Taxable Subtotal', 'GST / Tax Amount'],
+            chart: {
+              type: 'donut',
+              height: 280,
+              fontFamily: 'inherit'
+            },
+            colors: ['#635BFF', '#06B6D4'],
+            plotOptions: {
+              pie: {
+                donut: {
+                  size: '72%',
+                  labels: {
+                    show: true,
+                    total: {
+                      show: true,
+                      label: 'Grand Total',
+                      fontSize: '11px',
+                      formatter: function(w) {
+                        const sum = w.globals.seriesTotals.reduce((a, b) => a + b, 0);
+                        return '₹' + (sum >= 1000 ? (sum / 1000).toFixed(1) + 'k' : sum.toFixed(0));
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            dataLabels: { enabled: false },
+            legend: { position: 'bottom', fontSize: '11px', labels: { colors: '#64748B' } },
+            stroke: { width: 2, colors: ['#ffffff'] },
+            tooltip: {
+              y: {
+                formatter: function(val) {
+                  return '₹' + Number(val).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+                }
+              }
+            },
+            noData: { text: 'No records to visualize', align: 'center', verticalAlign: 'middle', style: { color: '#94a3b8' } }
+          };
+
+          const chart = new ApexCharts(chartEl, flatOptions);
+          chart.render();
+        }
+      })();
+    </script>
+  `
+}) %>

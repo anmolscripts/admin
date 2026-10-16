@@ -86,6 +86,7 @@ async function search(query, user, hasPermissionFn) {
                 where: {
                     active: true,
                     OR: [
+                        { clientCode: { contains: q } },
                         { name: { contains: q } },
                         { email: { contains: q } },
                         { phone: { contains: q } },
@@ -167,6 +168,7 @@ async function search(query, user, hasPermissionFn) {
                 where: {
                     active: true,
                     OR: [
+                        { itemCode: { contains: q } },
                         { name: { contains: q } },
                         { hsnSac: { contains: q } }
                     ]
@@ -206,6 +208,7 @@ async function search(query, user, hasPermissionFn) {
                 where: {
                     active: true,
                     OR: [
+                        { unitCode: { contains: q } },
                         { name: { contains: q } },
                         { symbol: { contains: q } }
                     ]
@@ -352,6 +355,7 @@ async function search(query, user, hasPermissionFn) {
                 where: {
                     active: true,
                     OR: [
+                        { supplierCode: { contains: q } },
                         { name: { contains: q } },
                         { email: { contains: q } },
                         { phone: { contains: q } },
@@ -432,6 +436,7 @@ async function search(query, user, hasPermissionFn) {
                 where: {
                     OR: [
                         { billNumber: { contains: q } },
+                        { internalNumber: { contains: q } },
                         { supplierName: { contains: q } },
                         { supplierGSTIN: { contains: q } }
                     ]
@@ -470,6 +475,7 @@ async function search(query, user, hasPermissionFn) {
             const expenses = await prisma.expense.findMany({
                 where: {
                     OR: [
+                        { expenseNumber: { contains: q } },
                         { category: { contains: q } },
                         { description: { contains: q } }
                     ]

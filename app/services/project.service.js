@@ -4,6 +4,8 @@ const prisma = require('../config/prisma');
 const activityService = require('./activity.service');
 const { ValidationError, NotFoundError, ConflictError } = require('./errorTypes');
 
+const numberingService = require('./numbering.service');
+
 const VALID_PROJECT_STATUSES = ['ACTIVE', 'ON_HOLD', 'COMPLETED', 'ARCHIVED'];
 const VALID_BILLING_TYPES = ['TIME_AND_MATERIALS', 'FIXED_PRICE', 'NON_BILLABLE'];
 const VALID_TASK_STATUSES = ['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE', 'CANCELLED'];
@@ -14,9 +16,6 @@ const VALID_TASK_STATUSES = ['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE', 'CANCELLED
  * -------------------------------------------------------------
  */
 async function createProject(data = {}, userId) {
-    const code = (data.code || '').trim().toUpperCase();
-    if (!code) throw new ValidationError('Project code is required.');
-
     const name = (data.name || '').trim();
     if (!name) throw new ValidationError('Project name is required.');
 
@@ -27,7 +26,17 @@ async function createProject(data = {}, userId) {
     const endDate = data.endDate ? new Date(data.endDate) : null;
     if (endDate && isNaN(endDate.getTime())) throw new ValidationError('Invalid end date.');
 
-    const existing = await prisma.project.findUnique({ where: { code } });
+    const businessId = data.businessId ? parseInt(data.businessId, 10) : 1;
+    let code = (data.code || '').trim().toUpperCase();
+    if (!code) {
+        code = await numberingService.allocateNumber({
+            businessId,
+            entityType: 'PROJECT',
+            date: startDate
+        });
+    }
+
+    const existing = await prisma.project.findFirst({ where: { businessId, code } });
     if (existing) throw new ConflictError(`Project with code "${code}" already exists.`);
 
     let clientId = null;
@@ -45,6 +54,7 @@ async function createProject(data = {}, userId) {
 
     const project = await prisma.project.create({
         data: {
+            businessId,
             code,
             name,
             description: data.description ? String(data.description).trim() : null,
@@ -92,8 +102,9 @@ async function getProjectById(id) {
     return project;
 }
 
-async function listProjects({ clientId, status, search, page = 1, limit = 20 } = {}) {
+async function listProjects({ businessId, clientId, status, search, page = 1, limit = 20 } = {}) {
     const where = {};
+    if (businessId) where.businessId = parseInt(businessId, 10);
     if (clientId) where.clientId = parseInt(clientId, 10);
     if (status) where.status = status;
     if (search) {

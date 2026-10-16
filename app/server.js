@@ -1,6 +1,7 @@
 require('dotenv').config();
 
 const { validateEnv } = require('./config/env');
+const { assertSchemaReadiness } = require('./config/schemaReadiness');
 const app = require('./app');
 const prisma = require('./config/prisma');
 
@@ -10,8 +11,18 @@ validateEnv();
 const PORT = Number(process.env.PORT) || 3000;
 const HOST = process.env.HOST || '127.0.0.1';
 
-const server = app.listen(PORT, HOST, () => {
-    console.log(`Server running at http://${HOST}:${PORT}`);
+let server = null;
+
+async function start() {
+    await assertSchemaReadiness();
+    server = app.listen(PORT, HOST, () => {
+        console.log(`Server running at http://${HOST}:${PORT}`);
+    });
+}
+
+start().catch(err => {
+    console.error(`[STARTUP FAILURE] ${err.message}`);
+    process.exit(1);
 });
 
 let isShuttingDown = false;
@@ -28,16 +39,12 @@ async function gracefulShutdown(signal) {
     }, 10000);
     forceExitTimer.unref();
 
-    // 1. Stop accepting new HTTP requests
-    server.close(async (err) => {
-        if (err) {
-            console.error('[SHUTDOWN] Error closing HTTP server:', err.message);
-        } else {
-            console.log('[SHUTDOWN] HTTP server closed successfully.');
-        }
-
-        // 2. Disconnect Prisma
+    const cleanup = async () => {
         try {
+            const { sessionStore } = require('./config/session');
+            if (sessionStore && typeof sessionStore.close === 'function') {
+                sessionStore.close();
+            }
             if (typeof prisma.disconnectPrisma === 'function') {
                 await prisma.disconnectPrisma();
             } else if (typeof prisma.$disconnect === 'function') {
@@ -47,15 +54,26 @@ async function gracefulShutdown(signal) {
         } catch (dbErr) {
             console.error('[SHUTDOWN] Error disconnecting from database:', dbErr.message);
         }
-
         console.log('[SHUTDOWN] Graceful shutdown complete.');
         clearTimeout(forceExitTimer);
         process.exit(0);
-    });
+    };
 
-    // Close idle keep-alive connections if supported by Node runtime
-    if (typeof server.closeIdleConnections === 'function') {
-        server.closeIdleConnections();
+    if (server) {
+        server.close(async (err) => {
+            if (err) {
+                console.error('[SHUTDOWN] Error closing HTTP server:', err.message);
+            } else {
+                console.log('[SHUTDOWN] HTTP server closed successfully.');
+            }
+            await cleanup();
+        });
+
+        if (typeof server.closeIdleConnections === 'function') {
+            server.closeIdleConnections();
+        }
+    } else {
+        await cleanup();
     }
 }
 

@@ -135,7 +135,7 @@ describe('Documents Listing (Phase 2) Test Suite', () => {
         assert.ok(qtnBody.data.length > 0);
         qtnBody.data.forEach((doc) => {
             assert.strictEqual(doc.documentType, 'QUOTATION');
-            assert.ok(doc.invoiceNumber.startsWith('QTN-'));
+            assert.ok(doc.invoiceNumber.startsWith('QUOT/') || doc.invoiceNumber.startsWith('QTN-'));
         });
 
         // Query invoices only
@@ -148,7 +148,7 @@ describe('Documents Listing (Phase 2) Test Suite', () => {
         assert.ok(invBody.data.length > 0);
         invBody.data.forEach((doc) => {
             assert.strictEqual(doc.documentType, 'INVOICE');
-            assert.ok(doc.invoiceNumber.startsWith('INV-'));
+            assert.ok(doc.invoiceNumber.startsWith('INVO/') || doc.invoiceNumber.startsWith('INV-'));
         });
     });
 

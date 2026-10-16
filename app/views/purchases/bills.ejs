@@ -1,5 +1,26 @@
 <%- include('../layouts/header') %>
 
+<%
+  let totalBilled = 0;
+  let activeCount = 0;
+  const supplierMap = {};
+  const statusMap = { ACTIVE: 0, VOID: 0 };
+  (records || []).forEach(b => {
+    const amt = parseFloat(b.totalAmount) || 0;
+    if (b.status === 'ACTIVE') {
+      totalBilled += amt;
+      activeCount++;
+    }
+    const sup = b.supplierName || 'Unknown';
+    supplierMap[sup] = (supplierMap[sup] || 0) + amt;
+    statusMap[b.status] = (statusMap[b.status] || 0) + 1;
+  });
+  const supplierLabels = Object.keys(supplierMap).slice(0, 7);
+  const supplierValues = supplierLabels.map(s => supplierMap[s]);
+  const statusLabels = Object.keys(statusMap);
+  const statusValues = Object.values(statusMap);
+%>
+
 <div class="content-wrapper p-4">
   <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
     <div>
@@ -7,83 +28,154 @@
       <p class="text-muted small mb-0"><%= pageSubtitle %></p>
     </div>
     <div class="d-flex gap-2">
-      <a href="/purchases/bills/new" class="btn btn-primary d-inline-flex align-items-center gap-2">
+      <a href="/purchases/bills/new" class="btn btn-primary d-inline-flex align-items-center gap-2 rounded-pill px-3 shadow-sm">
         <i class="bi bi-plus-circle"></i>
         <span>Record Supplier Bill</span>
       </a>
-      <a href="/purchases/orders" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2">
+      <a href="/purchases/orders" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2 rounded-pill px-3">
         <i class="bi bi-cart"></i>
         <span>Purchase Orders</span>
       </a>
     </div>
   </div>
 
-  <!-- Filters Card -->
-  <div class="card border-0 shadow-sm mb-4">
-    <div class="card-body p-3">
-      <form method="GET" action="/purchases/bills" class="row g-2 align-items-center">
-        <div class="col-md-5">
-          <input type="text" name="search" class="form-control form-control-sm" placeholder="Search Bill # or supplier..." value="<%= search %>">
+  <!-- Filters Toolbar (Glass Panel) -->
+  <div class="card-glass p-3 mb-4">
+    <form method="GET" action="/purchases/bills" class="row g-2 align-items-center">
+      <div class="col-md-5">
+        <input type="text" name="search" class="form-control form-control-sm" placeholder="Search Bill # or supplier..." value="<%= search %>">
+      </div>
+      <div class="col-md-3">
+        <select name="status" class="form-select form-select-sm">
+          <option value="">All Statuses</option>
+          <option value="ACTIVE" <%= status === 'ACTIVE' ? 'selected' : '' %>>Active</option>
+          <option value="VOID" <%= status === 'VOID' ? 'selected' : '' %>>Void</option>
+        </select>
+      </div>
+      <div class="col-md-4 d-flex gap-2">
+        <button type="submit" class="btn btn-sm btn-primary flex-grow-1 rounded-pill">Filter</button>
+        <a href="/purchases/bills" class="btn btn-sm btn-outline-secondary rounded-pill px-3">Reset</a>
+      </div>
+    </form>
+  </div>
+
+  <!-- KPI Cards Row -->
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-xl-4">
+      <div class="kpi-card">
+        <div class="kpi-accent-bar accent-red"></div>
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="kpi-label">Active Payable Volume</span>
+          <div class="kpi-icon-circle bg-danger-subtle text-danger"><i class="bi bi-receipt"></i></div>
         </div>
-        <div class="col-md-3">
-          <select name="status" class="form-select form-select-sm">
-            <option value="">All Statuses</option>
-            <option value="ACTIVE" <%= status === 'ACTIVE' ? 'selected' : '' %>>Active</option>
-            <option value="VOID" <%= status === 'VOID' ? 'selected' : '' %>>Void</option>
-          </select>
+        <div class="kpi-value text-danger">₹<%= totalBilled.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></div>
+        <div class="kpi-subtext"><%= activeCount %> active payable bill<%= activeCount === 1 ? '' : 's' %></div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-4">
+      <div class="kpi-card">
+        <div class="kpi-accent-bar accent-blue"></div>
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="kpi-label">Suppliers Engaged</span>
+          <div class="kpi-icon-circle bg-primary-subtle text-primary"><i class="bi bi-building"></i></div>
         </div>
-        <div class="col-md-2">
-          <button type="submit" class="btn btn-sm btn-dark w-100">Filter</button>
+        <div class="kpi-value text-primary"><%= Object.keys(supplierMap).length %></div>
+        <div class="kpi-subtext">Active trade vendor accounts</div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-4">
+      <div class="kpi-card">
+        <div class="kpi-accent-bar accent-green"></div>
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="kpi-label">Total Bills Tracked</span>
+          <div class="kpi-icon-circle bg-success-subtle text-success"><i class="bi bi-card-checklist"></i></div>
         </div>
-      </form>
+        <div class="kpi-value text-success"><%= records.length %></div>
+        <div class="kpi-subtext">Cumulative recorded bills</div>
+      </div>
     </div>
   </div>
 
-  <!-- Bills Table -->
-  <div class="card border-0 shadow-sm">
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead class="table-light">
-            <tr>
-              <th class="ps-3">Bill Number</th>
-              <th>Supplier</th>
-              <th>Bill Date</th>
-              <th>Due Date</th>
-              <th>Total Amount</th>
-              <th>Status</th>
-              <th class="text-end pe-3">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% if (records && records.length > 0) { %>
-              <% records.forEach(bill => { %>
-                <tr>
-                  <td class="ps-3 fw-bold"><%= bill.billNumber %></td>
-                  <td><%= bill.supplierName %></td>
-                  <td><%= new Date(bill.billDate).toLocaleDateString() %></td>
-                  <td><%= bill.dueDate ? new Date(bill.dueDate).toLocaleDateString() : '—' %></td>
-                  <td class="fw-bold">$<%= parseFloat(bill.totalAmount).toFixed(2) %></td>
-                  <td>
-                    <span class="badge bg-<%= bill.status === 'ACTIVE' ? 'success' : 'danger' %>">
-                      <%= bill.status %>
-                    </span>
-                  </td>
-                  <td class="text-end pe-3">
-                    <% if (bill.status === 'ACTIVE') { %>
-                      <button class="btn btn-sm btn-outline-danger" onclick="voidBill(<%= bill.id %>)">Void</button>
-                    <% } %>
-                  </td>
-                </tr>
-              <% }); %>
-            <% } else { %>
-              <tr>
-                <td colspan="7" class="text-center py-4 text-muted">No supplier bills recorded yet.</td>
-              </tr>
-            <% } %>
-          </tbody>
-        </table>
+  <!-- Charts Row -->
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-lg-5">
+      <div class="chart-card">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div>
+            <div class="chart-title">Bill Lifecycle Status</div>
+            <div class="chart-subtitle">Active vs voided bills</div>
+          </div>
+          <i class="bi bi-pie-chart text-muted"></i>
+        </div>
+        <div id="chart-bills-status" style="min-height: 270px;"></div>
       </div>
+    </div>
+    <div class="col-12 col-lg-7">
+      <div class="chart-card">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div>
+            <div class="chart-title">Supplier Exposure Amounts</div>
+            <div class="chart-subtitle">Largest supplier payable allocations</div>
+          </div>
+          <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace">INR (₹)</span>
+        </div>
+        <div id="chart-bills-suppliers" style="min-height: 270px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bills Table (Glass Panel) -->
+  <div class="card-glass overflow-hidden mb-4">
+    <div class="py-3 px-4 border-bottom bg-white d-flex align-items-center justify-content-between">
+      <h6 class="fw-bold mb-0 text-dark">Supplier Bills Registry</h6>
+      <span class="badge bg-light text-dark border">Showing <%= records.length %> record<%= records.length === 1 ? '' : 's' %></span>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-4">Bill #</th>
+            <th>Supplier</th>
+            <th>Bill Date</th>
+            <th>Due Date</th>
+            <th class="text-end">Total Amount</th>
+            <th class="text-center">Status</th>
+            <th class="text-end pe-4">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (records && records.length > 0) { %>
+            <% records.forEach(bill => { %>
+              <tr>
+                <td class="ps-4 fw-bold font-monospace text-primary"><%= bill.billNumber %></td>
+                <td class="fw-medium text-dark"><%= bill.supplierName %></td>
+                <td class="small text-muted"><%= new Date(bill.billDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) %></td>
+                <td class="small text-muted"><%= bill.dueDate ? new Date(bill.dueDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—' %></td>
+                <td class="text-end fw-bold font-monospace text-dark">₹<%= parseFloat(bill.totalAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 }) %></td>
+                <td class="text-center">
+                  <span class="badge bg-<%= bill.status === 'ACTIVE' ? 'success' : 'danger' %>-subtle text-<%= bill.status === 'ACTIVE' ? 'success' : 'danger' %> border border-<%= bill.status === 'ACTIVE' ? 'success' : 'danger' %>-subtle rounded-pill">
+                    <%= bill.status %>
+                  </span>
+                </td>
+                <td class="text-end pe-4">
+                  <% if (bill.status === 'ACTIVE') { %>
+                    <button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="voidBill(<%= bill.id %>)">Void</button>
+                  <% } else { %>
+                    <span class="text-muted small">Locked</span>
+                  <% } %>
+                </td>
+              </tr>
+            <% }); %>
+          <% } else { %>
+            <tr>
+              <td colspan="7" class="text-center py-5 text-muted">
+                <i class="bi bi-receipt fs-2 d-block mb-2"></i>
+                No supplier bills recorded matching the current filter.
+              </td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
     </div>
   </div>
 </div>
@@ -111,4 +203,105 @@ async function voidBill(id) {
 }
 </script>
 
-<%- include('../layouts/footer') %>
+<%- include('../layouts/footer', {
+  extraJs: `
+    <script>
+      (function() {
+        if (!window.ApexCharts) return;
+
+        // 1. Status Donut Chart
+        const statusOptions = {
+          series: ${JSON.stringify(statusValues)},
+          labels: ${JSON.stringify(statusLabels)},
+          chart: {
+            type: 'donut',
+            height: 270,
+            fontFamily: 'inherit'
+          },
+          colors: ['#10B981', '#EF4444'],
+          plotOptions: {
+            pie: {
+              donut: {
+                size: '72%',
+                labels: {
+                  show: true,
+                  total: {
+                    show: true,
+                    label: 'Total Bills',
+                    fontSize: '11px',
+                    formatter: function(w) {
+                      return w.globals.seriesTotals.reduce((a, b) => a + b, 0);
+                    }
+                  }
+                }
+              }
+            }
+          },
+          dataLabels: { enabled: false },
+          legend: { position: 'bottom', fontSize: '11px', labels: { colors: '#64748B' } },
+          stroke: { width: 2, colors: ['#ffffff'] },
+          noData: { text: 'No bills recorded', align: 'center', verticalAlign: 'middle', style: { color: '#94a3b8' } }
+        };
+
+        const statusEl = document.getElementById('chart-bills-status');
+        if (statusEl) {
+          const chart = new ApexCharts(statusEl, statusOptions);
+          chart.render();
+        }
+
+        // 2. Suppliers Bar Chart
+        const supOptions = {
+          series: [{
+            name: 'Payable Amount (₹)',
+            data: ${JSON.stringify(supplierValues)}
+          }],
+          chart: {
+            type: 'bar',
+            height: 270,
+            toolbar: { show: false },
+            fontFamily: 'inherit'
+          },
+          colors: ['#635BFF'],
+          plotOptions: {
+            bar: {
+              horizontal: true,
+              borderRadius: 4,
+              barHeight: '50%'
+            }
+          },
+          dataLabels: { enabled: false },
+          xaxis: {
+            categories: ${JSON.stringify(supplierLabels)},
+            labels: {
+              formatter: function(val) {
+                return '₹' + (val >= 1000 ? (val / 1000).toFixed(0) + 'k' : val.toFixed(0));
+              },
+              style: { fontSize: '11px', colors: '#64748B' }
+            }
+          },
+          yaxis: {
+            labels: { style: { fontSize: '11px', colors: '#64748B' } }
+          },
+          grid: {
+            borderColor: 'rgba(226, 232, 240, 0.7)',
+            strokeDashArray: 4
+          },
+          tooltip: {
+            y: {
+              formatter: function(val) {
+                return '₹' + Number(val).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+              }
+            }
+          },
+          noData: { text: 'No supplier payable activity', align: 'center', verticalAlign: 'middle', style: { color: '#94a3b8' } }
+        };
+
+        const supEl = document.getElementById('chart-bills-suppliers');
+        if (supEl) {
+          const chart = new ApexCharts(supEl, supOptions);
+          chart.render();
+        }
+      })();
+    </script>
+  `
+}) %>

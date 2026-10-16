@@ -20,8 +20,42 @@ const profileController = require('../controllers/profile.controller');
 const { uploadAvatar } = require('../middleware/upload.middleware');
 const purchaseController = require('../controllers/purchase.controller');
 const erpController = require('../controllers/erp.controller');
+const businessController = require('../controllers/business.controller');
+const reportingWorkbenchController = require('../controllers/reportingWorkbench.controller');
 
 const router = express.Router();
+
+// -------------------------------------------------------------
+// MULTI-BUSINESS WORKSPACE & CONTEXT
+// -------------------------------------------------------------
+router.get('/select-business', requireAuth, businessController.renderSelectBusiness);
+router.post('/switch-business', requireAuth, businessController.switchBusiness);
+router.post('/api/switch-business', requireAuth, businessController.switchBusiness);
+
+// Platform Administration
+router.get('/admin/businesses', requireAuth, businessController.renderBusinessList);
+router.get('/admin/numbering', requireAuth, businessController.renderNumberingConfig);
+router.post('/admin/numbering', requireAuth, businessController.updatePrefixConfig);
+router.post('/admin/numbering/prefixes/:id', requireAuth, businessController.updatePrefixConfig);
+router.get('/api/businesses', requireAuth, businessController.listBusinesses);
+router.post('/api/businesses/create', requireAuth, businessController.createBusiness);
+router.post('/api/businesses/:id', requireAuth, businessController.updateBusiness);
+router.post('/api/businesses/:id/archive', requireAuth, businessController.archiveBusiness);
+router.post('/api/businesses/:id/suspend', requireAuth, businessController.suspendBusiness);
+router.post('/api/businesses/:id/delete', requireAuth, businessController.deleteBusiness);
+router.delete('/api/businesses/:id', requireAuth, businessController.deleteBusiness);
+router.get('/api/businesses/:id/members', requireAuth, businessController.listBusinessMembers);
+router.post('/api/businesses/:id/members/role', requireAuth, businessController.setMemberRole);
+router.post('/api/businesses/:id/members/revoke', requireAuth, businessController.revokeMemberAccess);
+router.post('/api/businesses/:id/prefix-config', requireAuth, businessController.updatePrefixConfig);
+
+// -------------------------------------------------------------
+// ENTERPRISE REPORTING WORKBENCH (PHASE F)
+// -------------------------------------------------------------
+router.get('/reports/workbench', requireAuth, requirePermission('REPORTS', 'VIEW'), reportingWorkbenchController.renderWorkbench);
+router.get('/reports/workbench/export', requireAuth, requirePermission('REPORTS', 'VIEW'), reportingWorkbenchController.exportApi);
+router.get('/api/reports/workbench/query', requireAuth, requirePermission('REPORTS', 'VIEW'), reportingWorkbenchController.queryApi);
+router.get('/api/reports/workbench/export', requireAuth, requirePermission('REPORTS', 'VIEW'), reportingWorkbenchController.exportApi);
 
 // Business Analytics Dashboard
 router.get('/dashboard', requireAuth, requirePermission('DASHBOARD', 'VIEW'), dashboardController.renderDashboard);

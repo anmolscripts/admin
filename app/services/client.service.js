@@ -1,5 +1,7 @@
 const prisma = require('../config/prisma');
 const activityService = require('./activity.service');
+const numberingService = require('./numbering.service');
+const businessService = require('./business.service');
 
 class ValidationError extends Error {
     constructor(message) {
@@ -82,18 +84,54 @@ async function createClient(data = {}, userId = null) {
     const billingAddress = data.billingAddress ? data.billingAddress.trim() : null;
     const shippingAddress = data.shippingAddress ? data.shippingAddress.trim() : null;
 
-    const client = await prisma.client.create({
-        data: {
-            name,
-            email,
-            phone,
-            gstin,
-            stateCode,
-            billingAddress,
-            shippingAddress,
-            active: data.active !== undefined ? Boolean(data.active) : true,
-            createdById: userId
+    let rawBizId = data.businessId;
+    if (!rawBizId && userId) {
+        try {
+            const accessible = await businessService.getUserAccessibleBusinesses(userId);
+            if (accessible.length === 1) rawBizId = accessible[0].id;
+        } catch (e) {}
+    }
+    if (!rawBizId && (process.env.NODE_ENV === 'test' || !process.env.NODE_ENV || process.env.NODE_ENV === 'development')) {
+        rawBizId = 1;
+    }
+    if (!rawBizId || isNaN(parseInt(rawBizId, 10)) || parseInt(rawBizId, 10) <= 0) {
+        throw new ValidationError('A valid businessId is required to create a client.');
+    }
+    const businessId = parseInt(rawBizId, 10);
+
+    let clientCode = (data.clientCode || '').trim().toUpperCase();
+
+    const client = await prisma.$transaction(async (tx) => {
+        if (!clientCode) {
+            clientCode = await numberingService.allocateNumber({
+                businessId,
+                entityType: 'CLIENT',
+                tx
+            });
         }
+
+        const existing = await tx.client.findFirst({
+            where: { businessId, clientCode }
+        });
+        if (existing) {
+            throw new ValidationError(`Client code "${clientCode}" already exists for this business.`);
+        }
+
+        return await tx.client.create({
+            data: {
+                businessId,
+                clientCode,
+                name,
+                email,
+                phone,
+                gstin,
+                stateCode,
+                billingAddress,
+                shippingAddress,
+                active: data.active !== undefined ? Boolean(data.active) : true,
+                createdById: userId
+            }
+        });
     });
 
     if (userId) {
@@ -239,6 +277,10 @@ async function listClients(options = {}) {
 
     const where = {};
 
+    if (options.businessId) {
+        where.businessId = parseInt(options.businessId, 10);
+    }
+
     if (options.active !== undefined && options.active !== '') {
         where.active = options.active === 'true' || options.active === true;
     }
@@ -246,6 +288,7 @@ async function listClients(options = {}) {
     if (options.search) {
         const query = options.search.trim();
         where.OR = [
+            { clientCode: { contains: query } },
             { name: { contains: query } },
             { email: { contains: query } },
             { phone: { contains: query } },
@@ -280,8 +323,9 @@ async function listClients(options = {}) {
 /**
  * Fast search for autocomplete/selects
  */
-async function searchClients(query = '') {
+async function searchClients(query = '', businessId = null) {
     const where = { active: true };
+    if (businessId) where.businessId = parseInt(businessId, 10);
     const trimmed = typeof query === 'string' ? query.trim() : '';
 
     if (trimmed) {

@@ -681,7 +681,7 @@ describe('Milestone 7: Core Financial Reports & Accounting Reconciliation', () =
             assert.equal(tbFY27.summary.isBalanced, true, 'Trial Balance for FY 2026-27 must be balanced');
             assert.equal(tbFY27.summary.difference, '0.00');
 
-            // Bank balance should reflect 15,000 (from 31 March) - 2,500 (from 1 April) = at least 12,500
+            // Bank balance should reflect carried forward prior year balance
             const bankRow = tbFY27.rows.find(r => r.code === '1112');
             assert.ok(bankRow);
             assert.ok(parseFloat(bankRow.debitBalance) >= 12500.00, 'Bank balance must carry forward prior year balance');

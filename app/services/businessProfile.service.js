@@ -55,16 +55,34 @@ function invalidateBrandingCache() {
 
 /**
  * Get current business profile or create default if none exists
+ * @param {number|null} [businessId=null]
  */
-async function getProfile() {
+async function getProfile(businessId = null) {
+    const where = {};
+    if (businessId) {
+        where.businessId = Number(businessId);
+    }
     let profile = await prisma.businessProfile.findFirst({
+        where,
         orderBy: { id: 'asc' }
     });
 
     if (!profile) {
+        let b = null;
+        if (businessId) {
+            b = await prisma.business.findUnique({ where: { id: Number(businessId) } });
+        }
         const initialData = process.env.NODE_ENV === 'production' ? PROD_DEFAULT_PROFILE : DEFAULT_PROFILE;
         profile = await prisma.businessProfile.create({
-            data: initialData
+            data: {
+                ...initialData,
+                businessId: businessId ? Number(businessId) : 1,
+                displayName: b ? b.name : initialData.displayName,
+                legalName: b ? (b.legalName || b.name) : initialData.legalName,
+                gstin: b ? b.gstin : initialData.gstin,
+                currency: b ? b.currency : initialData.currency,
+                timeZone: b ? b.timeZone : initialData.timeZone
+            }
         });
         invalidateBrandingCache();
     }
@@ -81,16 +99,12 @@ async function getProfile() {
 
 /**
  * Fast cached branding resolver for global template middleware
+ * @param {number|null} [businessId=null]
  */
-async function getBranding() {
-    const now = Date.now();
-    if (cachedBranding && (now - cachedBrandingTimestamp < CACHE_TTL_MS)) {
-        return cachedBranding;
-    }
-
+async function getBranding(businessId = null) {
     try {
-        const profile = await getProfile();
-        cachedBranding = {
+        const profile = await getProfile(businessId);
+        return {
             workspaceName: profile.workspaceName || profile.displayName || profile.legalName || 'Spark Admin',
             displayName: profile.displayName || profile.legalName || 'Spark Admin',
             legalName: profile.legalName || 'Spark Admin',
@@ -99,8 +113,6 @@ async function getBranding() {
             currency: profile.currency || 'INR',
             timeZone: profile.timeZone || 'Asia/Kolkata'
         };
-        cachedBrandingTimestamp = now;
-        return cachedBranding;
     } catch (_) {
         return {
             workspaceName: 'Spark Admin',

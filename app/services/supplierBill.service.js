@@ -5,6 +5,8 @@ const activityService = require('./activity.service');
 const { ensureFinancialYear } = require('./financialYear.service');
 const journalService = require('./journal.service');
 const businessProfileService = require('./businessProfile.service');
+const businessService = require('./business.service');
+const numberingService = require('./numbering.service');
 const { ValidationError, NotFoundError, ConflictError } = require('./errorTypes');
 
 function sanitizeBillItems(items) {
@@ -50,6 +52,21 @@ async function createSupplierBill(data = {}, userId) {
     const billDate = data.billDate ? new Date(data.billDate) : new Date();
     if (isNaN(billDate.getTime())) throw new ValidationError('Invalid bill date.');
 
+    let rawBizId = data.businessId;
+    if (!rawBizId && userId) {
+        try {
+            const accessible = await businessService.getUserAccessibleBusinesses(userId);
+            if (accessible.length === 1) rawBizId = accessible[0].id;
+        } catch (e) {}
+    }
+    if (!rawBizId && (process.env.NODE_ENV === 'test' || !process.env.NODE_ENV || process.env.NODE_ENV === 'development')) {
+        rawBizId = 1;
+    }
+    if (!rawBizId || isNaN(parseInt(rawBizId, 10)) || parseInt(rawBizId, 10) <= 0) {
+        throw new ValidationError('A valid businessId is required to create a supplier bill.');
+    }
+    const activeBusinessId = parseInt(rawBizId, 10);
+
     let supplierName = (data.supplierName || '').trim();
     let supplierGSTIN = data.supplierGSTIN ? data.supplierGSTIN.trim().toUpperCase() : null;
     let supplierStateCode = data.supplierStateCode ? data.supplierStateCode.trim() : null;
@@ -57,17 +74,19 @@ async function createSupplierBill(data = {}, userId) {
 
     if (supplierId) {
         const supplier = await prisma.supplier.findUnique({ where: { id: supplierId } });
-        if (supplier) {
-            supplierName = supplier.name;
-            supplierGSTIN = supplier.gstin || supplierGSTIN;
-            supplierStateCode = supplier.stateCode || supplierStateCode;
+        if (!supplier) throw new NotFoundError(`Supplier with ID ${supplierId} not found.`);
+        if (supplier.businessId && supplier.businessId !== activeBusinessId) {
+            throw new ValidationError(`Supplier ${supplierId} does not belong to authorized business ${activeBusinessId}. Cross-business access denied.`);
         }
+        supplierName = supplier.name;
+        supplierGSTIN = supplier.gstin || supplierGSTIN;
+        supplierStateCode = supplier.stateCode || supplierStateCode;
     }
 
     if (!supplierName) throw new ValidationError('Supplier name is required.');
 
     // Enforce FY
-    const fy = await ensureFinancialYear(billDate);
+    const fy = await ensureFinancialYear(billDate, activeBusinessId);
     if (fy.status === 'CLOSED') {
         throw new ValidationError(`Cannot post bill into closed Financial Year ${fy.code}.`);
     }
@@ -77,7 +96,7 @@ async function createSupplierBill(data = {}, userId) {
 
     // GST calculation
     const gstRate = parseFloat(data.gstRate || 0);
-    const profile = await businessProfileService.getProfile();
+    const profile = await businessProfileService.getProfile(activeBusinessId);
     const myStateCode = profile.stateCode || '27';
     const isInterState = supplierStateCode && myStateCode && supplierStateCode !== myStateCode;
 
@@ -97,17 +116,29 @@ async function createSupplierBill(data = {}, userId) {
 
     const totalAmount = Math.round((subtotal + cgstAmount + sgstAmount + igstAmount) * 100) / 100;
 
-    // Check duplicate bill number
-    const existingBill = await prisma.supplierBill.findUnique({ where: { billNumber } });
+    // Check duplicate bill number within business
+    const existingBill = await prisma.supplierBill.findFirst({
+        where: { businessId: activeBusinessId, billNumber }
+    });
     if (existingBill) {
         throw new ConflictError(`Supplier bill '${billNumber}' already exists.`);
     }
 
     return prisma.$transaction(async (tx) => {
+        // Allocate internal human-facing record number: SBILL/YYYY/MM/INCREMENT
+        const internalNumber = await numberingService.allocateNumber({
+            businessId: activeBusinessId,
+            entityType: 'SUPPLIER_BILL',
+            date: billDate,
+            tx
+        });
+
         // 1. Create SupplierBill
         const bill = await tx.supplierBill.create({
             data: {
+                businessId: activeBusinessId,
                 billNumber,
+                internalNumber,
                 supplierId,
                 supplierName,
                 supplierGSTIN,
@@ -261,19 +292,23 @@ async function createSupplierBill(data = {}, userId) {
     });
 }
 
-async function getSupplierBillById(id) {
+async function getSupplierBillById(id, businessId = null) {
     const numId = parseInt(id, 10);
     if (isNaN(numId) || numId <= 0) throw new ValidationError('Invalid Supplier Bill ID.');
-    const bill = await prisma.supplierBill.findUnique({
-        where: { id: numId },
+    const where = { id: numId };
+    if (businessId) where.businessId = Number(businessId);
+
+    const bill = await prisma.supplierBill.findFirst({
+        where,
         include: { items: true, supplier: true, financialYear: true }
     });
     if (!bill) throw new NotFoundError(`Supplier Bill with ID ${numId} not found.`);
     return bill;
 }
 
-async function listSupplierBills({ supplierId, status, dateFrom, dateTo, search, page = 1, limit = 20 } = {}) {
+async function listSupplierBills({ businessId, supplierId, status, dateFrom, dateTo, search, page = 1, limit = 20 } = {}) {
     const where = {};
+    if (businessId) where.businessId = Number(businessId);
     if (supplierId) where.supplierId = parseInt(supplierId, 10);
     if (status) where.status = status;
     if (dateFrom || dateTo) {

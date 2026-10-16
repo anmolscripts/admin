@@ -30,37 +30,23 @@ class ConflictError extends Error {
     }
 }
 
+const numberingService = require('./numbering.service');
+const businessProfileService = require('./businessProfile.service');
+
 /**
- * Generates an atomic sequential Credit/Debit Note number:
- * CN-<FY_CODE>-NNNN or DN-<FY_CODE>-NNNN
- * e.g. CN-2025-26-0001 or DN-2026-27-0001
- * Scoped strictly to (noteType, financialYearId).
+ * Generates an atomic sequential Credit/Debit Note number using central numbering:
+ * CRN/YYYY/MM/INCREMENT or DBN/YYYY/MM/INCREMENT
  */
-async function generateNoteNumber(tx, noteType, financialYear) {
-    if (!financialYear || !financialYear.id || !financialYear.code) {
-        throw new Error('Valid financialYear is required to generate note number.');
-    }
-
-    const prefix = noteType === 'DEBIT' ? 'DN' : 'CN';
-    const seq = await tx.creditDebitNoteSequence.upsert({
-        where: {
-            noteType_financialYearId: {
-                noteType,
-                financialYearId: financialYear.id
-            }
-        },
-        update: {
-            currentNumber: { increment: 1 }
-        },
-        create: {
-            noteType,
-            financialYearId: financialYear.id,
-            currentNumber: 1
-        }
+async function generateNoteNumber(tx, noteType, financialYear, options = {}) {
+    const businessId = options.businessId ? parseInt(options.businessId, 10) : 1;
+    const date = options.date || new Date();
+    const entityType = noteType === 'DEBIT' ? 'DEBIT_NOTE' : 'CREDIT_NOTE';
+    return await numberingService.allocateNumber({
+        businessId,
+        entityType,
+        date,
+        tx
     });
-
-    const paddedNumber = String(seq.currentNumber).padStart(4, '0');
-    return `${prefix}-${financialYear.code}-${paddedNumber}`;
 }
 
 /**
@@ -246,8 +232,20 @@ async function createCreditDebitNote(data, userId, meta = {}, externalTx = null)
             throw new ValidationError('The specified client does not match the referenced invoice client.');
         }
 
+        // Resolve business context
+        let businessId = invoice.businessId || (data && data.businessId);
+        if (!businessId && (process.env.NODE_ENV === 'test' || !process.env.NODE_ENV || process.env.NODE_ENV === 'development')) {
+            businessId = 1;
+        }
+        if (!businessId) {
+            throw new ValidationError('Invoice is missing business context.');
+        }
+        if (invoice.businessId && data.businessId && parseInt(data.businessId, 10) !== invoice.businessId) {
+            throw new ValidationError(`Invoice ${invoice.id} does not belong to authorized business ${data.businessId}. Cross-business access denied.`);
+        }
+
         // 2. Resolve Financial Year for noteDate
-        const financialYear = await ensureFinancialYear(noteDate);
+        const financialYear = await ensureFinancialYear(noteDate, businessId);
         if (!financialYear) {
             throw new ValidationError(`Could not resolve Financial Year for note date ${noteDate.toISOString().slice(0, 10)}.`);
         }
@@ -289,13 +287,14 @@ async function createCreditDebitNote(data, userId, meta = {}, externalTx = null)
         }
 
         // 5. Generate Atomic Note Number
-        const noteNumber = await generateNoteNumber(tx, noteType, financialYear);
+        const noteNumber = await generateNoteNumber(tx, noteType, financialYear, { businessId, date: noteDate });
 
         // 6. Capture Immutable Commercial & Client Snapshots
-        const profile = await tx.businessProfile.findFirst() || {};
+        const profile = await businessProfileService.getProfile(businessId) || await tx.businessProfile.findFirst() || {};
 
         const note = await tx.creditDebitNote.create({
             data: {
+                businessId,
                 noteNumber,
                 noteType,
                 invoiceId: invoice.id,
@@ -596,6 +595,10 @@ async function listCreditDebitNotes(query = {}) {
 
     if (query.status && ['DRAFT', 'ISSUED', 'VOID'].includes(query.status.toUpperCase())) {
         where.status = query.status.toUpperCase();
+    }
+
+    if (query.businessId) {
+        where.businessId = parseInt(query.businessId, 10);
     }
 
     if (query.invoiceId) {

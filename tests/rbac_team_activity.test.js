@@ -21,6 +21,17 @@ describe('Team Management, RBAC & User Activity Test Suite', () => {
 
     // Helper: Login and obtain session cookie + CSRF token
     async function loginUser(email, password) {
+        const u = await prisma.user.findUnique({ where: { email } });
+        if (u) {
+            const defaultBiz = await prisma.business.findFirst();
+            if (defaultBiz) {
+                await prisma.businessMembership.upsert({
+                    where: { userId_businessId: { userId: u.id, businessId: defaultBiz.id } },
+                    update: { status: 'ACTIVE' },
+                    create: { businessId: defaultBiz.id, userId: u.id, role: u.role === 'ADMIN' ? 'ADMIN' : 'MEMBER', status: 'ACTIVE' }
+                });
+            }
+        }
         const getLoginRes = await fetch(`${baseUrl}/login`);
         const html = await getLoginRes.text();
         const rawCookie = getLoginRes.headers.get('set-cookie');

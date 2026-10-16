@@ -1,4 +1,7 @@
+'use strict';
+
 const session = require('express-session');
+const PrismaSessionStore = require('./sessionStore');
 
 const isProduction = process.env.NODE_ENV === 'production';
 const SESSION_COOKIE_NAME = process.env.SESSION_COOKIE_NAME || 'spark.sid';
@@ -19,19 +22,24 @@ const cookieOptions = {
     path: '/'
 };
 
-/**
- * NOTE ON SESSION STORAGE ARCHITECTURE:
- * The default session store used here (MemoryStore) is strictly for local development
- * and single-process use.
- * 
- * IMPORTANT FOR PRODUCTION:
- * Express MemoryStore MUST be replaced before production deployment or horizontal scaling.
- * MemoryStore does not scale across multiple server processes/containers and leaks memory
- * under high load. For production environments, configure a persistent session store
- * such as Redis (`connect-redis`) or MySQL/MariaDB (`express-mysql-session`).
- */
-if (isProduction && !process.env.SESSION_STORE) {
-    console.warn('[SECURITY WARNING] express-session MemoryStore is active in production. It must be replaced with a persistent session store (e.g., Redis or MySQL) before production deployment or horizontal scaling.');
+// Resolve session store
+let sessionStore = null;
+const configuredStoreType = (process.env.SESSION_STORE || '').trim().toLowerCase();
+
+if (isProduction) {
+    if (configuredStoreType === 'memory') {
+        throw new Error('FATAL: In-memory session store (MemoryStore) is strictly prohibited in production. Configure a persistent store such as SESSION_STORE=database.');
+    }
+    // Default to persistent database store in production
+    sessionStore = new PrismaSessionStore({ defaultMaxAgeMs: maxAgeMs });
+} else {
+    // Development / Test
+    if (configuredStoreType === 'database' || configuredStoreType === 'mysql' || configuredStoreType === 'mariadb') {
+        sessionStore = new PrismaSessionStore({ defaultMaxAgeMs: maxAgeMs });
+    } else {
+        // Memory store allowed in dev/test for lightweight local runner
+        sessionStore = new session.MemoryStore();
+    }
 }
 
 const sessionConfig = {
@@ -39,7 +47,8 @@ const sessionConfig = {
     secret: sessionSecret || 'spark-admin-dev-secret-key-change-in-prod-32chars',
     resave: false,
     saveUninitialized: false,
-    cookie: cookieOptions
+    cookie: cookieOptions,
+    store: sessionStore
 };
 
 const sessionMiddleware = session(sessionConfig);
@@ -47,6 +56,7 @@ const sessionMiddleware = session(sessionConfig);
 module.exports = {
     sessionMiddleware,
     sessionConfig,
+    sessionStore,
     SESSION_COOKIE_NAME,
     cookieOptions
 };

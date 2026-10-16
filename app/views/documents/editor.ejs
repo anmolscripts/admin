@@ -96,11 +96,16 @@
     <!-- ===================================================================
          SECTION A: DOCUMENT INFORMATION
          =================================================================== -->
-    <div class="card border-light shadow-sm p-4 mb-4 editor-section-card">
+    <div class="card border-light shadow-sm p-4 mb-4 editor-section-card section-doc-info">
       <div class="editor-section-header">
-        <div class="d-flex align-items-center gap-2">
-          <i class="bi <%= typeIcon %> text-primary fs-5"></i>
-          <h5 class="mb-0 fw-bold">Document Information</h5>
+        <div class="d-flex align-items-center gap-3">
+          <div class="section-icon-badge badge-violet">
+            <i class="bi <%= typeIcon %>"></i>
+          </div>
+          <div>
+            <h5 class="mb-0 fw-bold section-title">Document Information</h5>
+            <div class="small text-muted section-desc">System sequence and validity parameters</div>
+          </div>
         </div>
         <span class="badge <%= typeBadgeClass %> text-uppercase">
           <i class="bi <%= typeIcon %> me-1"></i><%= documentType %>
@@ -186,11 +191,16 @@
     <!-- ===================================================================
          SECTION B: CLIENT / CUSTOMER INFORMATION
          =================================================================== -->
-    <div class="card border-light shadow-sm p-4 mb-4 editor-section-card">
+    <div class="card border-light shadow-sm p-4 mb-4 editor-section-card section-client-info">
       <div class="editor-section-header">
-        <div class="d-flex align-items-center gap-2">
-          <i class="bi bi-person-badge text-info fs-5"></i>
-          <h5 class="mb-0 fw-bold">Client Information</h5>
+        <div class="d-flex align-items-center gap-3">
+          <div class="section-icon-badge badge-cyan">
+            <i class="bi bi-person-badge"></i>
+          </div>
+          <div>
+            <h5 class="mb-0 fw-bold section-title">Client Information</h5>
+            <div class="small text-muted section-desc">Buyer contact details and GST identification</div>
+          </div>
         </div>
         <span class="badge bg-light text-muted border client-snapshot-badge">Document-level client snapshot</span>
       </div>
@@ -201,28 +211,35 @@
 
         <!-- Select Existing Client Dropdown -->
         <div class="col-12">
-          <label class="form-label-custom" for="client-select">Choose Saved Client</label>
-          <div class="input-group">
-            <select class="form-select-custom flex-grow-1" id="client-select" aria-label="Select saved client">
-              <option value="">-- Choose Existing Client (or enter details below) --</option>
-              <% if (locals.clientList && clientList.length > 0) { %>
-                <% clientList.forEach(c => { %>
-                  <option value="<%= c.id %>" <%= (document && Number(document.clientId) === c.id) ? 'selected' : '' %>
-                    data-name="<%= c.name %>"
-                    data-email="<%= c.email || '' %>"
-                    data-phone="<%= c.phone || '' %>"
-                    data-gstin="<%= c.gstin || '' %>"
-                    data-state="<%= c.stateCode || '' %>"
-                    data-billing="<%= c.billingAddress || '' %>"
-                    data-shipping="<%= c.shippingAddress || '' %>">
-                    <%= c.name %> <%= c.gstin ? `(${c.gstin})` : '' %>
-                  </option>
-                <% }); %>
-              <% } %>
-            </select>
-            <button class="btn btn-outline-secondary btn-clear-client <%= (document && document.clientId) ? '' : 'd-none' %>" type="button" id="btn-clear-client" title="Clear selected client">
-              <i class="bi bi-x-lg"></i>
-            </button>
+          <div class="client-quick-select-card p-3 rounded-3 mb-2">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <label class="form-label-custom mb-0 fw-bold" for="client-select">
+                <i class="bi bi-person-check-fill me-1 text-info"></i> Choose Saved Client
+              </label>
+              <span class="small text-muted">Prefills name, contact, GSTIN & addresses</span>
+            </div>
+            <div class="input-group">
+              <select class="form-select-custom flex-grow-1" id="client-select" aria-label="Select saved client">
+                <option value="">-- Choose Existing Client (or enter details below) --</option>
+                <% if (locals.clientList && clientList.length > 0) { %>
+                  <% clientList.forEach(c => { %>
+                    <option value="<%= c.id %>" <%= (document && Number(document.clientId) === c.id) ? 'selected' : '' %>
+                      data-name="<%= c.name %>"
+                      data-email="<%= c.email || '' %>"
+                      data-phone="<%= c.phone || '' %>"
+                      data-gstin="<%= c.gstin || '' %>"
+                      data-state="<%= c.stateCode || '' %>"
+                      data-billing="<%= c.billingAddress || '' %>"
+                      data-shipping="<%= c.shippingAddress || '' %>">
+                      <%= c.name %> <%= c.gstin ? `(${c.gstin})` : '' %>
+                    </option>
+                  <% }); %>
+                <% } %>
+              </select>
+              <button class="btn btn-outline-secondary btn-clear-client <%= (document && document.clientId) ? '' : 'd-none' %>" type="button" id="btn-clear-client" title="Clear selected client">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -316,16 +333,21 @@
     <!-- ===================================================================
          SECTION C: BILLING & SHIPPING ADDRESS
          =================================================================== -->
-    <div class="card border-light shadow-sm p-4 mb-4 editor-section-card">
+    <div class="card border-light shadow-sm p-4 mb-4 editor-section-card section-addresses">
       <div class="editor-section-header">
-        <div class="d-flex align-items-center gap-2">
-          <i class="bi bi-geo-alt text-success fs-5"></i>
-          <h5 class="mb-0 fw-bold">Billing & Shipping Addresses</h5>
+        <div class="d-flex align-items-center gap-3">
+          <div class="section-icon-badge badge-mint">
+            <i class="bi bi-geo-alt"></i>
+          </div>
+          <div>
+            <h5 class="mb-0 fw-bold section-title">Billing & Shipping Addresses</h5>
+            <div class="small text-muted section-desc">Invoicing address and dispatch location</div>
+          </div>
 <%
   const isSameAddress = !document || (!document.shippingAddress && !document.billingAddress) || (document.billingAddress && document.shippingAddress && document.billingAddress === document.shippingAddress);
 %>
         </div>
-        <div class="form-check form-switch m-0 d-flex align-items-center gap-2">
+        <div class="form-check form-switch m-0 d-flex align-items-center gap-2 address-sync-toggle">
           <input class="form-check-input" type="checkbox" id="same-as-billing" <%= isSameAddress ? 'checked' : '' %>>
           <label class="form-check-label small fw-semibold" for="same-as-billing">
             Shipping same as billing
@@ -364,13 +386,18 @@
     <!-- ===================================================================
          SECTION D: DYNAMIC LINE ITEMS TABLE
          =================================================================== -->
-    <div class="card border-light shadow-sm p-4 mb-4 editor-section-card">
+    <div class="card border-light shadow-sm p-4 mb-4 editor-section-card section-items">
       <div class="editor-section-header">
-        <div class="d-flex align-items-center gap-2">
-          <i class="bi bi-list-check text-primary fs-5"></i>
-          <h5 class="mb-0 fw-bold">Line Items</h5>
+        <div class="d-flex align-items-center gap-3">
+          <div class="section-icon-badge badge-blue">
+            <i class="bi bi-list-check"></i>
+          </div>
+          <div>
+            <h5 class="mb-0 fw-bold section-title">Line Items</h5>
+            <div class="small text-muted section-desc">Item master autocomplete, rates, quantities and amounts</div>
+          </div>
         </div>
-        <button type="button" class="btn-custom btn-custom-outline-primary btn-custom-sm" id="btn-add-item-header">
+        <button type="button" class="btn-custom btn-secondary-action btn-custom-sm" id="btn-add-item-header">
           <i class="bi bi-plus-lg me-1"></i> Add Item
         </button>
       </div>
@@ -380,13 +407,13 @@
         <table class="table align-middle line-items-table" id="items-table" aria-label="Document line items">
           <thead>
             <tr>
-              <th scope="col" class="th-num text-center" style="width: 40px;">#</th>
+              <th scope="col" class="th-num text-center" style="width: 44px;">#</th>
               <th scope="col" class="th-desc">Item Description *</th>
-              <th scope="col" class="th-unit" style="width: 110px;">Unit</th>
-              <th scope="col" class="th-rate text-end" style="width: 130px;">Rate (₹) *</th>
+              <th scope="col" class="th-unit" style="width: 120px;">Unit</th>
+              <th scope="col" class="th-rate text-end" style="width: 140px;">Rate (₹) *</th>
               <th scope="col" class="th-qty text-end" style="width: 110px;">Quantity *</th>
-              <th scope="col" class="th-hsn" style="width: 110px;">HSN/SAC</th>
-              <th scope="col" class="th-amount text-end" style="width: 130px;">Amount (₹)</th>
+              <th scope="col" class="th-hsn" style="width: 120px;">HSN/SAC</th>
+              <th scope="col" class="th-amount text-end" style="width: 140px;">Amount (₹)</th>
               <th scope="col" class="th-action text-center" style="width: 50px;" aria-label="Action"></th>
             </tr>
           </thead>
@@ -398,10 +425,10 @@
 
       <!-- Table Bottom Toolbar -->
       <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
-        <button type="button" class="btn-custom btn-custom-outline-primary" id="btn-add-item">
+        <button type="button" class="btn-custom btn-secondary-action" id="btn-add-item">
           <i class="bi bi-plus-circle me-1"></i> Add Line Item
         </button>
-        <span class="small text-muted-green" id="items-count-indicator">
+        <span class="small text-muted" id="items-count-indicator">
           At least 1 item required
         </span>
       </div>
@@ -414,13 +441,18 @@
     <!-- ===================================================================
          SECTION E: GST & LIVE FINANCIAL SUMMARY
          =================================================================== -->
-    <div class="card border-light shadow-sm p-4 mb-4 editor-section-card">
+    <div class="card border-light shadow-sm p-4 mb-4 editor-section-card section-financials">
       <div class="editor-section-header">
-        <div class="d-flex align-items-center gap-2">
-          <i class="bi bi-calculator text-primary fs-5"></i>
-          <h5 class="mb-0 fw-bold">Taxes & Financial Summary</h5>
+        <div class="d-flex align-items-center gap-3">
+          <div class="section-icon-badge badge-emerald">
+            <i class="bi bi-calculator"></i>
+          </div>
+          <div>
+            <h5 class="mb-0 fw-bold section-title">Taxes & Financial Summary</h5>
+            <div class="small text-muted section-desc">GST rate calculation and authoritative grand total</div>
+          </div>
         </div>
-        <span class="small text-muted">Authoritative totals calculated on server</span>
+        <span class="badge bg-light text-muted border px-2 py-1 small">Server-verified totals</span>
       </div>
 
       <div class="row g-4">
@@ -505,11 +537,16 @@
     <!-- ===================================================================
          SECTION F: TERMS & NOTES
          =================================================================== -->
-    <div class="card border-light shadow-sm p-4 mb-4 editor-section-card">
+    <div class="card border-light shadow-sm p-4 mb-4 editor-section-card section-terms">
       <div class="editor-section-header">
-        <div class="d-flex align-items-center gap-2">
-          <i class="bi bi-card-text text-secondary fs-5"></i>
-          <h5 class="mb-0 fw-bold">Terms & Remarks</h5>
+        <div class="d-flex align-items-center gap-3">
+          <div class="section-icon-badge badge-neutral">
+            <i class="bi bi-card-text"></i>
+          </div>
+          <div>
+            <h5 class="mb-0 fw-bold section-title">Terms & Remarks</h5>
+            <div class="small text-muted section-desc">Payment conditions, delivery terms and internal notes</div>
+          </div>
         </div>
       </div>
 
@@ -542,13 +579,13 @@
          SECTION G: ACTIONS FOOTER BAR
          =================================================================== -->
     <div class="editor-actions-card card border-light shadow-sm p-3 mb-5">
-      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <button type="button" class="btn-custom btn-custom-secondary" id="btn-cancel">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <button type="button" class="btn-custom btn-neutral-action" id="btn-cancel">
           <i class="bi bi-x-lg me-1"></i> Cancel
         </button>
 
         <div class="d-flex align-items-center gap-2">
-          <button type="submit" class="btn-custom btn-custom-primary btn-save-action" id="btn-save">
+          <button type="submit" class="btn-custom btn-primary-gradient btn-save-action" id="btn-save">
             <span class="spinner-border spinner-border-sm d-none me-1" id="save-spinner" role="status" aria-hidden="true"></span>
             <i class="bi bi-check2-circle me-1" id="save-icon"></i>
             <span id="save-btn-text">

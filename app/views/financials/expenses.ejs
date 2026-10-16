@@ -1,65 +1,156 @@
-<%- include('../layouts/header') %>
+<%
+  let totalExpenses = 0;
+  const catMap = {};
+  const dateMap = {};
+  (records || []).forEach(exp => {
+    const amt = parseFloat(exp.amount) || 0;
+    totalExpenses += amt;
+    const cat = exp.category || 'General';
+    catMap[cat] = (catMap[cat] || 0) + amt;
+    const d = new Date(exp.expenseDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    dateMap[d] = (dateMap[d] || 0) + amt;
+  });
+  const catLabels = Object.keys(catMap);
+  const catValues = Object.values(catMap);
+  const trendDates = Object.keys(dateMap).slice(0, 10);
+  const trendValues = trendDates.map(d => dateMap[d]);
+  const avgExpense = records && records.length > 0 ? (totalExpenses / records.length) : 0;
 
-<div class="content-wrapper p-4">
-  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
-    <div>
-      <h1 class="h3 fw-bold mb-1"><%= pageTitle %></h1>
-      <p class="text-muted small mb-0"><%= pageSubtitle %></p>
-    </div>
-    <button class="btn btn-primary d-inline-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#newExpenseModal">
+  const headerActionHtml = `
+    <button class="btn btn-primary d-inline-flex align-items-center gap-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#newExpenseModal">
       <i class="bi bi-plus-circle"></i>
       <span>Record Expense</span>
     </button>
+  `;
+%>
+
+<%- include('../layouts/header', {
+  pageTitle: pageTitle || 'Operating Expenses',
+  pageSubtitle: pageSubtitle || 'Track day-to-day administrative and operating expenses.',
+  headerAction: headerActionHtml
+}) %>
+
+<div class="content-wrapper">
+
+  <!-- Filters Toolbar (Glass Panel) -->
+  <div class="card-glass p-3 mb-4">
+    <form method="GET" action="/financials/expenses" class="row g-2 align-items-center">
+      <div class="col-md-5">
+        <input type="text" name="search" class="form-control form-control-sm" placeholder="Search description..." value="<%= search %>">
+      </div>
+      <div class="col-md-4">
+        <input type="text" name="category" class="form-control form-control-sm" placeholder="Category (e.g. Office, Utilities)..." value="<%= category %>">
+      </div>
+      <div class="col-md-3 d-flex gap-2">
+        <button type="submit" class="btn btn-sm btn-primary flex-grow-1 rounded-pill">Filter</button>
+        <a href="/financials/expenses" class="btn btn-sm btn-outline-secondary rounded-pill px-3">Reset</a>
+      </div>
+    </form>
   </div>
 
-  <!-- Filters Card -->
-  <div class="card border-0 shadow-sm mb-4">
-    <div class="card-body p-3">
-      <form method="GET" action="/financials/expenses" class="row g-2 align-items-center">
-        <div class="col-md-6">
-          <input type="text" name="search" class="form-control form-control-sm" placeholder="Search description..." value="<%= search %>">
+  <!-- KPI Cards Row -->
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-xl-4">
+      <div class="kpi-card">
+        <div class="kpi-accent-bar accent-red"></div>
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="kpi-label">Total Outflow</span>
+          <div class="kpi-icon-circle bg-danger-subtle text-danger"><i class="bi bi-wallet2"></i></div>
         </div>
-        <div class="col-md-4">
-          <input type="text" name="category" class="form-control form-control-sm" placeholder="Category (e.g. Office, Utilities)..." value="<%= category %>">
+        <div class="kpi-value text-danger">₹<%= totalExpenses.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></div>
+        <div class="kpi-subtext">Across <%= records.length %> recorded expense<%= records.length === 1 ? '' : 's' %></div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-4">
+      <div class="kpi-card">
+        <div class="kpi-accent-bar accent-purple"></div>
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="kpi-label">Expense Categories</span>
+          <div class="kpi-icon-circle" style="background: rgba(139, 92, 246, 0.12); color: #8B5CF6;"><i class="bi bi-tags"></i></div>
         </div>
-        <div class="col-md-2">
-          <button type="submit" class="btn btn-sm btn-dark w-100">Filter</button>
+        <div class="kpi-value" style="color: #8B5CF6;"><%= catLabels.length %></div>
+        <div class="kpi-subtext">Distinct operational cost centres</div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-4">
+      <div class="kpi-card">
+        <div class="kpi-accent-bar accent-amber"></div>
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="kpi-label">Average Expense</span>
+          <div class="kpi-icon-circle bg-warning-subtle text-warning"><i class="bi bi-calculator"></i></div>
         </div>
-      </form>
+        <div class="kpi-value text-dark">₹<%= avgExpense.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></div>
+        <div class="kpi-subtext">Mean transaction value</div>
+      </div>
     </div>
   </div>
 
-  <!-- Expenses Table -->
-  <div class="card border-0 shadow-sm">
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead class="table-light">
-            <tr>
-              <th class="ps-3">Date</th>
-              <th>Category</th>
-              <th>Description</th>
-              <th class="text-end pe-3">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% if (records && records.length > 0) { %>
-              <% records.forEach(exp => { %>
-                <tr>
-                  <td class="ps-3"><%= new Date(exp.expenseDate).toLocaleDateString() %></td>
-                  <td><span class="badge bg-secondary"><%= exp.category || 'General' %></span></td>
-                  <td><%= exp.description %></td>
-                  <td class="text-end pe-3 fw-bold text-danger">-$<%= parseFloat(exp.amount).toFixed(2) %></td>
-                </tr>
-              <% }); %>
-            <% } else { %>
-              <tr>
-                <td colspan="4" class="text-center py-4 text-muted">No expenses recorded yet.</td>
-              </tr>
-            <% } %>
-          </tbody>
-        </table>
+  <!-- Expense Visual Analytics Row -->
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-lg-5">
+      <div class="chart-card">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div>
+            <div class="chart-title">Allocation by Category</div>
+            <div class="chart-subtitle">Operating expenses distribution</div>
+          </div>
+          <i class="bi bi-pie-chart text-muted"></i>
+        </div>
+        <div id="chart-expenses-cat" style="min-height: 270px;"></div>
       </div>
+    </div>
+    <div class="col-12 col-lg-7">
+      <div class="chart-card">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div>
+            <div class="chart-title">Expense Chronological Outflow</div>
+            <div class="chart-subtitle">Daily expenditure flows over recorded period</div>
+          </div>
+          <span class="badge bg-danger-subtle text-danger border border-danger-subtle font-monospace">INR (₹)</span>
+        </div>
+        <div id="chart-expenses-trend" style="min-height: 270px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Expenses Table (Glass Panel) -->
+  <div class="card-glass overflow-hidden mb-4">
+    <div class="py-3 px-4 border-bottom bg-white d-flex align-items-center justify-content-between">
+      <h6 class="fw-bold mb-0 text-dark">Operating Expenses Journal</h6>
+      <span class="badge bg-light text-dark border">Showing <%= records.length %> record<%= records.length === 1 ? '' : 's' %></span>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-4">Date</th>
+            <th>Category</th>
+            <th>Description & Purpose</th>
+            <th>Method</th>
+            <th class="text-end pe-4">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (records && records.length > 0) { %>
+            <% records.forEach(exp => { %>
+              <tr>
+                <td class="ps-4 small text-muted"><%= new Date(exp.expenseDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) %></td>
+                <td><span class="badge bg-secondary-subtle text-secondary rounded-pill font-monospace"><%= exp.category || 'General' %></span></td>
+                <td class="fw-medium text-dark"><%= exp.description %></td>
+                <td><span class="badge bg-light text-muted border font-monospace"><%= exp.paymentMethod || 'BANK' %></span></td>
+                <td class="text-end pe-4 fw-bold font-monospace text-danger">₹<%= parseFloat(exp.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 }) %></td>
+              </tr>
+            <% }); %>
+          <% } else { %>
+            <tr>
+              <td colspan="5" class="text-center py-5 text-muted">
+                <i class="bi bi-wallet2 fs-2 d-block mb-2"></i>
+                No expenses recorded matching the current filter.
+              </td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
     </div>
   </div>
 </div>
@@ -83,7 +174,7 @@
             <input type="text" name="category" class="form-control" placeholder="e.g. Office Supplies, Travel, Software" required>
           </div>
           <div class="mb-3">
-            <label class="form-label fw-bold">Amount ($) <span class="text-danger">*</span></label>
+            <label class="form-label fw-bold">Amount (₹) <span class="text-danger">*</span></label>
             <input type="number" step="0.01" name="amount" class="form-control" placeholder="0.00" required>
           </div>
           <div class="mb-3">
@@ -138,4 +229,112 @@ document.getElementById('expenseForm').addEventListener('submit', async (e) => {
 });
 </script>
 
-<%- include('../layouts/footer') %>
+<%- include('../layouts/footer', {
+  extraJs: `
+    <script>
+      (function() {
+        if (!window.ApexCharts) return;
+
+        // 1. Expense Allocation Donut Chart
+        const catOptions = {
+          series: ${JSON.stringify(catValues)},
+          labels: ${JSON.stringify(catLabels)},
+          chart: {
+            type: 'donut',
+            height: 270,
+            fontFamily: 'inherit'
+          },
+          colors: ['#EF4444', '#F59E0B', '#635BFF', '#06B6D4', '#10B981', '#8B5CF6'],
+          plotOptions: {
+            pie: {
+              donut: {
+                size: '72%',
+                labels: {
+                  show: true,
+                  total: {
+                    show: true,
+                    label: 'Total Outflow',
+                    fontSize: '11px',
+                    formatter: function(w) {
+                      const sum = w.globals.seriesTotals.reduce((a, b) => a + b, 0);
+                      return '₹' + (sum >= 1000 ? (sum / 1000).toFixed(1) + 'k' : sum.toFixed(0));
+                    }
+                  }
+                }
+              }
+            }
+          },
+          dataLabels: { enabled: false },
+          legend: { position: 'bottom', fontSize: '11px', labels: { colors: '#64748B' } },
+          stroke: { width: 2, colors: ['#ffffff'] },
+          tooltip: {
+            y: {
+              formatter: function(val) {
+                return '₹' + Number(val).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+              }
+            }
+          },
+          noData: { text: 'No expense records in period', align: 'center', verticalAlign: 'middle', style: { color: '#94a3b8' } }
+        };
+
+        const catEl = document.getElementById('chart-expenses-cat');
+        if (catEl) {
+          const catChart = new ApexCharts(catEl, catOptions);
+          catChart.render();
+        }
+
+        // 2. Trend Bar Chart
+        const trendOptions = {
+          series: [{
+            name: 'Expense Outflow (₹)',
+            data: ${JSON.stringify(trendValues)}
+          }],
+          chart: {
+            type: 'bar',
+            height: 270,
+            toolbar: { show: false },
+            fontFamily: 'inherit'
+          },
+          colors: ['#EF4444'],
+          plotOptions: {
+            bar: {
+              columnWidth: '40%',
+              borderRadius: 4
+            }
+          },
+          dataLabels: { enabled: false },
+          xaxis: {
+            categories: ${JSON.stringify(trendDates)},
+            labels: { style: { fontSize: '11px', colors: '#64748B' } }
+          },
+          yaxis: {
+            labels: {
+              formatter: function(val) {
+                return '₹' + (val >= 1000 ? (val / 1000).toFixed(0) + 'k' : val.toFixed(0));
+              },
+              style: { fontSize: '11px', colors: '#64748B' }
+            }
+          },
+          grid: {
+            borderColor: 'rgba(226, 232, 240, 0.7)',
+            strokeDashArray: 4
+          },
+          tooltip: {
+            y: {
+              formatter: function(val) {
+                return '₹' + Number(val).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+              }
+            }
+          },
+          noData: { text: 'No daily expense activity', align: 'center', verticalAlign: 'middle', style: { color: '#94a3b8' } }
+        };
+
+        const trendEl = document.getElementById('chart-expenses-trend');
+        if (trendEl) {
+          const trendChart = new ApexCharts(trendEl, trendOptions);
+          trendChart.render();
+        }
+      })();
+    </script>
+  `
+}) %>

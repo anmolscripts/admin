@@ -1,3 +1,5 @@
+'use strict';
+
 const prisma = require('../config/prisma');
 
 /**
@@ -48,9 +50,9 @@ function getDateRangeFilter(rangeKey = 'this_month', customFrom = null, customTo
 
 /**
  * Server-side KPI and Analytics aggregation
- * Efficient SQL queries with zero N+1 and robust handling of empty datasets.
+ * Efficient SQL queries strictly scoped to authorized businessId and date filter.
  */
-async function getDashboardMetrics({ range = 'this_month', from = null, to = null } = {}, referenceDate = new Date()) {
+async function getDashboardMetrics({ range = 'this_month', from = null, to = null, businessId = null } = {}, referenceDate = new Date()) {
     const dateFilter = getDateRangeFilter(range, from, to, referenceDate);
     const now = new Date(referenceDate);
 
@@ -62,12 +64,25 @@ async function getDashboardMetrics({ range = 'this_month', from = null, to = nul
     }
     const hasDateFilter = Object.keys(dateCondition).length > 0;
 
+    // Tenant Scoping Clause
+    const bizIdNum = businessId ? parseInt(businessId, 10) : null;
+    const businessClause = (bizIdNum && !isNaN(bizIdNum) && bizIdNum > 0) ? { businessId: bizIdNum } : {};
+
     const invoiceDateClause = hasDateFilter ? { invoiceDate: dateCondition } : {};
     const paymentDateClause = hasDateFilter ? { paymentDate: dateCondition } : {};
+    const expenseDateClause = hasDateFilter ? { expenseDate: dateCondition } : {};
 
     // Calculate overdue cutoff: 30 days prior to current reference date
     const overdueCutoff = new Date(now);
     overdueCutoff.setDate(overdueCutoff.getDate() - 30);
+
+    // Calculate aging bucket cutoffs
+    const d30 = new Date(now);
+    d30.setDate(d30.getDate() - 30);
+    const d60 = new Date(now);
+    d60.setDate(d60.getDate() - 60);
+    const d90 = new Date(now);
+    d90.setDate(d90.getDate() - 90);
 
     // Run parallel server-side aggregations
     const [
@@ -80,16 +95,23 @@ async function getDashboardMetrics({ range = 'this_month', from = null, to = nul
         invoiceFinancials,
         overdueAgg,
         paymentsAgg,
-        recentActivity
+        expensesAgg,
+        recentActivity,
+        expenseCategoryGroups,
+        topClientsGroup,
+        agingAggCurrent,
+        agingAgg30,
+        agingAgg60,
+        agingAgg90
     ] = await Promise.all([
         // 1. Total Quotations
         prisma.invoice.count({
-            where: { documentType: 'QUOTATION', ...invoiceDateClause }
+            where: { documentType: 'QUOTATION', ...businessClause, ...invoiceDateClause }
         }),
 
         // 2. Active Quotations
         prisma.invoice.count({
-            where: { documentType: 'QUOTATION', status: 'ACTIVE', ...invoiceDateClause }
+            where: { documentType: 'QUOTATION', status: 'ACTIVE', ...businessClause, ...invoiceDateClause }
         }),
 
         // 3. Converted Quotations (source quotation of an invoice)
@@ -97,30 +119,32 @@ async function getDashboardMetrics({ range = 'this_month', from = null, to = nul
             where: {
                 documentType: 'QUOTATION',
                 convertedInvoice: { isNot: null },
+                ...businessClause,
                 ...invoiceDateClause
             }
         }),
 
         // 4. Total Invoices
         prisma.invoice.count({
-            where: { documentType: 'INVOICE', ...invoiceDateClause }
+            where: { documentType: 'INVOICE', ...businessClause, ...invoiceDateClause }
         }),
 
         // 5. Active Invoices
         prisma.invoice.count({
-            where: { documentType: 'INVOICE', status: 'ACTIVE', ...invoiceDateClause }
+            where: { documentType: 'INVOICE', status: 'ACTIVE', ...businessClause, ...invoiceDateClause }
         }),
 
         // 6. Void Invoices
         prisma.invoice.count({
-            where: { documentType: 'INVOICE', status: 'VOID', ...invoiceDateClause }
+            where: { documentType: 'INVOICE', status: 'VOID', ...businessClause, ...invoiceDateClause }
         }),
 
-        // 7. Active/Inactive Invoice Financials (grandTotal, paidAmount, outstandingAmount)
+        // 7. Active/Inactive Invoice Financials
         prisma.invoice.aggregate({
             where: {
                 documentType: 'INVOICE',
                 status: { in: ['ACTIVE', 'INACTIVE'] },
+                ...businessClause,
                 ...invoiceDateClause
             },
             _sum: {
@@ -130,12 +154,13 @@ async function getDashboardMetrics({ range = 'this_month', from = null, to = nul
             }
         }),
 
-        // 8. Overdue Invoices Aggregation (ACTIVE, outstanding > 0, dueDate < now OR (dueDate is null AND invoiceDate < now - 30d))
+        // 8. Overdue Invoices Aggregation
         prisma.invoice.aggregate({
             where: {
                 documentType: 'INVOICE',
                 status: 'ACTIVE',
                 outstandingAmount: { gt: 0 },
+                ...businessClause,
                 OR: [
                     { dueDate: { not: null, lt: now } },
                     { dueDate: null, invoiceDate: { lt: overdueCutoff } }
@@ -153,6 +178,7 @@ async function getDashboardMetrics({ range = 'this_month', from = null, to = nul
         prisma.payment.aggregate({
             where: {
                 status: 'RECORDED',
+                ...businessClause,
                 ...paymentDateClause
             },
             _sum: {
@@ -163,9 +189,23 @@ async function getDashboardMetrics({ range = 'this_month', from = null, to = nul
             }
         }),
 
-        // 10. Recent 5 documents for quick table
+        // 10. Expenses Aggregation
+        prisma.expense.aggregate({
+            where: {
+                ...businessClause,
+                ...expenseDateClause
+            },
+            _sum: {
+                amount: true
+            },
+            _count: {
+                id: true
+            }
+        }),
+
+        // 11. Recent 5 documents
         prisma.invoice.findMany({
-            where: invoiceDateClause,
+            where: { ...businessClause, ...invoiceDateClause },
             take: 5,
             orderBy: { createdAt: 'desc' },
             select: {
@@ -179,10 +219,106 @@ async function getDashboardMetrics({ range = 'this_month', from = null, to = nul
                 paidAmount: true,
                 outstandingAmount: true
             }
+        }),
+
+        // 12. Expense Category Breakdown (Top categories)
+        prisma.expense.groupBy({
+            by: ['category'],
+            where: {
+                ...businessClause,
+                ...expenseDateClause
+            },
+            _sum: {
+                amount: true
+            },
+            _count: {
+                id: true
+            },
+            orderBy: {
+                _sum: {
+                    amount: 'desc'
+                }
+            },
+            take: 6
+        }),
+
+        // 13. Top Clients by Revenue
+        prisma.invoice.groupBy({
+            by: ['clientName'],
+            where: {
+                documentType: 'INVOICE',
+                status: { in: ['ACTIVE', 'INACTIVE'] },
+                ...businessClause,
+                ...invoiceDateClause
+            },
+            _sum: {
+                grandTotal: true
+            },
+            _count: {
+                id: true
+            },
+            orderBy: {
+                _sum: {
+                    grandTotal: 'desc'
+                }
+            },
+            take: 5
+        }),
+
+        // 14. Ageing: Current (0 - 30 days)
+        prisma.invoice.aggregate({
+            where: {
+                documentType: 'INVOICE',
+                status: 'ACTIVE',
+                outstandingAmount: { gt: 0 },
+                invoiceDate: { gte: d30 },
+                ...businessClause
+            },
+            _sum: { outstandingAmount: true },
+            _count: { id: true }
+        }),
+
+        // 15. Ageing: 31 - 60 days
+        prisma.invoice.aggregate({
+            where: {
+                documentType: 'INVOICE',
+                status: 'ACTIVE',
+                outstandingAmount: { gt: 0 },
+                invoiceDate: { lt: d30, gte: d60 },
+                ...businessClause
+            },
+            _sum: { outstandingAmount: true },
+            _count: { id: true }
+        }),
+
+        // 16. Ageing: 61 - 90 days
+        prisma.invoice.aggregate({
+            where: {
+                documentType: 'INVOICE',
+                status: 'ACTIVE',
+                outstandingAmount: { gt: 0 },
+                invoiceDate: { lt: d60, gte: d90 },
+                ...businessClause
+            },
+            _sum: { outstandingAmount: true },
+            _count: { id: true }
+        }),
+
+        // 17. Ageing: Over 90 days
+        prisma.invoice.aggregate({
+            where: {
+                documentType: 'INVOICE',
+                status: 'ACTIVE',
+                outstandingAmount: { gt: 0 },
+                invoiceDate: { lt: d90 },
+                ...businessClause
+            },
+            _sum: { outstandingAmount: true },
+            _count: { id: true }
         })
     ]);
 
-    // Financial numbers
+    // Financial calculations
     const totalInvoiced = Number(invoiceFinancials._sum.grandTotal) || 0;
     const paidAmount = Number(invoiceFinancials._sum.paidAmount) || 0;
     const outstandingAmount = Number(invoiceFinancials._sum.outstandingAmount) || 0;
@@ -190,17 +326,71 @@ async function getDashboardMetrics({ range = 'this_month', from = null, to = nul
     const overdueCount = Number(overdueAgg._count.id) || 0;
     const totalCollected = Number(paymentsAgg._sum.amount) || 0;
     const paymentsCount = Number(paymentsAgg._count.id) || 0;
+    const totalExpenses = Number(expensesAgg._sum.amount) || 0;
+    const expensesCount = Number(expensesAgg._count.id) || 0;
 
     // Conversion metrics
     const conversionRate = totalQuotations > 0
         ? Number(((convertedQuotations / totalQuotations) * 100).toFixed(1))
         : 0;
 
-    // Build trend analytics (6 time buckets based on dateFilter)
-    const trends = await generateTrendSeries(dateFilter, now);
+    // Paid rate
+    const collectionRate = totalInvoiced > 0
+        ? Number(((paidAmount / totalInvoiced) * 100).toFixed(1))
+        : 0;
+
+    // Build trend analytics (6 time buckets strictly scoped by businessId)
+    const trends = await generateTrendSeries(dateFilter, now, businessClause);
+
+    // Format Expense Categories for Chart
+    const expenseCategories = {
+        labels: expenseCategoryGroups.map(g => g.category || 'General Expense'),
+        series: expenseCategoryGroups.map(g => Number(g._sum.amount) || 0),
+        counts: expenseCategoryGroups.map(g => g._count.id)
+    };
+
+    // Format Invoices by Status for Donut Chart
+    const paidInvoicesCount = await prisma.invoice.count({
+        where: { documentType: 'INVOICE', status: 'ACTIVE', outstandingAmount: 0, ...businessClause, ...invoiceDateClause }
+    });
+    const partiallyPaidInvoicesCount = await prisma.invoice.count({
+        where: { documentType: 'INVOICE', status: 'ACTIVE', paidAmount: { gt: 0 }, outstandingAmount: { gt: 0 }, ...businessClause, ...invoiceDateClause }
+    });
+    const unpaidInvoicesCount = await prisma.invoice.count({
+        where: { documentType: 'INVOICE', status: 'ACTIVE', paidAmount: 0, outstandingAmount: { gt: 0 }, ...businessClause, ...invoiceDateClause }
+    });
+
+    const statusBreakdown = {
+        labels: ['Fully Paid', 'Partially Paid', 'Unpaid', 'Voided'],
+        series: [paidInvoicesCount, partiallyPaidInvoicesCount, unpaidInvoicesCount, voidInvoices]
+    };
+
+    // Format Top Clients for Horizontal Bar Chart
+    const topClients = {
+        labels: topClientsGroup.map(c => c.clientName || 'Unnamed Client'),
+        series: topClientsGroup.map(c => Number(c._sum.grandTotal) || 0)
+    };
+
+    // Format Receivables Ageing for Column Chart
+    const receivablesAgeing = {
+        labels: ['Current (0-30d)', '31-60 Days', '61-90 Days', 'Over 90 Days'],
+        series: [
+            Number(agingAggCurrent._sum.outstandingAmount) || 0,
+            Number(agingAgg30._sum.outstandingAmount) || 0,
+            Number(agingAgg60._sum.outstandingAmount) || 0,
+            Number(agingAgg90._sum.outstandingAmount) || 0
+        ],
+        counts: [
+            Number(agingAggCurrent._count.id) || 0,
+            Number(agingAgg30._count.id) || 0,
+            Number(agingAgg60._count.id) || 0,
+            Number(agingAgg90._count.id) || 0
+        ]
+    };
 
     return {
         range: dateFilter.key,
+        businessId: bizIdNum,
         dateFilter: {
             startDate: dateFilter.startDate ? dateFilter.startDate.toISOString() : null,
             endDate: dateFilter.endDate ? dateFilter.endDate.toISOString() : null
@@ -215,7 +405,8 @@ async function getDashboardMetrics({ range = 'this_month', from = null, to = nul
             invoices: {
                 total: totalInvoices,
                 active: activeInvoices,
-                void: voidInvoices
+                void: voidInvoices,
+                collectionRate
             },
             financials: {
                 totalInvoiced,
@@ -224,18 +415,30 @@ async function getDashboardMetrics({ range = 'this_month', from = null, to = nul
                 overdueAmount,
                 overdueCount,
                 totalCollected,
-                paymentsCount
+                paymentsCount,
+                totalExpenses,
+                expensesCount
             }
         },
         trends,
+        charts: {
+            statusBreakdown,
+            expenseCategories,
+            topClients,
+            receivablesAgeing
+        },
+        statusBreakdown,
+        expenseCategories,
+        topClients,
+        receivablesAgeing,
         recentActivity
     };
 }
 
 /**
- * Generate 6 trend data points for chart analytics
+ * Generate 6 trend data points for chart analytics strictly scoped by business
  */
-async function generateTrendSeries(dateFilter, now) {
+async function generateTrendSeries(dateFilter, now, businessClause = {}) {
     const buckets = [];
     const numBuckets = 6;
 
@@ -257,21 +460,23 @@ async function generateTrendSeries(dateFilter, now) {
         buckets.push({ bStart, bEnd, label });
     }
 
-    // Parallel aggregate for each bucket
+    // Parallel aggregate for each bucket strictly scoped to businessClause
     const trendResults = await Promise.all(buckets.map(async ({ bStart, bEnd, label }) => {
         const [revAgg, quoteAgg, convCount, collAgg] = await Promise.all([
             prisma.invoice.aggregate({
                 where: {
                     documentType: 'INVOICE',
                     status: { in: ['ACTIVE', 'INACTIVE'] },
-                    invoiceDate: { gte: bStart, lte: bEnd }
+                    invoiceDate: { gte: bStart, lte: bEnd },
+                    ...businessClause
                 },
                 _sum: { grandTotal: true }
             }),
             prisma.invoice.aggregate({
                 where: {
                     documentType: 'QUOTATION',
-                    invoiceDate: { gte: bStart, lte: bEnd }
+                    invoiceDate: { gte: bStart, lte: bEnd },
+                    ...businessClause
                 },
                 _sum: { grandTotal: true },
                 _count: { id: true }
@@ -280,13 +485,15 @@ async function generateTrendSeries(dateFilter, now) {
                 where: {
                     documentType: 'QUOTATION',
                     convertedInvoice: { isNot: null },
-                    invoiceDate: { gte: bStart, lte: bEnd }
+                    invoiceDate: { gte: bStart, lte: bEnd },
+                    ...businessClause
                 }
             }),
             prisma.payment.aggregate({
                 where: {
                     status: 'RECORDED',
-                    paymentDate: { gte: bStart, lte: bEnd }
+                    paymentDate: { gte: bStart, lte: bEnd },
+                    ...businessClause
                 },
                 _sum: { amount: true }
             })
@@ -306,7 +513,9 @@ async function generateTrendSeries(dateFilter, now) {
         labels: trendResults.map(t => t.period),
         revenue: trendResults.map(t => t.revenue),
         collections: trendResults.map(t => t.collections),
-        quotations: trendResults.map(t => t.quotationsValue),
+        quotations: trendResults.map(t => t.quotationsCount),
+        quotationsCount: trendResults.map(t => t.quotationsCount),
+        quotationsValue: trendResults.map(t => t.quotationsValue),
         conversions: trendResults.map(t => t.convertedCount)
     };
 }

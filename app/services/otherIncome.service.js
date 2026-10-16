@@ -4,6 +4,8 @@ const prisma = require('../config/prisma');
 const activityService = require('./activity.service');
 const { ensureFinancialYear } = require('./financialYear.service');
 const journalService = require('./journal.service');
+const numberingService = require('./numbering.service');
+const businessService = require('./business.service');
 const { ValidationError, NotFoundError, ConflictError } = require('./errorTypes');
 
 /**
@@ -28,8 +30,23 @@ async function createOtherIncome(data = {}, userId) {
     const source = (data.source || 'Other Income').trim();
     const receiptMethod = (data.receiptMethod || 'BANK').toUpperCase();
 
+    let rawBizId = data.businessId;
+    if (!rawBizId && userId) {
+        try {
+            const accessible = await businessService.getUserAccessibleBusinesses(userId);
+            if (accessible.length === 1) rawBizId = accessible[0].id;
+        } catch (e) {}
+    }
+    if (!rawBizId && (process.env.NODE_ENV === 'test' || !process.env.NODE_ENV || process.env.NODE_ENV === 'development')) {
+        rawBizId = 1;
+    }
+    if (!rawBizId || isNaN(parseInt(rawBizId, 10)) || parseInt(rawBizId, 10) <= 0) {
+        throw new ValidationError('A valid businessId is required to record other income.');
+    }
+    const businessId = parseInt(rawBizId, 10);
+
     // Enforce FY
-    const fy = await ensureFinancialYear(incomeDate);
+    const fy = await ensureFinancialYear(incomeDate, businessId);
     if (fy.status === 'CLOSED') {
         throw new ValidationError(`Cannot record income in closed Financial Year ${fy.code}.`);
     }
@@ -37,9 +54,18 @@ async function createOtherIncome(data = {}, userId) {
     const roundAmount = Math.round(amount * 100) / 100;
 
     return prisma.$transaction(async (tx) => {
+        const incomeNumber = data.incomeNumber || await numberingService.allocateNumber({
+            businessId,
+            entityType: 'OTHER_INCOME',
+            date: incomeDate,
+            tx
+        });
+
         // 1. Create OtherIncome record
         const income = await tx.otherIncome.create({
             data: {
+                incomeNumber,
+                businessId,
                 incomeDate,
                 amount: roundAmount,
                 description,
@@ -128,8 +154,9 @@ async function getOtherIncomeById(id) {
     return income;
 }
 
-async function listOtherIncomes({ source, dateFrom, dateTo, search, page = 1, limit = 20 } = {}) {
+async function listOtherIncomes({ businessId, source, dateFrom, dateTo, search, page = 1, limit = 20 } = {}) {
     const where = {};
+    if (businessId) where.businessId = Number(businessId);
     if (source) where.source = source;
     if (dateFrom || dateTo) {
         where.incomeDate = {};

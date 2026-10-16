@@ -74,13 +74,17 @@ app.use(sessionMiddleware);
 // CSRF protection for all state-changing requests
 app.use(csrfProtection);
 
+// Business Context Resolver & Multi-Business Tenancy Enforcement
+const businessContextMiddleware = require('./middleware/businessContext.middleware');
+app.use(businessContextMiddleware);
+
 // Global EJS variables & RBAC permission resolution
 const businessProfileService = require('./services/businessProfile.service');
 app.use(async (req, res, next) => {
     res.locals.user = req.session ? req.session.user || null : null;
     res.locals.currentPath = req.path;
     try {
-        res.locals.branding = await businessProfileService.getBranding();
+        res.locals.branding = await businessProfileService.getBranding(req.businessId || null);
     } catch (_) {
         res.locals.branding = {
             workspaceName: 'Spark Admin',

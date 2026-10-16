@@ -6,31 +6,33 @@ const { ensureFinancialYear } = require('./financialYear.service');
 const journalService = require('./journal.service');
 const { ensureSystemAccounts } = require('./chartOfAccounts.service');
 const { ValidationError, NotFoundError, ConflictError } = require('./errorTypes');
+const businessService = require('./business.service');
 
 const INWARD_TYPES = ['RECEIPT', 'OPENING', 'RETURN_IN'];
 const OUTWARD_TYPES = ['ISSUE', 'RETURN_OUT'];
 const VALID_MOVEMENT_TYPES = ['RECEIPT', 'ISSUE', 'ADJUSTMENT', 'OPENING', 'RETURN_IN', 'RETURN_OUT'];
 
+const numberingService = require('./numbering.service');
 
 /**
- * Generate sequential movement number: STK-YYYYMMDD-XXXX
+ * Generate sequential movement number: STK/YYYY/MM/INCREMENT
  */
-async function generateMovementNumber() {
-    const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const prefix = `STK-${todayStr}-`;
-    const last = await prisma.stockMovement.findFirst({
-        where: { movementNumber: { startsWith: prefix } },
-        orderBy: { movementNumber: 'desc' },
-        select: { movementNumber: true }
-    });
-
-    let nextSeq = 1;
-    if (last && last.movementNumber) {
-        const parts = last.movementNumber.split('-');
-        const seq = parseInt(parts[parts.length - 1], 10);
-        if (!isNaN(seq)) nextSeq = seq + 1;
+async function generateMovementNumber(tx, options = {}) {
+    let rawBizId = options.businessId;
+    if (!rawBizId && (process.env.NODE_ENV === 'test' || !process.env.NODE_ENV || process.env.NODE_ENV === 'development')) {
+        rawBizId = 1;
     }
-    return `${prefix}${String(nextSeq).padStart(4, '0')}`;
+    if (!rawBizId || isNaN(parseInt(rawBizId, 10)) || parseInt(rawBizId, 10) <= 0) {
+        throw new ValidationError('A valid businessId is required for stock movement numbering.');
+    }
+    const businessId = parseInt(rawBizId, 10);
+    const date = options.date || new Date();
+    return await numberingService.allocateNumber({
+        businessId,
+        entityType: 'STOCK_MOVEMENT',
+        date,
+        tx
+    });
 }
 
 /**
@@ -86,13 +88,31 @@ async function recordStockMovement(data = {}, userId) {
 
     const absQty = Math.round(Math.abs(rawQty) * 100) / 100;
     const signedQty = movementType === 'ADJUSTMENT' ? (rawQty < 0 ? -absQty : absQty) : (isOutward ? -absQty : absQty);
-    const totalCost = Math.round(absQty * unitCost * 100) / 100;
+    let rawBizId = data.businessId || item.businessId;
+    if (!rawBizId && userId) {
+        try {
+            const accessible = await businessService.getUserAccessibleBusinesses(userId);
+            if (accessible.length === 1) rawBizId = accessible[0].id;
+        } catch (e) {}
+    }
+    if (!rawBizId && (process.env.NODE_ENV === 'test' || !process.env.NODE_ENV || process.env.NODE_ENV === 'development')) {
+        rawBizId = 1;
+    }
+    if (!rawBizId || isNaN(parseInt(rawBizId, 10)) || parseInt(rawBizId, 10) <= 0) {
+        throw new ValidationError('A valid businessId is required for stock movements.');
+    }
+    const businessId = parseInt(rawBizId, 10);
+    if (item.businessId && item.businessId !== businessId) {
+        throw new ValidationError(`Item ${itemId} does not belong to authorized business ${businessId}. Cross-business access denied.`);
+    }
 
+    const totalCost = Math.round(Math.abs(signedQty) * unitCost * 100) / 100;
     const movement = await prisma.$transaction(async (tx) => {
-        const movementNumber = await generateMovementNumber();
+        const movementNumber = await generateMovementNumber(tx, { businessId, date: movementDate });
 
         const movement = await tx.stockMovement.create({
             data: {
+                businessId,
                 movementNumber,
                 itemId,
                 movementType,
@@ -193,11 +213,17 @@ async function getItemStockSummary(itemId, asOfDate = null) {
 }
 
 /**
- * Inventory Valuation Report across all items
+ * Inventory Valuation Report across items (scoped by businessId)
  */
-async function getInventoryValuationReport(asOfDate = null) {
+async function getInventoryValuationReport(options = {}) {
+    const asOfDate = typeof options === 'object' && options !== null ? options.asOfDate : options;
+    const businessId = typeof options === 'object' && options !== null && options.businessId ? parseInt(options.businessId, 10) : null;
+
+    const where = { active: true };
+    if (businessId) where.businessId = businessId;
+
     const items = await prisma.item.findMany({
-        where: { active: true },
+        where,
         orderBy: { name: 'asc' }
     });
 
@@ -232,8 +258,9 @@ async function getInventoryValuationReport(asOfDate = null) {
 /**
  * List stock movements with filtering & pagination
  */
-async function listStockMovements({ itemId, movementType, referenceType, dateFrom, dateTo, page = 1, limit = 20 } = {}) {
+async function listStockMovements({ businessId, itemId, movementType, referenceType, dateFrom, dateTo, page = 1, limit = 20 } = {}) {
     const where = {};
+    if (businessId) where.businessId = parseInt(businessId, 10);
     if (itemId) where.itemId = parseInt(itemId, 10);
     if (movementType) where.movementType = movementType;
     if (referenceType) where.referenceType = referenceType;
@@ -287,7 +314,7 @@ async function postStockMovementToLedger({ movementId, debitAccountKey = 'COGS',
         throw new ConflictError(`Stock movement ${movement.movementNumber} has already been posted to the general ledger (Journal #${existing.entryNumber}).`);
     }
 
-    const fy = await ensureFinancialYear(movement.movementDate);
+    const fy = await ensureFinancialYear(movement.movementDate, movement.businessId || movement.item?.businessId);
     if (fy.status === 'CLOSED') {
         throw new ValidationError(`Cannot post stock movement into closed Financial Year ${fy.code}.`);
     }
@@ -329,6 +356,7 @@ async function postStockMovementToLedger({ movementId, debitAccountKey = 'COGS',
         ];
 
         const journal = await journalService.postJournalEntry({
+            businessId: movement.businessId || movement.item?.businessId,
             entryDate: movement.movementDate,
             financialYearId: fy.id,
             sourceType: 'STOCK_MOVEMENT',

@@ -1,0 +1,136 @@
+<%- include('../layouts/header') %>
+
+<div class="content-wrapper p-4">
+  <!-- Page Header -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+      <h1 class="h3 fw-bold mb-1">Central Document Numbering</h1>
+      <p class="text-muted small mb-0">Monthly-resetting sequence engine with strictly formatted <code>PREFIX/YYYY/MM/INCREMENT</code> identifiers.</p>
+    </div>
+  </div>
+
+  <% if (locals.success) { %>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+      <i class="bi bi-check-circle me-1"></i> <%= locals.success %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+
+  <div class="row g-4">
+    <!-- Prefix Configuration Table -->
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white py-3">
+          <h5 class="fw-bold mb-0">Series Prefixes for Active Business</h5>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Entity Series</th>
+                <th>Current Prefix</th>
+                <th>Sample Output</th>
+                <th class="text-end">Configure</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (!prefixes || prefixes.length === 0) { %>
+                <tr>
+                  <td colspan="4" class="text-center py-4 text-muted">
+                    No entity prefixes configured for this business.
+                  </td>
+                </tr>
+              <% } else { %>
+                <% prefixes.forEach(p => { %>
+                <tr>
+                  <td>
+                    <div class="fw-bold text-dark"><%= p.entityType %></div>
+                    <small class="text-muted"><%= p.description %></small>
+                  </td>
+                  <td><code><%= p.prefix %></code></td>
+                  <td><span class="badge bg-light text-primary border"><%= p.sample %></span></td>
+                  <td class="text-end">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editPrefixModal_<%= p.entityType %>">
+                      <i class="bi bi-pencil me-1"></i> Edit
+                    </button>
+                  </td>
+                </tr>
+
+                <!-- Modal for this Prefix -->
+                <div class="modal fade" id="editPrefixModal_<%= p.entityType %>" tabindex="-1" aria-hidden="true">
+                  <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content border-0 shadow">
+                      <div class="modal-header border-0 pb-0">
+                        <h5 class="modal-title fw-bold">Configure Prefix: <%= p.entityType %></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                      </div>
+                      <form action="/api/businesses/<%= businessId %>/prefix-config" method="POST">
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                        <input type="hidden" name="entityType" value="<%= p.entityType %>">
+                        <div class="modal-body">
+                          <p class="text-muted small">
+                            Rule: Prefix must be uppercase alphanumeric without slashes. Changing prefix does not reset historical sequence counts.
+                          </p>
+                          <div class="mb-3">
+                            <label class="form-label small fw-semibold">New Prefix *</label>
+                            <input type="text" name="prefix" class="form-control" value="<%= p.prefix %>" required pattern="^[A-Z0-9_\-]+$">
+                          </div>
+                        </div>
+                        <div class="modal-footer border-0 pt-0">
+                          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                          <button type="submit" class="btn btn-primary">Save Configuration</button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              <% }); %>
+            <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Sequences Counters -->
+    <div class="col-lg-5">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white py-3">
+          <h5 class="fw-bold mb-0">Monthly Sequence State (<%= activeSequences.length %>)</h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Series</th>
+                  <th>Period</th>
+                  <th class="text-end">Current Counter</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (activeSequences.length === 0) { %>
+                  <tr>
+                    <td colspan="3" class="text-center py-4 text-muted">
+                      No monthly sequences initialized yet for this business.
+                    </td>
+                  </tr>
+                <% } else { %>
+                  <% activeSequences.forEach(s => { %>
+                    <tr>
+                      <td class="fw-bold"><%= s.entityType %></td>
+                      <td><code><%= s.year %>/<%= String(s.month).padStart(2, '0') %></code></td>
+                      <td class="text-end fw-bold text-primary">#<%= s.currentIncrement %></td>
+                    </tr>
+                  <% }); %>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('../layouts/footer') %>

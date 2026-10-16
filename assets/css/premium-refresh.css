@@ -1,0 +1,605 @@
+/* ========================================================================
+   SPARK ADMIN — PREMIUM COLOR & HIERARCHY REFRESH
+   A compact semantic palette: ocean / cobalt / violet / citrus / coral.
+   This file deliberately loads after page styles to protect action hierarchy.
+   ======================================================================== */
+
+:root,
+[data-theme="light"] {
+  --sa-primary: #146c94;
+  --sa-primary-hover: #0d5678;
+  --sa-primary-active: #09435e;
+  --sa-primary-subtle: #e6f4f9;
+  --sa-secondary: #7058b7;
+  --sa-secondary-hover: #594495;
+  --sa-bg: #f4f8fb;
+  --sa-body-bg: #f4f8fb;
+  --sa-surface: rgba(255, 255, 255, 0.92);
+  --sa-surface-secondary: #edf4f8;
+  --sa-card-glass-bg: rgba(255, 255, 255, 0.9);
+  --sa-text-main: #193247;
+  --sa-text-secondary: #617487;
+  --sa-border: rgba(35, 73, 96, 0.13);
+  --sa-border-subtle: rgba(35, 73, 96, 0.08);
+  --sa-hover: rgba(20, 108, 148, 0.07);
+  --sa-table-header-bg: #e8f2f7;
+  --sa-turquoise: #26a6b5;
+  --sa-sky-blue: #57b5d1;
+  --sa-soft-violet: #8b74c9;
+  --sa-coral: #e66d58;
+  --sa-amber: #e69a35;
+  --sa-mint: #a8c95b;
+  --sa-status-success: #27845f;
+  --sa-status-success-bg: #e7f5ec;
+  --sa-status-warning: #c77a16;
+  --sa-status-danger: #d85b4a;
+  --sa-status-info: #1683b0;
+}
+
+body {
+  background-image:
+    radial-gradient(circle at 3% 0%, rgba(139, 116, 201, 0.11), transparent 31rem),
+    radial-gradient(circle at 100% 12%, rgba(38, 166, 181, 0.12), transparent 30rem),
+    linear-gradient(180deg, #f8fbfd 0%, #f1f7fa 100%);
+}
+
+/* Cards have a quiet base; their section accent provides the personality. */
+.card, .view-card, .editor-section-card, .documents-toolbar-card, .spark-dt-card {
+  border-color: rgba(35, 73, 96, 0.11) !important;
+  box-shadow: 0 8px 24px rgba(22, 54, 75, 0.055) !important;
+}
+
+.view-card, .editor-section-card {
+  border-radius: 16px !important;
+}
+
+.editor-section-card::before { height: 4px; opacity: 1; }
+.section-doc-info { background: linear-gradient(110deg, rgba(139, 116, 201, 0.055), #fff 30%) !important; }
+.section-client-info { background: linear-gradient(110deg, rgba(38, 166, 181, 0.06), #fff 30%) !important; }
+.section-addresses { background: linear-gradient(110deg, rgba(39, 132, 95, 0.06), #fff 30%) !important; }
+.section-items { background: linear-gradient(110deg, rgba(20, 108, 148, 0.06), #fff 30%) !important; }
+.section-financials { background: linear-gradient(110deg, rgba(168, 201, 91, 0.11), #fff 30%) !important; }
+.section-terms { background: linear-gradient(110deg, rgba(230, 154, 53, 0.07), #fff 30%) !important; }
+
+/* Every action gets a job: cobalt = main, violet = create/convert,
+   green = confirm/paid, amber = caution, coral = destructive, slate = utility. */
+.btn-custom-primary, .btn-primary, .btn-spark-primary {
+  background: linear-gradient(135deg, #176f98, #1689af) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+  box-shadow: 0 5px 12px rgba(20, 108, 148, 0.24) !important;
+}
+.btn-custom-primary:hover, .btn-primary:hover, .btn-spark-primary:hover {
+  background: linear-gradient(135deg, #105b7d, #126f92) !important;
+  color: #fff !important;
+  transform: translateY(-1px);
+}
+.btn-custom-success, .btn-success {
+  background: linear-gradient(135deg, #27845f, #3aa67a) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+  box-shadow: 0 5px 12px rgba(39, 132, 95, 0.22) !important;
+}
+.btn-custom-success:hover, .btn-success:hover { background: #206d4e !important; color: #fff !important; }
+.btn-custom-warning, .btn-warning {
+  background: linear-gradient(135deg, #d88925, #efad4b) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+}
+.btn-custom-danger, .btn-danger {
+  background: linear-gradient(135deg, #d85b4a, #ed806a) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+}
+.btn-custom-secondary, .btn-secondary, .btn-custom-light {
+  background: rgba(255, 255, 255, 0.84) !important;
+  border-color: rgba(35, 73, 96, 0.16) !important;
+  color: #385268 !important;
+  box-shadow: none !important;
+}
+.btn-custom-secondary:hover, .btn-secondary:hover, .btn-custom-light:hover {
+  background: #edf4f8 !important;
+  border-color: #8eabbc !important;
+  color: #193247 !important;
+}
+.btn-custom-outline-primary, .btn-outline-primary {
+  background: #edf7fa !important;
+  border-color: #73b8ca !important;
+  color: #116a8b !important;
+  box-shadow: none !important;
+}
+.btn-custom-outline-primary:hover, .btn-outline-primary:hover { background: #d8eff5 !important; color: #0b5877 !important; }
+.btn-custom-outline-info, .btn-outline-info { background: #f0edfb !important; border-color: #baaee1 !important; color: #644da7 !important; }
+.btn-primary-gradient, .btn-save-action {
+  background: linear-gradient(135deg, #7058b7, #9279d0) !important;
+  box-shadow: 0 7px 16px rgba(112, 88, 183, 0.28) !important;
+}
+.btn-primary-gradient:hover:not(:disabled), .btn-save-action:hover:not(:disabled) { background: linear-gradient(135deg, #594495, #7962bd) !important; }
+.btn-secondary-action { background: #f0edfb !important; border-color: #aa9ada !important; color: #604c9e !important; box-shadow: none !important; }
+.btn-secondary-action:hover { background: #7058b7 !important; border-color: #7058b7 !important; color: #fff !important; }
+.btn-neutral-action { background: #fff !important; border-color: #c8d8e1 !important; color: #587084 !important; }
+
+/* Main document view: break repeated white panels into legible, calm groups. */
+.view-header-bar { border-top: 4px solid #7058b7; background: linear-gradient(105deg, #fcfbff, #fff) !important; }
+.view-card { position: relative; overflow: hidden; }
+.view-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: #57b5d1; }
+.view-card:nth-of-type(4n + 2)::before { background: #8b74c9; }
+.view-card:nth-of-type(4n + 3)::before { background: #a8c95b; }
+.view-card:nth-of-type(4n + 4)::before { background: #e69a35; }
+.view-card-title { color: #24465d !important; }
+.view-card-title i { color: #1683b0; }
+.view-card:nth-of-type(4n + 2) .view-card-title i { color: #7058b7; }
+.view-card:nth-of-type(4n + 3) .view-card-title i { color: #588330; }
+.view-card:nth-of-type(4n + 4) .view-card-title i { color: #c77a16; }
+.address-card, .totals-summary-box { background: #f1f7fa !important; }
+.grand-total-value { color: #27845f !important; }
+
+/* Inputs look crisp, but focused fields retain a clearly visible cobalt cue. */
+.form-control, .form-select, .form-control-custom, .form-select-custom {
+  border-color: rgba(35, 73, 96, 0.16) !important;
+  box-shadow: inset 0 1px 1px rgba(20, 54, 75, 0.02);
+}
+.form-control:focus, .form-select:focus, .form-control-custom:focus, .form-select-custom:focus {
+  border-color: #52a9c6 !important;
+  box-shadow: 0 0 0 3px rgba(87, 181, 209, 0.18) !important;
+}
+
+[data-theme="dark"] .section-doc-info, [data-theme="dark"] .section-client-info,
+[data-theme="dark"] .section-addresses, [data-theme="dark"] .section-items,
+[data-theme="dark"] .section-financials, [data-theme="dark"] .section-terms { background: var(--sa-surface) !important; }
+[data-theme="dark"] .btn-custom-secondary, [data-theme="dark"] .btn-secondary, [data-theme="dark"] .btn-custom-light { background: #1d3340 !important; color: #d5e5ed !important; border-color: #35505f !important; }
+
+/* ------------------------------------------------------------------------
+   Studio workspace shell
+   Inspired by contemporary product dashboards: a floating application canvas,
+   compact navigation rail, generous white space and softer, rounded modules.
+   The compact rail expands on hover, so the familiar labelled navigation is
+   still one effortless pointer move away.
+   ------------------------------------------------------------------------ */
+@media (min-width: 1100px) {
+  :root { --sidebar-width: 108px; }
+
+  body {
+    padding: 20px;
+    background:
+      radial-gradient(circle at 4% 0%, rgba(242, 167, 103, 0.54), transparent 34%),
+      radial-gradient(circle at 100% 100%, rgba(87, 181, 209, 0.55), transparent 39%),
+      #dfeaf0;
+  }
+
+  .sidebar-wrapper {
+    top: 20px;
+    left: 20px;
+    width: 68px;
+    height: calc(100vh - 40px);
+    padding: 0.9rem 0.55rem;
+    border: 0;
+    border-radius: 24px;
+    background: #173c38;
+    box-shadow: 0 16px 36px rgba(22, 45, 52, 0.2);
+    overflow: visible;
+  }
+  .sidebar-wrapper:hover { width: 246px; padding-inline: 0.8rem; }
+  .sidebar-brand { justify-content: center; padding: 0.55rem 0.15rem 1.05rem; margin-bottom: 0.7rem; }
+  .sidebar-brand-text, .sidebar-menu-title, .sidebar-menu-link span, .sidebar-profile-info { display: none; }
+  .sidebar-nav-container { overflow: hidden; }
+  .sidebar-menu-link { justify-content: center; width: 100%; padding: 0.72rem; border-radius: 14px; }
+  .sidebar-menu-link i { font-size: 1rem; width: 20px; height: 20px; }
+  .sidebar-menu-link.active { background: #9ace25 !important; color: #173c38 !important; box-shadow: none !important; }
+  .sidebar-menu-link.active i { color: #173c38 !important; }
+  .sidebar-menu-link.active::after { display: none; }
+  .sidebar-profile { justify-content: center; padding: 0.5rem; border: 0; background: rgba(255,255,255,0.09); }
+  .sidebar-profile-avatar-fallback, .sidebar-profile-img { margin-right: 0 !important; width: 34px !important; height: 34px !important; min-width: 34px !important; }
+
+  .sidebar-wrapper:hover .sidebar-brand { justify-content: flex-start; padding-inline: 0.5rem; }
+  .sidebar-wrapper:hover .sidebar-brand-text, .sidebar-wrapper:hover .sidebar-menu-title,
+  .sidebar-wrapper:hover .sidebar-menu-link span, .sidebar-wrapper:hover .sidebar-profile-info { display: block; }
+  .sidebar-wrapper:hover .sidebar-menu-link { justify-content: flex-start; padding-inline: 0.85rem; }
+  .sidebar-wrapper:hover .sidebar-menu-link.active { color: #173c38 !important; }
+  .sidebar-wrapper:hover .sidebar-profile { justify-content: flex-start; padding: 0.65rem; }
+
+  .main-wrapper {
+    margin-left: 88px;
+    min-height: calc(100vh - 40px);
+    padding: 0 30px 30px;
+    border-radius: 26px;
+    background: rgba(250, 252, 253, 0.96);
+    box-shadow: 0 18px 45px rgba(47, 77, 88, 0.12);
+    overflow: hidden;
+  }
+  .navbar-custom {
+    margin: 0 -30px 2rem;
+    padding: 1rem 30px;
+    min-height: 74px;
+    border: 0;
+    border-bottom: 1px solid rgba(35, 73, 96, 0.08);
+    border-radius: 26px 26px 0 0;
+    background: rgba(255,255,255,0.82);
+    box-shadow: none;
+  }
+  .page-title, .page-header h1, h1 { letter-spacing: -0.045em; }
+  .card, .card-glass, .view-card, .editor-section-card, .documents-toolbar-card, .spark-dt-card {
+    border-radius: 18px !important;
+    box-shadow: 0 4px 15px rgba(35, 73, 96, 0.045) !important;
+  }
+  .card:hover, .view-card:hover, .editor-section-card:hover, .spark-dt-card:hover {
+    box-shadow: 0 10px 26px rgba(35, 73, 96, 0.08) !important;
+    transform: translateY(-1px);
+  }
+  .filter-pill-btn { border-radius: 999px; }
+}
+
+/* At narrower widths the shell remains dense and practical, never decorative. */
+@media (max-width: 1099.98px) {
+  .view-card, .editor-section-card { border-radius: 14px !important; }
+}
+
+/* ------------------------------------------------------------------------
+   Shared glass components — used by every server-rendered page.
+   Glass is deliberately restrained: readable solid text, translucent surfaces,
+   and color only where it communicates state or action.
+   ------------------------------------------------------------------------ */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 108px;
+}
+
+::selection { background: rgba(112, 88, 183, 0.24); color: #193247; }
+
+.card, .card-glass, .glass-card, .documents-toolbar-card, .spark-dt-card,
+.view-card, .editor-section-card, .table-card-custom, .chart-card,
+.kpi-card, .hero-kpi-card, .modal-content, .dropdown-menu {
+  background: rgba(255, 255, 255, 0.72) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(135%);
+  backdrop-filter: blur(18px) saturate(135%);
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
+  box-shadow: 0 10px 28px rgba(37, 67, 86, 0.07), inset 0 1px 0 rgba(255,255,255,0.7) !important;
+}
+
+.card-header, .view-card-header, .editor-section-header {
+  background: transparent !important;
+  border-color: rgba(35, 73, 96, 0.09) !important;
+}
+
+/* Forms feel like part of the glass panel, while retaining crisp contrast. */
+.form-control, .form-select, .form-control-custom, .form-select-custom,
+.toolbar-search-input, .toolbar-select, .toolbar-date-input, textarea {
+  background: rgba(255, 255, 255, 0.66) !important;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(66, 104, 126, 0.18) !important;
+  color: #213c50 !important;
+  border-radius: 11px !important;
+  transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease, transform .18s ease;
+}
+.form-control:hover, .form-select:hover, .form-control-custom:hover, .form-select-custom:hover {
+  background: rgba(255,255,255,.88) !important;
+  border-color: rgba(55, 131, 164, .34) !important;
+}
+.form-control:focus, .form-select:focus, .form-control-custom:focus, .form-select-custom:focus,
+.toolbar-search-input:focus, .toolbar-select:focus, .toolbar-date-input:focus {
+  background: rgba(255,255,255,.94) !important;
+  border-color: #56aec9 !important;
+  box-shadow: 0 0 0 4px rgba(87,181,209,.14), 0 5px 12px rgba(35,73,96,.06) !important;
+  transform: translateY(-1px);
+}
+.form-label, .form-label-custom, .toolbar-control-label { color: #536d81 !important; letter-spacing: .015em; }
+
+/* Tables become light, highly legible data surfaces rather than dense grids. */
+.table-responsive, .view-table-wrapper, .spark-dt-table-wrap {
+  border: 1px solid rgba(66, 104, 126, 0.12);
+  border-radius: 14px;
+  background: rgba(255,255,255,.35);
+  overflow: hidden;
+}
+.table { --bs-table-bg: transparent; --bs-table-hover-bg: rgba(87,181,209,.08); color: #294359; margin-bottom: 0; }
+.table > :not(caption) > * > * { border-bottom-color: rgba(66, 104, 126, .10); padding-top: .9rem; padding-bottom: .9rem; }
+.table thead th, .view-items-table thead th, .spark-dt-table thead th {
+  background: rgba(226, 241, 247, .72) !important;
+  color: #547085 !important;
+  border-bottom: 1px solid rgba(66, 104, 126, .14) !important;
+  font-size: .71rem;
+  font-weight: 800;
+  letter-spacing: .065em;
+}
+.table tbody tr { transition: background-color .16s ease, transform .16s ease, box-shadow .16s ease; }
+.table tbody tr:hover { background: rgba(255,255,255,.58); box-shadow: inset 3px 0 0 #57b5d1; }
+.table tbody tr:hover td { color: #193e56; }
+
+/* Smaller controls retain the same polished language. */
+.badge, .badge-doc-type, .badge-doc-status, .filter-pill-btn, .nav-pills .nav-link {
+  border-radius: 999px !important;
+}
+.filter-pill-btn, .nav-pills .nav-link {
+  background: rgba(255,255,255,.62);
+  border: 1px solid rgba(66,104,126,.12);
+  transition: transform .16s ease, box-shadow .16s ease, background-color .16s ease;
+}
+.filter-pill-btn:hover, .nav-pills .nav-link:hover { transform: translateY(-1px); box-shadow: 0 5px 10px rgba(35,73,96,.08); }
+
+.btn, .btn-custom {
+  position: relative;
+  overflow: hidden;
+  transition: transform .18s cubic-bezier(.2,.8,.2,1), box-shadow .18s ease, background-color .18s ease, border-color .18s ease, color .18s ease !important;
+}
+.btn:hover:not(:disabled), .btn-custom:hover:not(:disabled) { transform: translateY(-1px); }
+.btn:active:not(:disabled), .btn-custom:active:not(:disabled) { transform: translateY(0) scale(.98); }
+.btn-outline-secondary, .btn-light, .btn-custom-secondary, .btn-custom-light {
+  background: rgba(255,255,255,.65) !important;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+@keyframes spark-rise-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes spark-soft-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(87,181,209,0); }
+  50% { box-shadow: 0 0 0 5px rgba(87,181,209,.10); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .main-wrapper > :not(.navbar-custom) { animation: spark-rise-in .38s cubic-bezier(.2,.8,.2,1) both; }
+  .main-wrapper > :not(.navbar-custom):nth-child(3) { animation-delay: .035s; }
+  .main-wrapper > :not(.navbar-custom):nth-child(4) { animation-delay: .07s; }
+  .form-control:focus, .form-select:focus { animation: spark-soft-pulse 1.4s ease-in-out infinite; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+/* Keep the header/search bar pinned to the viewport while page content moves. */
+@media (min-width: 1100px) {
+  .main-wrapper { overflow: visible; }
+  .navbar-custom {
+    position: sticky;
+    top: 20px;
+    z-index: 1025;
+    isolation: isolate;
+  }
+
+  /* Smooth rail expansion: labels participate in layout at all times, then
+     fade and grow, avoiding the previous icon/text reflow jump. */
+  .sidebar-wrapper { width: 70px; transition: width .28s cubic-bezier(.2,.8,.2,1), padding .28s cubic-bezier(.2,.8,.2,1), box-shadow .28s ease; }
+  .sidebar-wrapper:hover { width: 246px; }
+  .sidebar-brand, .sidebar-menu-link, .sidebar-profile { transition: padding .28s cubic-bezier(.2,.8,.2,1), gap .28s cubic-bezier(.2,.8,.2,1), background-color .18s ease; }
+  .sidebar-brand-text, .sidebar-menu-title, .sidebar-menu-link span, .sidebar-profile-info {
+    display: block !important;
+    max-width: 0;
+    margin: 0;
+    overflow: hidden;
+    opacity: 0;
+    visibility: hidden;
+    white-space: nowrap;
+    transform: translateX(-7px);
+    transition: max-width .28s cubic-bezier(.2,.8,.2,1), opacity .18s ease, transform .28s cubic-bezier(.2,.8,.2,1), visibility 0s linear .28s;
+  }
+  .sidebar-menu-link { display: grid; grid-template-columns: 20px minmax(0, 1fr); justify-content: start; gap: 0; }
+  .sidebar-menu-link i { justify-self: center; }
+  .sidebar-wrapper:hover .sidebar-brand-text, .sidebar-wrapper:hover .sidebar-menu-title,
+  .sidebar-wrapper:hover .sidebar-menu-link span, .sidebar-wrapper:hover .sidebar-profile-info {
+    max-width: 165px;
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+    transition-delay: .045s, .045s, .045s, 0s;
+  }
+  .sidebar-wrapper:hover .sidebar-menu-link { grid-template-columns: 20px minmax(0, 1fr); gap: .75rem; justify-content: start; }
+  .sidebar-wrapper:hover .sidebar-brand, .sidebar-wrapper:hover .sidebar-profile { gap: .75rem; }
+}
+
+[data-theme="dark"] .card, [data-theme="dark"] .card-glass, [data-theme="dark"] .glass-card,
+[data-theme="dark"] .documents-toolbar-card, [data-theme="dark"] .spark-dt-card, [data-theme="dark"] .view-card,
+[data-theme="dark"] .editor-section-card, [data-theme="dark"] .modal-content, [data-theme="dark"] .dropdown-menu {
+  background: rgba(22, 39, 50, .78) !important;
+  border-color: rgba(173, 214, 228, .10) !important;
+}
+[data-theme="dark"] .form-control, [data-theme="dark"] .form-select,
+[data-theme="dark"] .form-control-custom, [data-theme="dark"] .form-select-custom {
+  background: rgba(20, 38, 49, .72) !important;
+  color: #e4f1f4 !important;
+}
+
+/* ------------------------------------------------------------------------
+   Colourful module identities (not stripes)
+   These are full surfaces inspired by contemporary dashboard systems. Each
+   tone keeps the information legible, while making modules scannable at once.
+   ------------------------------------------------------------------------ */
+.view-card::before, .editor-section-card::before, .kpi-accent-bar { display: none !important; }
+.dashboard-tone-aqua { background: linear-gradient(135deg, #e5f8f5 0%, #f8fffe 72%) !important; border-color: #c9ece6 !important; }
+.dashboard-tone-sky { background: linear-gradient(135deg, #e6f4ff 0%, #f9fcff 74%) !important; border-color: #cbe8f7 !important; }
+.dashboard-tone-mint { background: linear-gradient(135deg, #edf8dc 0%, #fbfff5 74%) !important; border-color: #dceeb8 !important; }
+.dashboard-tone-violet, .dashboard-tone-lavender { background: linear-gradient(135deg, #f0edff 0%, #fcfbff 74%) !important; border-color: #dfd8fa !important; }
+.dashboard-tone-peach { background: linear-gradient(135deg, #fff0e5 0%, #fffaf6 74%) !important; border-color: #f7ddcc !important; }
+.dashboard-tone-cloud { background: linear-gradient(135deg, rgba(239,248,252,.92) 0%, rgba(255,255,255,.8) 74%) !important; border-color: #dbeaf1 !important; }
+.dashboard-tone-mint-soft { background: linear-gradient(135deg, #f2faec 0%, #fff 74%) !important; border-color: #e1efd3 !important; }
+.dashboard-tone-peach-soft { background: linear-gradient(135deg, #fff7ed 0%, #fff 74%) !important; border-color: #f5e2ca !important; }
+.dashboard-tone-sky-soft { background: linear-gradient(135deg, #eef8ff 0%, #fff 74%) !important; border-color: #d9ebf6 !important; }
+
+.dashboard-tone-aqua .kpi-icon-circle { background: #b9eee6 !important; color: #107d72 !important; }
+.dashboard-tone-sky .kpi-icon-circle { background: #c8ecfb !important; color: #1889b7 !important; }
+.dashboard-tone-mint .kpi-icon-circle { background: #dcefb6 !important; color: #618a24 !important; }
+.dashboard-tone-violet .kpi-icon-circle { background: #ded5fa !important; color: #7157ba !important; }
+.dashboard-tone-peach .kpi-icon-circle { background: #ffdcc6 !important; color: #d46c40 !important; }
+.dashboard-tone-aqua .kpi-icon-circle, .dashboard-tone-sky .kpi-icon-circle,
+.dashboard-tone-mint .kpi-icon-circle, .dashboard-tone-violet .kpi-icon-circle,
+.dashboard-tone-peach .kpi-icon-circle { border-radius: 14px; }
+
+/* Editor sections use their entire panel as the visual signature. */
+.section-doc-info { background: linear-gradient(135deg, #f1eeff 0%, #fff 52%) !important; border-color: #dfd8fa !important; }
+.section-client-info { background: linear-gradient(135deg, #e9f8fd 0%, #fff 52%) !important; border-color: #d0eaf3 !important; }
+.section-addresses { background: linear-gradient(135deg, #eef9e8 0%, #fff 52%) !important; border-color: #d9edcc !important; }
+.section-items { background: linear-gradient(135deg, #edf5ff 0%, #fff 52%) !important; border-color: #d6e6f6 !important; }
+.section-financials { background: linear-gradient(135deg, #fff7e8 0%, #fff 52%) !important; border-color: #f4e1b8 !important; }
+.section-terms { background: linear-gradient(135deg, #fff0eb 0%, #fff 52%) !important; border-color: #f5d8cf !important; }
+
+/* The document detail view keeps a clean grouped rhythm without coloured rails. */
+.document-view-container .view-card { background: rgba(255,255,255,.78) !important; }
+.document-view-container .view-card:nth-of-type(3n + 1) { background: linear-gradient(135deg, #f1eeff 0%, #fff 48%) !important; }
+.document-view-container .view-card:nth-of-type(3n + 2) { background: linear-gradient(135deg, #eaf8fd 0%, #fff 48%) !important; }
+.document-view-container .view-card:nth-of-type(3n) { background: linear-gradient(135deg, #f2faec 0%, #fff 48%) !important; }
+
+/* Preserve the palette in dark mode without washing text or charts out. */
+[data-theme="dark"] .dashboard-tone-aqua, [data-theme="dark"] .dashboard-tone-sky,
+[data-theme="dark"] .dashboard-tone-mint, [data-theme="dark"] .dashboard-tone-violet,
+[data-theme="dark"] .dashboard-tone-peach, [data-theme="dark"] .dashboard-tone-cloud,
+[data-theme="dark"] .dashboard-tone-lavender, [data-theme="dark"] .dashboard-tone-mint-soft,
+[data-theme="dark"] .dashboard-tone-peach-soft, [data-theme="dark"] .dashboard-tone-sky-soft,
+[data-theme="dark"] .section-doc-info, [data-theme="dark"] .section-client-info,
+[data-theme="dark"] .section-addresses, [data-theme="dark"] .section-items,
+[data-theme="dark"] .section-financials, [data-theme="dark"] .section-terms {
+  background: rgba(22,39,50,.88) !important;
+  border-color: rgba(173,214,228,.10) !important;
+}
+
+/* ------------------------------------------------------------------------
+   Final shell polish: a floating header must reserve its original space.
+   It is deliberately not fixed; sticky preserves document flow and prevents
+   any page title or first card from disappearing underneath it.
+   ------------------------------------------------------------------------ */
+@media (min-width: 1100px) {
+  .main-wrapper {
+    padding-top: 1px;
+    overflow: visible;
+  }
+  .navbar-custom {
+    position: sticky;
+    top: 16px;
+    z-index: 1025;
+    min-height: 64px;
+    margin: 14px 0 30px !important;
+    padding: .7rem 1rem !important;
+    border: 1px solid rgba(255,255,255,.78) !important;
+    border-radius: 20px !important;
+    background: linear-gradient(110deg, rgba(255,255,255,.88), rgba(237,248,252,.82)) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(145%);
+    backdrop-filter: blur(20px) saturate(145%);
+    box-shadow: 0 10px 28px rgba(35,73,96,.10), inset 0 1px 0 rgba(255,255,255,.9) !important;
+  }
+
+  /* The 20px icon column never changes; only the text column expands. */
+  .sidebar-wrapper {
+    box-sizing: border-box;
+    width: 70px;
+    padding: .9rem .55rem;
+  }
+  .sidebar-nav-container, .sidebar-menu-list { width: 100%; }
+  .sidebar-menu-item { width: 100%; }
+  .sidebar-menu-link, .sidebar-wrapper:hover .sidebar-menu-link {
+    display: grid !important;
+    grid-template-columns: 20px minmax(0, 1fr) !important;
+    align-items: center;
+    justify-content: center;
+    gap: 0 !important;
+    width: 100%;
+    min-height: 42px;
+    padding: .68rem !important;
+    box-sizing: border-box;
+  }
+  .sidebar-menu-link i { justify-self: center; margin: 0 !important; }
+  .sidebar-wrapper:hover .sidebar-menu-link {
+    justify-content: start;
+    gap: .72rem !important;
+    padding-inline: .8rem !important;
+  }
+  .sidebar-brand, .sidebar-wrapper:hover .sidebar-brand {
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr);
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+  }
+  .sidebar-brand i { justify-self: center; }
+  .sidebar-wrapper:hover .sidebar-brand { justify-content: start; gap: .7rem; }
+  .sidebar-profile, .sidebar-wrapper:hover .sidebar-profile {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr);
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+  }
+  .sidebar-wrapper:hover .sidebar-profile { justify-content: start; gap: .65rem; }
+}
+
+/* Let glass, spacing and colour do the grouping — not a border around every card. */
+.card, .card-glass, .glass-card, .documents-toolbar-card, .spark-dt-card,
+.view-card, .editor-section-card, .table-card-custom, .chart-card,
+.kpi-card, .hero-kpi-card, .modal-content, .dropdown-menu,
+.dashboard-tone-aqua, .dashboard-tone-sky, .dashboard-tone-mint,
+.dashboard-tone-violet, .dashboard-tone-lavender, .dashboard-tone-peach,
+.dashboard-tone-cloud, .dashboard-tone-mint-soft, .dashboard-tone-peach-soft,
+.dashboard-tone-sky-soft, .section-doc-info, .section-client-info,
+.section-addresses, .section-items, .section-financials, .section-terms {
+  border: 0 !important;
+}
+
+/* Dividers remain only where they help scan data: forms, table rows and headers. */
+.table-responsive, .view-table-wrapper, .spark-dt-table-wrap { border-color: rgba(66,104,126,.08); }
+.table > :not(caption) > * > * { border-bottom-color: rgba(66,104,126,.075); }
+
+/* ------------------------------------------------------------------------
+   Fixed desktop chrome
+   Both navigation surfaces are attached to the viewport. The workspace gets
+   an explicit top inset, so fixed chrome can never cover page content.
+   ------------------------------------------------------------------------ */
+@media (min-width: 1100px) {
+  .sidebar-wrapper {
+    position: fixed !important;
+    inset: 20px auto 20px 20px !important;
+    height: auto !important;
+    z-index: 1050;
+  }
+  .navbar-custom {
+    position: fixed !important;
+    top: 16px !important;
+    left: 138px !important;
+    right: 50px !important;
+    width: auto !important;
+    margin: 0 !important;
+    z-index: 1040;
+  }
+  .main-wrapper {
+    padding-top: 110px !important;
+  }
+}
+
+/* Dark mode is a separate intentional palette, not the light shell inverted. */
+[data-theme="dark"] body {
+  background:
+    radial-gradient(circle at 5% 0%, rgba(103, 81, 179, .23), transparent 30rem),
+    radial-gradient(circle at 100% 100%, rgba(22, 150, 177, .20), transparent 30rem),
+    #0d1720;
+}
+[data-theme="dark"] .main-wrapper {
+  background: rgba(17, 30, 40, .92);
+  box-shadow: 0 20px 48px rgba(0,0,0,.32);
+}
+[data-theme="dark"] .navbar-custom {
+  background: linear-gradient(110deg, rgba(27, 44, 56, .90), rgba(19, 52, 63, .84)) !important;
+  border-color: rgba(174, 221, 232, .13) !important;
+  box-shadow: 0 12px 30px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.05) !important;
+}
+[data-theme="dark"] .sidebar-wrapper {
+  background: linear-gradient(180deg, #163f3a, #122b35) !important;
+  box-shadow: 0 16px 38px rgba(0,0,0,.42) !important;
+}
+[data-theme="dark"] .sidebar-menu-link.active {
+  background: #b5e633 !important;
+  color: #142b30 !important;
+}
+[data-theme="dark"] .sidebar-menu-link.active i { color: #142b30 !important; }
+[data-theme="dark"] .dashboard-tone-aqua { background: linear-gradient(135deg, #193f42, #172d36 76%) !important; }
+[data-theme="dark"] .dashboard-tone-sky, [data-theme="dark"] .dashboard-tone-sky-soft { background: linear-gradient(135deg, #183c51, #172d38 76%) !important; }
+[data-theme="dark"] .dashboard-tone-mint, [data-theme="dark"] .dashboard-tone-mint-soft { background: linear-gradient(135deg, #2a4024, #1d3329 76%) !important; }
+[data-theme="dark"] .dashboard-tone-violet, [data-theme="dark"] .dashboard-tone-lavender { background: linear-gradient(135deg, #332852, #24253e 76%) !important; }
+[data-theme="dark"] .dashboard-tone-peach, [data-theme="dark"] .dashboard-tone-peach-soft { background: linear-gradient(135deg, #4a302b, #38292d 76%) !important; }
+[data-theme="dark"] .dashboard-tone-cloud { background: linear-gradient(135deg, #1c3440, #172a35 76%) !important; }
+[data-theme="dark"] .section-doc-info { background: linear-gradient(135deg, #332852, #1d2b35 65%) !important; }
+[data-theme="dark"] .section-client-info { background: linear-gradient(135deg, #183f4c, #1d2b35 65%) !important; }
+[data-theme="dark"] .section-addresses { background: linear-gradient(135deg, #294329, #1d2b35 65%) !important; }
+[data-theme="dark"] .section-items { background: linear-gradient(135deg, #203b53, #1d2b35 65%) !important; }
+[data-theme="dark"] .section-financials { background: linear-gradient(135deg, #4a3c22, #1d2b35 65%) !important; }
+[data-theme="dark"] .section-terms { background: linear-gradient(135deg, #48302d, #1d2b35 65%) !important; }
+[data-theme="dark"] .table, [data-theme="dark"] .table tbody tr:hover td { color: #dceaf0; }
+[data-theme="dark"] .table thead th, [data-theme="dark"] .view-items-table thead th { background: rgba(43, 69, 82, .75) !important; color: #aac4d0 !important; }
+[data-theme="dark"] .table-responsive, [data-theme="dark"] .view-table-wrapper { background: rgba(10,20,28,.22); border-color: rgba(173,214,228,.10); }

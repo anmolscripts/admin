@@ -31,8 +31,8 @@ test('Payroll Calculation & GL Posting Integration Test Suite', async (t) => {
     });
 
     await t.test('Create employee master records and handle uniqueness', async () => {
-        const empCode1 = `EMP${Date.now().toString().slice(-4)}A`;
-        const empCode2 = `EMP${Date.now().toString().slice(-4)}B`;
+        const empCode1 = `EMP${Date.now()}_${Math.floor(Math.random() * 10000)}A`;
+        const empCode2 = `EMP${Date.now()}_${Math.floor(Math.random() * 10000)}B`;
 
         employee1 = await payrollService.createEmployee({
             employeeCode: empCode1,
@@ -247,14 +247,29 @@ test('Payroll Calculation & GL Posting Integration Test Suite', async (t) => {
         const periodCode = `PAY-${yr}-${String(mo).padStart(2, '0')}`;
         await prisma.payrollPeriod.deleteMany({ where: { periodCode } });
 
-        generatedPeriod = await payrollService.generatePayrollPeriod({ month: mo, year: yr }, testUser.id);
+        // Missing or invalid businessId must be rejected with ValidationError
+        await assert.rejects(
+            payrollService.generatePayrollPeriod({ month: mo, year: yr }, testUser.id),
+            /valid, positive integer businessId is required/i
+        );
+        await assert.rejects(
+            payrollService.generatePayrollPeriod({ businessId: 'not-a-number', month: mo, year: yr }, testUser.id),
+            /valid, positive integer businessId is required/i
+        );
+        await assert.rejects(
+            payrollService.generatePayrollPeriod({ businessId: -1, month: mo, year: yr }, testUser.id),
+            /valid, positive integer businessId is required/i
+        );
+
+        generatedPeriod = await payrollService.generatePayrollPeriod({ businessId: 1, month: mo, year: yr }, testUser.id);
         assert.ok(generatedPeriod.id);
+        assert.equal(generatedPeriod.businessId, 1);
         assert.equal(generatedPeriod.status, 'DRAFT');
         assert.ok(generatedPeriod.entriesCount >= 2);
 
-        // Disallow duplicate period generation
+        // Disallow duplicate period generation for the same business
         await assert.rejects(
-            payrollService.generatePayrollPeriod({ month: mo, year: yr }, testUser.id),
+            payrollService.generatePayrollPeriod({ businessId: 1, month: mo, year: yr }, testUser.id),
             /already generated/
         );
     });
@@ -276,6 +291,7 @@ test('Payroll Calculation & GL Posting Integration Test Suite', async (t) => {
             include: { lines: { include: { account: true } } }
         });
         assert.ok(journal);
+        assert.equal(journal.businessId, 1, 'Journal must be posted strictly to Business 1');
 
         // Double-entry validation: Total Debit must equal Total Credit exactly to the cent
         const totalDebit = journal.lines.reduce((s, l) => s + Number(l.debit), 0);
@@ -287,6 +303,119 @@ test('Payroll Calculation & GL Posting Integration Test Suite', async (t) => {
         assert.ok(accountKeys.includes('SALARIES_EXPENSE'), 'Must include Salaries Expense');
         assert.ok(accountKeys.includes('SALARIES_PAYABLE'), 'Must include Salaries Payable');
         assert.ok(accountKeys.includes('EPF_PAYABLE'), 'Must include EPF Payable');
+
+        // Requirement 5: Payroll journal postings use central JRNL/YYYY/MM/INCREMENT sequence independent of periodCode
+        assert.match(journal.entryNumber, /^JRNL\/\d{4}\/\d{2}\/\d+$/, 'Journal entry number must adhere to canonical JRNL/YYYY/MM/INCREMENT');
+    });
+
+    await t.test('Multi-business tenancy: Coexistence of identical periodCode across separate businesses and same-business duplicate prevention', async () => {
+        // Create or find a secondary test business
+        const biz2 = await prisma.business.upsert({
+            where: { code: 'PAYROLL_BIZ_2' },
+            create: {
+                code: 'PAYROLL_BIZ_2',
+                name: 'Secondary Payroll Corp',
+                currency: 'INR'
+            },
+            update: {}
+        });
+
+        // Create an employee in biz2
+        const empBiz2 = await payrollService.createEmployee({
+            businessId: biz2.id,
+            employeeCode: `EMP_BIZ2_${Date.now()}`,
+            firstName: 'Karan',
+            lastName: 'Mehta',
+            email: `karan_${Date.now()}@biz2.test`,
+            dateOfJoining: '2025-01-01'
+        }, testUser.id);
+
+        await payrollService.setSalaryStructure(empBiz2.id, {
+            effectiveFrom: '2025-01-01',
+            basicSalary: 30000,
+            hra: 10000,
+            epfApplicable: false,
+            esiApplicable: false,
+            ptApplicable: false,
+            tdsMonthly: 0
+        }, testUser.id);
+
+        // Generated period for Business 1 has periodCode: generatedPeriod.periodCode
+        // Now generate the EXACT SAME period for Business 2:
+        const periodBiz2 = await payrollService.generatePayrollPeriod({
+            businessId: biz2.id,
+            month: generatedPeriod.month,
+            year: generatedPeriod.year
+        }, testUser.id);
+
+        assert.equal(periodBiz2.periodCode, generatedPeriod.periodCode, 'Both businesses must use identical periodCode PAY-YYYY-MM');
+        assert.equal(periodBiz2.businessId, biz2.id);
+        assert.notEqual(periodBiz2.id, generatedPeriod.id);
+
+        // Same-business duplicate creation on Business 2 must be rejected
+        await assert.rejects(
+            payrollService.generatePayrollPeriod({
+                businessId: biz2.id,
+                month: generatedPeriod.month,
+                year: generatedPeriod.year
+            }, testUser.id),
+            /already generated/
+        );
+
+        // Approve and post periodBiz2 to GL -> journal must be allocated strictly to biz2.id
+        await payrollService.approvePayrollPeriod(periodBiz2.id, testUser.id);
+        const postedBiz2 = await payrollService.postPayrollToLedger(periodBiz2.id, testUser.id);
+        assert.equal(postedBiz2.status, 'POSTED');
+
+        const journalBiz2 = await prisma.journalEntry.findUnique({
+            where: { id: postedBiz2.journalEntryId }
+        });
+        assert.ok(journalBiz2);
+        assert.equal(journalBiz2.businessId, biz2.id, 'Business 2 payroll posting must strictly allocate journal in Business 2');
+        assert.match(journalBiz2.entryNumber, /^JRNL\/\d{4}\/\d{2}\/\d+$/);
+
+        // Cross-business unauthorized access check: staff member of biz2 cannot create or post payroll for Business 1
+        const staffUserB = await prisma.user.create({
+            data: {
+                name: 'Staff B User',
+                email: `staff_b_${Date.now()}@biz2.test`,
+                password: 'test-secret-2026',
+                role: 'STAFF',
+                active: true
+            }
+        });
+        await prisma.businessMembership.create({
+            data: {
+                userId: staffUserB.id,
+                businessId: biz2.id,
+                role: 'STAFF',
+                status: 'ACTIVE'
+            }
+        });
+
+        await assert.rejects(
+            payrollService.generatePayrollPeriod({
+                businessId: 1,
+                month: 11,
+                year: 2026
+            }, staffUserB.id),
+            /not authorized/i
+        );
+
+        await assert.rejects(
+            payrollService.postPayrollToLedger(generatedPeriod.id, staffUserB.id),
+            /not authorized/i
+        );
+
+        // Posting period with missing or corrupt business context must fail with actionable domain error
+        await assert.rejects(
+            payrollService.postPayrollToLedger(99999999, testUser.id),
+            /not found/i
+        );
+
+        // Clean up staffUserB
+        await prisma.businessMembership.deleteMany({ where: { userId: staffUserB.id } });
+        await prisma.user.delete({ where: { id: staffUserB.id } });
     });
 
     await t.test('Retrieve employee payslip breakdown', async () => {

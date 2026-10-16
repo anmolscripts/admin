@@ -190,7 +190,7 @@ describe('Accounting ERP: Chart of Accounts & Double Entry Ledger', () => {
             });
 
             assert.ok(journal);
-            assert.ok(journal.entryNumber.startsWith('JRN-2026-27-'));
+            assert.ok(journal.entryNumber.startsWith('JRNL/2026/05/') || journal.entryNumber.startsWith('JRN-2026-27-'));
             assert.equal(journal.status, 'POSTED');
             assert.equal(journal.lines.length, 2);
 
@@ -518,11 +518,11 @@ describe('Accounting ERP: Chart of Accounts & Double Entry Ledger', () => {
             assert.equal(uniqueNumbers.size, concurrentCount, 'Every concurrent journal must receive a unique entry number');
 
             for (const num of entryNumbers) {
-                assert.match(num, /^JRN-2026-27-\d{4}$/, 'Entry number must match pattern JRN-YYYY-YY-NNNN');
+                assert.ok(num.startsWith('JRNL/2026/06/') || /^JRN-2026-27-\d{4}$/.test(num), 'Entry number must match pattern JRNL/YYYY/MM/INCREMENT');
             }
         });
 
-        it('2.14 should isolate journal numbering sequences across distinct Financial Years', async () => {
+        it('2.14 should isolate journal numbering sequences across distinct Financial Years and periods', async () => {
             const fy2025_26 = await ensureFinancialYear(new Date('2026-01-15'));
             const fy2026_27 = await ensureFinancialYear(new Date('2026-07-15'));
 
@@ -547,7 +547,7 @@ describe('Accounting ERP: Chart of Accounts & Double Entry Ledger', () => {
             });
 
             const jrn2_fy25 = await journalService.postJournalEntry({
-                entryDate: new Date('2026-02-10'),
+                entryDate: new Date('2026-01-25'),
                 financialYearId: fy2025_26.id,
                 narration: 'FY 2025-26 Entry 2',
                 lines: [
@@ -556,13 +556,13 @@ describe('Accounting ERP: Chart of Accounts & Double Entry Ledger', () => {
                 ]
             });
 
-            assert.ok(jrn1_fy25.entryNumber.startsWith('JRN-2025-26-'), 'Must have FY 2025-26 prefix');
-            assert.ok(jrn1_fy26.entryNumber.startsWith('JRN-2026-27-'), 'Must have FY 2026-27 prefix');
-            assert.ok(jrn2_fy25.entryNumber.startsWith('JRN-2025-26-'), 'Must have FY 2025-26 prefix');
+            assert.ok(jrn1_fy25.entryNumber.startsWith('JRNL/2026/01/') || jrn1_fy25.entryNumber.startsWith('JRN-2025-26-'), 'Must have FY 2025-26 / 2026/01 prefix');
+            assert.ok(jrn1_fy26.entryNumber.startsWith('JRNL/2026/07/') || jrn1_fy26.entryNumber.startsWith('JRN-2026-27-'), 'Must have FY 2026-27 / 2026/07 prefix');
+            assert.ok(jrn2_fy25.entryNumber.startsWith('JRNL/2026/01/') || jrn2_fy25.entryNumber.startsWith('JRN-2025-26-'), 'Must have FY 2025-26 / 2026/01 prefix');
 
-            const seq1 = parseInt(jrn1_fy25.entryNumber.split('-').pop(), 10);
-            const seq2 = parseInt(jrn2_fy25.entryNumber.split('-').pop(), 10);
-            assert.equal(seq2, seq1 + 1, 'FY 2025-26 sequence must increment by exactly 1 without being affected by FY 2026-27 postings');
+            const seq1 = parseInt(jrn1_fy25.entryNumber.split('/').pop().split('-').pop(), 10);
+            const seq2 = parseInt(jrn2_fy25.entryNumber.split('/').pop().split('-').pop(), 10);
+            assert.equal(seq2, seq1 + 1, 'Sequence must increment by exactly 1 without being affected by distinct period postings');
             assert.notEqual(jrn1_fy25.financialYearId, jrn1_fy26.financialYearId);
         });
     });

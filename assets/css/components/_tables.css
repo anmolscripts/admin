@@ -1,0 +1,169 @@
+/* assets/css/components/_tables.css */
+/* Modern SaaS & Glass-Morphic Table Design System with Sticky Headers */
+
+/* Global Scrollable Table Containers for Sticky Headers */
+.table-responsive {
+  max-height: min(72vh, 680px);
+  overflow-y: auto;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+}
+
+.table-modern,
+.card-glass .table,
+.table {
+  width: 100%;
+  vertical-align: middle;
+  border-color: var(--sa-border, #E7EAF2);
+  color: var(--sa-text-main, #1E293B);
+}
+
+/* Sticky Header Cells - Global Across Standard, Glass & Modern Tables */
+.table thead th,
+.table thead.table-light th,
+.table-light th,
+.card-glass .table thead th,
+.table-modern thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: var(--sa-table-header-bg, #F8FAFC) !important;
+  color: var(--sa-text-secondary, #64748B);
+  font-weight: 700;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  border-bottom: 1px solid var(--sa-border, #E7EAF2);
+  border-top: none;
+  box-shadow: inset 0 -1px 0 var(--sa-border, #E7EAF2);
+  padding: 0.85rem 1rem;
+  white-space: nowrap;
+}
+
+/* Darker header option when specified */
+.table thead.table-dark th {
+  background: var(--sa-nav-bg, #15182B);
+  color: var(--sa-nav-text, #AAB2CA);
+  border-color: var(--sa-nav-border, #252A47);
+  box-shadow: inset 0 -1px 0 var(--sa-nav-border, #252A47);
+}
+
+/* Body Rows */
+.table tbody tr {
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.table-hover tbody tr:hover,
+.card-glass .table tbody tr:hover {
+  background-color: var(--sa-table-row-hover, rgba(99, 91, 255, 0.035));
+}
+
+/* Data Cells */
+.table td,
+.card-glass .table td {
+  padding: 0.85rem 1rem;
+  color: var(--sa-text-main, #1E293B);
+  font-size: 0.875rem;
+  border-bottom: 1px solid var(--sa-border, rgba(231, 234, 242, 0.8));
+  border-top: none;
+}
+
+/* Dark Theme Table Overrides */
+[data-theme="dark"] .table {
+  --bs-table-bg: transparent;
+  --bs-table-color: var(--sa-text-main);
+  border-color: var(--sa-border);
+}
+
+[data-theme="dark"] .table-light,
+[data-theme="dark"] .table thead.table-light,
+[data-theme="dark"] .table thead.table-light th,
+[data-theme="dark"] .table-light th {
+  --bs-table-bg: var(--sa-table-header-bg) !important;
+  --bs-table-color: var(--sa-text-secondary) !important;
+  background-color: var(--sa-table-header-bg) !important;
+  color: var(--sa-text-secondary) !important;
+  border-color: var(--sa-border) !important;
+}
+
+[data-theme="dark"] .table-striped > tbody > tr:nth-of-type(odd) > * {
+  background-color: rgba(255, 255, 255, 0.02);
+  color: var(--sa-text-main);
+}
+
+[data-theme="dark"] .table-hover > tbody > tr:hover > * {
+  background-color: var(--sa-table-row-hover, rgba(99, 91, 255, 0.08));
+  color: var(--sa-text-main);
+}
+
+/* Optional Card-Row floating table */
+.table-cards {
+  border-collapse: separate;
+  border-spacing: 0 0.45rem;
+}
+
+.table-cards tbody tr {
+  background: var(--sa-surface, #FFFFFF);
+  border-radius: var(--sa-radius-md, 10px);
+  box-shadow: var(--sa-shadow-xs, 0 1px 3px rgba(16, 24, 40, 0.04));
+}
+
+.table-cards tbody tr:hover {
+  background: var(--sa-surface-elevated, #FFFFFF);
+  box-shadow: var(--sa-shadow-md, 0 4px 12px rgba(99, 91, 255, 0.08));
+  transform: translateY(-1px);
+}
+
+.table-cards td:first-child {
+  border-top-left-radius: var(--sa-radius-md, 10px);
+  border-bottom-left-radius: var(--sa-radius-md, 10px);
+}
+
+.table-cards td:last-child {
+  border-top-right-radius: var(--sa-radius-md, 10px);
+  border-bottom-right-radius: var(--sa-radius-md, 10px);
+}
+
+/* Financial Monospace Alignment */
+.table td.text-end,
+.table th.text-end {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Modal Table Container Constraints to Prevent Awkward Double-Scrolling */
+.modal-body .table-responsive {
+  max-height: min(50vh, 420px);
+}
+
+/* Print Layout Integrity */
+@media print {
+  body {
+    background-color: #FFFFFF !important;
+    background-image: none !important;
+    color: #000000 !important;
+  }
+  .table-responsive {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  .table {
+    --bs-table-bg: transparent !important;
+    --bs-table-color: #000000 !important;
+    color: #000000 !important;
+  }
+  .table thead th,
+  .table thead.table-light th,
+  .table-light th,
+  .card-glass .table thead th,
+  .table-modern thead th {
+    position: static !important;
+    box-shadow: none !important;
+    background-color: #F8FAFC !important;
+    color: #000000 !important;
+  }
+  .table td {
+    color: #000000 !important;
+    background-color: transparent !important;
+  }
+}

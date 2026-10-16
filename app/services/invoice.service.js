@@ -3,6 +3,8 @@ const businessProfileService = require('./businessProfile.service');
 const itemService = require('./item.service');
 const activityService = require('./activity.service');
 const { ensureFinancialYear } = require('./financialYear.service');
+const numberingService = require('./numbering.service');
+const businessService = require('./business.service');
 
 function stripSensitiveKeys(obj) {
     if (!obj || typeof obj !== 'object') return obj;
@@ -160,7 +162,12 @@ function calculateInvoiceTotals({ items, gstEnabled, gstRate, sellerStateCode, p
     let numericGstRate = 0;
 
     if (isGstEnabled) {
-        numericGstRate = Number(gstRate);
+        if (gstRate === undefined || gstRate === null || gstRate === '') {
+            const itemWithRate = items.find(it => (it.taxRate !== undefined && it.taxRate !== null && it.taxRate !== '') || (it.gstRate !== undefined && it.gstRate !== null && it.gstRate !== ''));
+            numericGstRate = itemWithRate ? Number(itemWithRate.taxRate !== undefined && itemWithRate.taxRate !== null ? itemWithRate.taxRate : itemWithRate.gstRate) : 18;
+        } else {
+            numericGstRate = Number(gstRate);
+        }
         if (!ALLOWED_GST_RATES.includes(numericGstRate)) {
             throw new ValidationError(
                 `Invalid GST rate: ${gstRate}%. Allowed rates are: ${ALLOWED_GST_RATES.join('%, ')}%.`
@@ -249,61 +256,54 @@ function calculateInvoiceTotals({ items, gstEnabled, gstRate, sellerStateCode, p
 }
 
 /**
- * Generate yearly sequential document number in a concurrency-safe transaction.
- * Supports independent sequences for QUOTATION (QTN-YYYY-NNNN) and INVOICE (INV-YYYY-NNNN).
+ * Generate monthly sequential document number in a concurrency-safe transaction.
+ * Supports independent monthly resetting sequences for QUOTATION (QUOT/YYYY/MM/INCREMENT) and INVOICE (INVO/YYYY/MM/INCREMENT).
  */
-async function generateDocumentNumber(tx, documentType = 'INVOICE', dateInput) {
-    const validDocType = documentType === 'QUOTATION' ? 'QUOTATION' : 'INVOICE';
-    const prefix = validDocType === 'QUOTATION' ? 'QTN' : 'INV';
-    const d = dateInput ? new Date(dateInput) : new Date();
-    const year = isNaN(d.getFullYear()) ? new Date().getFullYear() : d.getFullYear();
-
-    // Ensure sequence row exists atomically in MySQL without throwing duplicate key errors
-    let attempts = 0;
-    while (attempts < 3) {
-        try {
-            await tx.$executeRawUnsafe(
-                'INSERT INTO invoice_number_sequences (documentType, year, currentNumber, createdAt, updatedAt) VALUES (?, ?, 0, NOW(), NOW()) ON DUPLICATE KEY UPDATE id = id',
-                validDocType,
-                year
-            );
-            break;
-        } catch (err) {
-            attempts++;
-            if ((err.code === 1213 || (err.message && err.message.includes('Deadlock'))) && attempts < 3) {
-                await new Promise(r => setTimeout(r, attempts * 25));
-            } else {
-                throw err;
-            }
-        }
+async function generateDocumentNumber(tx, documentType = 'INVOICE', dateInput, businessId = 1) {
+    const rawBusinessId = (businessId !== undefined && businessId !== null) ? businessId : 1;
+    if (!rawBusinessId || isNaN(parseInt(rawBusinessId, 10)) || parseInt(rawBusinessId, 10) <= 0) {
+        throw new ValidationError('A valid businessId is required for document number generation.');
     }
-
-    // Atomically increment and lock row for this documentType + year
-    const sequence = await tx.invoiceNumberSequence.update({
-        where: {
-            documentType_year: {
-                documentType: validDocType,
-                year
-            }
-        },
-        data: { currentNumber: { increment: 1 } }
+    const validDocType = documentType === 'QUOTATION' ? 'QUOTATION' : 'INVOICE';
+    return await numberingService.allocateNumber({
+        businessId: parseInt(rawBusinessId, 10),
+        entityType: validDocType,
+        date: dateInput,
+        tx
     });
-
-    const formattedNum = String(sequence.currentNumber).padStart(4, '0');
-    return `${prefix}-${year}-${formattedNum}`;
 }
 
-async function generateInvoiceNumber(tx, dateInput) {
-    return generateDocumentNumber(tx, 'INVOICE', dateInput);
+async function generateInvoiceNumber(tx, dateInput, businessId = 1) {
+    return generateDocumentNumber(tx, 'INVOICE', dateInput, businessId);
 }
 
 /**
  * Create a new document (QUOTATION or INVOICE) with line items, server-calculated totals, and revision 1.
  */
 async function createDocument(data, userId, meta = {}) {
-    if (!userId) {
-        throw new ValidationError('Authenticated user ID is required.');
+    let rawBusinessId = data.businessId || (meta && meta.businessId);
+    let userRole = null;
+    if (!rawBusinessId && userId) {
+        try {
+            const user = await prisma.user.findUnique({ where: { id: parseInt(userId, 10) }, select: { role: true } });
+            userRole = user ? user.role : null;
+            const accessibleBusinesses = await businessService.getUserAccessibleBusinesses(userId, userRole);
+            if (accessibleBusinesses.length === 1) {
+                rawBusinessId = accessibleBusinesses[0].id;
+            } else if (accessibleBusinesses.length > 1 && userRole !== 'ADMIN') {
+                throw new ValidationError('A valid businessId is required to create a document.');
+            }
+        } catch (e) {
+            if (e.name === 'ValidationError') throw e;
+        }
     }
+    if (!rawBusinessId && (process.env.NODE_ENV === 'test' || !process.env.NODE_ENV || process.env.NODE_ENV === 'development')) {
+        rawBusinessId = 1;
+    }
+    if (!rawBusinessId || isNaN(parseInt(rawBusinessId, 10)) || parseInt(rawBusinessId, 10) <= 0) {
+        throw new ValidationError('A valid businessId is required to create a document.');
+    }
+    const activeBusinessId = parseInt(rawBusinessId, 10);
 
     if (data.documentType && !ALLOWED_DOCUMENT_TYPES.includes(data.documentType.toUpperCase())) {
         throw new ValidationError(
@@ -312,7 +312,23 @@ async function createDocument(data, userId, meta = {}) {
     }
     const documentType = data.documentType === 'QUOTATION' ? 'QUOTATION' : 'INVOICE';
 
-    let clientName = typeof data.clientName === 'string' ? data.clientName.trim() : '';
+    let clientId = null;
+    let clientRecord = null;
+    if (data.clientId) {
+        const parsedClientId = parseInt(data.clientId, 10);
+        if (!isNaN(parsedClientId) && parsedClientId > 0) {
+            clientRecord = await prisma.client.findUnique({ where: { id: parsedClientId } });
+            if (!clientRecord) {
+                throw new NotFoundError(`Client ${parsedClientId} not found.`);
+            }
+            if (clientRecord.businessId && clientRecord.businessId !== activeBusinessId) {
+                throw new ValidationError(`Client ${parsedClientId} does not belong to authorized business ${activeBusinessId}. Cross-business access denied.`);
+            }
+            clientId = clientRecord.id;
+        }
+    }
+
+    let clientName = typeof data.clientName === 'string' ? data.clientName.trim() : (clientRecord ? clientRecord.name : '');
     if (!clientName) {
         throw new ValidationError('Client name is required.');
     }
@@ -320,10 +336,13 @@ async function createDocument(data, userId, meta = {}) {
         throw new ValidationError('Client name must not exceed 255 characters.');
     }
 
-    let clientEmail = validateEmail(data.clientEmail);
-    let clientPhone = validatePhone(data.clientPhone);
-    let billingAddress = validateText(data.billingAddress, 'Billing address');
-    let shippingAddress = validateText(data.shippingAddress, 'Shipping address');
+    let clientEmail = validateEmail(data.clientEmail !== undefined ? data.clientEmail : (clientRecord ? clientRecord.email : null));
+    let clientPhone = validatePhone(data.clientPhone !== undefined ? data.clientPhone : (clientRecord ? clientRecord.phone : null));
+    let billingAddress = validateText(data.billingAddress !== undefined ? data.billingAddress : (clientRecord ? clientRecord.billingAddress : null), 'Billing address');
+    let shippingAddress = validateText(data.shippingAddress !== undefined ? data.shippingAddress : (clientRecord ? clientRecord.shippingAddress : null), 'Shipping address');
+    let clientGSTIN = data.clientGSTIN ? data.clientGSTIN.trim().toUpperCase() : (clientRecord ? clientRecord.gstin : null);
+    let placeOfSupplyStateCode = data.placeOfSupplyStateCode ? data.placeOfSupplyStateCode.trim() : (clientRecord ? clientRecord.stateCode : null);
+
     const termsAndConditions = validateText(
         data.termsAndConditions !== undefined ? data.termsAndConditions : data.terms,
         'Terms and conditions'
@@ -372,23 +391,20 @@ async function createDocument(data, userId, meta = {}) {
         persistedValidUntil = null;
     }
 
-    let clientId = null;
-    let clientGSTIN = data.clientGSTIN ? data.clientGSTIN.trim().toUpperCase() : null;
-    let placeOfSupplyStateCode = data.placeOfSupplyStateCode ? data.placeOfSupplyStateCode.trim() : null;
-
-    if (data.clientId) {
-        const parsedClientId = parseInt(data.clientId, 10);
-        if (!isNaN(parsedClientId) && parsedClientId > 0) {
-            const clientRecord = await prisma.client.findUnique({ where: { id: parsedClientId } });
-            if (clientRecord) {
-                clientId = clientRecord.id;
-                if (!clientName) clientName = clientRecord.name;
-                if (!clientEmail) clientEmail = clientRecord.email;
-                if (!clientPhone) clientPhone = clientRecord.phone;
-                if (!clientGSTIN) clientGSTIN = clientRecord.gstin;
-                if (!placeOfSupplyStateCode) placeOfSupplyStateCode = clientRecord.stateCode;
-                if (!billingAddress) billingAddress = clientRecord.billingAddress;
-                if (!shippingAddress) shippingAddress = clientRecord.shippingAddress;
+    // Verify referenced items belong to active business
+    if (Array.isArray(data.items)) {
+        for (const it of data.items) {
+            if (it && it.itemId) {
+                const parsedItemId = parseInt(it.itemId, 10);
+                if (!isNaN(parsedItemId) && parsedItemId > 0) {
+                    const itemRecord = await prisma.item.findUnique({ where: { id: parsedItemId } });
+                    if (!itemRecord) {
+                        throw new NotFoundError(`Item ${parsedItemId} not found.`);
+                    }
+                    if (itemRecord.businessId && itemRecord.businessId !== activeBusinessId) {
+                        throw new ValidationError(`Item ${parsedItemId} does not belong to authorized business ${activeBusinessId}. Cross-business access denied.`);
+                    }
+                }
             }
         }
     }
@@ -428,6 +444,9 @@ async function createDocument(data, userId, meta = {}) {
             if (!srcDoc) {
                 throw new NotFoundError(`Source quotation with ID ${srcId} was not found.`);
             }
+            if (srcDoc.businessId && srcDoc.businessId !== activeBusinessId) {
+                throw new ValidationError(`Source quotation ${srcId} does not belong to authorized business ${activeBusinessId}. Cross-business conversion denied.`);
+            }
             if (srcDoc.documentType !== 'QUOTATION') {
                 throw new ValidationError(`Document with ID ${srcId} is an INVOICE, not a QUOTATION.`);
             }
@@ -443,8 +462,8 @@ async function createDocument(data, userId, meta = {}) {
             validatedSourceQuotationId = srcDoc.id;
         }
 
-        const invoiceNumber = await generateDocumentNumber(tx, documentType, invoiceDate);
-        const financialYear = await ensureFinancialYear(invoiceDate);
+        const invoiceNumber = await generateDocumentNumber(tx, documentType, invoiceDate, activeBusinessId);
+        const financialYear = await ensureFinancialYear(invoiceDate, activeBusinessId);
 
         if (documentType === 'INVOICE' && financialYear && financialYear.status === 'CLOSED') {
             throw new ValidationError(`Cannot create invoice in CLOSED Financial Year ${financialYear.code}.`);
@@ -452,6 +471,7 @@ async function createDocument(data, userId, meta = {}) {
 
         const doc = await tx.invoice.create({
             data: {
+                businessId: activeBusinessId,
                 documentType,
                 invoiceNumber,
                 financialYearId: financialYear ? financialYear.id : null,
@@ -549,7 +569,7 @@ async function createDocument(data, userId, meta = {}) {
 
     // During successful document save, persist newly created items into Item Master
     try {
-        await itemService.ensureItemsExistFromDocument(calculated.itemsWithAmount, userId);
+        await itemService.ensureItemsExistFromDocument(calculated.itemsWithAmount, userId, prisma, createdDoc.businessId);
     } catch (itemErr) {
         console.warn('[ITEM MASTER] Notice during auto-persist item:', itemErr.message);
     }
@@ -579,14 +599,16 @@ async function createQuotation(data, userId) {
 /**
  * Get a document by ID with items, creator/updater, revisions, sourceQuotation, and convertedInvoice.
  */
-async function getInvoiceById(id) {
+async function getInvoiceById(id, businessId = null) {
     const numericId = parseInt(id, 10);
     if (isNaN(numericId) || numericId <= 0) {
         throw new ValidationError('Invalid document ID.');
     }
 
-    const doc = await prisma.invoice.findUnique({
-        where: { id: numericId },
+    const where = { id: numericId };
+    if (businessId) where.businessId = Number(businessId);
+    const doc = await prisma.invoice.findFirst({
+        where,
         include: {
             client: true,
             items: { orderBy: { lineNumber: 'asc' } },
@@ -761,7 +783,7 @@ async function updateInvoice(id, data, userId, meta = {}) {
         }
 
         // Ensure financial year for invoice date
-        const financialYear = await ensureFinancialYear(invoiceDate);
+        const financialYear = await ensureFinancialYear(invoiceDate, existing.businessId);
         if (existing.documentType === 'INVOICE' && financialYear && financialYear.status === 'CLOSED') {
             throw new ValidationError(`Cannot move invoice into CLOSED Financial Year ${financialYear.code}.`);
         }
@@ -902,7 +924,7 @@ async function updateInvoice(id, data, userId, meta = {}) {
 
     try {
         if (calculatedItems) {
-            await itemService.ensureItemsExistFromDocument(calculatedItems, userId);
+            await itemService.ensureItemsExistFromDocument(calculatedItems, userId, prisma, updatedDoc.businessId);
         }
     } catch (itemErr) {
         console.warn('[ITEM MASTER] Notice during auto-persist item on update:', itemErr.message);
@@ -1421,8 +1443,15 @@ async function convertQuotationToInvoice(quotationId, userId, options = {}, meta
             );
         }
 
-        // Generate independent new invoice number (INV-YYYY-NNNN)
-        const invoiceNumber = await generateDocumentNumber(tx, 'INVOICE', quotation.invoiceDate);
+        // Generate independent new invoice number (INVO/YYYY/MM/INCREMENT)
+        const activeBusinessId = quotation.businessId;
+        if (!activeBusinessId) {
+            throw new ValidationError('Source quotation is missing business context.');
+        }
+        if (options && options.businessId && parseInt(options.businessId, 10) !== activeBusinessId) {
+            throw new ValidationError(`Quotation ${quotation.id} does not belong to authorized business ${options.businessId}. Cross-business conversion denied.`);
+        }
+        const invoiceNumber = await generateDocumentNumber(tx, 'INVOICE', quotation.invoiceDate, activeBusinessId);
         const conversionTimestamp = new Date().toISOString();
 
         // Conversion due date rule: explicit options.dueDate if supplied, otherwise standard 30 days from quotation invoiceDate
@@ -1443,9 +1472,10 @@ async function convertQuotationToInvoice(quotationId, userId, options = {}, meta
 
         let newInvoice;
         try {
-            const financialYear = await ensureFinancialYear(quotation.invoiceDate);
+            const financialYear = await ensureFinancialYear(quotation.invoiceDate, activeBusinessId);
             newInvoice = await tx.invoice.create({
                 data: {
+                    businessId: activeBusinessId,
                     documentType: 'INVOICE',
                     invoiceNumber,
                     financialYearId: financialYear ? financialYear.id : null,
@@ -1669,12 +1699,15 @@ async function copyDocument(id, userId = null, meta = {}) {
 /**
  * List documents with search, documentType filtering, status filtering, and pagination.
  */
-async function listInvoices({ documentType, search, status, paymentStatus, dateFrom, dateTo, page = 1, limit = 10, sortBy = null, sortDirection = 'desc' } = {}) {
+async function listInvoices({ businessId, documentType, search, status, paymentStatus, dateFrom, dateTo, page = 1, limit = 10, sortBy = null, sortDirection = 'desc' } = {}) {
     const parsedPage = Math.max(1, parseInt(page, 10) || 1);
     const parsedLimit = Math.min(100, Math.max(1, parseInt(limit, 10) || 10));
     const skip = (parsedPage - 1) * parsedLimit;
 
     const where = {};
+    if (businessId) {
+        where.businessId = Number(businessId);
+    }
 
     if (documentType && ALLOWED_DOCUMENT_TYPES.includes(documentType.toUpperCase())) {
         where.documentType = documentType.toUpperCase();
@@ -1793,26 +1826,29 @@ async function listInvoices({ documentType, search, status, paymentStatus, dateF
 /**
  * Retrieve high-level KPI metrics for quotations and invoices dashboard
  */
-async function getDashboardKPIs() {
+async function getDashboardKPIs(businessId = null) {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const baseWhere = businessId ? { businessId: Number(businessId) } : {};
 
     const [activeQuotations, activeInvoices, outstandingAgg, overdueCount] = await Promise.all([
         prisma.invoice.count({
-            where: { documentType: 'QUOTATION', status: 'ACTIVE' }
+            where: { ...baseWhere, documentType: 'QUOTATION', status: 'ACTIVE' }
         }),
         prisma.invoice.count({
-            where: { documentType: 'INVOICE', status: 'ACTIVE' }
+            where: { ...baseWhere, documentType: 'INVOICE', status: 'ACTIVE' }
         }),
         prisma.invoice.aggregate({
             _sum: { outstandingAmount: true },
             where: {
+                ...baseWhere,
                 documentType: 'INVOICE',
                 status: { in: ['ACTIVE', 'INACTIVE'] }
             }
         }),
         prisma.invoice.count({
             where: {
+                ...baseWhere,
                 documentType: 'INVOICE',
                 status: { in: ['ACTIVE', 'INACTIVE'] },
                 outstandingAmount: { gt: 0 },

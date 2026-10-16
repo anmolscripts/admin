@@ -86,7 +86,7 @@ async function getItem(req, res, next) {
 async function createItem(req, res, next) {
     try {
         const userId = req.session && req.session.user ? req.session.user.id : null;
-        const item = await itemService.createItem(req.body, userId);
+        const item = await itemService.createItem({ ...req.body, businessId: req.businessId }, userId);
         return res.status(201).json({
             success: true,
             data: item

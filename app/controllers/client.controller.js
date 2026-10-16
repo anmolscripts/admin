@@ -57,7 +57,7 @@ async function getClient(req, res) {
 async function createClient(req, res) {
     try {
         const userId = req.session && req.session.user ? req.session.user.id : null;
-        const client = await clientService.createClient(req.body, userId);
+        const client = await clientService.createClient({ ...req.body, businessId: req.businessId }, userId);
         return res.status(201).json({ success: true, data: client });
     } catch (err) {
         return handleControllerError(err, res);

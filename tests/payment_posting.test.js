@@ -114,7 +114,7 @@ describe('Milestone 5: Payment Accounting Posting & Double-Entry Integration', (
             assert.equal(journal.sourceType, 'PAYMENT');
             assert.equal(journal.sourceId, paymentRecord.id);
             assert.equal(journal.idempotencyKey, `PAYMENT:${paymentRecord.id}`);
-            assert.ok(journal.entryNumber.startsWith('JRN-2026-27-'));
+            assert.ok(journal.entryNumber.startsWith('JRNL/'));
         });
 
         it('1.6 should verify exact double-entry balance: SUM(Dr) === SUM(Cr)', async () => {
@@ -220,7 +220,7 @@ describe('Milestone 5: Payment Accounting Posting & Double-Entry Integration', (
             const fy2025_26 = await ensureFinancialYear(new Date('2026-03-31'));
             assert.equal(payRes.payment.financialYearId, fy2025_26.id);
             assert.equal(payRes.journal.financialYearId, fy2025_26.id);
-            assert.ok(payRes.journal.entryNumber.startsWith(`JRN-${fy2025_26.code}-`));
+            assert.ok(payRes.journal.entryNumber.startsWith('JRNL/2026/03/'));
         });
 
         it('3.2 should map payment on 1 April 2026 to FY 2026-27', async () => {
@@ -233,7 +233,7 @@ describe('Milestone 5: Payment Accounting Posting & Double-Entry Integration', (
             const fy2026_27 = await ensureFinancialYear(new Date('2026-04-01'));
             assert.equal(payRes.payment.financialYearId, fy2026_27.id);
             assert.equal(payRes.journal.financialYearId, fy2026_27.id);
-            assert.ok(payRes.journal.entryNumber.startsWith(`JRN-${fy2026_27.code}-`));
+            assert.ok(payRes.journal.entryNumber.startsWith('JRNL/2026/04/'));
         });
 
         it('3.3 should reject posting when payment date is in a CLOSED Financial Year', async () => {

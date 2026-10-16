@@ -88,6 +88,120 @@
                 |-- removed-features.md
                 |-- schema-changes.md
             |-- SKILL.md
+|-- .antigravity
+    |-- extensions.json
+|-- .artifacts
+    |-- autonomous-run
+        |-- run-20261010-01
+            |-- DATABASE_SAFETY.md
+            |-- DBA_DEPLOYMENT_HANDOVER.md
+            |-- DECISION_LOG.md
+            |-- FAILURES_AND_FIXES.md
+            |-- FINAL_REPORT.md
+            |-- README.md
+            |-- RISK_REGISTER.md
+            |-- RUN_LOG.md
+            |-- tasks
+                |-- TASK-000.md
+                |-- TASK-001.md
+                |-- TASK-002.md
+                |-- TASK-003.md
+                |-- TASK-004.md
+                |-- TASK-005.md
+                |-- TASK-006.md
+                |-- TASK-100.md
+                |-- TASK-101.md
+                |-- TASK-102.md
+                |-- TASK-103.md
+                |-- TASK-104.md
+                |-- TASK-105.md
+                |-- TASK-200.md
+                |-- TASK-201.md
+                |-- TASK-202.md
+                |-- TASK-203.md
+                |-- TASK-204.md
+                |-- TASK-205.md
+                |-- TASK-206.md
+                |-- TASK-207.md
+                |-- TASK-208.md
+                |-- TASK-209.md
+                |-- TASK-210.md
+                |-- TASK-300.md
+                |-- TASK-301.md
+                |-- TASK-302.md
+                |-- TASK-303.md
+                |-- TASK-304.md
+                |-- TASK-305.md
+                |-- TASK-306.md
+                |-- TASK-307.md
+                |-- TASK-308.md
+                |-- TASK-400.md
+                |-- TASK-401.md
+                |-- TASK-402.md
+                |-- TASK-403.md
+                |-- TASK-404.md
+                |-- TASK-405.md
+                |-- TASK-406.md
+                |-- TASK-500.md
+                |-- TASK-501.md
+                |-- TASK-502.md
+                |-- TASK-503.md
+                |-- TASK-504.md
+                |-- TASK-505.md
+                |-- TASK-600.md
+                |-- TASK-601.md
+                |-- TASK-602.md
+                |-- TASK-603.md
+                |-- TASK-604.md
+                |-- TASK-605.md
+                |-- TASK-606.md
+                |-- TASK-607.md
+                |-- TASK-700.md
+                |-- TASK-701.md
+                |-- TASK-702.md
+                |-- TASK-703.md
+                |-- TASK-704.md
+                |-- TASK-800.md
+                |-- TASK-801.md
+                |-- TASK-802.md
+                |-- TASK-803.md
+                |-- TASK-804.md
+                |-- TASK-805.md
+                |-- TASK-806.md
+                |-- TASK-807.md
+                |-- TASK-900.md
+                |-- TASK-901.md
+                |-- TASK-902.md
+                |-- TASK-903.md
+                |-- TASK-904.md
+                |-- TASK-FINAL-001.md
+                |-- TASK-FINAL-002.md
+                |-- TASK-FINAL-003.md
+                |-- TASK-FINAL-004.md
+                |-- TASK-FINAL-005.md
+                |-- TASK-FINAL-006.md
+                |-- TASK-FINAL-007.md
+            |-- TASK_BOARD.md
+            |-- TEST_SUMMARY.md
+    |-- milestone-8
+        |-- full-test-suite-20261009.log
+    |-- product-readiness
+        |-- check_complete_test_suite.log
+        |-- check_doctor_health_check.log
+        |-- check_migration_16_upgrade_proof.log
+        |-- check_prisma_migration_status.log
+        |-- check_prisma_schema_validation.log
+        |-- check_syntax_app.log
+        |-- check_syntax_business_profile.log
+        |-- check_syntax_business_service.log
+        |-- check_syntax_navigation_service.log
+        |-- check_syntax_numbering_service.log
+        |-- check_syntax_payroll_service.log
+        |-- check_syntax_profile_service.log
+        |-- check_syntax_reporting_workbench.log
+        |-- check_syntax_schema_readiness.log
+        |-- check_syntax_search_service.log
+        |-- check_syntax_server.log
 |-- .claude
     |-- skills
         |-- prisma-cli
@@ -182,6 +296,7 @@
 |-- .env
 |-- .env.example
 |-- .env.production.example
+|-- .env.test
 |-- .gitattributes
 |-- .gitignore
 |-- .nvmrc
@@ -280,25 +395,37 @@
     |-- config
         |-- env.js
         |-- prisma.js
+        |-- schemaReadiness.js
         |-- session.js
+        |-- sessionStore.js
     |-- controllers
         |-- auth.controller.js
+        |-- business.controller.js
         |-- businessProfile.controller.js
         |-- client.controller.js
+        |-- creditDebitNote.controller.js
         |-- dashboard.controller.js
+        |-- erp.controller.js
+        |-- financialYear.controller.js
         |-- invitation.controller.js
         |-- invoice.controller.js
         |-- item.controller.js
         |-- payment.controller.js
+        |-- profile.controller.js
+        |-- purchase.controller.js
+        |-- report.controller.js
+        |-- reportingWorkbench.controller.js
         |-- search.controller.js
         |-- team.controller.js
         |-- unit.controller.js
     |-- middleware
         |-- auth.middleware.js
+        |-- businessContext.middleware.js
         |-- csrf.middleware.js
         |-- error.middleware.js
         |-- permission.middleware.js
         |-- rateLimit.middleware.js
+        |-- upload.middleware.js
     |-- routes
         |-- admin.routes.js
         |-- auth.routes.js
@@ -308,25 +435,53 @@
         |-- web.routes.js
     |-- server.js
     |-- services
+        |-- accounting
+            |-- posting.service.js
+            |-- report.service.js
         |-- activity.service.js
         |-- auth.service.js
+        |-- business.service.js
         |-- businessProfile.service.js
+        |-- chartOfAccounts.service.js
         |-- client.service.js
+        |-- creditDebitNote.service.js
         |-- dashboard.service.js
         |-- documentView.service.js
+        |-- errorTypes.js
         |-- excel.service.js
+        |-- expense.service.js
+        |-- financialYear.service.js
+        |-- financialYearClosing.service.js
         |-- invitation.service.js
         |-- invoice.service.js
         |-- item.service.js
+        |-- journal.service.js
+        |-- navigation.service.js
+        |-- numbering.service.js
+        |-- otherIncome.service.js
         |-- payment.service.js
+        |-- payroll.service.js
         |-- pdf.service.js
+        |-- profile.service.js
+        |-- project.service.js
+        |-- purchaseOrder.service.js
         |-- rbac.service.js
+        |-- reportingWorkbench.service.js
         |-- search.service.js
+        |-- stockMovement.service.js
+        |-- supplier.service.js
+        |-- supplierBill.service.js
+        |-- supplierPayment.service.js
         |-- team.service.js
         |-- unit.service.js
     |-- views
+        |-- admin
+            |-- businesses.ejs
+            |-- numbering.ejs
         |-- auth
             |-- login.ejs
+            |-- no-business.ejs
+            |-- select-business.ejs
             |-- setup-password.ejs
         |-- clients
             |-- form.ejs
@@ -344,11 +499,42 @@
             |-- 403.ejs
             |-- 404.ejs
             |-- 500.ejs
+        |-- financial-years
+            |-- close-preview.ejs
+            |-- detail.ejs
+            |-- index.ejs
+            |-- opening-balances.ejs
+        |-- financials
+            |-- expenses.ejs
+            |-- other-income.ejs
         |-- items
             |-- index.ejs
         |-- layouts
             |-- footer.ejs
             |-- header.ejs
+        |-- notes
+            |-- editor.ejs
+            |-- index.ejs
+            |-- print.ejs
+            |-- view.ejs
+        |-- profile
+            |-- index.ejs
+        |-- purchases
+            |-- bill-editor.ejs
+            |-- bills.ejs
+            |-- orders.ejs
+            |-- po-editor.ejs
+        |-- reports
+            |-- balance-sheet.ejs
+            |-- customer-receivables.ejs
+            |-- customer-statement.ejs
+            |-- general-ledger.ejs
+            |-- index.ejs
+            |-- journal-register.ejs
+            |-- journal-view.ejs
+            |-- profit-and-loss.ejs
+            |-- trial-balance.ejs
+            |-- workbench.ejs
         |-- settings
             |-- index.ejs
         |-- team
@@ -360,10 +546,19 @@
             |-- index.ejs
 |-- assets
     |-- css
+        |-- components
+            |-- _alerts.css
+            |-- _buttons.css
+            |-- _cards.css
+            |-- _header.css
+            |-- _sidebar.css
+            |-- _tables.css
         |-- documents.css
         |-- editor.css
         |-- main.css
+        |-- premium-refresh.css
         |-- spark-datatable.css
+        |-- theme.css
         |-- view.css
     |-- images
         |-- avatar.png
@@ -402,6 +597,9 @@
         |-- flatpickr
             |-- flatpickr.min.css
             |-- flatpickr.min.js
+    |-- uploads
+        |-- avatars
+            |-- .gitkeep
 |-- DEPLOYMENT.md
 |-- docs
     |-- ADR
@@ -419,16 +617,28 @@
     |-- CODING_STANDARDS.md
     |-- CORE_CONTRACTS.md
     |-- DATABASE.md
+    |-- DATABASE_OPERATIONS.md
+    |-- DECISION_LOG.md
     |-- DEPLOYMENT.md
     |-- DEVELOPER_HANDBOOK.md
     |-- DEVELOPMENT_WORKFLOW.md
     |-- DOCUMENT_LIFECYCLE.md
+    |-- GLOBAL_SEARCH.md
     |-- INSTALLATION.md
+    |-- MILESTONE_8_FINAL_REPORT.md
+    |-- MILESTONE_8_REMEDIATION_LOG.md
+    |-- product
+        |-- ACCOUNTING_AND_DATA_INTEGRITY_MATRIX.md
+        |-- ERP_PRODUCT_SPEC.md
+    |-- PRODUCT_READINESS_FINAL_REPORT.md
+    |-- PRODUCT_READINESS_REMEDIATION_LOG.md
+    |-- PROJECT_COMPLETION_ROADMAP.md
     |-- RBAC.md
     |-- README.md
     |-- RELEASE_CHECKLIST.md
     |-- SECURITY.md
     |-- TESTING.md
+    |-- UPGRADE_GUIDE.md
     |-- USER_ACTIVITY.md
     |-- USER_MANUAL.md
 |-- documentation
@@ -468,6 +678,28 @@
             |-- migration.sql
         |-- 20261004100000_change_invoice_item_name_to_text
             |-- migration.sql
+        |-- 20261008093402_add_financial_year_model
+            |-- migration.sql
+        |-- 20261008112127_add_chart_of_accounts_and_journal_ledger
+            |-- migration.sql
+        |-- 20261009053635_add_credit_and_debit_notes
+            |-- migration.sql
+        |-- 20261009183000_add_business_branding_and_user_profile
+            |-- migration.sql
+        |-- 20261010082705_add_purchase_models
+            |-- migration.sql
+        |-- 20261010093000_add_bills_expenses_income
+            |-- migration.sql
+        |-- 20261010183000_add_erp_modules_inventory_payroll_projects
+            |-- migration.sql
+        |-- 20261011120000_multi_business_and_central_numbering
+            |-- migration.sql
+        |-- 20261011200000_master_record_identifiers_and_persistent_sessions
+            |-- migration.sql
+        |-- 20261012113000_scope_payroll_period_to_business
+            |-- migration.sql
+        |-- 20261012120000_require_explicit_payroll_period_business_id
+            |-- migration.sql
         |-- migration_lock.toml
     |-- schema.prisma
     |-- seed
@@ -481,36 +713,74 @@
 |-- prisma7.config.ts
 |-- PRODUCTION_CHECKLIST.md
 |-- README.md
-|-- scratch
 |-- scripts
+    |-- backfill-payment-accounting.js
+    |-- check-db-connection.js
+    |-- check-test-db-exists.js
+    |-- create-test-db.js
+    |-- create_shadow_db.js
+    |-- db-reset.js
+    |-- db-target.js
+    |-- db-upgrade.js
+    |-- diagnostic-env.js
+    |-- disposable-release-verification.js
     |-- doctor.js
+    |-- guard.js
     |-- lib
         |-- db-manager.js
         |-- env-manager.js
         |-- logger.js
         |-- prerequisites.js
         |-- verifier.js
+    |-- package-release.js
+    |-- prisma-test.js
     |-- qa_browser_e2e.js
     |-- qa_search_browser_e2e.js
     |-- setup.js
+    |-- test-fixtures.js
+    |-- test-genuine-upgrade.js
     |-- test-runner.js
+    |-- test-upgrade-from-m16.js
+    |-- verify-all.js
 |-- skills-lock.json
 |-- tables-basic.html
 |-- tests
+    |-- accounting.test.js
     |-- auth.test.js
+    |-- business_retention_archiving.test.js
     |-- contracts.test.js
+    |-- credit_debit_notes.test.js
     |-- documents.test.js
     |-- editor.test.js
+    |-- enterprise_multibusiness_isolation.test.js
+    |-- erp_workflow_integration.test.js
     |-- export.test.js
+    |-- financial_year_closing.test.js
     |-- hardening.test.js
     |-- installer.test.js
+    |-- inventory_accounting_integration.test.js
     |-- invoice.test.js
+    |-- invoice_posting.test.js
+    |-- item_import_inventory.test.js
+    |-- numbering.test.js
+    |-- numbering_recovery.test.js
+    |-- packaging_and_safety.test.js
+    |-- payment_posting.test.js
+    |-- payroll.test.js
     |-- phase6.test.js
     |-- phase8.test.js
+    |-- profile.test.js
+    |-- project_costing.test.js
+    |-- purchases_and_financials.test.js
     |-- quotation_long_item_regression.test.js
     |-- rbac_team_activity.test.js
+    |-- reporting_format_parity.test.js
+    |-- reports_reconciliation.test.js
     |-- search.test.js
+    |-- stock_movements.test.js
+    |-- supplier_payments.test.js
     |-- unit.test.js
+    |-- Untitled-1.html
     |-- ux_polish.test.js
     |-- view.test.js
 |-- ui-buttons.html

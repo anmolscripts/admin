@@ -7,67 +7,165 @@ datasource db {
 }
 
 model User {
-  id                    Int               @id @default(autoincrement())
-  name                  String            @db.VarChar(100)
-  email                 String            @unique @db.VarChar(150)
-  password              String            @db.VarChar(255)
-  role                  String            @default("ADMIN") @db.VarChar(30)
-  active                Boolean           @default(true)
-  createdAt             DateTime          @default(now())
-  updatedAt             DateTime          @updatedAt
-  lastActivityAt        DateTime?
-  lastLoginAt           DateTime?
-  roleId                Int?
-  status                String            @default("ACTIVE") @db.VarChar(20)
-  avatarUrl             String?           @db.VarChar(255)
-  phone                 String?           @db.VarChar(50)
-  accountsCreated       ChartOfAccount[]  @relation("AccountCreatedBy")
-  clientsCreated        Client[]          @relation("ClientCreatedBy")
-  notesCreated          CreditDebitNote[] @relation("NoteCreatedBy")
-  notesUpdated          CreditDebitNote[] @relation("NoteUpdatedBy")
-  notesVoided           CreditDebitNote[] @relation("NoteVoidedBy")
-  financialYearsClosed  FinancialYear[]   @relation("FinancialYearClosedBy")
-  invitationsSent       Invitation[]      @relation("InvitationCreatedBy")
-  invitation            Invitation?       @relation("UserInvitation")
-  revisionsCreated      InvoiceRevision[] @relation("RevisionChangedBy")
-  invoicesCreated       Invoice[]         @relation("InvoiceCreatedBy")
-  invoicesDeleted       Invoice[]         @relation("InvoiceDeletedBy")
-  invoicesUpdated       Invoice[]         @relation("InvoiceUpdatedBy")
-  itemsCreated          Item[]            @relation("ItemCreatedBy")
-  journalsPosted        JournalEntry[]    @relation("JournalPostedBy")
-  paymentsCreated       Payment[]         @relation("PaymentCreatedBy")
-  purchaseOrdersCreated PurchaseOrder[]   @relation("PurchaseOrderCreatedBy")
-  purchaseOrdersUpdated PurchaseOrder[]   @relation("PurchaseOrderUpdatedBy")
-  suppliersCreated      Supplier[]        @relation("SupplierCreatedBy")
-  unitsCreated          Unit[]            @relation("UnitCreatedBy")
-  activities            UserActivityLog[] @relation("UserActivities")
-  supplierBillsCreated   SupplierBill[]      @relation("SupplierBillCreatedBy")
-  supplierBillsUpdated   SupplierBill[]      @relation("SupplierBillUpdatedBy")
-  expensesCreated        Expense[]           @relation("ExpenseCreatedBy")
-  expensesUpdated        Expense[]           @relation("ExpenseUpdatedBy")
-  otherIncomesCreated    OtherIncome[]       @relation("OtherIncomeCreatedBy")
-  otherIncomesUpdated    OtherIncome[]       @relation("OtherIncomeUpdatedBy")
-  supplierPaymentsCreated SupplierPayment[]  @relation("SupplierPaymentCreatedBy")
-  stockMovementsCreated   StockMovement[]    @relation("StockMovementCreatedBy")
-  employeesCreated        Employee[]         @relation("EmployeeCreatedBy")
-  salaryStructuresCreated SalaryStructure[]  @relation("SalaryStructureCreatedBy")
-  payrollPeriodsCreated   PayrollPeriod[]    @relation("PayrollPeriodCreatedBy")
-  payrollPeriodsApproved  PayrollPeriod[]    @relation("PayrollPeriodApprovedBy")
+  id                      Int                     @id @default(autoincrement())
+  name                    String                  @db.VarChar(100)
+  email                   String                  @unique @db.VarChar(150)
+  password                String                  @db.VarChar(255)
+  role                    String                  @default("ADMIN") @db.VarChar(30)
+  active                  Boolean                 @default(true)
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
+  lastActivityAt          DateTime?
+  lastLoginAt             DateTime?
+  roleId                  Int?
+  status                  String                  @default("ACTIVE") @db.VarChar(20)
+  avatarUrl               String?                 @db.VarChar(255)
+  phone                   String?                 @db.VarChar(50)
+  accountsCreated         ChartOfAccount[]        @relation("AccountCreatedBy")
+  clientsCreated          Client[]                @relation("ClientCreatedBy")
+  notesCreated            CreditDebitNote[]       @relation("NoteCreatedBy")
+  notesUpdated            CreditDebitNote[]       @relation("NoteUpdatedBy")
+  notesVoided             CreditDebitNote[]       @relation("NoteVoidedBy")
+  financialYearsClosed    FinancialYear[]         @relation("FinancialYearClosedBy")
+  invitationsSent         Invitation[]            @relation("InvitationCreatedBy")
+  invitation              Invitation?             @relation("UserInvitation")
+  revisionsCreated        InvoiceRevision[]       @relation("RevisionChangedBy")
+  invoicesCreated         Invoice[]               @relation("InvoiceCreatedBy")
+  invoicesDeleted         Invoice[]               @relation("InvoiceDeletedBy")
+  invoicesUpdated         Invoice[]               @relation("InvoiceUpdatedBy")
+  itemsCreated            Item[]                  @relation("ItemCreatedBy")
+  journalsPosted          JournalEntry[]          @relation("JournalPostedBy")
+  paymentsCreated         Payment[]               @relation("PaymentCreatedBy")
+  purchaseOrdersCreated   PurchaseOrder[]         @relation("PurchaseOrderCreatedBy")
+  purchaseOrdersUpdated   PurchaseOrder[]         @relation("PurchaseOrderUpdatedBy")
+  suppliersCreated        Supplier[]              @relation("SupplierCreatedBy")
+  unitsCreated            Unit[]                  @relation("UnitCreatedBy")
+  activities              UserActivityLog[]       @relation("UserActivities")
+  supplierBillsCreated    SupplierBill[]          @relation("SupplierBillCreatedBy")
+  supplierBillsUpdated    SupplierBill[]          @relation("SupplierBillUpdatedBy")
+  expensesCreated         Expense[]               @relation("ExpenseCreatedBy")
+  expensesUpdated         Expense[]               @relation("ExpenseUpdatedBy")
+  otherIncomesCreated     OtherIncome[]           @relation("OtherIncomeCreatedBy")
+  otherIncomesUpdated     OtherIncome[]           @relation("OtherIncomeUpdatedBy")
+  supplierPaymentsCreated SupplierPayment[]       @relation("SupplierPaymentCreatedBy")
+  stockMovementsCreated   StockMovement[]         @relation("StockMovementCreatedBy")
+  employeesCreated        Employee[]              @relation("EmployeeCreatedBy")
+  salaryStructuresCreated SalaryStructure[]       @relation("SalaryStructureCreatedBy")
+  payrollPeriodsCreated   PayrollPeriod[]         @relation("PayrollPeriodCreatedBy")
+  payrollPeriodsApproved  PayrollPeriod[]         @relation("PayrollPeriodApprovedBy")
   reimbursementsApproved  EmployeeReimbursement[] @relation("ReimbursementApprovedBy")
-  projectsCreated         Project[]          @relation("ProjectCreatedBy")
-  tasksAssigned           ProjectTask[]      @relation("TaskAssignedTo")
-  timesheetEntries        TimesheetEntry[]   @relation("TimesheetUser")
-  timesheetsApproved      TimesheetEntry[]   @relation("TimesheetApprovedBy")
-  userPermissions       UserPermission[]
-  assignedRole          Role?             @relation(fields: [roleId], references: [id])
+  projectsCreated         Project[]               @relation("ProjectCreatedBy")
+  tasksAssigned           ProjectTask[]           @relation("TaskAssignedTo")
+  timesheetEntries        TimesheetEntry[]        @relation("TimesheetUser")
+  timesheetsApproved      TimesheetEntry[]        @relation("TimesheetApprovedBy")
+  userPermissions         UserPermission[]
+  assignedRole            Role?                   @relation(fields: [roleId], references: [id])
+  businessMemberships     BusinessMembership[]
 
   @@index([roleId])
   @@index([status])
   @@map("users")
 }
 
+model Business {
+  id               Int                     @id @default(autoincrement())
+  code             String                  @unique @db.VarChar(50)
+  name             String                  @db.VarChar(255)
+  legalName        String?                 @db.VarChar(255)
+  gstin            String?                 @db.VarChar(20)
+  stateCode        String?                 @db.VarChar(5)
+  currency         String                  @default("INR") @db.VarChar(10)
+  timeZone         String                  @default("Asia/Kolkata") @db.VarChar(50)
+  status           String                  @default("ACTIVE") @db.VarChar(20)
+  email            String?
+  phone            String?                 @db.VarChar(50)
+  address          String?                 @db.Text
+  website          String?
+  logoUrl          String?                 @db.VarChar(255)
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+  memberships      BusinessMembership[]
+  profiles         BusinessProfile[]
+  clients          Client[]
+  suppliers        Supplier[]
+  purchaseOrders   PurchaseOrder[]
+  supplierBills    SupplierBill[]
+  expenses         Expense[]
+  otherIncomes     OtherIncome[]
+  invoices         Invoice[]
+  items            Item[]
+  units            Unit[]
+  payments         Payment[]
+  financialYears   FinancialYear[]
+  accounts         ChartOfAccount[]
+  journalEntries   JournalEntry[]
+  creditDebitNotes CreditDebitNote[]
+  supplierPayments SupplierPayment[]
+  stockMovements   StockMovement[]
+  employees        Employee[]
+  salaryStructures SalaryStructure[]
+  payrollPeriods   PayrollPeriod[]
+  reimbursements   EmployeeReimbursement[]
+  projects         Project[]
+  sequences        NumberingSequence[]
+  prefixConfigs    BusinessPrefixConfig[]
+  activityLogs     UserActivityLog[]
+
+  @@index([status])
+  @@map("businesses")
+}
+
+model BusinessMembership {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  businessId Int
+  role       String   @default("MEMBER") @db.VarChar(30)
+  status     String   @default("ACTIVE") @db.VarChar(20)
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, businessId])
+  @@index([businessId])
+  @@index([userId])
+  @@map("business_memberships")
+}
+
+model NumberingSequence {
+  id            Int      @id @default(autoincrement())
+  businessId    Int
+  entityType    String   @db.VarChar(50)
+  year          Int
+  month         Int
+  currentNumber BigInt   @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  business      Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, entityType, year, month])
+  @@index([businessId, entityType])
+  @@map("numbering_sequences")
+}
+
+model BusinessPrefixConfig {
+  id         Int      @id @default(autoincrement())
+  businessId Int
+  entityType String   @db.VarChar(50)
+  prefix     String   @db.VarChar(20)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, entityType])
+  @@index([businessId])
+  @@map("business_prefix_configs")
+}
+
 model Client {
   id               Int                @id @default(autoincrement())
+  clientCode       String?            @db.VarChar(50)
   name             String
   email            String?
   phone            String?            @db.VarChar(50)
@@ -84,7 +182,12 @@ model Client {
   invoices         Invoice[]
   journalLines     JournalEntryLine[]
   projects         Project[]
+  businessId       Int?
+  business         Business?          @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
+  @@unique([businessId, clientCode])
+  @@index([businessId])
+  @@index([clientCode])
   @@index([name])
   @@index([email])
   @@index([active])
@@ -93,22 +196,28 @@ model Client {
 }
 
 model Supplier {
-  id             Int             @id @default(autoincrement())
-  name           String
-  email          String?
-  phone          String?         @db.VarChar(50)
-  gstin          String?         @db.VarChar(20)
-  stateCode      String?         @db.VarChar(5)
-  address        String?         @db.Text
-  active         Boolean         @default(true)
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  createdById    Int?
-  purchaseOrders PurchaseOrder[]
-  createdBy      User?           @relation("SupplierCreatedBy", fields: [createdById], references: [id])
-  supplierBills  SupplierBill[]
+  id               Int               @id @default(autoincrement())
+  supplierCode     String?           @db.VarChar(50)
+  name             String
+  email            String?
+  phone            String?           @db.VarChar(50)
+  gstin            String?           @db.VarChar(20)
+  stateCode        String?           @db.VarChar(5)
+  address          String?           @db.Text
+  active           Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  createdById      Int?
+  businessId       Int?
+  business         Business?         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  purchaseOrders   PurchaseOrder[]
+  createdBy        User?             @relation("SupplierCreatedBy", fields: [createdById], references: [id])
+  supplierBills    SupplierBill[]
   supplierPayments SupplierPayment[]
 
+  @@unique([businessId, supplierCode])
+  @@index([businessId])
+  @@index([supplierCode])
   @@index([name])
   @@index([email])
   @@index([active])
@@ -118,7 +227,9 @@ model Supplier {
 
 model PurchaseOrder {
   id                     Int                 @id @default(autoincrement())
-  orderNumber            String              @unique @db.VarChar(50)
+  orderNumber            String              @db.VarChar(50)
+  businessId             Int?
+  business               Business?           @relation(fields: [businessId], references: [id], onDelete: Cascade)
   supplierId             Int?
   supplierName           String              @db.VarChar(255)
   supplierGSTIN          String?             @db.VarChar(20)
@@ -138,6 +249,8 @@ model PurchaseOrder {
   supplier               Supplier?           @relation(fields: [supplierId], references: [id])
   updatedBy              User                @relation("PurchaseOrderUpdatedBy", fields: [updatedById], references: [id])
 
+  @@unique([businessId, orderNumber])
+  @@index([businessId])
   @@index([supplierId])
   @@index([orderDate])
   @@index([status])
@@ -174,25 +287,28 @@ model PurchaseOrderNumberSequence {
 }
 
 model SupplierBill {
-  id                     Int                 @id @default(autoincrement())
-  billNumber              String              @unique @db.VarChar(50)
-  supplierId              Int?
-  supplierName            String              @db.VarChar(255)
-  supplierGSTIN           String?             @db.VarChar(20)
-  billDate                DateTime            @db.Date
-  dueDate                 DateTime?           @db.Date
-  status                  String              @default("ACTIVE") @db.VarChar(20)
-  totalAmount             Decimal             @db.Decimal(12, 2)
-  financialYearId         Int?
-  createdById             Int
-  updatedById             Int
-  version                 Int                 @default(1)
-  items                   SupplierBillItem[]
-  createdBy               User                @relation("SupplierBillCreatedBy", fields: [createdById], references: [id])
-  updatedBy               User                @relation("SupplierBillUpdatedBy", fields: [updatedById], references: [id])
-  financialYear           FinancialYear?      @relation(fields: [financialYearId], references: [id])
-  supplier                Supplier?           @relation(fields: [supplierId], references: [id])
-  supplierPayments        SupplierPayment[]
+  id               Int                @id @default(autoincrement())
+  billNumber       String             @db.VarChar(50)
+  internalNumber   String?            @db.VarChar(50)
+  businessId       Int?
+  business         Business?          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  supplierId       Int?
+  supplierName     String             @db.VarChar(255)
+  supplierGSTIN    String?            @db.VarChar(20)
+  billDate         DateTime           @db.Date
+  dueDate          DateTime?          @db.Date
+  status           String             @default("ACTIVE") @db.VarChar(20)
+  totalAmount      Decimal            @db.Decimal(12, 2)
+  financialYearId  Int?
+  createdById      Int
+  updatedById      Int
+  version          Int                @default(1)
+  items            SupplierBillItem[]
+  createdBy        User               @relation("SupplierBillCreatedBy", fields: [createdById], references: [id])
+  updatedBy        User               @relation("SupplierBillUpdatedBy", fields: [updatedById], references: [id])
+  financialYear    FinancialYear?     @relation(fields: [financialYearId], references: [id])
+  supplier         Supplier?          @relation(fields: [supplierId], references: [id])
+  supplierPayments SupplierPayment[]
 
   @@index([supplierId])
   @@index([billDate])
@@ -201,90 +317,103 @@ model SupplierBill {
 }
 
 model SupplierBillItem {
-  id               Int          @id @default(autoincrement())
-  supplierBillId   Int
-  lineNumber       Int
-  name             String       @db.VarChar(255)
-  hsnSac           String?      @db.VarChar(20)
-  quantity         Decimal      @db.Decimal(10, 2)
-  unit             String       @default("PCS") @db.VarChar(30)
-  rate             Decimal      @db.Decimal(12, 2)
-  amount           Decimal      @db.Decimal(12, 2)
-  supplierBill     SupplierBill @relation(fields: [supplierBillId], references: [id], onDelete: Cascade)
+  id             Int          @id @default(autoincrement())
+  supplierBillId Int
+  lineNumber     Int
+  name           String       @db.VarChar(255)
+  hsnSac         String?      @db.VarChar(20)
+  quantity       Decimal      @db.Decimal(10, 2)
+  unit           String       @default("PCS") @db.VarChar(30)
+  rate           Decimal      @db.Decimal(12, 2)
+  amount         Decimal      @db.Decimal(12, 2)
+  supplierBill   SupplierBill @relation(fields: [supplierBillId], references: [id], onDelete: Cascade)
 
   @@index([supplierBillId])
   @@map("supplier_bill_items")
 }
 
 model Expense {
-  id               Int          @id @default(autoincrement())
-  expenseDate      DateTime     @db.Date
-  amount           Decimal      @db.Decimal(12, 2)
-  description      String?      @db.Text
-  category         String?      @db.VarChar(100)
-  financialYearId  Int?
-  createdById      Int
-  updatedById      Int
-  version          Int          @default(1)
-  createdBy        User         @relation("ExpenseCreatedBy", fields: [createdById], references: [id])
-  updatedBy        User         @relation("ExpenseUpdatedBy", fields: [updatedById], references: [id])
-  financialYear    FinancialYear? @relation(fields: [financialYearId], references: [id])
+  id              Int            @id @default(autoincrement())
+  expenseDate     DateTime       @db.Date
+  amount          Decimal        @db.Decimal(12, 2)
+  description     String?        @db.Text
+  category        String?        @db.VarChar(100)
+  expenseNumber   String?        @db.VarChar(50)
+  businessId      Int?
+  business        Business?      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  financialYearId Int?
+  createdById     Int
+  updatedById     Int
+  version         Int            @default(1)
+  createdBy       User           @relation("ExpenseCreatedBy", fields: [createdById], references: [id])
+  updatedBy       User           @relation("ExpenseUpdatedBy", fields: [updatedById], references: [id])
+  financialYear   FinancialYear? @relation(fields: [financialYearId], references: [id])
 
+  @@index([businessId])
   @@index([expenseDate])
   @@map("expenses")
 }
 
 model OtherIncome {
-  id               Int          @id @default(autoincrement())
-  incomeDate       DateTime     @db.Date
-  amount           Decimal      @db.Decimal(12, 2)
-  description      String?      @db.Text
-  source           String?      @db.VarChar(100)
-  financialYearId  Int?
-  createdById      Int
-  updatedById      Int
-  version          Int          @default(1)
-  createdBy        User         @relation("OtherIncomeCreatedBy", fields: [createdById], references: [id])
-  updatedBy        User         @relation("OtherIncomeUpdatedBy", fields: [updatedById], references: [id])
-  financialYear    FinancialYear? @relation(fields: [financialYearId], references: [id])
+  id              Int            @id @default(autoincrement())
+  incomeDate      DateTime       @db.Date
+  amount          Decimal        @db.Decimal(12, 2)
+  description     String?        @db.Text
+  source          String?        @db.VarChar(100)
+  incomeNumber    String?        @db.VarChar(50)
+  businessId      Int?
+  business        Business?      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  financialYearId Int?
+  createdById     Int
+  updatedById     Int
+  version         Int            @default(1)
+  createdBy       User           @relation("OtherIncomeCreatedBy", fields: [createdById], references: [id])
+  updatedBy       User           @relation("OtherIncomeUpdatedBy", fields: [updatedById], references: [id])
+  financialYear   FinancialYear? @relation(fields: [financialYearId], references: [id])
 
+  @@index([businessId])
   @@index([incomeDate])
   @@map("other_incomes")
 }
 
 model BusinessProfile {
-  id                  Int      @id @default(autoincrement())
+  id                  Int       @id @default(autoincrement())
   legalName           String
   displayName         String?
-  gstin               String?  @db.VarChar(20)
-  stateCode           String?  @db.VarChar(5)
+  gstin               String?   @db.VarChar(20)
+  stateCode           String?   @db.VarChar(5)
   email               String?
-  phone               String?  @db.VarChar(50)
-  address             String?  @db.Text
-  defaultTerms        String?  @db.Text
-  defaultRemarks      String?  @db.Text
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  phone               String?   @db.VarChar(50)
+  address             String?   @db.Text
+  defaultTerms        String?   @db.Text
+  defaultRemarks      String?   @db.Text
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
   accountHolder       String?
-  accountNumber       String?  @db.VarChar(50)
+  accountNumber       String?   @db.VarChar(50)
   bankName            String?
   branch              String?
-  currency            String?  @default("INR") @db.VarChar(10)
-  ifsc                String?  @db.VarChar(20)
-  invoiceFooter       String?  @db.Text
-  logoUrl             String?  @db.VarChar(255)
-  paymentInstructions String?  @db.Text
-  timeZone            String?  @default("Asia/Kolkata") @db.VarChar(50)
-  upiId               String?  @db.VarChar(100)
+  currency            String?   @default("INR") @db.VarChar(10)
+  ifsc                String?   @db.VarChar(20)
+  invoiceFooter       String?   @db.Text
+  logoUrl             String?   @db.VarChar(255)
+  paymentInstructions String?   @db.Text
+  timeZone            String?   @default("Asia/Kolkata") @db.VarChar(50)
+  upiId               String?   @db.VarChar(100)
   website             String?
   workspaceName       String?
+  businessId          Int?
+  business            Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
+  @@index([businessId])
   @@map("business_profiles")
 }
 
 model Invoice {
   id                         Int               @id @default(autoincrement())
-  invoiceNumber              String            @unique @db.VarChar(50)
+  invoiceNumber              String            @db.VarChar(50)
+  businessId                 Int?
+  business                   Business?         @relation(fields: [businessId], references: [id], onDelete: Cascade)
   clientName                 String            @db.VarChar(255)
   invoiceDate                DateTime          @db.Date
   gstEnabled                 Boolean           @default(false)
@@ -372,36 +501,51 @@ model InvoiceItem {
 }
 
 model Item {
-  id          Int      @id @default(autoincrement())
-  name        String   @unique @db.VarChar(255)
-  description String?  @db.Text
-  unit        String   @default("PCS") @db.VarChar(30)
-  rate        Decimal  @default(0.00) @db.Decimal(12, 2)
-  hsnSac      String?  @db.VarChar(20)
-  gstRate     Decimal  @default(0.00) @db.Decimal(5, 2)
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  createdById Int?
-  createdBy   User?    @relation("ItemCreatedBy", fields: [createdById], references: [id])
+  id             Int             @id @default(autoincrement())
+  itemCode       String?         @db.VarChar(50)
+  name           String          @db.VarChar(255)
+  businessId     Int?
+  business       Business?       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  description    String?         @db.Text
+  unit           String          @default("PCS") @db.VarChar(30)
+  rate           Decimal         @default(0.00) @db.Decimal(12, 2)
+  hsnSac         String?         @db.VarChar(20)
+  gstRate        Decimal         @default(0.00) @db.Decimal(5, 2)
+  active         Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  createdById    Int?
+  createdBy      User?           @relation("ItemCreatedBy", fields: [createdById], references: [id])
   stockMovements StockMovement[]
 
+  @@unique([businessId, name])
+  @@unique([businessId, itemCode])
+  @@index([businessId])
+  @@index([itemCode])
   @@index([active])
   @@index([createdById])
   @@map("items")
 }
 
 model Unit {
-  id          Int      @id @default(autoincrement())
-  name        String   @db.VarChar(100)
-  symbol      String   @unique @db.VarChar(30)
-  description String?  @db.Text
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id          Int       @id @default(autoincrement())
+  unitCode    String?   @db.VarChar(50)
+  name        String    @db.VarChar(100)
+  symbol      String    @db.VarChar(30)
+  description String?   @db.Text
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  businessId  Int?
+  business    Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
   createdById Int?
-  createdBy   User?    @relation("UnitCreatedBy", fields: [createdById], references: [id])
+  createdBy   User?     @relation("UnitCreatedBy", fields: [createdById], references: [id])
 
+  @@unique([businessId, symbol])
+  @@unique([businessId, unitCode])
+  @@index([businessId])
+  @@index([unitCode])
+  @@index([symbol])
   @@index([active])
   @@index([createdById])
   @@map("units")
@@ -436,6 +580,9 @@ model Payment {
   reference       String?
   notes           String?        @db.Text
   status          String         @default("POSTED") @db.VarChar(20)
+  receiptNumber   String?        @db.VarChar(50)
+  businessId      Int?
+  business        Business?      @relation(fields: [businessId], references: [id], onDelete: Cascade)
   createdById     Int?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
@@ -541,18 +688,20 @@ model Invitation {
 }
 
 model UserActivityLog {
-  id              Int      @id @default(autoincrement())
+  id              Int       @id @default(autoincrement())
   actorUserId     Int?
-  action          String   @db.VarChar(50)
-  module          String   @db.VarChar(50)
-  targetType      String?  @db.VarChar(50)
-  targetId        String?  @db.VarChar(50)
-  targetReference String?  @db.VarChar(100)
-  ipAddress       String?  @db.VarChar(45)
-  userAgent       String?  @db.VarChar(500)
+  action          String    @db.VarChar(50)
+  module          String    @db.VarChar(50)
+  targetType      String?   @db.VarChar(50)
+  targetId        String?   @db.VarChar(50)
+  targetReference String?   @db.VarChar(100)
+  ipAddress       String?   @db.VarChar(45)
+  userAgent       String?   @db.VarChar(500)
   metadata        Json?
-  createdAt       DateTime @default(now())
-  actorUser       User?    @relation("UserActivities", fields: [actorUserId], references: [id])
+  createdAt       DateTime  @default(now())
+  actorUser       User?     @relation("UserActivities", fields: [actorUserId], references: [id])
+  businessId      Int?
+  business        Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@index([actorUserId])
   @@index([createdAt])
@@ -564,7 +713,9 @@ model UserActivityLog {
 
 model FinancialYear {
   id                       Int                       @id @default(autoincrement())
-  code                     String                    @unique @db.VarChar(20)
+  code                     String                    @db.VarChar(20)
+  businessId               Int?
+  business                 Business?                 @relation(fields: [businessId], references: [id], onDelete: Cascade)
   startDate                DateTime
   endDate                  DateTime
   status                   String                    @default("OPEN") @db.VarChar(10)
@@ -588,13 +739,17 @@ model FinancialYear {
   payrollPeriods           PayrollPeriod[]
   reimbursements           EmployeeReimbursement[]
 
+  @@unique([businessId, code])
+  @@index([businessId])
   @@index([closedById])
   @@map("financial_years")
 }
 
 model ChartOfAccount {
   id                 Int                @id @default(autoincrement())
-  code               String             @unique @db.VarChar(50)
+  code               String             @db.VarChar(50)
+  businessId         Int?
+  business           Business?          @relation(fields: [businessId], references: [id], onDelete: Cascade)
   name               String
   type               AccountType
   subtype            String?            @db.VarChar(100)
@@ -628,7 +783,9 @@ model ChartOfAccount {
 
 model JournalEntry {
   id              Int                @id @default(autoincrement())
-  entryNumber     String             @unique @db.VarChar(50)
+  entryNumber     String             @db.VarChar(50)
+  businessId      Int?
+  business        Business?          @relation(fields: [businessId], references: [id], onDelete: Cascade)
   entryDate       DateTime           @db.Date
   financialYearId Int
   sourceType      String             @default("MANUAL") @db.VarChar(50)
@@ -691,7 +848,9 @@ model JournalNumberSequence {
 
 model CreditDebitNote {
   id                        Int                   @id @default(autoincrement())
-  noteNumber                String                @unique @db.VarChar(50)
+  noteNumber                String                @db.VarChar(50)
+  businessId                Int?
+  business                  Business?             @relation(fields: [businessId], references: [id], onDelete: Cascade)
   noteType                  NoteType
   invoiceId                 Int
   clientId                  Int?
@@ -824,7 +983,9 @@ enum AccountType {
 
 model SupplierPayment {
   id              Int            @id @default(autoincrement())
-  paymentNumber   String         @unique @db.VarChar(50)
+  paymentNumber   String         @db.VarChar(50)
+  businessId      Int?
+  business        Business?      @relation(fields: [businessId], references: [id], onDelete: Cascade)
   supplierId      Int
   supplierBillId  Int?
   paymentDate     DateTime       @db.Date
@@ -850,21 +1011,23 @@ model SupplierPayment {
 }
 
 model StockMovement {
-  id             Int      @id @default(autoincrement())
-  movementNumber String   @unique @db.VarChar(50)
+  id             Int       @id @default(autoincrement())
+  movementNumber String    @db.VarChar(50)
+  businessId     Int?
+  business       Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
   itemId         Int
-  movementType   String   @db.VarChar(30)
-  quantity       Decimal  @db.Decimal(10, 2)
-  unitCost       Decimal  @default(0.00) @db.Decimal(12, 2)
-  totalCost      Decimal  @default(0.00) @db.Decimal(12, 2)
-  referenceType  String?  @db.VarChar(50)
+  movementType   String    @db.VarChar(30)
+  quantity       Decimal   @db.Decimal(10, 2)
+  unitCost       Decimal   @default(0.00) @db.Decimal(12, 2)
+  totalCost      Decimal   @default(0.00) @db.Decimal(12, 2)
+  referenceType  String?   @db.VarChar(50)
   referenceId    Int?
-  movementDate   DateTime @db.Date
-  notes          String?  @db.Text
+  movementDate   DateTime  @db.Date
+  notes          String?   @db.Text
   createdById    Int
-  createdAt      DateTime @default(now())
-  createdBy      User     @relation("StockMovementCreatedBy", fields: [createdById], references: [id])
-  item           Item     @relation(fields: [itemId], references: [id])
+  createdAt      DateTime  @default(now())
+  createdBy      User      @relation("StockMovementCreatedBy", fields: [createdById], references: [id])
+  item           Item      @relation(fields: [itemId], references: [id])
 
   @@index([itemId])
   @@index([movementDate])
@@ -874,7 +1037,9 @@ model StockMovement {
 
 model Employee {
   id                Int                     @id @default(autoincrement())
-  employeeCode      String                  @unique @db.VarChar(50)
+  employeeCode      String                  @db.VarChar(50)
+  businessId        Int?
+  business          Business?               @relation(fields: [businessId], references: [id], onDelete: Cascade)
   firstName         String                  @db.VarChar(100)
   lastName          String                  @db.VarChar(100)
   email             String                  @unique @db.VarChar(150)
@@ -897,29 +1062,34 @@ model Employee {
   payrollEntries    PayrollEntry[]
   reimbursements    EmployeeReimbursement[]
 
+  @@unique([businessId, employeeCode])
+  @@index([businessId])
   @@index([status])
   @@index([department])
   @@map("employees")
 }
 
 model SalaryStructure {
-  id               Int      @id @default(autoincrement())
+  id               Int       @id @default(autoincrement())
   employeeId       Int
-  effectiveFrom    DateTime @db.Date
-  basicSalary      Decimal  @db.Decimal(12, 2)
-  hra              Decimal  @default(0.00) @db.Decimal(12, 2)
-  conveyance       Decimal  @default(0.00) @db.Decimal(12, 2)
-  specialAllowance Decimal  @default(0.00) @db.Decimal(12, 2)
-  epfApplicable    Boolean  @default(true)
-  esiApplicable    Boolean  @default(false)
-  ptApplicable     Boolean  @default(true)
-  tdsMonthly       Decimal  @default(0.00) @db.Decimal(12, 2)
+  effectiveFrom    DateTime  @db.Date
+  basicSalary      Decimal   @db.Decimal(12, 2)
+  hra              Decimal   @default(0.00) @db.Decimal(12, 2)
+  conveyance       Decimal   @default(0.00) @db.Decimal(12, 2)
+  specialAllowance Decimal   @default(0.00) @db.Decimal(12, 2)
+  epfApplicable    Boolean   @default(true)
+  esiApplicable    Boolean   @default(false)
+  ptApplicable     Boolean   @default(true)
+  tdsMonthly       Decimal   @default(0.00) @db.Decimal(12, 2)
   createdById      Int
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  createdBy        User     @relation("SalaryStructureCreatedBy", fields: [createdById], references: [id])
-  employee         Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  businessId       Int?
+  business         Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  createdBy        User      @relation("SalaryStructureCreatedBy", fields: [createdById], references: [id])
+  employee         Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
+  @@index([businessId])
   @@index([employeeId])
   @@index([effectiveFrom])
   @@map("salary_structures")
@@ -928,7 +1098,7 @@ model SalaryStructure {
 model PayrollPeriod {
   id              Int            @id @default(autoincrement())
   financialYearId Int
-  periodCode      String         @unique @db.VarChar(20)
+  periodCode      String         @db.VarChar(20)
   month           Int
   year            Int
   startDate       DateTime       @db.Date
@@ -940,12 +1110,17 @@ model PayrollPeriod {
   createdById     Int
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
+  businessId      Int
+  business        Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
   approvedBy      User?          @relation("PayrollPeriodApprovedBy", fields: [approvedById], references: [id])
   createdBy       User           @relation("PayrollPeriodCreatedBy", fields: [createdById], references: [id])
   financialYear   FinancialYear  @relation(fields: [financialYearId], references: [id])
   journalEntry    JournalEntry?  @relation(fields: [journalEntryId], references: [id])
   entries         PayrollEntry[]
 
+  @@unique([businessId, periodCode])
+  @@index([businessId])
+  @@index([periodCode])
   @@index([financialYearId])
   @@index([status])
   @@map("payroll_periods")
@@ -989,6 +1164,9 @@ model EmployeeReimbursement {
   amount          Decimal        @db.Decimal(12, 2)
   category        String         @db.VarChar(100)
   description     String?        @db.Text
+  claimNumber     String?        @db.VarChar(50)
+  businessId      Int?
+  business        Business?      @relation(fields: [businessId], references: [id], onDelete: Cascade)
   receiptUrl      String?        @db.VarChar(255)
   status          String         @default("PENDING") @db.VarChar(20)
   approvedById    Int?
@@ -1006,7 +1184,9 @@ model EmployeeReimbursement {
 
 model Project {
   id               Int              @id @default(autoincrement())
-  code             String           @unique @db.VarChar(50)
+  code             String           @db.VarChar(50)
+  businessId       Int?
+  business         Business?        @relation(fields: [businessId], references: [id], onDelete: Cascade)
   name             String           @db.VarChar(255)
   description      String?          @db.Text
   clientId         Int?
@@ -1096,4 +1276,16 @@ model ProjectCost {
   @@index([projectId])
   @@index([costDate])
   @@map("project_costs")
+}
+
+model Session {
+  id        String   @id @db.VarChar(128)
+  sid       String   @unique @db.VarChar(128)
+  data      String   @db.MediumText
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([expiresAt])
+  @@map("sessions")
 }

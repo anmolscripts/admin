@@ -148,12 +148,13 @@ async function applyTestFixtures(options = {}) {
     const fy2025_26 = await ensureFinancialYear(new Date('2026-02-15'));
 
     // 5a. INV-2026-0001 (ACTIVE, Acme Corporation, Feb 15 2026)
-    const inv1 = await prisma.invoice.findUnique({
+    const inv1 = await prisma.invoice.findFirst({
         where: { invoiceNumber: 'INV-2026-0001' },
         include: { items: true, revisions: true }
     });
 
     const inv1Data = {
+        businessId: 1,
         documentType: 'INVOICE',
         invoiceNumber: 'INV-2026-0001',
         clientName: 'Acme Corporation',
@@ -230,12 +231,13 @@ async function applyTestFixtures(options = {}) {
     }
 
     // 5b. INV-2026-0002 (INACTIVE, Globex Logistics Ltd, Feb 20 2026)
-    const inv2 = await prisma.invoice.findUnique({
+    const inv2 = await prisma.invoice.findFirst({
         where: { invoiceNumber: 'INV-2026-0002' },
         include: { items: true, revisions: true }
     });
 
     const inv2Data = {
+        businessId: 1,
         documentType: 'INVOICE',
         invoiceNumber: 'INV-2026-0002',
         clientName: 'Globex Logistics Ltd',
@@ -299,12 +301,13 @@ async function applyTestFixtures(options = {}) {
     }
 
     // 5c. INV-2026-0003 (VOID, Stark Industries, Feb 25 2026)
-    const inv3 = await prisma.invoice.findUnique({
+    const inv3 = await prisma.invoice.findFirst({
         where: { invoiceNumber: 'INV-2026-0003' },
         include: { items: true, revisions: true }
     });
 
     const inv3Data = {
+        businessId: 1,
         documentType: 'INVOICE',
         invoiceNumber: 'INV-2026-0003',
         clientName: 'Stark Industries',
@@ -368,12 +371,13 @@ async function applyTestFixtures(options = {}) {
     }
 
     // 5d. QTN-2026-0001 (ACTIVE, Nexus Cybernetics, Mar 01 2026)
-    const qtn1 = await prisma.invoice.findUnique({
+    const qtn1 = await prisma.invoice.findFirst({
         where: { invoiceNumber: 'QTN-2026-0001' },
         include: { items: true, revisions: true }
     });
 
     const qtn1Data = {
+        businessId: 1,
         documentType: 'QUOTATION',
         invoiceNumber: 'QTN-2026-0001',
         clientName: 'Nexus Cybernetics',
@@ -427,12 +431,13 @@ async function applyTestFixtures(options = {}) {
     }
 
     // 5e. QTN-2026-0002 (INACTIVE, Solaris Energy Ltd, Mar 05 2026)
-    const qtn2 = await prisma.invoice.findUnique({
+    const qtn2 = await prisma.invoice.findFirst({
         where: { invoiceNumber: 'QTN-2026-0002' },
         include: { items: true, revisions: true }
     });
 
     const qtn2Data = {
+        businessId: 1,
         documentType: 'QUOTATION',
         invoiceNumber: 'QTN-2026-0002',
         clientName: 'Solaris Energy Ltd',

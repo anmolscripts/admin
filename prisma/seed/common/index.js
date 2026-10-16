@@ -143,7 +143,7 @@ async function seedCommon(prisma, adminUser = null) {
     // 2. Unit Master (13 predefined units)
     let unitsCreated = 0;
     for (const u of DEFAULT_UNITS) {
-        const existingUnit = await prisma.unit.findUnique({
+        const existingUnit = await prisma.unit.findFirst({
             where: { symbol: u.symbol }
         });
         if (!existingUnit) {
@@ -164,7 +164,7 @@ async function seedCommon(prisma, adminUser = null) {
     let itemsCreated = 0;
     for (const item of MASTER_ITEMS) {
         const trimmedName = item.name.trim();
-        const existingItem = await prisma.item.findUnique({
+        const existingItem = await prisma.item.findFirst({
             where: { name: trimmedName }
         });
 
@@ -175,6 +175,7 @@ async function seedCommon(prisma, adminUser = null) {
                     unit: item.unit.trim(),
                     rate: item.rate,
                     active: true,
+                    businessId: 1,
                     createdById: adminUser ? adminUser.id : null
                 }
             });

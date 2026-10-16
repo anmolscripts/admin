@@ -147,7 +147,7 @@ describe('Phase 4: Purchases, Supplier Bills, Expenses & Financial Reporting Tes
             }, testUser.id);
 
             assert.ok(createdPo.id > 0);
-            assert.ok(createdPo.orderNumber.startsWith('PO-'));
+            assert.ok(createdPo.orderNumber.startsWith('PO/') || createdPo.orderNumber.startsWith('PO-'));
             assert.equal(createdPo.supplierName, supplier.name);
             assert.equal(createdPo.status, 'ACTIVE');
             assert.equal(createdPo.items.length, 2);

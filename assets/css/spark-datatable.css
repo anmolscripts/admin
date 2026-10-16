@@ -1,37 +1,60 @@
 /**
  * Spark Admin - Reusable Unified DataTable Design System
- * Matches the core brand palette: Forest Dark (#051C12), Lime (#B4F105), Neutral borders (#E9EFEF).
- * Supports complete responsive behavior across 1920px to 375px breakpoints.
+ * Modern SaaS & Fintech Enterprise Design Language
+ * Fully responsive from 1920px to 375px breakpoints.
  */
 
 :root {
-  --sdt-brand-forest-dark: #051C12;
-  --sdt-brand-forest-medium: #072F1F;
-  --sdt-brand-forest-light: #1A3E30;
-  --sdt-brand-lime: #B4F105;
-  --sdt-border-color: #E9EFEF;
-  --sdt-border-hover: #CCD7D1;
-  --sdt-bg-header: #F9FBFA;
-  --sdt-bg-row-hover: rgba(5, 28, 18, 0.025);
-  --sdt-text-main: #0B130F;
-  --sdt-text-muted: #6C7E75;
+  --sdt-brand-primary: var(--sa-primary, #635BFF);
+  --sdt-brand-primary-hover: var(--sa-primary-hover, #4840C8);
+  --sdt-brand-primary-subtle: var(--sa-primary-subtle, #EEEDFF);
+  --sdt-border-color: var(--sa-border, #E7EAF2);
+  --sdt-border-hover: var(--sa-border-strong, #D0D5DD);
+  --sdt-bg-header: var(--sa-table-header-bg, #F8FAFD);
+  --sdt-bg-row-hover: var(--sa-table-row-hover, #F8FAFD);
+  --sdt-text-main: var(--sa-text-main, #171B2D);
+  --sdt-text-muted: var(--sa-text-secondary, #667085);
+  --sdt-card-bg: var(--sa-card-glass-bg, rgba(255, 255, 255, 0.92));
+  --sdt-surface-bg: var(--sa-surface, #FFFFFF);
+  --sdt-input-bg: var(--sa-input-bg, #F8FAFD);
+
+  /* Backward Compatibility Aliases */
+  --sdt-brand-forest-dark: var(--sa-primary, #635BFF);
+  --sdt-brand-forest-medium: var(--sa-primary-hover, #4840C8);
+  --sdt-brand-forest-light: #232842;
+  --sdt-brand-lime: var(--sa-primary, #635BFF);
+}
+
+[data-theme="dark"] {
+  --sdt-border-color: var(--sa-border, rgba(255, 255, 255, 0.08));
+  --sdt-border-hover: var(--sa-border-strong, rgba(255, 255, 255, 0.16));
+  --sdt-bg-header: var(--sa-table-header-bg, #151C2C);
+  --sdt-bg-row-hover: var(--sa-table-row-hover, rgba(99, 91, 255, 0.08));
+  --sdt-text-main: var(--sa-text-main, #F1F5F9);
+  --sdt-text-muted: var(--sa-text-secondary, #94A3B8);
+  --sdt-card-bg: var(--sa-card-glass-bg, rgba(18, 24, 38, 0.82));
+  --sdt-surface-bg: var(--sa-surface, #121826);
+  --sdt-input-bg: var(--sa-input-bg, rgba(18, 24, 38, 0.9));
 }
 
 /* ==========================================================================
    1. Card & Container Wrappers
    ========================================================================== */
 .spark-dt-card {
-  background: #FFFFFF;
-  border-radius: 12px;
+  background: var(--sdt-card-bg, rgba(255, 255, 255, 0.92));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: var(--sa-radius-lg, 14px);
   border: 1px solid var(--sdt-border-color);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  box-shadow: 0 4px 20px -2px rgba(99, 91, 255, 0.05), 0 1px 3px rgba(16, 24, 40, 0.04);
   overflow: hidden;
   margin-bottom: 1.5rem;
-  transition: box-shadow 0.2s ease-in-out;
+  transition: box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out;
 }
 
 .spark-dt-card:focus-within {
-  box-shadow: 0 4px 12px rgba(5, 28, 18, 0.06);
+  box-shadow: 0 8px 24px -2px rgba(99, 91, 255, 0.12);
+  border-color: rgba(99, 91, 255, 0.3);
 }
 
 .card > .spark-dt-card,
@@ -51,7 +74,7 @@
   justify-content: space-between;
   gap: 1rem;
   padding: 1rem 1.25rem;
-  background-color: #FFFFFF;
+  background-color: var(--sdt-surface-bg, #FFFFFF);
   border-bottom: 1px solid var(--sdt-border-color);
   flex-wrap: wrap;
 }
@@ -64,7 +87,7 @@
 }
 
 .spark-dt-title {
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 700;
   color: var(--sdt-text-main);
   margin-bottom: 0;
@@ -76,11 +99,11 @@
 .spark-dt-count-badge {
   font-size: 0.75rem;
   font-weight: 600;
-  padding: 0.25rem 0.6rem;
+  padding: 0.2rem 0.55rem;
   border-radius: 999px;
-  background-color: #F4F6F5;
-  color: var(--sdt-text-muted);
-  border: 1px solid var(--sdt-border-color);
+  background-color: var(--sa-primary-subtle, #EEEDFF);
+  color: var(--sa-primary, #635BFF);
+  border: 1px solid rgba(99, 91, 255, 0.15);
 }
 
 .spark-dt-toolbar-right {
@@ -112,7 +135,7 @@
   height: 38px;
   padding: 0.4rem 2rem 0.4rem 2.4rem;
   font-size: 0.875rem;
-  background-color: #F8FAF9;
+  background-color: var(--sdt-input-bg, #F8FAFD);
   border: 1px solid var(--sdt-border-color);
   border-radius: 8px;
   color: var(--sdt-text-main);
@@ -121,8 +144,8 @@
 
 .spark-dt-search-input:focus {
   background-color: #FFFFFF;
-  border-color: var(--sdt-brand-forest-dark);
-  box-shadow: 0 0 0 3px rgba(5, 28, 18, 0.08);
+  border-color: var(--sdt-brand-primary);
+  box-shadow: 0 0 0 3px rgba(99, 91, 255, 0.15);
   outline: none;
 }
 
@@ -163,10 +186,10 @@
   font-weight: 500;
   border-radius: 8px;
   border: 1px solid var(--sdt-border-color);
-  background-color: #F8FAF9;
+  background-color: var(--sdt-input-bg, #F8FAFD);
   color: var(--sdt-text-main);
   cursor: pointer;
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%236C7E75' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23667085' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
   background-repeat: no-repeat;
   background-position: right 0.6rem center;
   background-size: 12px 10px;
@@ -174,9 +197,9 @@
 }
 
 .spark-dt-size-select:focus {
-  border-color: var(--sdt-brand-forest-dark);
+  border-color: var(--sdt-brand-primary);
   outline: none;
-  box-shadow: 0 0 0 3px rgba(5, 28, 18, 0.08);
+  box-shadow: 0 0 0 3px rgba(99, 91, 255, 0.15);
 }
 
 /* ==========================================================================
@@ -184,9 +207,12 @@
    ========================================================================== */
 .spark-dt-responsive {
   width: 100%;
+  max-height: min(72vh, 680px);
+  overflow-y: auto;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  background: #FFFFFF;
+  background: var(--sdt-surface-bg, #FFFFFF);
+  position: relative;
 }
 
 .spark-dt-table {
@@ -202,13 +228,18 @@
 }
 
 .spark-dt-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   padding: 0.85rem 1rem;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
   color: var(--sdt-text-muted);
+  background-color: var(--sdt-bg-header);
   border-bottom: 1px solid var(--sdt-border-color);
+  box-shadow: inset 0 -1px 0 var(--sdt-border-color);
   white-space: nowrap;
   vertical-align: middle;
 }
@@ -222,12 +253,12 @@
 }
 
 .spark-dt-table thead th.sortable:hover {
-  background-color: #EFF4F2;
-  color: var(--sdt-brand-forest-dark);
+  background-color: #F1F4F9;
+  color: var(--sdt-brand-primary);
 }
 
 .spark-dt-table thead th.sortable:focus-visible {
-  outline: 2px solid var(--sdt-brand-forest-dark);
+  outline: 2px solid var(--sdt-brand-primary);
   outline-offset: -2px;
 }
 
@@ -236,7 +267,7 @@
   align-items: center;
   margin-left: 0.4rem;
   font-size: 0.8rem;
-  color: #A3B3AB;
+  color: #98A2B3;
   vertical-align: middle;
   transition: color 0.15s ease, transform 0.15s ease;
 }
@@ -247,7 +278,7 @@
 
 .spark-dt-table thead th[aria-sort="ascending"] .spark-dt-sort-indicator,
 .spark-dt-table thead th[aria-sort="descending"] .spark-dt-sort-indicator {
-  color: var(--sdt-brand-forest-dark);
+  color: var(--sdt-brand-primary);
   font-weight: 700;
 }
 
@@ -289,7 +320,7 @@
   justify-content: space-between;
   gap: 1rem;
   padding: 0.85rem 1.25rem;
-  background-color: #FFFFFF;
+  background-color: var(--sdt-surface-bg, #FFFFFF);
   border-top: 1px solid var(--sdt-border-color);
   flex-wrap: wrap;
 }
@@ -319,7 +350,7 @@
   font-weight: 500;
   border-radius: 6px;
   border: 1px solid var(--sdt-border-color);
-  background-color: #FFFFFF;
+  background-color: var(--sdt-surface-bg, #FFFFFF);
   color: var(--sdt-text-main);
   cursor: pointer;
   transition: all 0.15s ease;
@@ -327,16 +358,17 @@
 }
 
 .spark-dt-page-btn:hover:not(:disabled):not(.active) {
-  background-color: #F4F6F5;
+  background-color: var(--sdt-bg-row-hover, #F8FAFD);
   border-color: var(--sdt-border-hover);
-  color: var(--sdt-brand-forest-dark);
+  color: var(--sdt-brand-primary);
 }
 
 .spark-dt-page-btn.active {
-  background-color: var(--sdt-brand-forest-dark);
-  border-color: var(--sdt-brand-forest-dark);
+  background-color: var(--sdt-brand-primary);
+  border-color: var(--sdt-brand-primary);
   color: #FFFFFF !important;
   font-weight: 600;
+  box-shadow: 0 1px 3px rgba(99, 91, 255, 0.25);
 }
 
 .spark-dt-page-btn:disabled,
@@ -368,7 +400,7 @@
 
 .spark-dt-empty-icon {
   font-size: 2.5rem;
-  color: #A3B3AB;
+  color: #AAB2CA;
   margin-bottom: 0.75rem;
   display: inline-block;
 }
@@ -394,7 +426,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(255, 255, 255, 0.75);
+  background-color: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(2px);
   display: flex;
   flex-direction: column;
@@ -414,8 +446,8 @@
 .spark-dt-spinner {
   width: 2.2rem;
   height: 2.2rem;
-  border: 3px solid rgba(5, 28, 18, 0.15);
-  border-top-color: var(--sdt-brand-forest-dark);
+  border: 3px solid rgba(99, 91, 255, 0.15);
+  border-top-color: var(--sdt-brand-primary);
   border-radius: 50%;
   animation: spark-spin 0.8s linear infinite;
 }
@@ -507,5 +539,17 @@
   }
   .spark-dt-pagination {
     gap: 0.2rem;
+  }
+}
+
+/* Print Layout Integrity */
+@media print {
+  .spark-dt-responsive {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  .spark-dt-table thead th {
+    position: static !important;
+    box-shadow: none !important;
   }
 }

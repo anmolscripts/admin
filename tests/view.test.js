@@ -585,7 +585,7 @@ describe('Document View & Lifecycle (Phase 4) Test Suite', () => {
         newlyConvertedInvoiceId = newInv.id;
 
         assert.strictEqual(newInv.documentType, 'INVOICE');
-        assert.ok(newInv.invoiceNumber.startsWith('INV-'));
+        assert.ok(newInv.invoiceNumber.startsWith('INVO/'));
         assert.strictEqual(newInv.sourceQuotationId, activeQuotationId);
         assert.strictEqual(newInv.clientName, doc.clientName);
         assert.strictEqual(Number(newInv.grandTotal), Number(doc.grandTotal));
@@ -754,7 +754,7 @@ describe('Document View & Lifecycle (Phase 4) Test Suite', () => {
         const newDoc = saveBody.data;
 
         assert.notStrictEqual(newDoc.id, activeInvoiceId);
-        assert.ok(newDoc.invoiceNumber.startsWith('INV-'));
+        assert.ok(newDoc.invoiceNumber.startsWith('INVO/'));
         assert.strictEqual(newDoc.status, 'ACTIVE');
         assert.strictEqual(newDoc.version, 1);
     });

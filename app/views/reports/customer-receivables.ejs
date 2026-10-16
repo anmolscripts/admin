@@ -1,61 +1,61 @@
-<%- include('../layouts/header') %>
-
-<div class="content-wrapper p-4">
-  <!-- Page Header -->
-  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
-    <div>
-      <h1 class="h3 fw-bold mb-1"><%= pageTitle %></h1>
-      <p class="text-muted small mb-0"><%= pageSubtitle %></p>
-    </div>
+<%
+  const crHeaderAction = `
     <div class="d-flex gap-2">
-      <button onclick="window.print()" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2">
+      <button onclick="window.print()" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2 rounded-pill px-3">
         <i class="bi bi-printer"></i>
         <span>Print Report</span>
       </button>
-      <a href="/reports" class="btn btn-outline-primary d-inline-flex align-items-center gap-2">
+      <a href="/reports" class="btn btn-outline-primary d-inline-flex align-items-center gap-2 rounded-pill px-3">
         <i class="bi bi-arrow-left"></i>
         <span>All Reports</span>
       </a>
     </div>
-  </div>
+  `;
+%>
 
-  <!-- Filters Toolbar -->
-  <div class="card border-0 shadow-sm mb-4">
-    <div class="card-body p-3">
-      <form method="GET" action="/reports/customer-receivables" class="row g-2 align-items-center">
-        <!-- As Of Date -->
-        <div class="col-md-3">
-          <label class="form-label small text-muted mb-1">As-Of Date</label>
-          <input type="date" name="asOfDate" class="form-control form-control-sm" value="<%= filters.asOfDate || '' %>">
-        </div>
+<%- include('../layouts/header', {
+    pageTitle: pageTitle || 'Customer Receivables & Ageing',
+    pageSubtitle: pageSubtitle || 'Accounts receivable ageing breakdown and client subledger balance.',
+    headerAction: crHeaderAction
+}) %>
 
-        <!-- Search Customer -->
-        <div class="col-md-4">
-          <label class="form-label small text-muted mb-1">Search Customer Name</label>
-          <div class="input-group input-group-sm">
-            <span class="input-group-text bg-light border-end-0 text-muted">
-              <i class="bi bi-search"></i>
-            </span>
-            <input type="text" name="search" class="form-control form-control-sm border-start-0"
-                   placeholder="Client name or GSTIN..."
-                   value="<%= filters.search || '' %>">
-          </div>
-        </div>
+<div class="content-wrapper p-4">
 
-        <!-- Filter Actions -->
-        <div class="col-md-3 d-flex align-items-end gap-2 pt-4">
-          <button type="submit" class="btn btn-sm btn-primary flex-grow-1">Apply Filter</button>
-          <a href="/reports/customer-receivables" class="btn btn-sm btn-outline-secondary" title="Reset">
-            <i class="bi bi-x-lg"></i>
-          </a>
+  <!-- Filters Toolbar (Glass Panel) -->
+  <div class="card-glass p-3 mb-4">
+    <form method="GET" action="/reports/customer-receivables" class="row g-2 align-items-center">
+      <!-- As Of Date -->
+      <div class="col-md-3">
+        <label class="form-label small text-muted mb-1">As-Of Date</label>
+        <input type="date" name="asOfDate" class="form-control form-control-sm" value="<%= filters.asOfDate || '' %>">
+      </div>
+
+      <!-- Search Customer -->
+      <div class="col-md-5">
+        <label class="form-label small text-muted mb-1">Search Customer Name</label>
+        <div class="input-group input-group-sm">
+          <span class="input-group-text bg-white border-end-0 text-muted">
+            <i class="bi bi-search"></i>
+          </span>
+          <input type="text" name="search" class="form-control form-control-sm border-start-0"
+                 placeholder="Client name or GSTIN..."
+                 value="<%= filters.search || '' %>">
         </div>
-      </form>
-    </div>
+      </div>
+
+      <!-- Filter Actions -->
+      <div class="col-md-4 d-flex align-items-end gap-2 pt-2">
+        <button type="submit" class="btn btn-sm btn-primary flex-grow-1 rounded-pill">Apply Filter</button>
+        <a href="/reports/customer-receivables" class="btn btn-sm btn-outline-secondary rounded-pill px-3" title="Reset">
+          <i class="bi bi-arrow-counterclockwise"></i> Reset
+        </a>
+      </div>
+    </form>
   </div>
 
   <!-- Reconciliation Status Banner -->
   <% if (report.summary.isReconciled) { %>
-    <div class="alert alert-success d-flex align-items-center justify-content-between p-3 mb-4 border-0 shadow-sm" role="alert">
+    <div class="alert alert-success d-flex align-items-center justify-content-between p-3 mb-4 border-0 shadow-sm rounded-3" role="alert">
       <div class="d-flex align-items-center gap-3">
         <i class="bi bi-shield-check fs-2 text-success"></i>
         <div>
@@ -66,11 +66,11 @@
         </div>
       </div>
       <div class="text-end">
-        <span class="badge bg-success fs-6 px-3 py-2">Reconciled (Diff: ₹0.00)</span>
+        <span class="badge bg-success fs-6 px-3 py-2 rounded-pill">Reconciled (Diff: ₹0.00)</span>
       </div>
     </div>
   <% } else { %>
-    <div class="alert alert-warning d-flex align-items-center justify-content-between p-3 mb-4 border-0 shadow-sm" role="alert">
+    <div class="alert alert-warning d-flex align-items-center justify-content-between p-3 mb-4 border-0 shadow-sm rounded-3" role="alert">
       <div class="d-flex align-items-center gap-3">
         <i class="bi bi-exclamation-triangle-fill fs-2 text-warning"></i>
         <div>
@@ -81,62 +81,89 @@
         </div>
       </div>
       <div class="text-end">
-        <span class="badge bg-warning text-dark fs-6 px-3 py-2">Diff: ₹<%= report.summary.difference %></span>
+        <span class="badge bg-warning text-dark fs-6 px-3 py-2 rounded-pill">Diff: ₹<%= report.summary.difference %></span>
       </div>
     </div>
   <% } %>
 
-  <!-- Ageing Breakdown KPI Strip -->
+  <!-- Ageing Breakdown KPI Strip (Glass KPI Cards) -->
   <div class="row g-3 mb-4">
-    <div class="col-md-3">
-      <div class="card border-0 shadow-sm bg-light">
-        <div class="card-body p-3">
-          <div class="text-muted small text-uppercase fw-bold">Current (0–30 Days)</div>
-          <div class="fs-4 fw-bold text-success mt-1">₹<%= parseFloat(report.summary.ageingSummary.current).toLocaleString('en-IN', { minimumFractionDigits: 2 }) %></div>
-          <div class="small text-muted">On time / recent billings</div>
-        </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="kpi-card">
+        <div class="kpi-accent-bar accent-green"></div>
+        <div class="kpi-label">Current (0–30 Days)</div>
+        <div class="kpi-value text-success mt-2">₹<%= parseFloat(report.summary.ageingSummary.current).toLocaleString('en-IN', { minimumFractionDigits: 2 }) %></div>
+        <div class="kpi-subtext">Recent / on-time billings</div>
       </div>
     </div>
-    <div class="col-md-3">
-      <div class="card border-0 shadow-sm bg-light">
-        <div class="card-body p-3">
-          <div class="text-muted small text-uppercase fw-bold">31–60 Days</div>
-          <div class="fs-4 fw-bold text-primary mt-1">₹<%= parseFloat(report.summary.ageingSummary.days31to60).toLocaleString('en-IN', { minimumFractionDigits: 2 }) %></div>
-          <div class="small text-muted">Standard credit term</div>
-        </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="kpi-card">
+        <div class="kpi-accent-bar accent-blue"></div>
+        <div class="kpi-label">31–60 Days</div>
+        <div class="kpi-value text-primary mt-2">₹<%= parseFloat(report.summary.ageingSummary.days31to60).toLocaleString('en-IN', { minimumFractionDigits: 2 }) %></div>
+        <div class="kpi-subtext">Standard credit window</div>
       </div>
     </div>
-    <div class="col-md-3">
-      <div class="card border-0 shadow-sm bg-light">
-        <div class="card-body p-3">
-          <div class="text-muted small text-uppercase fw-bold">61–90 Days</div>
-          <div class="fs-4 fw-bold text-warning mt-1">₹<%= parseFloat(report.summary.ageingSummary.days61to90).toLocaleString('en-IN', { minimumFractionDigits: 2 }) %></div>
-          <div class="small text-muted">Follow-up required</div>
-        </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="kpi-card">
+        <div class="kpi-accent-bar accent-amber"></div>
+        <div class="kpi-label">61–90 Days</div>
+        <div class="kpi-value text-warning mt-2">₹<%= parseFloat(report.summary.ageingSummary.days61to90).toLocaleString('en-IN', { minimumFractionDigits: 2 }) %></div>
+        <div class="kpi-subtext">Follow-up required</div>
       </div>
     </div>
-    <div class="col-md-3">
-      <div class="card border-0 shadow-sm bg-light">
-        <div class="card-body p-3">
-          <div class="text-muted small text-uppercase fw-bold">Over 90 Days</div>
-          <div class="fs-4 fw-bold text-danger mt-1">₹<%= parseFloat(report.summary.ageingSummary.daysOver90).toLocaleString('en-IN', { minimumFractionDigits: 2 }) %></div>
-          <div class="small text-muted">Critical overdue</div>
-        </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+      <div class="kpi-card">
+        <div class="kpi-accent-bar accent-red"></div>
+        <div class="kpi-label">Over 90 Days</div>
+        <div class="kpi-value text-danger mt-2">₹<%= parseFloat(report.summary.ageingSummary.daysOver90).toLocaleString('en-IN', { minimumFractionDigits: 2 }) %></div>
+        <div class="kpi-subtext">Critical overdue exposure</div>
       </div>
     </div>
   </div>
 
-  <!-- Customer Receivables Table -->
-  <div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-      <h6 class="fw-bold mb-0">Customer Outstanding & Ageing Schedule</h6>
-      <span class="badge bg-light text-dark border"><%= report.clients.length %> Client(s)</span>
+  <!-- Charts Row: Visual Distribution & Top Debtors -->
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-lg-5">
+      <div class="chart-card">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div>
+            <div class="chart-title">Receivables Ageing Distribution</div>
+            <div class="chart-subtitle">Proportion of debt by age category</div>
+          </div>
+          <i class="bi bi-pie-chart text-muted"></i>
+        </div>
+        <div id="chart-receivables-donut" style="min-height: 270px;"></div>
+      </div>
+    </div>
+    <div class="col-12 col-lg-7">
+      <div class="chart-card">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div>
+            <div class="chart-title">Top Customer Exposures</div>
+            <div class="chart-subtitle">Largest outstanding client balances</div>
+          </div>
+          <i class="bi bi-bar-chart text-muted"></i>
+        </div>
+        <div id="chart-top-clients" style="min-height: 270px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Customer Receivables Table (Glass Panel) -->
+  <div class="card-glass overflow-hidden mb-4">
+    <div class="py-3 px-4 d-flex justify-content-between align-items-center border-bottom">
+      <div>
+        <h6 class="fw-bold mb-0 text-dark">Customer Outstanding & Ageing Schedule</h6>
+        <span class="text-muted small">Comprehensive subledger debtor breakdown</span>
+      </div>
+      <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3"><%= report.clients.length %> Client(s)</span>
     </div>
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
-            <th class="ps-3">Customer</th>
+            <th class="ps-4">Customer</th>
             <th class="text-end" style="width: 120px;">Invoiced (₹)</th>
             <th class="text-end" style="width: 120px;">Paid (₹)</th>
             <th class="text-end" style="width: 110px;">Adjustments</th>
@@ -145,21 +172,21 @@
             <th class="text-end" style="width: 110px;">31–60d</th>
             <th class="text-end" style="width: 110px;">61–90d</th>
             <th class="text-end" style="width: 110px;">90d+</th>
-            <th class="text-end pe-3" style="width: 90px;">Action</th>
+            <th class="text-end pe-4" style="width: 90px;">Action</th>
           </tr>
         </thead>
         <tbody>
           <% if (report.clients.length === 0) { %>
             <tr>
               <td colspan="10" class="text-center py-5 text-muted">
-                <i class="bi bi-people fs-1 d-block mb-2"></i>
+                <i class="bi bi-people fs-1 d-block mb-2 text-muted"></i>
                 <div class="fw-semibold">No customers with receivable balances found</div>
               </td>
             </tr>
           <% } else { %>
             <% report.clients.forEach(c => { %>
               <tr>
-                <td class="ps-3">
+                <td class="ps-4">
                   <a href="/reports/customer-statement/<%= c.id %>" class="fw-bold text-dark text-decoration-none">
                     <%= c.name %>
                   </a>
@@ -194,8 +221,8 @@
                 <td class="text-end small <%= parseFloat(c.ageing.daysOver90) > 0 ? 'text-danger fw-bold' : 'text-muted' %>">
                   <%= parseFloat(c.ageing.daysOver90) > 0 ? '₹' + parseFloat(c.ageing.daysOver90).toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '—' %>
                 </td>
-                <td class="text-end pe-3">
-                  <a href="/reports/customer-statement/<%= c.id %>" class="btn btn-sm btn-outline-primary" title="View Customer Account Statement">
+                <td class="text-end pe-4">
+                  <a href="/reports/customer-statement/<%= c.id %>" class="btn btn-sm btn-light border rounded-circle" title="View Customer Account Statement">
                     <i class="bi bi-file-text"></i>
                   </a>
                 </td>
@@ -205,7 +232,7 @@
         </tbody>
         <tfoot class="table-light border-top">
           <tr>
-            <th class="ps-3 py-3 fw-bold">Grand Totals:</th>
+            <th class="ps-4 py-3 fw-bold">Grand Totals:</th>
             <th class="text-end py-3">₹<%= parseFloat(report.summary.totalInvoiced).toLocaleString('en-IN', { minimumFractionDigits: 2 }) %></th>
             <th class="text-end py-3">₹<%= parseFloat(report.summary.totalPaid).toLocaleString('en-IN', { minimumFractionDigits: 2 }) %></th>
             <th class="text-end py-3">—</th>
@@ -214,7 +241,7 @@
             <th class="text-end py-3 text-primary">₹<%= parseFloat(report.summary.ageingSummary.days31to60).toLocaleString('en-IN', { minimumFractionDigits: 2 }) %></th>
             <th class="text-end py-3 text-warning">₹<%= parseFloat(report.summary.ageingSummary.days61to90).toLocaleString('en-IN', { minimumFractionDigits: 2 }) %></th>
             <th class="text-end py-3 text-danger">₹<%= parseFloat(report.summary.ageingSummary.daysOver90).toLocaleString('en-IN', { minimumFractionDigits: 2 }) %></th>
-            <th class="pe-3"></th>
+            <th class="pe-4"></th>
           </tr>
         </tfoot>
       </table>
@@ -222,4 +249,132 @@
   </div>
 </div>
 
-<%- include('../layouts/footer') %>
+<%
+  const sortedClients = [...(report.clients || [])]
+    .sort((a, b) => parseFloat(b.outstanding) - parseFloat(a.outstanding))
+    .slice(0, 5);
+  const topClientsNamesJson = JSON.stringify(sortedClients.map(c => c.name));
+  const topClientsBalancesJson = JSON.stringify(sortedClients.map(c => parseFloat(c.outstanding) || 0));
+%>
+
+<%- include('../layouts/footer', {
+  extraJs: `
+    <script>
+      (function() {
+        if (!window.ApexCharts) return;
+
+        // Ageing Donut Chart
+        const ageingSeries = [
+          ${parseFloat(report.summary.ageingSummary.current) || 0},
+          ${parseFloat(report.summary.ageingSummary.days31to60) || 0},
+          ${parseFloat(report.summary.ageingSummary.days61to90) || 0},
+          ${parseFloat(report.summary.ageingSummary.daysOver90) || 0}
+        ];
+        const hasAgeingData = ageingSeries.some(v => v > 0);
+
+        const donutOptions = {
+          series: hasAgeingData ? ageingSeries : [],
+          labels: ['Current (0-30d)', '31-60 Days', '61-90 Days', 'Over 90 Days'],
+          chart: {
+            type: 'donut',
+            height: 270,
+            fontFamily: 'inherit'
+          },
+          colors: ['#B8F16A', '#16B8AF', '#65BCE8', '#FF896F'],
+          plotOptions: {
+            pie: {
+              donut: {
+                size: '72%',
+                labels: {
+                  show: true,
+                  total: {
+                    show: true,
+                    label: 'Outstanding',
+                    fontSize: '11px',
+                    formatter: function(w) {
+                      const sum = w.globals.seriesTotals.reduce((a, b) => a + b, 0);
+                      return '₹' + (sum >= 1000 ? (sum / 1000).toFixed(1) + 'k' : sum.toFixed(0));
+                    }
+                  }
+                }
+              }
+            }
+          },
+          dataLabels: { enabled: false },
+          legend: { position: 'bottom', fontSize: '11px', labels: { colors: '#64748B' } },
+          stroke: { width: 2, colors: ['#ffffff'] },
+          tooltip: {
+            y: {
+              formatter: function(val) {
+                return '₹' + Number(val).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+              }
+            }
+          },
+          noData: { text: 'No outstanding debt', align: 'center', verticalAlign: 'middle', style: { color: '#94a3b8' } }
+        };
+
+        const donutEl = document.getElementById('chart-receivables-donut');
+        if (donutEl) {
+          const donutChart = new ApexCharts(donutEl, donutOptions);
+          donutChart.render();
+        }
+
+        // Top Clients Exposure Bar Chart
+        const topClientsNames = ${topClientsNamesJson};
+        const topClientsBalances = ${topClientsBalancesJson};
+
+        const barOptions = {
+          series: [{
+            name: 'Outstanding Balance',
+            data: topClientsBalances
+          }],
+          chart: {
+            type: 'bar',
+            height: 270,
+            toolbar: { show: false },
+            fontFamily: 'inherit'
+          },
+          colors: ['#16B8AF'],
+          plotOptions: {
+            bar: {
+              horizontal: true,
+              borderRadius: 4,
+              barHeight: '50%'
+            }
+          },
+          dataLabels: { enabled: false },
+          xaxis: {
+            categories: topClientsNames,
+            labels: {
+              formatter: function(val) {
+                return '₹' + (val >= 1000 ? (val / 1000).toFixed(0) + 'k' : val.toFixed(0));
+              },
+              style: { fontSize: '11px', colors: '#64748B' }
+            }
+          },
+          yaxis: {
+            labels: { style: { fontSize: '11px', colors: '#64748B' } }
+          },
+          grid: {
+            borderColor: 'rgba(226, 232, 240, 0.7)',
+            strokeDashArray: 4
+          },
+          tooltip: {
+            y: {
+              formatter: function(val) {
+                return '₹' + Number(val).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+              }
+            }
+          },
+          noData: { text: 'No client debtor balances', align: 'center', verticalAlign: 'middle', style: { color: '#94a3b8' } }
+        };
+
+        const barEl = document.getElementById('chart-top-clients');
+        if (barEl) {
+          const barChart = new ApexCharts(barEl, barOptions);
+          barChart.render();
+        }
+      })();
+    </script>
+  `
+}) %>

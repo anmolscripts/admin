@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Organization - Spark Admin ERP</title>
+    <link rel="icon" type="image/png" href="/images/favicon.ico">
+    <link rel="stylesheet" href="/libs/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/libs/bootstrap-icons/bootstrap-icons.css">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/theme.css">
+    <link rel="stylesheet" href="/css/premium-refresh.css">
+
+    <script>
+        (function () {
+            try {
+                var theme = localStorage.getItem('spark-theme') || 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        })();
+    </script>
+</head>
+<body>
+    <div class="login-wrapper">
+        <div class="login-bg-shape login-bg-shape-1"></div>
+        <div class="login-bg-shape login-bg-shape-2"></div>
+
+        <div class="login-card" style="max-width: 540px;">
+            <div class="login-brand text-decoration-none">
+                <i class="bi bi-buildings text-primary"></i>
+                <span>Select Organization</span>
+            </div>
+
+            <p class="login-subtitle">Choose which business workspace you want to enter</p>
+
+            <% if (locals.error) { %>
+                <div class="alert alert-danger" role="alert">
+                    <%= locals.error %>
+                </div>
+            <% } %>
+
+            <form action="/switch-business" method="POST" id="selectBusinessForm">
+                <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>">
+
+                <div class="list-group mb-4">
+                    <% businesses.forEach((b, index) => { %>
+                        <label class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-3 rounded-3 mb-2 border shadow-sm">
+                            <input class="form-check-input flex-shrink-0" type="radio" name="businessId" value="<%= b.id %>" <%= index === 0 ? 'checked' : '' %>>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <strong class="text-dark"><%= b.name %></strong>
+                                    <span class="badge bg-light text-primary border"><%= b.currency || 'INR' %></span>
+                                </div>
+                                <small class="text-muted d-block">
+                                    Role: <span class="badge bg-secondary-subtle text-secondary"><%= b.membershipRole || 'MEMBER' %></span>
+                                    <% if (b.legalName && b.legalName !== b.name) { %>
+                                        • <%= b.legalName %>
+                                    <% } %>
+                                </small>
+                            </div>
+                        </label>
+                    <% }); %>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary py-2 fw-semibold">
+                        Enter Workspace <i class="bi bi-arrow-right ms-1"></i>
+                    </button>
+                    <a href="/logout" class="btn btn-outline-secondary py-2">
+                        Sign Out
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

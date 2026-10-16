@@ -5,23 +5,23 @@
   <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
     <div>
       <div class="d-flex align-items-center gap-2 mb-1">
-        <h1 class="h3 fw-bold mb-0"><%= journal.entryNumber %></h1>
+        <h1 class="h3 fw-bold mb-0 text-dark"><%= journal.entryNumber %></h1>
         <% if (journal.status === 'POSTED') { %>
-          <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1">POSTED</span>
+          <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1">POSTED</span>
         <% } else if (journal.status === 'REVERSED') { %>
-          <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-1">REVERSED</span>
+          <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3 py-1">REVERSED</span>
         <% } else { %>
-          <span class="badge bg-secondary px-3 py-1"><%= journal.status %></span>
+          <span class="badge bg-secondary rounded-pill px-3 py-1"><%= journal.status %></span>
         <% } %>
       </div>
       <p class="text-muted small mb-0"><%= pageSubtitle %></p>
     </div>
     <div class="d-flex gap-2">
-      <button onclick="window.print()" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2">
+      <button onclick="window.print()" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2 rounded-pill px-3">
         <i class="bi bi-printer"></i>
         <span>Print Entry</span>
       </button>
-      <a href="/reports/journals" class="btn btn-outline-primary d-inline-flex align-items-center gap-2">
+      <a href="/reports/journals" class="btn btn-outline-primary d-inline-flex align-items-center gap-2 rounded-pill px-3">
         <i class="bi bi-arrow-left"></i>
         <span>Journal Register</span>
       </a>
@@ -30,7 +30,7 @@
 
   <!-- Reversal Notice Banner -->
   <% if (journal.reversedEntry) { %>
-    <div class="alert alert-danger d-flex align-items-center gap-3 mb-4 shadow-sm" role="alert">
+    <div class="alert alert-danger d-flex align-items-center gap-3 mb-4 shadow-sm rounded-3 border-0" role="alert">
       <i class="bi bi-arrow-counterclockwise fs-3"></i>
       <div>
         <h6 class="alert-heading fw-bold mb-1">Reversal Entry</h6>
@@ -45,7 +45,7 @@
   <% } %>
 
   <% if (journal.reversingEntry) { %>
-    <div class="alert alert-warning d-flex align-items-center gap-3 mb-4 shadow-sm" role="alert">
+    <div class="alert alert-warning d-flex align-items-center gap-3 mb-4 shadow-sm rounded-3 border-0" role="alert">
       <i class="bi bi-exclamation-triangle fs-3"></i>
       <div>
         <h6 class="alert-heading fw-bold mb-1">Entry Has Been Reversed</h6>
@@ -59,47 +59,45 @@
     </div>
   <% } %>
 
-  <!-- Journal Metadata Card -->
-  <div class="card border-0 shadow-sm mb-4">
-    <div class="card-body p-4">
-      <div class="row g-3">
-        <div class="col-md-3">
-          <div class="text-muted small">Entry Date</div>
-          <div class="fw-bold fs-6"><%= new Date(journal.entryDate).toLocaleDateString('en-IN') %></div>
+  <!-- Journal Metadata Card (Glass Panel) -->
+  <div class="card-glass p-4 mb-4">
+    <div class="row g-3">
+      <div class="col-md-3">
+        <div class="text-muted small">Entry Date</div>
+        <div class="fw-bold fs-6 text-dark"><%= new Date(journal.entryDate).toLocaleDateString('en-IN') %></div>
+      </div>
+      <div class="col-md-3">
+        <div class="text-muted small">Financial Year</div>
+        <div class="fw-bold fs-6 font-monospace text-dark"><%= journal.financialYear ? journal.financialYear.code : '—' %></div>
+      </div>
+      <div class="col-md-3">
+        <div class="text-muted small">Source Type & Reference</div>
+        <div class="fw-bold fs-6">
+          <span class="badge bg-secondary-subtle text-secondary border font-monospace">
+            <%= journal.sourceType %> <%= journal.sourceId ? '#' + journal.sourceId : '' %>
+          </span>
         </div>
-        <div class="col-md-3">
-          <div class="text-muted small">Financial Year</div>
-          <div class="fw-bold fs-6"><%= journal.financialYear ? journal.financialYear.code : '—' %></div>
+      </div>
+      <div class="col-md-3">
+        <div class="text-muted small">Idempotency Key</div>
+        <div class="font-monospace small text-muted text-truncate" title="<%= journal.idempotencyKey %>">
+          <%= journal.idempotencyKey || 'None' %>
         </div>
-        <div class="col-md-3">
-          <div class="text-muted small">Source Type & Reference</div>
-          <div class="fw-bold fs-6">
-            <span class="badge bg-light text-dark border">
-              <%= journal.sourceType %> <%= journal.sourceId ? '#' + journal.sourceId : '' %>
-            </span>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="text-muted small">Idempotency Key</div>
-          <div class="font-monospace small text-muted text-truncate" title="<%= journal.idempotencyKey %>">
-            <%= journal.idempotencyKey || 'None' %>
-          </div>
-        </div>
-        <div class="col-12 pt-2 border-top">
-          <div class="text-muted small mb-1">Narration</div>
-          <div class="p-3 bg-light rounded-2 text-dark"><%= journal.narration %></div>
-        </div>
+      </div>
+      <div class="col-12 pt-3 border-top">
+        <div class="text-muted small mb-1">Narration</div>
+        <div class="p-3 bg-light rounded-3 text-dark fw-medium"><%= journal.narration %></div>
       </div>
     </div>
   </div>
 
-  <!-- Posting Lines Table -->
-  <div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-white py-3">
-      <h6 class="fw-bold mb-0">Double-Entry Transaction Lines</h6>
+  <!-- Posting Lines Table (Glass Panel) -->
+  <div class="card-glass overflow-hidden mb-4">
+    <div class="py-3 px-4 border-bottom bg-white">
+      <h6 class="fw-bold mb-0 text-dark">Double-Entry Transaction Lines</h6>
     </div>
     <div class="table-responsive">
-      <table class="table align-middle mb-0">
+      <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
             <th class="ps-4" style="width: 60px;">#</th>
@@ -126,15 +124,15 @@
             <tr>
               <td class="ps-4 text-muted small"><%= idx + 1 %></td>
               <td>
-                <div class="fw-bold text-dark">
+                <div class="fw-bold text-dark font-monospace">
                   <%= line.account ? line.account.code : '' %> — <%= line.account ? line.account.name : '' %>
                 </div>
                 <% if (line.account && line.account.systemAccountKey) { %>
-                  <span class="badge bg-light text-muted border small">KEY: <%= line.account.systemAccountKey %></span>
+                  <span class="badge bg-light text-muted border font-monospace small">KEY: <%= line.account.systemAccountKey %></span>
                 <% } %>
               </td>
               <td>
-                <span class="badge bg-light text-dark border"><%= line.account ? line.account.type : '' %></span>
+                <span class="badge bg-light text-dark border font-monospace"><%= line.account ? line.account.type : '' %></span>
               </td>
               <td>
                 <% if (line.client) { %>
@@ -146,10 +144,10 @@
                 <% } %>
               </td>
               <td class="text-muted small"><%= line.description || '—' %></td>
-              <td class="text-end fw-bold <%= dr > 0 ? 'text-primary' : 'text-muted' %>">
+              <td class="text-end font-monospace <%= dr > 0 ? 'fw-bold text-primary' : 'text-muted' %>">
                 <%= dr > 0 ? '₹' + dr.toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '—' %>
               </td>
-              <td class="text-end pe-4 fw-bold <%= cr > 0 ? 'text-success' : 'text-muted' %>">
+              <td class="text-end pe-4 font-monospace <%= cr > 0 ? 'fw-bold text-success' : 'text-muted' %>">
                 <%= cr > 0 ? '₹' + cr.toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '—' %>
               </td>
             </tr>
@@ -158,21 +156,21 @@
         <tfoot class="table-light border-top">
           <tr>
             <th colspan="5" class="text-end ps-4 py-3 fw-bold">Total (Double-Entry Balance):</th>
-            <th class="text-end py-3 text-primary fs-6 fw-bold">
+            <th class="text-end py-3 text-primary fs-6 fw-bold font-monospace">
               ₹<%= sumDr.toLocaleString('en-IN', { minimumFractionDigits: 2 }) %>
             </th>
-            <th class="text-end pe-4 py-3 text-success fs-6 fw-bold">
+            <th class="text-end pe-4 py-3 text-success fs-6 fw-bold font-monospace">
               ₹<%= sumCr.toLocaleString('en-IN', { minimumFractionDigits: 2 }) %>
             </th>
           </tr>
           <tr>
             <td colspan="7" class="text-end pe-4 py-2 border-0">
               <% if (Math.abs(sumDr - sumCr) < 0.001) { %>
-                <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2">
+                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-2">
                   <i class="bi bi-shield-check me-1"></i> Total Debits Equal Total Credits (Exact Balance)
                 </span>
               <% } else { %>
-                <span class="badge bg-danger px-3 py-2">
+                <span class="badge bg-danger rounded-pill px-3 py-2">
                   <i class="bi bi-exclamation-triangle me-1"></i> Balance Discrepancy Detected
                 </span>
               <% } %>
@@ -183,9 +181,9 @@
     </div>
   </div>
 
-  <!-- Audit & Timestamp Strip -->
-  <div class="card border-0 shadow-sm bg-light">
-    <div class="card-body p-3 d-flex flex-wrap justify-content-between align-items-center gap-2 small text-muted">
+  <!-- Audit & Timestamp Strip (Glass Panel) -->
+  <div class="card-glass p-3 mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 small text-muted">
       <div>
         <strong>Posted By:</strong> <%= journal.postedBy ? journal.postedBy.name + ' (' + journal.postedBy.email + ')' : 'System' %>
       </div>
@@ -193,7 +191,7 @@
         <strong>Posted At:</strong> <%= new Date(journal.postedAt).toLocaleString('en-IN') %>
       </div>
       <div>
-        <strong>Immutability Status:</strong> <span class="badge bg-secondary">Permanent & Immutable</span>
+        <strong>Immutability Status:</strong> <span class="badge bg-secondary rounded-pill">Permanent & Immutable</span>
       </div>
     </div>
   </div>

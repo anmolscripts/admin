@@ -86,7 +86,7 @@ describe('Milestone 4: Invoice Accounting Posting & Double-Entry Ledger Integrat
             assert.equal(journal.sourceType, 'INVOICE');
             assert.equal(journal.sourceId, intraInvoice.id);
             assert.equal(journal.idempotencyKey, `INVOICE:${intraInvoice.id}`);
-            assert.ok(journal.entryNumber.startsWith('JRN-2026-27-'));
+            assert.ok(journal.entryNumber.startsWith('JRNL/'));
             assert.equal(journal.status, 'POSTED');
 
             // 4 lines: Receivable, Sales, Output CGST, Output SGST
@@ -533,7 +533,7 @@ describe('Milestone 4: Invoice Accounting Posting & Double-Entry Ledger Integrat
             const status = await postingService.getInvoiceAccountingStatus(invoiceToPost.id);
             assert.equal(status.isPosted, true);
             assert.ok(status.journalId > 0);
-            assert.ok(status.entryNumber.startsWith('JRN-2026-27-'));
+            assert.ok(status.entryNumber.startsWith('JRNL/'));
             assert.ok(status.postedAt instanceof Date);
         });
     });

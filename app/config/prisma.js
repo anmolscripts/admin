@@ -37,11 +37,16 @@ function createPrismaClient() {
         port,
         user,
         password,
-        database
+        database,
+        connectionLimit: 30
     });
 
     prismaInstance = new PrismaClient({
         adapter,
+        transactionOptions: {
+            maxWait: 10000,
+            timeout: 20000
+        },
         log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error']
     });
 

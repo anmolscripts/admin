@@ -301,7 +301,7 @@ describe('UX Polish, Unit Master & Master Data Tests', () => {
             ];
 
             for (const expected of expectedItems) {
-                const item = await prisma.item.findUnique({
+                const item = await prisma.item.findFirst({
                     where: { name: expected.name }
                 });
                 assert.ok(item, `Item "${expected.name}" should exist in Item Master`);

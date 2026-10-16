@@ -96,13 +96,40 @@ const NAV_ITEMS = [
         isActive: (path, title = '') => path.startsWith('/team') || title.toLowerCase().includes('team')
     },
     {
+        id: 'menu-workbench',
+        label: 'Reporting Workbench',
+        url: '/reports/workbench',
+        icon: 'bi-clipboard-data-fill',
+        requiredModule: 'REPORTS',
+        requiredAction: 'VIEW',
+        isActive: (path, title = '') => path.startsWith('/reports/workbench') || title.toLowerCase().includes('workbench')
+    },
+    {
+        id: 'menu-admin-businesses',
+        label: 'Organizations',
+        url: '/admin/businesses',
+        icon: 'bi-buildings-fill',
+        requiredModule: 'SETTINGS',
+        requiredAction: 'MANAGE',
+        isActive: (path, title = '') => path.startsWith('/admin/businesses') || title.toLowerCase().includes('organization')
+    },
+    {
+        id: 'menu-admin-numbering',
+        label: 'Document Numbering',
+        url: '/admin/numbering',
+        icon: 'bi-123',
+        requiredModule: 'SETTINGS',
+        requiredAction: 'MANAGE',
+        isActive: (path, title = '') => path.startsWith('/admin/numbering') || title.toLowerCase().includes('numbering')
+    },
+    {
         id: 'menu-settings',
         label: 'Settings',
         url: '/settings',
         icon: 'bi-gear-fill',
         requiredModule: 'SETTINGS',
         requiredAction: 'VIEW',
-        isActive: (path, title = '') => path.startsWith('/settings') || title.toLowerCase().includes('setting') || title.toLowerCase().includes('organization')
+        isActive: (path, title = '') => path.startsWith('/settings') || title.toLowerCase().includes('setting')
     }
 ];
 

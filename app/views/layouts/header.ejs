@@ -9,6 +9,17 @@
     <%= pageTitle || 'Spark Admin' %> | <%= (locals.branding && locals.branding.workspaceName) || 'Spark Admin' %>
   </title>
 
+  <script>
+    (function () {
+      try {
+        var theme = localStorage.getItem('spark-theme') || 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    })();
+  </script>
+
   <meta name="description" content="Spark Admin - Professional Accounting & Invoicing ERP" />
   <meta name="author" content="Spark Admin" />
 
@@ -33,6 +44,8 @@
   <% if (locals.extraCss) { %>
     <%- locals.extraCss %>
   <% } %>
+  <!-- Loaded last so semantic colors remain consistent across every screen. -->
+  <link rel="stylesheet" href="/css/premium-refresh.css" />
 </head>
 
 <%
@@ -67,7 +80,7 @@
     </a>
 
     <!-- Authoritative Navigation Menu -->
-    <div class="flex-grow-1 overflow-y-auto">
+    <div class="sidebar-nav-container flex-grow-1">
       <div class="sidebar-menu-section">
         <div class="sidebar-menu-title">MENU</div>
         <ul class="sidebar-menu-list">
@@ -103,9 +116,15 @@
           </li>
           <% if (canViewReports) { %>
           <li class="sidebar-menu-item">
-            <a href="/reports" class="sidebar-menu-link <%= isReports ? 'active' : '' %>" id="menu-reports" title="Accounting & Reports">
+            <a href="/reports" class="sidebar-menu-link <%= isReports && !currentNavPath.startsWith('/reports/workbench') ? 'active' : '' %>" id="menu-reports" title="Accounting & Reports">
               <i class="bi bi-bar-chart-line-fill"></i>
               <span>Reports & Accounting</span>
+            </a>
+          </li>
+          <li class="sidebar-menu-item">
+            <a href="/reports/workbench" class="sidebar-menu-link <%= (currentNavPath.startsWith('/reports/workbench')) ? 'active' : '' %>" id="menu-workbench" title="Reporting & Analytics Workbench">
+              <i class="bi bi-clipboard-data-fill"></i>
+              <span>Analytics Workbench</span>
             </a>
           </li>
           <% } %>
@@ -149,6 +168,20 @@
               <span>Settings</span>
             </a>
           </li>
+          <% if (locals.user && (locals.user.role === 'ADMIN' || locals.user.isPlatformAdmin === true)) { %>
+          <li class="sidebar-menu-item">
+            <a href="/admin/businesses" class="sidebar-menu-link <%= (currentNavPath.startsWith('/admin/businesses')) ? 'active' : '' %>" id="menu-admin-businesses" title="Organizations Management">
+              <i class="bi bi-buildings-fill"></i>
+              <span>Organizations</span>
+            </a>
+          </li>
+          <li class="sidebar-menu-item">
+            <a href="/admin/numbering" class="sidebar-menu-link <%= (currentNavPath.startsWith('/admin/numbering')) ? 'active' : '' %>" id="menu-admin-numbering" title="Document Numbering Configuration">
+              <i class="bi bi-123"></i>
+              <span>Numbering Series</span>
+            </a>
+          </li>
+          <% } %>
         </ul>
       </div>
     </div>
@@ -158,7 +191,7 @@
       <% if (locals.user && locals.user.avatarUrl) { %>
         <img src="<%= locals.user.avatarUrl %>" alt="<%= locals.user.name || 'Administrator' %>" class="sidebar-profile-img" />
       <% } else { %>
-        <div class="sidebar-profile-avatar-fallback rounded-circle bg-success text-white d-flex align-items-center justify-content-center fw-bold me-2" style="width: 40px; height: 40px; min-width: 40px; font-size: 1rem;">
+        <div class="sidebar-profile-avatar-fallback rounded-circle text-white d-flex align-items-center justify-content-center fw-bold me-2" style="width: 40px; height: 40px; min-width: 40px; font-size: 1rem; background: linear-gradient(135deg, #635BFF 0%, #8B5CF6 100%);">
           <%= (locals.user && locals.user.name) ? locals.user.name.charAt(0).toUpperCase() : 'A' %>
         </div>
       <% } %>
@@ -175,10 +208,52 @@
     <!-- START: Top Navbar -->
     <header class="navbar-custom">
       <div class="navbar-left">
-        <!-- Mobile sidebar toggle -->
-        <button class="sidebar-toggle-btn me-2" id="sidebar-toggle" aria-label="Toggle Navigation">
+        <!-- Sidebar toggle (Desktop icon-rail collapse / Mobile drawer) -->
+        <button class="sidebar-toggle-btn me-2" id="sidebar-toggle" aria-label="Toggle Navigation" aria-expanded="false" aria-controls="sidebar">
           <i class="bi bi-list"></i>
         </button>
+
+        <!-- Workspace Context Switcher Dropdown -->
+        <% if (locals.accessibleBusinesses && locals.accessibleBusinesses.length > 0) { %>
+        <div class="dropdown ms-2">
+          <button class="btn btn-sm btn-outline-secondary dropdown-toggle d-flex align-items-center gap-1 shadow-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Active Organization Workspace">
+            <i class="bi bi-buildings text-primary"></i>
+            <span class="fw-semibold text-truncate d-none d-sm-inline" style="max-width: 150px;">
+              <%= locals.activeBusiness ? locals.activeBusiness.name : 'Select Business' %>
+            </span>
+          </button>
+          <ul class="dropdown-menu shadow-sm">
+            <li class="dropdown-header small text-muted">ACTIVE WORKSPACE</li>
+            <% locals.accessibleBusinesses.forEach(b => { %>
+              <li>
+                <form action="/switch-business" method="POST" class="m-0 p-0">
+                  <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>">
+                  <input type="hidden" name="businessId" value="<%= b.id %>">
+                  <button type="submit" class="dropdown-item py-2 d-flex justify-content-between align-items-center <%= (locals.activeBusiness && locals.activeBusiness.id === b.id) ? 'active' : '' %>">
+                    <span><%= b.name %></span>
+                    <% if (locals.activeBusiness && locals.activeBusiness.id === b.id) { %>
+                      <i class="bi bi-check-lg text-primary ms-2"></i>
+                    <% } %>
+                  </button>
+                </form>
+              </li>
+            <% }); %>
+            <% if (locals.user && (locals.user.role === 'ADMIN' || locals.user.isPlatformAdmin === true)) { %>
+              <li><hr class="dropdown-divider my-1" /></li>
+              <li>
+                <a class="dropdown-item text-primary py-2" href="/admin/businesses">
+                  <i class="bi bi-gear-wide-connected me-1"></i> Manage Organizations
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item text-primary py-2" href="/admin/numbering">
+                  <i class="bi bi-123 me-1"></i> Document Numbering
+                </a>
+              </li>
+            <% } %>
+          </ul>
+        </div>
+        <% } %>
 
         <!-- Create Dropdown -->
         <div class="dropdown ms-2">
@@ -246,7 +321,7 @@
 
         <button class="navbar-search-btn" type="button" aria-label="Search" id="main-search-btn">
           <i class="bi bi-search" id="main-search-icon"></i>
-          <span class="spinner-border spinner-border-sm text-success d-none" id="main-search-spinner" role="status" aria-hidden="true" style="width: 1rem; height: 1rem; border-width: 2px;"></span>
+          <span class="spinner-border spinner-border-sm text-primary d-none" id="main-search-spinner" role="status" aria-hidden="true" style="width: 1rem; height: 1rem; border-width: 2px;"></span>
         </button>
 
         <!-- Global Search Dropdown Panel -->
@@ -267,6 +342,11 @@
 
       <!-- Right actions -->
       <div class="navbar-actions">
+        <!-- Theme Switcher Toggle -->
+        <button class="navbar-action-btn me-1" aria-label="Switch to dark mode" id="theme-toggle" title="Switch to dark mode" type="button">
+          <i class="bi bi-moon-stars" id="theme-toggle-icon"></i>
+        </button>
+
         <!-- Fullscreen -->
         <button class="navbar-action-btn me-1" aria-label="Toggle Fullscreen" id="btn-fullscreen">
           <i class="bi bi-arrows-fullscreen"></i>

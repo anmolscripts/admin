@@ -110,7 +110,7 @@ async function getUnit(req, res, next) {
 async function createUnit(req, res, next) {
     try {
         const userId = req.session && req.session.user ? req.session.user.id : null;
-        const unit = await unitService.createUnit(req.body, userId);
+        const unit = await unitService.createUnit({ ...req.body, businessId: req.businessId }, userId);
         return res.status(201).json({
             success: true,
             data: unit

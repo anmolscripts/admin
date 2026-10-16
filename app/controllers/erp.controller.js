@@ -19,7 +19,10 @@ async function listSupplierPayments(req, res, next) {
 
 async function recordSupplierPayment(req, res, next) {
     try {
-        const payment = await supplierPaymentService.recordSupplierPayment(req.body, req.user?.id);
+        const payment = await supplierPaymentService.recordSupplierPayment({
+            ...req.body,
+            businessId: req.body.businessId || req.businessId
+        }, req.user?.id);
         res.status(201).json({ success: true, payment });
     } catch (err) {
         if (err.name === 'ValidationError') return res.status(400).json({ success: false, error: err.message });
@@ -50,9 +53,9 @@ async function voidSupplierPayment(req, res, next) {
     }
 }
 
-// -------------------------------------------------------------
+// -----------------
 // INVENTORY & STOCK MOVEMENTS
-// -------------------------------------------------------------
+// -----------------
 async function listStockMovements(req, res, next) {
     try {
         const result = await stockMovementService.listStockMovements(req.query);
@@ -64,7 +67,10 @@ async function listStockMovements(req, res, next) {
 
 async function recordStockMovement(req, res, next) {
     try {
-        const movement = await stockMovementService.recordStockMovement(req.body, req.user?.id);
+        const movement = await stockMovementService.recordStockMovement({
+            ...req.body,
+            businessId: req.body.businessId || req.businessId
+        }, req.user?.id);
         res.status(201).json({ success: true, movement });
     } catch (err) {
         if (err.name === 'ValidationError') return res.status(400).json({ success: false, error: err.message });
@@ -138,32 +144,49 @@ async function setSalaryStructure(req, res, next) {
 
 async function generatePayrollPeriod(req, res, next) {
     try {
-        const period = await payrollService.generatePayrollPeriod(req.body, req.user?.id);
+        const actorUserId = req.session?.user?.id || req.user?.id;
+        const targetBusinessId = req.businessId || req.session?.activeBusinessId || req.body.businessId;
+        const period = await payrollService.generatePayrollPeriod({
+            ...req.body,
+            businessId: targetBusinessId
+        }, actorUserId);
         res.status(201).json({ success: true, period });
     } catch (err) {
         if (err.name === 'ValidationError') return res.status(400).json({ success: false, error: err.message });
-        if (err.name === 'ConflictError') return res.status(409).json({ success: false, error: err.message });
+        if (err.name === 'ForbiddenError' || err.statusCode === 403) return res.status(403).json({ success: false, error: err.message });
+        if (err.name === 'NotFoundError' || err.statusCode === 404) return res.status(404).json({ success: false, error: err.message });
+        if (err.name === 'ConflictError' || err.statusCode === 409) return res.status(409).json({ success: false, error: err.message });
+        if (err.name === 'BusinessError') return res.status(err.statusCode || 400).json({ success: false, error: err.message });
         next(err);
     }
 }
 
 async function approvePayrollPeriod(req, res, next) {
     try {
-        const period = await payrollService.approvePayrollPeriod(req.params.id, req.user?.id);
+        const actorUserId = req.session?.user?.id || req.user?.id;
+        const period = await payrollService.approvePayrollPeriod(req.params.id, actorUserId);
         res.json({ success: true, period });
     } catch (err) {
         if (err.name === 'ValidationError') return res.status(400).json({ success: false, error: err.message });
-        if (err.name === 'ConflictError') return res.status(409).json({ success: false, error: err.message });
+        if (err.name === 'ForbiddenError' || err.statusCode === 403) return res.status(403).json({ success: false, error: err.message });
+        if (err.name === 'NotFoundError' || err.statusCode === 404) return res.status(404).json({ success: false, error: err.message });
+        if (err.name === 'ConflictError' || err.statusCode === 409) return res.status(409).json({ success: false, error: err.message });
+        if (err.name === 'BusinessError') return res.status(err.statusCode || 400).json({ success: false, error: err.message });
         next(err);
     }
 }
 
 async function postPayrollToLedger(req, res, next) {
     try {
-        const period = await payrollService.postPayrollToLedger(req.params.id, req.user?.id);
+        const actorUserId = req.session?.user?.id || req.user?.id;
+        const period = await payrollService.postPayrollToLedger(req.params.id, actorUserId);
         res.json({ success: true, period });
     } catch (err) {
         if (err.name === 'ValidationError') return res.status(400).json({ success: false, error: err.message });
+        if (err.name === 'ForbiddenError' || err.statusCode === 403) return res.status(403).json({ success: false, error: err.message });
+        if (err.name === 'NotFoundError' || err.statusCode === 404) return res.status(404).json({ success: false, error: err.message });
+        if (err.name === 'ConflictError' || err.statusCode === 409) return res.status(409).json({ success: false, error: err.message });
+        if (err.name === 'BusinessError') return res.status(err.statusCode || 400).json({ success: false, error: err.message });
         next(err);
     }
 }
@@ -180,7 +203,10 @@ async function getPayslip(req, res, next) {
 
 async function createReimbursement(req, res, next) {
     try {
-        const reimbursement = await payrollService.createReimbursement(req.body, req.user?.id);
+        const reimbursement = await payrollService.createReimbursement({
+            ...req.body,
+            businessId: req.body.businessId || req.businessId
+        }, req.user?.id);
         res.status(201).json({ success: true, reimbursement });
     } catch (err) {
         if (err.name === 'ValidationError') return res.status(400).json({ success: false, error: err.message });
@@ -213,7 +239,10 @@ async function listProjects(req, res, next) {
 
 async function createProject(req, res, next) {
     try {
-        const project = await projectService.createProject(req.body, req.user?.id);
+        const project = await projectService.createProject({
+            ...req.body,
+            businessId: req.body.businessId || req.businessId
+        }, req.user?.id);
         res.status(201).json({ success: true, project });
     } catch (err) {
         if (err.name === 'ValidationError') return res.status(400).json({ success: false, error: err.message });

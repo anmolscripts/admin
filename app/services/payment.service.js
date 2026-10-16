@@ -3,6 +3,7 @@ const activityService = require('./activity.service');
 const { ensureFinancialYear } = require('./financialYear.service');
 const postingService = require('./accounting/posting.service');
 const journalService = require('./journal.service');
+const numberingService = require('./numbering.service');
 
 class ValidationError extends Error {
     constructor(message) {
@@ -147,13 +148,29 @@ async function recordPayment(invoiceIdInput, paymentData, userId, meta = {}) {
             );
         }
 
-        const financialYear = await ensureFinancialYear(paymentDate);
+        const activeBusinessId = invoice.businessId || (meta && meta.businessId);
+        if (!activeBusinessId) {
+            throw new ValidationError('Invoice is missing business context.');
+        }
+        if (meta && meta.businessId && parseInt(meta.businessId, 10) !== activeBusinessId) {
+            throw new ValidationError(`Invoice ${invoice.id} does not belong to authorized business ${meta.businessId}. Cross-business access denied.`);
+        }
+        const financialYear = await ensureFinancialYear(paymentDate, activeBusinessId);
         if (financialYear && financialYear.status === 'CLOSED') {
             throw new ValidationError(`Cannot record payment in CLOSED Financial Year ${financialYear.code}.`);
         }
 
+        const receiptNumber = await numberingService.allocateNumber({
+            businessId: activeBusinessId,
+            entityType: 'PAYMENT',
+            date: paymentDate,
+            tx
+        });
+
         const payment = await tx.payment.create({
             data: {
+                businessId: activeBusinessId,
+                receiptNumber,
                 invoiceId: invoice.id,
                 financialYearId: financialYear ? financialYear.id : null,
                 amount,

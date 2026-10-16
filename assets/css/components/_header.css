@@ -1,0 +1,194 @@
+/* assets/css/components/_header.css */
+/* Aurora Glass Header / Top Navbar */
+.navbar-custom {
+  background: var(--sa-header-bg, rgba(241, 247, 250, 0.85));
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--sa-header-border, rgba(32, 70, 82, 0.12));
+  box-shadow: 0 4px 16px -2px rgba(19, 42, 53, 0.04);
+  transition: var(--sa-transition);
+  height: var(--sa-header-height, 70px);
+  display: flex;
+  align-items: center;
+  padding: 0 1.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 1020;
+}
+
+.navbar-custom .navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.navbar-custom .navbar-left button.sidebar-toggle-btn {
+  color: var(--sa-text-secondary, #667985);
+  background: var(--sa-surface, #FFFFFF);
+  border: 1px solid var(--sa-border, rgba(32, 70, 82, 0.12));
+  border-radius: var(--sa-radius-md, 10px);
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  transition: var(--sa-transition);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+}
+
+.navbar-custom .navbar-left button.sidebar-toggle-btn:hover {
+  color: var(--sa-primary, #135E5A);
+  background: #FFFFFF;
+  border-color: rgba(22, 184, 175, 0.4);
+  box-shadow: 0 2px 8px rgba(22, 184, 175, 0.15);
+  transform: translateY(-1px);
+}
+
+.navbar-custom .navbar-left button.sidebar-toggle-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--sa-focus-ring);
+  border-color: var(--sa-primary, #135E5A);
+}
+
+/* Header Action / Utility Buttons (Theme toggle, Fullscreen, Notifications) */
+.navbar-action-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--sa-radius-md, 10px);
+  background: var(--sa-surface, #FFFFFF);
+  border: 1px solid var(--sa-border, rgba(32, 70, 82, 0.12));
+  color: var(--sa-text-secondary, #667985);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  position: relative;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: var(--sa-transition);
+  cursor: pointer;
+  padding: 0;
+}
+
+.navbar-action-btn:hover {
+  background: #FFFFFF;
+  color: var(--sa-primary, #135E5A);
+  border-color: rgba(22, 184, 175, 0.4);
+  box-shadow: 0 2px 8px rgba(22, 184, 175, 0.15);
+  transform: translateY(-1px);
+}
+
+.navbar-action-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--sa-focus-ring);
+  border-color: var(--sa-primary, #135E5A);
+}
+
+/* Workspace Context Switcher & Header Dropdowns */
+.navbar-custom .dropdown-menu {
+  background: var(--sa-surface-elevated, rgba(255, 255, 255, 0.95));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--sa-border, rgba(32, 70, 82, 0.12));
+  border-radius: var(--sa-radius-md, 12px);
+  box-shadow: 0 12px 32px -4px rgba(19, 42, 53, 0.12);
+  padding: 0.5rem;
+}
+
+.navbar-custom .dropdown-item {
+  border-radius: var(--sa-radius-sm, 6px);
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.5rem 0.85rem;
+  transition: all 0.15s ease;
+  color: var(--sa-text-main, #182A35);
+}
+
+.navbar-custom .dropdown-item:hover {
+  background: var(--sa-primary-translucent, rgba(19, 94, 90, 0.08));
+  color: var(--sa-primary, #135E5A);
+}
+
+.navbar-custom .dropdown-item.active {
+  background: var(--sa-primary, #135E5A);
+  color: #FFFFFF !important;
+}
+
+/* Profile / Right Nav */
+.navbar-custom .navbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.navbar-custom .navbar-right .profile-img {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--sa-radius-full);
+  border: 2px solid rgba(22, 184, 175, 0.35);
+  transition: border-color 0.2s ease;
+}
+
+.navbar-custom .navbar-right .profile-img:hover {
+  border-color: var(--sa-primary, #135E5A);
+}
+
+/* Mobile & Tablet Responsive Header Layout */
+@media (max-width: 991.98px) {
+  .navbar-custom {
+    height: auto !important;
+    min-height: 56px;
+    padding: 0.75rem 1rem !important;
+    flex-wrap: wrap;
+    row-gap: 0.6rem;
+    align-items: center;
+  }
+
+  .navbar-custom .navbar-left {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .navbar-custom .navbar-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  #btn-fullscreen {
+    display: none !important;
+  }
+
+  .navbar-search-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    order: 3;
+    margin: 0 !important;
+  }
+
+  .navbar-search-input {
+    height: 40px;
+    padding: 0.5rem 1rem 0.5rem 2.5rem;
+    font-size: 0.8125rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar-action-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+  }
+  
+  .navbar-custom .navbar-left button.sidebar-toggle-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 1.15rem;
+  }
+}
+

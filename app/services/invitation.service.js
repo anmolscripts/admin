@@ -180,6 +180,29 @@ async function createInvitation(adminUserId, { name, email, roleId, permissionId
             }
         });
 
+        // 3b. Create BusinessMembership for the new user
+        let targetBusinessId = meta.businessId;
+        if (!targetBusinessId && adminUserId) {
+            const adminMembership = await tx.businessMembership.findFirst({
+                where: { userId: Number(adminUserId), status: 'ACTIVE' }
+            });
+            if (adminMembership) targetBusinessId = adminMembership.businessId;
+        }
+        if (!targetBusinessId) {
+            const defaultBiz = await tx.business.findFirst({ where: { status: 'ACTIVE' } });
+            if (defaultBiz) targetBusinessId = defaultBiz.id;
+        }
+        if (targetBusinessId) {
+            await tx.businessMembership.create({
+                data: {
+                    businessId: targetBusinessId,
+                    userId: newUser.id,
+                    role: role.name === 'OWNER' ? 'OWNER' : (role.name === 'ADMIN' ? 'ADMIN' : 'MEMBER'),
+                    status: 'ACTIVE'
+                }
+            });
+        }
+
         // 4. Atomic Semantic Audit Events
         await activityService.log({
             actorUserId: adminUserId,

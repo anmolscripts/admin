@@ -143,14 +143,14 @@ Unique Item A,PCS,20`;
             assert.equal(commitRes.created, 1);
             assert.equal(commitRes.updated, 0);
 
-            const savedItem = await prisma.item.findUnique({ where: { name: importedName } });
+            const savedItem = await prisma.item.findFirst({ where: { name: importedName } });
             assert.ok(savedItem);
             assert.equal(Number(savedItem.rate), 899.00);
             assert.equal(savedItem.hsnSac, '847130');
         });
 
         it('2.2 updates existing items when action is UPDATE', async () => {
-            const existing = await prisma.item.findUnique({ where: { name: importedName } });
+            const existing = await prisma.item.findFirst({ where: { name: importedName } });
             assert.ok(existing);
 
             const updateRows = [
@@ -219,7 +219,7 @@ Unique Item A,PCS,20`;
             assert.equal(data.success, true);
             assert.equal(data.created, 1);
 
-            const saved = await prisma.item.findUnique({ where: { name: apiItemName } });
+            const saved = await prisma.item.findFirst({ where: { name: apiItemName } });
             assert.ok(saved);
         });
     });

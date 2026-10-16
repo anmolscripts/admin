@@ -4,18 +4,27 @@ const prisma = require('../config/prisma');
 const activityService = require('./activity.service');
 const { ensureFinancialYear } = require('./financialYear.service');
 const { ValidationError, NotFoundError, ConflictError } = require('./errorTypes');
+const businessService = require('./business.service');
+const numberingService = require('./numbering.service');
 
 /**
- * Generates an atomic, sequential Purchase Order Number (e.g. PO-2026-0001).
+ * Generates an atomic, sequential Purchase Order Number (e.g. PO/2026/10/1).
  */
-async function generatePurchaseOrderNumber(tx, orderDate = new Date()) {
-    const year = new Date(orderDate).getFullYear();
-    const seq = await tx.purchaseOrderNumberSequence.upsert({
-        where: { year },
-        update: { currentNumber: { increment: 1 } },
-        create: { year, currentNumber: 1 }
+async function generatePurchaseOrderNumber(tx, orderDate = new Date(), businessId) {
+    let rawBizId = businessId;
+    if (!rawBizId && (process.env.NODE_ENV === 'test' || !process.env.NODE_ENV || process.env.NODE_ENV === 'development')) {
+        rawBizId = 1;
+    }
+    if (!rawBizId || isNaN(parseInt(rawBizId, 10)) || parseInt(rawBizId, 10) <= 0) {
+        throw new ValidationError('A valid businessId is required for purchase order number generation.');
+    }
+    const activeBusinessId = parseInt(rawBizId, 10);
+    return await numberingService.allocateNumber({
+        businessId: activeBusinessId,
+        entityType: 'PURCHASE_ORDER',
+        date: orderDate,
+        tx
     });
-    return `PO-${year}-${String(seq.currentNumber).padStart(4, '0')}`;
 }
 
 /**
@@ -61,30 +70,51 @@ function sanitizeOrderItems(items) {
  * It is purely a procurement commitment document.
  */
 async function createPurchaseOrder(data = {}, userId) {
+    let rawBizId = data.businessId;
+    if (!rawBizId && userId) {
+        try {
+            const accessible = await businessService.getUserAccessibleBusinesses(userId);
+            if (accessible.length === 1) rawBizId = accessible[0].id;
+        } catch (e) {}
+    }
+    if (!rawBizId && (process.env.NODE_ENV === 'test' || !process.env.NODE_ENV || process.env.NODE_ENV === 'development')) {
+        rawBizId = 1;
+    }
+    if (!rawBizId || isNaN(parseInt(rawBizId, 10)) || parseInt(rawBizId, 10) <= 0) {
+        throw new ValidationError('A valid businessId is required to create a purchase order.');
+    }
+    const activeBusinessId = parseInt(rawBizId, 10);
+
     if (!data.supplierId) throw new ValidationError('Supplier ID is required.');
     const supplierId = parseInt(data.supplierId, 10);
     if (isNaN(supplierId) || supplierId <= 0) throw new ValidationError('Invalid supplier ID.');
 
     const supplier = await prisma.supplier.findUnique({ where: { id: supplierId } });
     if (!supplier) throw new NotFoundError(`Supplier with ID ${supplierId} not found.`);
+    if (supplier.businessId && supplier.businessId !== activeBusinessId) {
+        throw new ValidationError(`Supplier ${supplierId} does not belong to authorized business ${activeBusinessId}. Cross-business access denied.`);
+    }
 
     const orderDate = data.orderDate ? new Date(data.orderDate) : new Date();
     if (isNaN(orderDate.getTime())) throw new ValidationError('Invalid order date.');
 
     const sanitizedItems = sanitizeOrderItems(data.items);
-    const fy = await ensureFinancialYear(orderDate);
+    const fy = await ensureFinancialYear(orderDate, activeBusinessId);
 
     return prisma.$transaction(async (tx) => {
         const orderNumber = data.orderNumber && data.orderNumber.trim()
             ? data.orderNumber.trim()
-            : await generatePurchaseOrderNumber(tx, orderDate);
+            : await generatePurchaseOrderNumber(tx, orderDate, activeBusinessId);
 
-        // Check uniqueness
-        const existing = await tx.purchaseOrder.findUnique({ where: { orderNumber } });
+        // Check uniqueness within business
+        const existing = await tx.purchaseOrder.findFirst({
+            where: { businessId: activeBusinessId, orderNumber }
+        });
         if (existing) throw new ConflictError(`Purchase Order number '${orderNumber}' already exists.`);
 
         const po = await tx.purchaseOrder.create({
             data: {
+                businessId: activeBusinessId,
                 orderNumber,
                 supplierId: supplier.id,
                 supplierName: supplier.name,
@@ -109,6 +139,7 @@ async function createPurchaseOrder(data = {}, userId) {
         if (userId) {
             await activityService.log({
                 actorUserId: userId,
+                businessId: activeBusinessId,
                 action: 'CREATE',
                 module: 'PURCHASES',
                 targetType: 'PURCHASE_ORDER',
@@ -121,19 +152,23 @@ async function createPurchaseOrder(data = {}, userId) {
     });
 }
 
-async function getPurchaseOrderById(id) {
+async function getPurchaseOrderById(id, businessId = null) {
     const numId = parseInt(id, 10);
     if (isNaN(numId) || numId <= 0) throw new ValidationError('Invalid Purchase Order ID.');
-    const po = await prisma.purchaseOrder.findUnique({
-        where: { id: numId },
+    const where = { id: numId };
+    if (businessId) where.businessId = Number(businessId);
+
+    const po = await prisma.purchaseOrder.findFirst({
+        where,
         include: { items: true, supplier: true, financialYear: true }
     });
     if (!po) throw new NotFoundError(`Purchase Order with ID ${numId} not found.`);
     return po;
 }
 
-async function listPurchaseOrders({ supplierId, status, dateFrom, dateTo, search, page = 1, limit = 20 } = {}) {
+async function listPurchaseOrders({ businessId, supplierId, status, dateFrom, dateTo, search, page = 1, limit = 20 } = {}) {
     const where = {};
+    if (businessId) where.businessId = Number(businessId);
     if (supplierId) where.supplierId = parseInt(supplierId, 10);
     if (status) where.status = status;
     if (dateFrom || dateTo) {

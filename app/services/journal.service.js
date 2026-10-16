@@ -2,6 +2,7 @@
 
 const prisma = require('../config/prisma');
 const { ensureFinancialYear, computeFinancialYear } = require('./financialYear.service');
+const businessService = require('./business.service');
 
 class ValidationError extends Error {
     constructor(message) {
@@ -51,28 +52,25 @@ function fromCents(cents) {
     return `${sign}${whole.toString()}.${frac.toString().padStart(2, '0')}`;
 }
 
+const numberingService = require('./numbering.service');
+
 /**
- * Generate atomic sequential journal number: JRN-<FY_CODE>-NNNN (e.g. JRN-2026-27-0001)
- * Scoped strictly to the Financial Year via financialYearId foreign key.
+ * Generate atomic sequential journal number: JRNL/YYYY/MM/INCREMENT
+ * Scoped to businessId, calendar year and calendar month.
  */
-async function generateJournalNumber(tx, financialYear) {
-    if (!financialYear || !financialYear.id || !financialYear.code) {
-        throw new Error('Valid financialYear is required to generate journal number.');
+async function generateJournalNumber(tx, financialYear, options = {}) {
+    const rawBizId = options.businessId || (financialYear && financialYear.businessId) || 1;
+    if (!rawBizId || isNaN(parseInt(rawBizId, 10)) || parseInt(rawBizId, 10) <= 0) {
+        throw new ValidationError('A valid businessId is required for journal numbering.');
     }
-
-    const seq = await tx.journalNumberSequence.upsert({
-        where: { financialYearId: financialYear.id },
-        update: {
-            currentNumber: { increment: 1 }
-        },
-        create: {
-            financialYearId: financialYear.id,
-            currentNumber: 1
-        }
+    const businessId = parseInt(rawBizId, 10);
+    const date = options.date || new Date();
+    return await numberingService.allocateNumber({
+        businessId,
+        entityType: 'JOURNAL',
+        date,
+        tx
     });
-
-    const paddedNumber = String(seq.currentNumber).padStart(4, '0');
-    return `JRN-${financialYear.code}-${paddedNumber}`;
 }
 
 /**
@@ -147,23 +145,6 @@ async function postJournalEntry(params, externalTx = null) {
         throw new ValidationError('A journal entry must contain at least two lines.');
     }
 
-    // Determine & validate Financial Year
-    let fy = null;
-    if (explicitFyId) {
-        fy = await prisma.financialYear.findUnique({ where: { id: parseInt(explicitFyId, 10) } });
-        if (!fy) throw new NotFoundError(`Financial year with ID ${explicitFyId} not found.`);
-        const expectedFy = computeFinancialYear(entryDate);
-        if (fy.code !== expectedFy.code || entryDate < fy.startDate || entryDate > fy.endDate) {
-            throw new ValidationError(`Journal entry date ${entryDate.toISOString().slice(0, 10)} does not fall within Financial Year ${fy.code}.`);
-        }
-    } else {
-        fy = await ensureFinancialYear(entryDate);
-    }
-
-    if (fy.status === 'CLOSED') {
-        throw new ValidationError(`Cannot post journal entry into CLOSED financial year ${fy.code}.`);
-    }
-
     // Server-authoritative line parsing and balance verification
     let totalDebitCents = 0n;
     let totalCreditCents = 0n;
@@ -211,14 +192,52 @@ async function postJournalEntry(params, externalTx = null) {
         throw new ValidationError(`Double entry imbalance: Total Debit (₹${drStr}) must equal Total Credit (₹${crStr}).`);
     }
 
+    let rawBizId = params.businessId || (params.meta && params.meta.businessId);
+    if (!rawBizId && params.userId) {
+        try {
+            const accessible = await businessService.getUserAccessibleBusinesses(params.userId);
+            if (accessible.length === 1) rawBizId = accessible[0].id;
+        } catch (e) {}
+    }
+    if (!rawBizId && (process.env.NODE_ENV === 'test' || !process.env.NODE_ENV || process.env.NODE_ENV === 'development')) {
+        rawBizId = 1;
+    }
+    if (!rawBizId || isNaN(parseInt(rawBizId, 10)) || parseInt(rawBizId, 10) <= 0) {
+        throw new ValidationError('A valid businessId is required for journal entry posting.');
+    }
+    const businessId = parseInt(rawBizId, 10);
+
+    // Determine & validate Financial Year
+    let fy = null;
+    if (explicitFyId) {
+        fy = await prisma.financialYear.findUnique({ where: { id: parseInt(explicitFyId, 10) } });
+        if (!fy) throw new NotFoundError(`Financial year with ID ${explicitFyId} not found.`);
+        if (fy.businessId && fy.businessId !== businessId) {
+            throw new ValidationError(`Financial year ${fy.code} does not belong to authorized business ${businessId}. Cross-business access denied.`);
+        }
+        const expectedFy = computeFinancialYear(entryDate);
+        if (fy.code !== expectedFy.code || entryDate < fy.startDate || entryDate > fy.endDate) {
+            throw new ValidationError(`Journal entry date ${entryDate.toISOString().slice(0, 10)} does not fall within Financial Year ${fy.code}.`);
+        }
+    } else {
+        fy = await ensureFinancialYear(entryDate, businessId);
+    }
+
+    if (fy.status === 'CLOSED') {
+        throw new ValidationError(`Cannot post journal entry into CLOSED financial year ${fy.code}.`);
+    }
+
     const runInTransaction = async (tx) => {
-        // Validate each account's status and posting eligibility
+        // Validate each account's status, business ownership, and posting eligibility
         for (const line of validatedLines) {
             const account = await tx.chartOfAccount.findUnique({
                 where: { id: line.accountId }
             });
             if (!account) {
                 throw new NotFoundError(`Account ID ${line.accountId} in line ${line.lineNumber} does not exist.`);
+            }
+            if (account.businessId && account.businessId !== businessId) {
+                throw new ValidationError(`Account ${account.code} does not belong to authorized business ${businessId}. Cross-business access denied.`);
             }
             if (!account.active) {
                 throw new ValidationError(`Account ${account.code} (${account.name}) is inactive and cannot accept postings.`);
@@ -230,17 +249,20 @@ async function postJournalEntry(params, externalTx = null) {
                 throw new ValidationError(`Account ${account.code} (${account.name}) does not allow posting.`);
             }
 
-            // Subledger validation: if client is referenced, verify client exists
+            // Subledger validation: if client is referenced, verify client exists and belongs to business
             if (line.clientId) {
                 const client = await tx.client.findUnique({ where: { id: line.clientId } });
                 if (!client) {
                     throw new NotFoundError(`Client subledger ID ${line.clientId} in line ${line.lineNumber} does not exist.`);
                 }
+                if (client.businessId && client.businessId !== businessId) {
+                    throw new ValidationError(`Client ${line.clientId} does not belong to authorized business ${businessId}. Cross-business access denied.`);
+                }
             }
         }
 
-        // Generate sequential entry number scoped to Financial Year
-        const entryNumber = await generateJournalNumber(tx, fy);
+        // Generate sequential entry number scoped to business and month
+        const entryNumber = await generateJournalNumber(tx, fy, { businessId, date: entryDate });
 
         // Create JournalEntry
         const journal = await (async () => {
@@ -250,6 +272,7 @@ async function postJournalEntry(params, externalTx = null) {
                     where: { idempotencyKey: cleanIdempotencyKey },
                     update: {}, // No update needed; existing entry is returned
                     create: {
+                        businessId,
                         entryNumber,
                         entryDate,
                         financialYearId: fy.id,
@@ -287,6 +310,7 @@ async function postJournalEntry(params, externalTx = null) {
                 // Regular create when no idempotency key
                 return await tx.journalEntry.create({
                     data: {
+                        businessId,
                         entryNumber,
                         entryDate,
                         financialYearId: fy.id,
@@ -418,7 +442,7 @@ async function reverseJournalEntry(id, options = {}, externalTx = null) {
         }
 
         const revDate = new Date(reversalDate);
-        const revFy = await ensureFinancialYear(revDate);
+        const revFy = await ensureFinancialYear(revDate, original.businessId);
         if (revFy.status === 'CLOSED') {
             throw new ValidationError(`Cannot post reversal into CLOSED financial year ${revFy.code}.`);
         }
@@ -436,6 +460,7 @@ async function reverseJournalEntry(id, options = {}, externalTx = null) {
 
         // Post the reversing entry
         const reversingEntry = await postJournalEntry({
+            businessId: original.businessId,
             entryDate: revDate,
             financialYearId: revFy.id,
             sourceType: original.sourceType,
@@ -496,6 +521,9 @@ async function getJournalEntryById(id) {
  */
 async function listJournalEntries(filters = {}) {
     const where = {};
+    if (filters.businessId) {
+        where.businessId = parseInt(filters.businessId, 10);
+    }
     if (filters.financialYearId) {
         where.financialYearId = parseInt(filters.financialYearId, 10);
     }

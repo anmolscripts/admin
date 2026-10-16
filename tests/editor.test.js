@@ -174,7 +174,7 @@ describe('Document Editor (Phase 3) Test Suite', () => {
         });
         assert.strictEqual(res.status, 200);
         const html = await res.text();
-        assert.ok(html.includes('Edit INV-'), 'Page title should contain Edit and invoice number');
+        assert.ok(html.includes('Edit INVO/'), 'Page title should contain Edit and invoice number');
         assert.ok(html.includes('Editor Test Invoice Client'), 'Should contain client name in initial data');
         assert.ok(html.includes('id="doc-version"'), 'Should include doc-version input for optimistic concurrency');
     });
@@ -185,7 +185,7 @@ describe('Document Editor (Phase 3) Test Suite', () => {
         });
         assert.strictEqual(res.status, 200);
         const html = await res.text();
-        assert.ok(html.includes('Edit QTN-'), 'Page title should contain Edit and quotation number');
+        assert.ok(html.includes('Edit QUOT/'), 'Page title should contain Edit and quotation number');
         assert.ok(html.includes('Editor Test Quotation Client'), 'Should contain quotation client name');
     });
 
@@ -244,7 +244,7 @@ describe('Document Editor (Phase 3) Test Suite', () => {
         const doc = body.data;
 
         assert.strictEqual(doc.documentType, 'QUOTATION');
-        assert.match(doc.invoiceNumber, /^QTN-2026-\d{4}$/);
+        assert.match(doc.invoiceNumber, /^QUOT\/2026\/07\/\d+$/);
         assert.strictEqual(doc.status, 'ACTIVE');
         assert.strictEqual(doc.version, 1);
         // Server calculations:
@@ -290,7 +290,7 @@ describe('Document Editor (Phase 3) Test Suite', () => {
         const doc = body.data;
 
         assert.strictEqual(doc.documentType, 'INVOICE');
-        assert.match(doc.invoiceNumber, /^INV-2026-\d{4}$/);
+        assert.match(doc.invoiceNumber, /^INVO\/2026\/07\/\d+$/);
         assert.notStrictEqual(doc.invoiceNumber, 'INV-FAKE-0001', 'Cannot spoof invoice number');
         assert.strictEqual(doc.status, 'ACTIVE', 'Cannot spoof status to VOID on creation');
 

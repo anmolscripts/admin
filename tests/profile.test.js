@@ -63,6 +63,17 @@ describe('User Personal Profile & Security (Phase 3) Test Suite', () => {
             }
         });
 
+        const defaultBiz = await prisma.business.findFirst();
+        if (defaultBiz) {
+            await prisma.businessMembership.createMany({
+                data: [
+                    { userId: testUser.id, businessId: defaultBiz.id, role: 'MEMBER', status: 'ACTIVE' },
+                    { userId: secondUser.id, businessId: defaultBiz.id, role: 'MEMBER', status: 'ACTIVE' }
+                ],
+                skipDuplicates: true
+            });
+        }
+
         server = http.createServer(app);
         await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
         const port = server.address().port;
@@ -99,6 +110,9 @@ describe('User Personal Profile & Security (Phase 3) Test Suite', () => {
     after(async () => {
         // Cleanup fixtures
         try {
+            await prisma.businessMembership.deleteMany({
+                where: { user: { email: { in: [testUserEmail, secondUserEmail] } } }
+            });
             await prisma.user.deleteMany({
                 where: { email: { in: [testUserEmail, secondUserEmail] } }
             });

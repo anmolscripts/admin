@@ -2,6 +2,8 @@
 
 const prisma = require('../config/prisma');
 const activityService = require('./activity.service');
+const numberingService = require('./numbering.service');
+const businessService = require('./business.service');
 const { ValidationError, NotFoundError, ConflictError } = require('./errorTypes');
 
 const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
@@ -27,6 +29,21 @@ function validatePhone(phone) {
 }
 
 async function createSupplier(data = {}, userId = null) {
+    let rawBizId = data.businessId;
+    if (!rawBizId && userId) {
+        try {
+            const accessible = await businessService.getUserAccessibleBusinesses(userId);
+            if (accessible.length === 1) rawBizId = accessible[0].id;
+        } catch (e) {}
+    }
+    if (!rawBizId && (process.env.NODE_ENV === 'test' || !process.env.NODE_ENV || process.env.NODE_ENV === 'development')) {
+        rawBizId = 1;
+    }
+    if (!rawBizId || isNaN(parseInt(rawBizId, 10)) || parseInt(rawBizId, 10) <= 0) {
+        throw new ValidationError('A valid businessId is required to create a supplier.');
+    }
+    const businessId = parseInt(rawBizId, 10);
+
     const name = (data.name || '').trim();
     if (!name) throw new ValidationError('Supplier name is required.');
     if (name.length > 191) throw new ValidationError('Supplier name must not exceed 191 characters.');
@@ -45,17 +62,38 @@ async function createSupplier(data = {}, userId = null) {
     const phone = validatePhone(data.phone);
     const address = data.address ? data.address.trim() : null;
 
-    const supplier = await prisma.supplier.create({
-        data: {
-            name,
-            email,
-            phone,
-            gstin,
-            stateCode,
-            address,
-            active: data.active !== undefined ? Boolean(data.active) : true,
-            createdById: userId
+    let supplierCode = (data.supplierCode || '').trim().toUpperCase();
+
+    const supplier = await prisma.$transaction(async (tx) => {
+        if (!supplierCode) {
+            supplierCode = await numberingService.allocateNumber({
+                businessId,
+                entityType: 'SUPPLIER',
+                tx
+            });
         }
+
+        const existing = await tx.supplier.findFirst({
+            where: { businessId, supplierCode }
+        });
+        if (existing) {
+            throw new ConflictError(`Supplier code "${supplierCode}" already exists for this business.`);
+        }
+
+        return await tx.supplier.create({
+            data: {
+                businessId,
+                supplierCode,
+                name,
+                email,
+                phone,
+                gstin,
+                stateCode,
+                address,
+                active: data.active !== undefined ? Boolean(data.active) : true,
+                createdById: userId
+            }
+        });
     });
 
     if (userId) {
@@ -122,17 +160,23 @@ async function updateSupplier(id, data = {}, userId = null) {
     return updated;
 }
 
-async function searchSuppliers(query = '', limit = 50) {
+async function searchSuppliers(query = '', limit = 50, businessId = null) {
     const q = (query || '').trim();
+    const where = {};
+    if (businessId) {
+        where.businessId = parseInt(businessId, 10);
+    }
+    if (q) {
+        where.OR = [
+            { supplierCode: { contains: q } },
+            { name: { contains: q } },
+            { email: { contains: q } },
+            { phone: { contains: q } },
+            { gstin: { contains: q } }
+        ];
+    }
     return prisma.supplier.findMany({
-        where: q ? {
-            OR: [
-                { name: { contains: q } },
-                { email: { contains: q } },
-                { phone: { contains: q } },
-                { gstin: { contains: q } }
-            ]
-        } : {},
+        where,
         orderBy: { name: 'asc' },
         take: limit
     });

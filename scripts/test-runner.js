@@ -33,15 +33,6 @@ validateTestEnv();
 // Load Prisma client only after static validation succeeded
 prisma = require('../app/config/prisma');
 const { applyTestFixtures } = require('./test-fixtures');
-// Perform live connection validation
-(async () => {
-  try {
-    await validateTestEnv(prisma);
-  } catch (err) {
-    console.error(err.message);
-    process.exit(1);
-  }
-})();
 
 if (!explicitPassword || !explicitPassword.trim()) {
     console.error('');
@@ -115,38 +106,30 @@ if (database.toLowerCase() === 'admin') {
   console.error('\n[TEST RUNNER ERROR]: Resolved database name is admin. Abort to protect production data.');
   process.exit(1);
 }
-(async () => {
-  try { await prisma.$connect();
-    const result = await prisma.$queryRaw`SELECT DATABASE()`;
-    // Handle different result shapes (string, array of objects, or plain object)
-    let currentDb;
-    if (typeof result === 'string') {
-      currentDb = result;
-    } else if (Array.isArray(result) && result.length > 0) {
-      const row = result[0];
-      currentDb = row['DATABASE()'] ?? row.DATABASE ?? row.database;
-    } else {
-      currentDb = result['DATABASE()'] ?? result.DATABASE ?? result.database;
-    }
-    if (currentDb !== database) {
-      console.error('\n[TEST RUNNER ERROR]: Connected to unexpected database:', currentDb);
-      process.exit(1);
-    }
-  } catch (err) {
-    console.error('\n[TEST RUNNER ERROR]: Failed to query database for validation:', err);
-    process.exit(1);
-  }
-})();
-
-
 const args = ['--test', '--test-concurrency=1', ...selectedFiles];
 
 async function run() {
     try {
+        await validateTestEnv(prisma);
+        const result = await prisma.$queryRaw`SELECT DATABASE()`;
+        let currentDb;
+        if (typeof result === 'string') {
+            currentDb = result;
+        } else if (Array.isArray(result) && result.length > 0) {
+            const row = result[0];
+            currentDb = row['DATABASE()'] ?? row.DATABASE ?? row.database;
+        } else {
+            currentDb = result['DATABASE()'] ?? result.DATABASE ?? result.database;
+        }
+        if (currentDb !== database) {
+            console.error('\n[TEST RUNNER ERROR]: Connected to unexpected database:', currentDb);
+            process.exit(1);
+        }
+
         await applyTestFixtures({ adminPassword: cleanPassword });
     } catch (err) {
         console.error('');
-        console.error('[TEST RUNNER ERROR]: Failed to apply deterministic test fixtures:', err);
+        console.error('[TEST RUNNER ERROR]: Failed during test initialization:', err);
         process.exit(1);
     } finally {
         await prisma.$disconnect();
