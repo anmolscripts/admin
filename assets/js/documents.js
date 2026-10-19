@@ -119,6 +119,19 @@
         if (paymentStatusSelect) paymentStatusSelect.value = state.paymentStatus;
         if (dateFromInput) dateFromInput.value = state.dateFrom;
         if (dateToInput) dateToInput.value = state.dateTo;
+        const daterangeContainer = document.querySelector('.spark-daterange-picker');
+        if (daterangeContainer && daterangeContainer._sparkDateRangePicker) {
+            const d1 = state.dateFrom ? new Date(state.dateFrom + 'T00:00:00') : null;
+            const d2 = state.dateTo ? new Date(state.dateTo + 'T00:00:00') : null;
+            daterangeContainer._sparkDateRangePicker.update(d1, d2);
+            if (daterangeContainer._sparkDateRangePicker.fp) {
+                if (d1 && d2) {
+                    daterangeContainer._sparkDateRangePicker.fp.setDate([d1, d2], false);
+                } else if (!d1 && !d2) {
+                    daterangeContainer._sparkDateRangePicker.fp.clear();
+                }
+            }
+        }
         if (pageSizeSelect) pageSizeSelect.value = String(state.limit);
     }
 
@@ -278,6 +291,7 @@
         button.className = 'btn-doc-actions dropdown-toggle';
         button.type = 'button';
         button.setAttribute('data-bs-toggle', 'dropdown');
+        button.setAttribute('data-bs-popper-config', '{"strategy":"fixed"}');
         button.setAttribute('aria-expanded', 'false');
         button.setAttribute('aria-label', `Actions for ${doc.invoiceNumber}`);
 

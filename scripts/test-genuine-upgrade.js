@@ -297,17 +297,20 @@ async function run() {
         console.log(`  ✔ SupplierPayment recorded against pre-existing Bill: Payment ${paymentCheck.paymentNumber}, Amount ₹${paymentCheck.amount}`);
 
         // 7.3 Create Employee & Project
+        const defaultBiz = (await upgConn.query('SELECT id FROM businesses LIMIT 1'))[0];
+        const bizId = defaultBiz ? defaultBiz.id : 1;
+
         await upgConn.query(`
-            INSERT INTO employees (employeeCode, firstName, lastName, email, dateOfJoining, status, createdById, createdAt, updatedAt)
-            VALUES ('EMP-UPG-01', 'Vikram', 'Rathore', 'vikram@upg.test', '2026-04-01', 'ACTIVE', ?, NOW(), NOW())
-        `, [userId]);
+            INSERT INTO employees (employeeCode, businessId, firstName, lastName, email, dateOfJoining, status, createdById, createdAt, updatedAt)
+            VALUES ('EMP-UPG-01', ?, 'Vikram', 'Rathore', 'vikram@upg.test', '2026-04-01', 'ACTIVE', ?, NOW(), NOW())
+        `, [bizId, userId]);
         const emp = (await upgConn.query(`SELECT id, employeeCode FROM employees WHERE employeeCode = 'EMP-UPG-01'`))[0];
         console.log(`  ✔ Employee created in upgraded schema: ${emp.employeeCode} (ID: ${emp.id})`);
 
         await upgConn.query(`
-            INSERT INTO projects (code, name, clientId, startDate, budgetAmount, hourlyRate, billingType, status, createdById, updatedAt)
-            VALUES ('PRJ-UPG-01', 'Upgraded Enterprise Rollout', ?, '2026-05-01', 500000.00, 2500.00, 'FIXED_PRICE', 'ACTIVE', ?, NOW())
-        `, [priorClient.id, userId]);
+            INSERT INTO projects (code, businessId, name, clientId, startDate, budgetAmount, hourlyRate, billingType, status, createdById, updatedAt)
+            VALUES ('PRJ-UPG-01', ?, 'Upgraded Enterprise Rollout', ?, '2026-05-01', 500000.00, 2500.00, 'FIXED_PRICE', 'ACTIVE', ?, NOW())
+        `, [bizId, priorClient.id, userId]);
         const prj = (await upgConn.query(`SELECT id, code, name FROM projects WHERE code = 'PRJ-UPG-01'`))[0];
         console.log(`  ✔ Project created linked to pre-existing Client: ${prj.code} ('${prj.name}', ID: ${prj.id})`);
 

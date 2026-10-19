@@ -73,16 +73,25 @@
           </select>
         </div>
 
-        <!-- Date From -->
-        <div class="col-md-2">
-          <label class="form-label small fw-semibold text-muted">From Date</label>
-          <input type="date" name="dateFrom" class="form-control form-control-sm" value="<%= filters.dateFrom || '' %>">
-        </div>
-
-        <!-- Date To -->
-        <div class="col-md-2">
-          <label class="form-label small fw-semibold text-muted">To Date</label>
-          <input type="date" name="dateTo" class="form-control form-control-sm" value="<%= filters.dateTo || '' %>">
+        <!-- Unified Date Range Picker -->
+        <div class="col-md-4">
+          <label class="form-label small fw-semibold text-muted">Date Range</label>
+          <div class="spark-daterange-picker w-100" data-from-name="dateFrom" data-to-name="dateTo" data-auto-submit="true">
+            <div class="d-flex align-items-center gap-1">
+              <button class="btn-date-picker btn-date-picker-sm flex-grow-1" type="button" aria-label="Select date range filter">
+                <span class="d-flex align-items-center gap-2 text-truncate">
+                  <i class="bi bi-calendar4-event text-primary"></i>
+                  <span class="spark-daterange-label text-truncate">All Dates</span>
+                </span>
+                <i class="bi bi-chevron-down text-muted ms-auto"></i>
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-secondary btn-daterange-clear d-none" title="Clear date range" aria-label="Clear date range">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
+            <input type="hidden" name="dateFrom" value="<%= filters.dateFrom || '' %>">
+            <input type="hidden" name="dateTo" value="<%= filters.dateTo || '' %>">
+          </div>
         </div>
 
         <!-- Search Query -->
@@ -262,7 +271,7 @@
               </tr>
             <% } else { %>
               <% reportData.records.forEach(r => { %>
-                <tr>
+                <tr class="report-row-clickable cursor-pointer" data-source-type="<%= r.documentType %>" data-source-id="<%= r.id %>" data-source-ref="<%= r.referenceNumber %>" title="Click to view details in modal">
                   <td class="ps-4">
                     <span class="badge bg-light text-primary border rounded-pill px-2"><%= r.businessName %></span>
                   </td>
@@ -310,6 +319,7 @@
 
 <%- include('../layouts/footer', {
   extraJs: `
+    <script src="/js/report-drilldown.js"></script>
     <script>
       (function() {
         if (!window.ApexCharts) return;

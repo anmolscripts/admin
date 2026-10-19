@@ -7,6 +7,7 @@ const journalService = require('./journal.service');
 const { ensureSystemAccounts } = require('./chartOfAccounts.service');
 const { ValidationError, NotFoundError, ConflictError } = require('./errorTypes');
 const businessService = require('./business.service');
+const projectCostLedgerService = require('./projectCostLedger.service');
 
 const INWARD_TYPES = ['RECEIPT', 'OPENING', 'RETURN_IN'];
 const OUTWARD_TYPES = ['ISSUE', 'RETURN_OUT'];
@@ -121,12 +122,15 @@ async function recordStockMovement(data = {}, userId) {
                 totalCost,
                 referenceType: data.referenceType ? String(data.referenceType).trim() : null,
                 referenceId: data.referenceId ? parseInt(data.referenceId, 10) : null,
+                storeLocation: data.storeLocation ? String(data.storeLocation).trim() : null,
+                projectId: data.projectId ? parseInt(data.projectId, 10) : null,
                 movementDate,
                 notes: data.notes ? String(data.notes).trim() : null,
                 createdById: userId
             },
             include: {
                 item: true,
+                project: true,
                 createdBy: { select: { id: true, name: true, email: true } }
             }
         });
@@ -382,12 +386,126 @@ async function postStockMovementToLedger({ movementId, debitAccountKey = 'COGS',
     });
 }
 
+/**
+ * Issue material from a store/warehouse to a project.
+ * Decreases store stock, validates tenant ownership, calculates cost at weighted average,
+ * and posts to the Project Cost Subledger exactly once.
+ */
+async function issueMaterialToProject({ businessId, projectId, itemId, quantity, storeLocation = 'Main Warehouse', unitCost = null, notes = null, date = new Date() }, userId) {
+    const bId = parseInt(businessId, 10);
+    const pId = parseInt(projectId, 10);
+    if (!bId || isNaN(bId)) throw new ValidationError('Valid businessId is required.');
+    if (!pId || isNaN(pId)) throw new ValidationError('Valid projectId is required.');
+
+    const project = await prisma.project.findFirst({ where: { id: pId, businessId: bId } });
+    if (!project) throw new NotFoundError(`Project #${pId} not found in this organization.`);
+
+    const numQty = parseFloat(quantity);
+    if (isNaN(numQty) || numQty <= 0) throw new ValidationError('Quantity issued must be greater than 0.');
+
+    // Record outward stock movement
+    const movement = await recordStockMovement({
+        businessId: bId,
+        projectId: pId,
+        itemId,
+        movementType: 'ISSUE',
+        quantity: numQty,
+        unitCost,
+        storeLocation,
+        notes: notes || `Material issued to project ${project.code} (${project.name})`,
+        movementDate: date,
+        referenceType: 'PROJECT_ISSUE',
+        referenceId: pId
+    }, userId);
+
+    // Record in Project Cost Subledger (idempotent)
+    const costAmount = parseFloat(movement.totalCost);
+    if (costAmount > 0) {
+        await projectCostLedgerService.recordCost({
+            businessId: bId,
+            projectId: pId,
+            category: 'MATERIALS',
+            costType: 'MATERIAL',
+            sourceType: 'STOCK_MOVEMENT',
+            sourceId: movement.id,
+            sourceLineId: 0,
+            sourceReference: `STK_ISSUE:${movement.movementNumber}`,
+            amount: costAmount,
+            quantity: numQty,
+            unit: movement.item ? movement.item.unit : 'PCS',
+            unitCost: parseFloat(movement.unitCost),
+            costDate: movement.movementDate,
+            description: `Project Material Issue: ${movement.item ? movement.item.name : 'Stock Item'} (${numQty} ${movement.item ? movement.item.unit : 'units'} from ${storeLocation})`,
+            createdById: userId
+        });
+    }
+
+    return movement;
+}
+
+/**
+ * Return unused material from a project back to store inventory.
+ * Increases store stock, records RETURN_IN movement, and adjusts/voids project cost.
+ */
+async function returnMaterialFromProject({ businessId, projectId, itemId, quantity, storeLocation = 'Main Warehouse', unitCost = null, notes = null, date = new Date() }, userId) {
+    const bId = parseInt(businessId, 10);
+    const pId = parseInt(projectId, 10);
+    if (!bId || isNaN(bId)) throw new ValidationError('Valid businessId is required.');
+    if (!pId || isNaN(pId)) throw new ValidationError('Valid projectId is required.');
+
+    const project = await prisma.project.findFirst({ where: { id: pId, businessId: bId } });
+    if (!project) throw new NotFoundError(`Project #${pId} not found in this organization.`);
+
+    const numQty = parseFloat(quantity);
+    if (isNaN(numQty) || numQty <= 0) throw new ValidationError('Quantity returned must be greater than 0.');
+
+    const movement = await recordStockMovement({
+        businessId: bId,
+        projectId: pId,
+        itemId,
+        movementType: 'RETURN_IN',
+        quantity: numQty,
+        unitCost,
+        storeLocation,
+        notes: notes || `Material returned from project ${project.code} (${project.name})`,
+        movementDate: date,
+        referenceType: 'PROJECT_RETURN',
+        referenceId: pId
+    }, userId);
+
+    // Record material credit adjustment in Project Cost Subledger
+    const costAmount = parseFloat(movement.totalCost);
+    if (costAmount > 0) {
+        await projectCostLedgerService.recordCost({
+            businessId: bId,
+            projectId: pId,
+            category: 'MATERIALS',
+            costType: 'MATERIAL',
+            sourceType: 'STOCK_MOVEMENT',
+            sourceId: movement.id,
+            sourceLineId: 0,
+            sourceReference: `STK_RETURN:${movement.movementNumber}`,
+            amount: -costAmount,
+            quantity: -numQty,
+            unit: movement.item ? movement.item.unit : 'PCS',
+            unitCost: parseFloat(movement.unitCost),
+            costDate: movement.movementDate,
+            description: `Material Returned from Project: ${movement.item ? movement.item.name : 'Stock Item'} (${numQty} ${movement.item ? movement.item.unit : 'units'} to ${storeLocation})`,
+            createdById: userId
+        });
+    }
+
+    return movement;
+}
+
 module.exports = {
     recordStockMovement,
     postStockMovementToLedger,
     getItemStockSummary,
     getInventoryValuationReport,
     listStockMovements,
+    issueMaterialToProject,
+    returnMaterialFromProject,
     VALID_MOVEMENT_TYPES,
     INWARD_TYPES,
     OUTWARD_TYPES,
@@ -395,4 +513,3 @@ module.exports = {
     NotFoundError,
     ConflictError
 };
-

@@ -25,6 +25,9 @@
     let clientSelect;
     let btnClearClient;
     let clientIdInput;
+    let projectSelect;
+    let btnClearProject;
+    let projectIdInput;
     let clientNameInput;
     let clientEmailInput;
     let clientPhoneInput;
@@ -983,6 +986,7 @@
 
         const payload = {
             clientId: clientIdInput && clientIdInput.value ? parseInt(clientIdInput.value, 10) : null,
+            projectId: projectIdInput && projectIdInput.value ? parseInt(projectIdInput.value, 10) : (projectSelect && projectSelect.value ? parseInt(projectSelect.value, 10) : null),
             clientName: clientNameInput.value.trim(),
             clientEmail: clientEmailInput ? (clientEmailInput.value.trim() || null) : null,
             clientPhone: clientPhoneInput ? (clientPhoneInput.value.trim() || null) : null,
@@ -1268,6 +1272,11 @@
                 if (btnClearClient) btnClearClient.classList.remove('d-none');
             }
             if (clientIdInput && initialDoc.clientId) clientIdInput.value = initialDoc.clientId;
+            if (projectSelect && initialDoc.projectId) {
+                projectSelect.value = String(initialDoc.projectId);
+                if (btnClearProject) btnClearProject.classList.remove('d-none');
+            }
+            if (projectIdInput && initialDoc.projectId) projectIdInput.value = initialDoc.projectId;
             if (clientNameInput && initialDoc.clientName) clientNameInput.value = initialDoc.clientName;
             if (clientEmailInput) clientEmailInput.value = initialDoc.clientEmail || '';
             if (clientPhoneInput) clientPhoneInput.value = initialDoc.clientPhone || '';
@@ -1325,6 +1334,11 @@
                 if (btnClearClient) btnClearClient.classList.remove('d-none');
             }
             if (clientIdInput && initialDoc.clientId) clientIdInput.value = initialDoc.clientId;
+            if (projectSelect && initialDoc.projectId) {
+                projectSelect.value = String(initialDoc.projectId);
+                if (btnClearProject) btnClearProject.classList.remove('d-none');
+            }
+            if (projectIdInput && initialDoc.projectId) projectIdInput.value = initialDoc.projectId;
             if (clientNameInput && initialDoc.clientName) clientNameInput.value = initialDoc.clientName;
             if (clientEmailInput && initialDoc.clientEmail) clientEmailInput.value = initialDoc.clientEmail;
             if (clientPhoneInput && initialDoc.clientPhone) clientPhoneInput.value = initialDoc.clientPhone;
@@ -1491,6 +1505,36 @@
             });
         }
 
+        // Associated Project Selection
+        if (projectSelect) {
+            projectSelect.addEventListener('change', () => {
+                const opt = projectSelect.options[projectSelect.selectedIndex];
+                if (opt && opt.value) {
+                    if (projectIdInput) projectIdInput.value = opt.value;
+                    const projClientId = opt.dataset.clientId;
+                    if (projClientId && clientSelect && (!clientSelect.value || clientSelect.value !== projClientId)) {
+                        clientSelect.value = projClientId;
+                        clientSelect.dispatchEvent(new Event('change'));
+                    }
+                    if (btnClearProject) btnClearProject.classList.remove('d-none');
+                    markDirty();
+                } else {
+                    if (projectIdInput) projectIdInput.value = '';
+                    if (btnClearProject) btnClearProject.classList.add('d-none');
+                    markDirty();
+                }
+            });
+        }
+
+        if (btnClearProject) {
+            btnClearProject.addEventListener('click', () => {
+                if (projectSelect) projectSelect.value = '';
+                if (projectIdInput) projectIdInput.value = '';
+                btnClearProject.classList.add('d-none');
+                markDirty();
+            });
+        }
+
         // Add Item Buttons
         btnAddItem.addEventListener('click', () => addItemRow());
         if (btnAddItemHeader) {
@@ -1571,6 +1615,9 @@
         clientSelect = document.getElementById('client-select');
         btnClearClient = document.getElementById('btn-clear-client');
         clientIdInput = document.getElementById('client-id');
+        projectSelect = document.getElementById('project-select');
+        btnClearProject = document.getElementById('btn-clear-project');
+        projectIdInput = document.getElementById('project-id');
         clientNameInput = document.getElementById('client-name');
         clientEmailInput = document.getElementById('client-email');
         clientPhoneInput = document.getElementById('client-phone');

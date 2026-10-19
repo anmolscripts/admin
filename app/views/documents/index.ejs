@@ -145,26 +145,25 @@
       </button>
     </div>
 
-    <!-- Date Range: From -->
-    <div class="col-6 col-sm-6 col-lg-3">
-      <label for="filter-date-from" class="toolbar-control-label">Date From</label>
-      <input 
-        type="date" 
-        class="form-control toolbar-date-input" 
-        id="filter-date-from" 
-        aria-label="Filter documents from date"
-      />
-    </div>
-
-    <!-- Date Range: To -->
-    <div class="col-6 col-sm-6 col-lg-3">
-      <label for="filter-date-to" class="toolbar-control-label">Date To</label>
-      <input 
-        type="date" 
-        class="form-control toolbar-date-input" 
-        id="filter-date-to" 
-        aria-label="Filter documents to date"
-      />
+    <!-- Unified Date Range Picker -->
+    <div class="col-12 col-sm-12 col-lg-6">
+      <label class="toolbar-control-label">Date Range</label>
+      <div class="spark-daterange-picker w-100" data-from-name="dateFrom" data-to-name="dateTo">
+        <div class="d-flex align-items-center gap-2">
+          <button class="btn-date-picker flex-grow-1" type="button" id="toolbar-date-range-trigger" aria-label="Select date range filter">
+            <span class="d-flex align-items-center gap-2 text-truncate">
+              <i class="bi bi-calendar4-event text-primary"></i>
+              <span class="spark-daterange-label text-truncate" id="toolbar-selected-date-range">All Dates</span>
+            </span>
+            <i class="bi bi-chevron-down text-muted ms-auto"></i>
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary btn-daterange-clear d-none" id="btn-clear-date-range" title="Clear date range" aria-label="Clear date range">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <input type="hidden" id="filter-date-from" name="dateFrom" />
+        <input type="hidden" id="filter-date-to" name="dateTo" />
+      </div>
     </div>
 
     <!-- Export Excel Button -->

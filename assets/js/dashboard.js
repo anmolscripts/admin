@@ -117,15 +117,42 @@ document.addEventListener('DOMContentLoaded', function () {
         document.body.appendChild(overlay);
     }
 
+    // Helper to manage native tooltip attributes so expanded text labels are never blocked
+    function updateSidebarTooltips(isMinimized) {
+        const menuLinks = document.querySelectorAll('.sidebar-menu-link');
+        menuLinks.forEach(link => {
+            if (isMinimized) {
+                // In rail mode: restore tooltip title so user knows what the icon represents
+                if (link.dataset.savedTitle) {
+                    link.setAttribute('title', link.dataset.savedTitle);
+                }
+            } else {
+                // In expanded mode: hide native browser tooltip so it doesn't cover subsequent links
+                if (link.hasAttribute('title')) {
+                    link.dataset.savedTitle = link.getAttribute('title');
+                    link.removeAttribute('title');
+                }
+            }
+        });
+    }
+
     // Restore desktop sidebar minimized state on page load if applicable
     if (window.innerWidth >= 992) {
         const savedMinimized = localStorage.getItem('spark-sidebar-minimized');
-        if (savedMinimized === 'true') {
+        const shouldMinimize = savedMinimized !== null
+            ? (savedMinimized === 'true')
+            : document.documentElement.classList.contains('sidebar-minimized');
+
+        if (shouldMinimize) {
             document.body.classList.add('sidebar-minimized');
+            document.documentElement.classList.add('sidebar-minimized');
             if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'false');
-        } else if (toggleBtn) {
-            toggleBtn.setAttribute('aria-expanded', 'true');
+        } else {
+            document.body.classList.remove('sidebar-minimized');
+            document.documentElement.classList.remove('sidebar-minimized');
+            if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'true');
         }
+        updateSidebarTooltips(shouldMinimize);
     }
 
     function closeMobileSidebar() {
@@ -143,19 +170,21 @@ document.addEventListener('DOMContentLoaded', function () {
             e.stopPropagation();
 
             if (window.innerWidth >= 992) {
-                // Desktop: Toggle collapsed icon rail
+                // Desktop: Toggle collapsed icon rail vs expanded layout
                 const isMinimized = document.body.classList.toggle('sidebar-minimized');
-                toggleBtn.setAttribute('aria-expanded', !isMinimized);
+                document.documentElement.classList.toggle('sidebar-minimized', isMinimized);
+                toggleBtn.setAttribute('aria-expanded', (!isMinimized).toString());
                 localStorage.setItem('spark-sidebar-minimized', isMinimized ? 'true' : 'false');
+                updateSidebarTooltips(isMinimized);
 
                 // Ensure mobile overlay is never active on desktop
                 overlay.classList.remove('show');
                 document.body.classList.remove('sidebar-open');
 
-                // Dispatch resize event so ApexCharts redraw smoothly
+                // Dispatch resize event so ApexCharts redraw smoothly to the new canvas width
                 setTimeout(() => {
                     window.dispatchEvent(new Event('resize'));
-                }, 300);
+                }, 310);
             } else {
                 // Mobile and tablet: Toggle side drawer
                 const isOpen = sidebar.classList.toggle('show');
@@ -531,6 +560,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 } else if (selectedDates.length === 1) {
                     const startStr = instance.formatDate(selectedDates[0], 'F j, Y');
                     selectedRangeText.textContent = startStr;
+                }
+            },
+            onClose: function (selectedDates, dateStr, instance) {
+                if (selectedDates.length === 2) {
+                    const fromStr = instance.formatDate(selectedDates[0], 'Y-m-d');
+                    const toStr = instance.formatDate(selectedDates[1], 'Y-m-d');
+                    const customFrom = document.getElementById('custom-date-from');
+                    const customTo = document.getElementById('custom-date-to');
+                    if (customFrom) customFrom.value = fromStr;
+                    if (customTo) customTo.value = toStr;
+                    if (typeof window.fetchDashboardMetrics === 'function') {
+                        window.fetchDashboardMetrics({ range: 'custom', from: fromStr, to: toStr });
+                    }
                 }
             }
         });

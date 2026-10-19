@@ -160,6 +160,7 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <form id="expenseForm">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>">
         <div class="modal-header">
           <h5 class="modal-title fw-bold">Record Operating Expense</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -202,18 +203,23 @@
 document.getElementById('expenseForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const formData = new FormData(e.target);
+  const csrfToken = formData.get('_csrf') || (document.querySelector('input[name="_csrf"]')?.value || '');
   const payload = {
     expenseDate: formData.get('expenseDate'),
     category: formData.get('category'),
     amount: parseFloat(formData.get('amount')),
     paymentMethod: formData.get('paymentMethod'),
-    description: formData.get('description')
+    description: formData.get('description'),
+    _csrf: csrfToken
   };
 
   try {
     const res = await fetch('/api/expenses', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': csrfToken
+      },
       body: JSON.stringify(payload)
     });
     const data = await res.json();

@@ -68,7 +68,9 @@ const DEFAULT_PREFIXES = Object.freeze({
     BILL: 'SBILL',
     PAYROLL_PERIOD: 'PAY',
     PAYROLL_RUN: 'PAY',
-    PAY: 'PAY'
+    PAY: 'PAY',
+    GOODS_RECEIPT: 'GRN',
+    GRN: 'GRN'
 });
 
 const CANONICAL_ENTITIES = Object.freeze([
@@ -90,10 +92,12 @@ const CANONICAL_ENTITIES = Object.freeze([
     'EMPLOYEE',
     'PROJECT',
     'STOCK_MOVEMENT',
-    'REIMBURSEMENT'
+    'REIMBURSEMENT',
+    'GOODS_RECEIPT'
 ]);
 
 const ENTITY_DESCRIPTIONS = Object.freeze({
+    GOODS_RECEIPT: 'Goods receipt notes (GRN) and store receiving challans',
     INVOICE: 'Sales invoices and official tax documents',
     QUOTATION: 'Formal sales estimates and client price proposals',
     CREDIT_NOTE: 'Inward credit notes and invoice reduction adjustments',

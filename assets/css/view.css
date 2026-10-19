@@ -46,7 +46,7 @@
   font-family: var(--bs-font-monospace, monospace);
   font-size: 1.75rem;
   font-weight: 700;
-  color: var(--forest-dark);
+  color: var(--sa-text-main, #0f172a);
   letter-spacing: -0.5px;
   line-height: 1.2;
 }
@@ -54,11 +54,11 @@
 .version-pill {
   font-size: 0.75rem;
   font-weight: 600;
-  padding: 0.2rem 0.6rem;
+  padding: 0.25rem 0.65rem;
   border-radius: 50rem;
-  background-color: var(--mint-light);
-  color: var(--pine-green);
-  border: 1px solid rgba(35, 77, 56, 0.15);
+  background-color: var(--sa-primary-subtle, #e0f2fe);
+  color: var(--sa-primary, #0284c7);
+  border: 1px solid rgba(2, 132, 199, 0.2);
 }
 
 /* Action Buttons */
@@ -148,20 +148,20 @@
 }
 
 .view-items-table thead th {
-  background: #f1f7f3;
-  color: var(--forest-dark);
+  background: var(--sa-table-header-bg, #edf4f8);
+  color: var(--sa-text-secondary, #475569);
   font-weight: 600;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--sa-border, rgba(35, 73, 96, 0.12));
   padding: 0.85rem 1rem;
 }
 
 .view-items-table tbody td {
   padding: 0.85rem 1rem;
   font-size: 0.92rem;
-  border-bottom: 1px solid #f0f5f2;
+  border-bottom: 1px solid rgba(35, 73, 96, 0.06);
 }
 
 .view-items-table tbody tr:last-child td {
@@ -170,8 +170,8 @@
 
 /* Financial Summary Block */
 .view-summary-box {
-  background: var(--surface-alt);
-  border: 1px solid var(--border-subtle);
+  background: rgba(248, 250, 252, 0.72);
+  border: 1px solid rgba(35, 73, 96, 0.08);
   border-radius: 12px;
   padding: 1.25rem 1.5rem;
 }
@@ -185,9 +185,9 @@
 }
 
 .grand-total-box {
-  background: #f0f7f3;
-  border: 1px solid rgba(35, 77, 56, 0.2);
-  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(2, 132, 199, 0.07), rgba(13, 148, 136, 0.07));
+  border: 1px solid rgba(2, 132, 199, 0.2);
+  border-radius: 12px;
   padding: 0.9rem 1.2rem;
   margin-top: 0.75rem;
 }
@@ -196,7 +196,7 @@
   font-family: var(--bs-font-monospace, monospace);
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--forest-dark);
+  color: var(--sa-primary, #0284c7);
 }
 
 /* History / Activity Timeline */

@@ -1,0 +1,237 @@
+<%- include('../layouts/header') %>
+
+<div class="content-wrapper p-4">
+  <!-- Page Header -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+      <h1 class="h3 fw-bold mb-1"><%= pageTitle %></h1>
+      <p class="text-muted small mb-0">Project costing subledger, labour tracking, supplier invoice allocations & profitability</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="/projects/new" class="btn btn-primary d-inline-flex align-items-center gap-2 rounded-pill px-3 shadow-sm" id="btn-create-project">
+        <i class="bi bi-plus-circle"></i>
+        <span>Create Project</span>
+      </a>
+      <a href="/reports/workbench" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2 rounded-pill px-3">
+        <i class="bi bi-bar-chart"></i>
+        <span>Reporting Workbench</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- KPI Cards Row (Aurora Glass) -->
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-xl">
+      <div class="kpi-card shadow-sm h-100">
+        <div class="kpi-accent-bar accent-blue"></div>
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="kpi-label">Active Projects</span>
+          <div class="kpi-icon-circle bg-primary-subtle text-primary"><i class="bi bi-kanban"></i></div>
+        </div>
+        <div class="kpi-value"><%= kpis.activeCount %> <span class="fs-6 text-muted fw-normal">/ <%= kpis.totalCount %></span></div>
+        <div class="small text-muted mt-1">Portfolio active scope</div>
+      </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl">
+      <div class="kpi-card shadow-sm h-100">
+        <div class="kpi-accent-bar accent-purple"></div>
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="kpi-label">Contract Order Value</span>
+          <div class="kpi-icon-circle bg-info-subtle text-info"><i class="bi bi-award"></i></div>
+        </div>
+        <div class="kpi-value">₹<%= kpis.contractValue.toLocaleString('en-IN', { minimumFractionDigits: 2 }) %></div>
+        <div class="small text-muted mt-1">Distinct from cost budget</div>
+      </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl">
+      <div class="kpi-card shadow-sm h-100">
+        <div class="kpi-accent-bar accent-amber"></div>
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="kpi-label">Cost Budget</span>
+          <div class="kpi-icon-circle bg-warning-subtle text-warning"><i class="bi bi-calculator"></i></div>
+        </div>
+        <div class="kpi-value">₹<%= kpis.budget.toLocaleString('en-IN', { minimumFractionDigits: 2 }) %></div>
+        <div class="small text-muted mt-1">Allocated project budget</div>
+      </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl">
+      <div class="kpi-card shadow-sm h-100">
+        <div class="kpi-accent-bar accent-red"></div>
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="kpi-label">Actual Posted Cost</span>
+          <div class="kpi-icon-circle bg-danger-subtle text-danger"><i class="bi bi-cash-stack"></i></div>
+        </div>
+        <div class="kpi-value">₹<%= kpis.actualCost.toLocaleString('en-IN', { minimumFractionDigits: 2 }) %></div>
+        <div class="small text-muted mt-1">Subledger verified spend</div>
+      </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl">
+      <div class="kpi-card shadow-sm h-100">
+        <div class="kpi-accent-bar accent-green"></div>
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="kpi-label">Invoiced Margin</span>
+          <div class="kpi-icon-circle bg-success-subtle text-success"><i class="bi bi-graph-up-arrow"></i></div>
+        </div>
+        <div class="kpi-value <%= kpis.margin >= 0 ? 'text-success' : 'text-danger' %>">
+          ₹<%= kpis.margin.toLocaleString('en-IN', { minimumFractionDigits: 2 }) %>
+        </div>
+        <div class="small text-muted mt-1">Revenue vs actual cost</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search & Filters Toolbar -->
+  <div class="card-glass p-3 mb-4 shadow-sm">
+    <form method="GET" action="/projects" class="row g-2 align-items-center">
+      <div class="col-md-5">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text bg-transparent border-end-0 text-muted"><i class="bi bi-search"></i></span>
+          <input type="text" name="search" class="form-control border-start-0 ps-0" placeholder="Search by project code, name, location..." value="<%= filters.search %>" id="search-projects">
+        </div>
+      </div>
+      <div class="col-md-3">
+        <select name="status" class="form-select form-select-sm" id="filter-status">
+          <option value="">All Statuses</option>
+          <option value="ACTIVE" <%= filters.status === 'ACTIVE' ? 'selected' : '' %>>Active</option>
+          <option value="ON_HOLD" <%= filters.status === 'ON_HOLD' ? 'selected' : '' %>>On Hold</option>
+          <option value="COMPLETED" <%= filters.status === 'COMPLETED' ? 'selected' : '' %>>Completed</option>
+          <option value="ARCHIVED" <%= filters.status === 'ARCHIVED' ? 'selected' : '' %>>Archived</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <select name="clientId" class="form-select form-select-sm" id="filter-client">
+          <option value="">All Clients</option>
+          <% (clients || []).forEach(c => { %>
+            <option value="<%= c.id %>" <%= filters.clientId == c.id ? 'selected' : '' %>><%= c.name %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="col-md-2 d-flex gap-2">
+        <button type="submit" class="btn btn-sm btn-primary flex-grow-1 rounded-pill">Filter</button>
+        <a href="/projects" class="btn btn-sm btn-outline-secondary rounded-pill px-3">Reset</a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Projects Table -->
+  <div class="card-glass shadow-sm overflow-hidden mb-4">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" id="projects-table">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-4">Code / Project</th>
+            <th>Client</th>
+            <th>Site / Location</th>
+            <th>Timeline</th>
+            <th class="text-end">Contract Value</th>
+            <th class="text-end">Cost Budget</th>
+            <th>Billing Type</th>
+            <th class="text-center">Status</th>
+            <th class="pe-4 text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (projects && projects.length > 0) { %>
+            <% projects.forEach(p => { %>
+              <tr>
+                <td class="ps-4">
+                  <div class="fw-bold text-dark">
+                    <a href="/projects/<%= p.id %>" class="text-decoration-none text-primary"><%= p.code %></a>
+                  </div>
+                  <div class="text-muted small"><%= p.name %></div>
+                </td>
+                <td>
+                  <% if (p.client) { %>
+                    <span class="badge bg-light text-dark border"><i class="bi bi-building me-1"></i><%= p.client.name %></span>
+                  <% } else { %>
+                    <span class="text-muted small">Internal / Direct</span>
+                  <% } %>
+                </td>
+                <td>
+                  <span class="small text-muted"><%= p.siteLocation || '—' %></span>
+                </td>
+                <td>
+                  <div class="small fw-semibold text-secondary">
+                    <%= new Date(p.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) %>
+                  </div>
+                  <div class="text-muted small">
+                    <%= p.endDate ? new Date(p.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Ongoing' %>
+                  </div>
+                </td>
+                <td class="text-end fw-bold text-dark">
+                  ₹<%= (parseFloat(p.contractValue) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }) %>
+                </td>
+                <td class="text-end text-secondary fw-semibold">
+                  ₹<%= (parseFloat(p.budgetAmount) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }) %>
+                </td>
+                <td>
+                  <span class="badge bg-info-subtle text-info border border-info-subtle">
+                    <%= p.billingType.replace(/_/g, ' ') %>
+                  </span>
+                </td>
+                <td class="text-center">
+                  <% if (p.status === 'ACTIVE') { %>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2">ACTIVE</span>
+                  <% } else if (p.status === 'ON_HOLD') { %>
+                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-2">ON HOLD</span>
+                  <% } else if (p.status === 'COMPLETED') { %>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2">COMPLETED</span>
+                  <% } else { %>
+                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2"><%= p.status %></span>
+                  <% } %>
+                </td>
+                <td class="pe-4 text-end">
+                  <div class="btn-group btn-group-sm">
+                    <a href="/projects/<%= p.id %>" class="btn btn-outline-primary" title="Open Workspace">
+                      <i class="bi bi-kanban"></i> Workspace
+                    </a>
+                    <a href="/projects/<%= p.id %>/edit" class="btn btn-outline-secondary" title="Edit Parameters">
+                      <i class="bi bi-pencil"></i>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            <% }) %>
+          <% } else { %>
+            <tr>
+              <td colspan="9" class="text-center py-5 text-muted">
+                <i class="bi bi-folder2-open display-6 d-block mb-3 text-secondary opacity-50"></i>
+                <div class="fw-semibold">No Projects Found</div>
+                <p class="small text-muted mb-3">No project matching your criteria was found in this organization.</p>
+                <a href="/projects/new" class="btn btn-sm btn-primary rounded-pill px-3">
+                  <i class="bi bi-plus-circle me-1"></i> Create Your First Project
+                </a>
+              </td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <% if (totalPages > 1) { %>
+      <div class="d-flex justify-content-between align-items-center p-3 border-top">
+        <span class="text-muted small">Showing Page <%= currentPage %> of <%= totalPages %> (<%= totalProjects %> items)</span>
+        <ul class="pagination pagination-sm mb-0">
+          <li class="page-item <%= currentPage <= 1 ? 'disabled' : '' %>">
+            <a class="page-link" href="/projects?page=<%= currentPage - 1 %>&status=<%= filters.status %>&clientId=<%= filters.clientId %>&search=<%= filters.search %>">Prev</a>
+          </li>
+          <% for (let i = 1; i <= totalPages; i++) { %>
+            <li class="page-item <%= currentPage === i ? 'active' : '' %>">
+              <a class="page-link" href="/projects?page=<%= i %>&status=<%= filters.status %>&clientId=<%= filters.clientId %>&search=<%= filters.search %>"><%= i %></a>
+            </li>
+          <% } %>
+          <li class="page-item <%= currentPage >= totalPages ? 'disabled' : '' %>">
+            <a class="page-link" href="/projects?page=<%= currentPage + 1 %>&status=<%= filters.status %>&clientId=<%= filters.clientId %>&search=<%= filters.search %>">Next</a>
+          </li>
+        </ul>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../layouts/footer') %>

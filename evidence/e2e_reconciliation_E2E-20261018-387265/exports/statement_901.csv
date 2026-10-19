@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Screen - Spark Admin Premium Bootstrap 5 Admin Dashboard Template</title>
+
+    <!-- SEO Optimization -->
+    <meta name="description" content="Login Screen - Spark Admin Premium Bootstrap 5 Admin Dashboard Template">
+    <meta name="author" content="Spark Admin Team">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/images/favicon.ico">
+
+    <!-- Local Third-Party Libraries (100% Offline Compatible) -->
+    <link rel="stylesheet" href="/libs/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/libs/bootstrap-icons/bootstrap-icons.css">
+
+    <!-- Design System & Theme Stylesheets -->
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/theme.css">
+    <link rel="stylesheet" href="/css/premium-refresh.css">
+
+    <script>
+        (function () {
+            try {
+                var theme = localStorage.getItem('spark-theme') || 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        })();
+    </script>
+</head>
+
+<body>
+
+    <!-- ==========================================
+         START: Authentication Container & Login Card
+         ========================================== -->
+    <div class="login-wrapper">
+        <!-- Glowing background shapes for modern visual appearance -->
+        <div class="login-bg-shape login-bg-shape-1"></div>
+        <div class="login-bg-shape login-bg-shape-2"></div>
+
+        <!-- Main centered login card -->
+        <div class="login-card">
+
+            <!-- Brand Identity -->
+            <a href="/" class="login-brand text-decoration-none">
+                <i class="bi bi-asterisk"></i>
+                <span>Spark Admin</span>
+            </a>
+
+            <p class="login-subtitle">Please sign in to access your dashboard</p>
+
+            <!-- Login Form -->
+            <form action="/login" method="POST" id="loginForm" class="needs-validation" novalidate>
+                <input type="hidden" name="_csrf" value="35c86ddba721ddfb11509148ee8dca28c4c696475023bb246bcf5b91ad2e88b8">
+                <input type="hidden" name="returnTo" value="">
+                
+                
+                        <!-- Email Input Group -->
+                        <div class="login-form-group">
+                            <label for="email" class="login-form-label">Email Address</label>
+                            <div class="login-input-group">
+                                <i class="bi bi-envelope input-icon"></i>
+                                <input value="" type="email" name="email" id="email" class="login-input"
+                                    placeholder="name@company.com" required autocomplete="username">
+                            </div>
+                        </div>
+
+                        <!-- Password Input Group -->
+                        <div class="login-form-group">
+                            <label for="password" class="login-form-label">Password</label>
+                            <div class="login-input-group">
+                                <i class="bi bi-shield-lock input-icon"></i>
+                                <input value="" type="password" id="password" name="password"
+                                    class="login-input login-input-password" placeholder="••••••••" required autocomplete="current-password">
+                                <button type="button" class="password-toggle-btn" id="toggle-password"
+                                    aria-label="Show password">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Options (Remember me) -->
+                        <div class="login-options">
+                            <label class="custom-control-label">
+                                <input type="checkbox" class="custom-checkbox-input" id="rememberMe" name="rememberMe" value="true">
+                                <span>Remember Me</span>
+                            </label>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" class="btn-login" id="btn-submit">
+                            <span>Sign In to Dashboard</span>
+                            <i class="bi bi-arrow-right"></i>
+                        </button>
+
+            </form>
+
+            <!-- Footer Link -->
+            <p class="login-footer-text">
+                Don't have an account? <a href="#" id="link-register">Register Now</a>
+            </p>
+
+        </div>
+    </div>
+    <!-- END: Authentication Container -->
+
+    <!-- Local Bootstrap bundle -->
+    <script src="/libs/bootstrap/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Custom Authentication interactions script -->
+    <script src="/js/auth.js"></script>
+</body>
+
+</html>

@@ -32,9 +32,13 @@ function sanitizeCell(val) {
  * @returns {Promise<Buffer>} Excel file buffer
  */
 async function generateInvoicesExcel(filters = {}) {
-    const { documentType, status, search, dateFrom, dateTo, limit = 1000 } = filters;
+    const { businessId, documentType, status, search, dateFrom, dateTo, limit = 1000 } = filters;
 
     const where = {};
+
+    if (businessId) {
+        where.businessId = parseInt(businessId, 10);
+    }
 
     if (documentType && ['QUOTATION', 'INVOICE'].includes(documentType.toUpperCase())) {
         where.documentType = documentType.toUpperCase();

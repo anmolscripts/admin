@@ -91,9 +91,10 @@
         <h5 class="modal-title fw-bold">Create New Business Workspace</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <form action="/api/businesses/create" method="POST">
+      <form id="createBusinessForm" action="/api/businesses/create" method="POST">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <div class="modal-body">
+          <div id="createBusinessAlert" class="alert alert-danger d-none py-2 px-3 small rounded-3 mb-3"></div>
           <div class="mb-3">
             <label class="form-label small fw-semibold">Workspace Display Name *</label>
             <input type="text" name="name" class="form-control" placeholder="e.g. Acme Retailers" required>
@@ -119,11 +120,58 @@
         </div>
         <div class="modal-footer border-0 pt-0">
           <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary">Create Workspace</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-business">Create Workspace</button>
         </div>
       </form>
     </div>
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.getElementById('createBusinessForm');
+  const alertEl = document.getElementById('createBusinessAlert');
+  if (!form) return;
+
+  form.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    if (alertEl) alertEl.classList.add('d-none');
+    const submitBtn = document.getElementById('btn-submit-business') || form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Creating...';
+
+    try {
+      const formData = new FormData(form);
+      const payload = Object.fromEntries(formData.entries());
+
+      const res = await fetch('/api/businesses/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to create business workspace.');
+      }
+
+      window.location.reload();
+    } catch (err) {
+      if (alertEl) {
+        alertEl.textContent = err.message || 'An error occurred. Please try again.';
+        alertEl.classList.remove('d-none');
+      } else {
+        alert(err.message);
+      }
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalText;
+    }
+  });
+});
+</script>
 
 <%- include('../layouts/footer') %>

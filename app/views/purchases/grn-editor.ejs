@@ -1,0 +1,233 @@
+<%- include('../layouts/header') %>
+
+<div class="content-wrapper p-4">
+  <input type="hidden" id="csrf-token" value="<%= locals.csrfToken || '' %>" />
+
+  <!-- Breadcrumbs & Header -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0 small">
+        <li class="breadcrumb-item"><a href="/purchases/orders" class="text-decoration-none">Purchase Orders</a></li>
+        <li class="breadcrumb-item"><a href="/purchases/orders/<%= order.id %>" class="text-decoration-none"><%= order.orderNumber %></a></li>
+        <li class="breadcrumb-item active" aria-current="page">Goods Receipt (GRN)</li>
+      </ol>
+    </nav>
+    <a href="/purchases/orders/<%= order.id %>" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+      <i class="bi bi-arrow-left me-1"></i> Back to Purchase Order
+    </a>
+  </div>
+
+  <div class="card shadow-sm border-0 rounded-4 overflow-hidden mb-4">
+    <div class="card-header bg-gradient bg-primary text-white p-4">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+          <span class="badge bg-white text-primary rounded-pill px-3 py-1 mb-2">WAREHOUSE INTAKE</span>
+          <h3 class="h4 fw-bold mb-1">Goods Receipt Note (GRN)</h3>
+          <p class="mb-0 opacity-75 small">Receive, inspect, and accept delivered materials against Purchase Order #<%= order.orderNumber %></p>
+        </div>
+        <div class="text-end">
+          <div class="small opacity-75">Supplier</div>
+          <div class="fw-bold fs-5"><%= order.supplierName %></div>
+          <% if (order.project) { %>
+            <div class="small mt-1"><span class="badge bg-light text-dark">Project: <%= order.project.code %> - <%= order.project.name %></span></div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <form id="form-goods-receipt" action="/purchases/orders/<%= order.id %>/receive" method="POST">
+      <input type="hidden" name="purchaseOrderId" value="<%= order.id %>" />
+      <input type="hidden" name="supplierId" value="<%= order.supplierId %>" />
+      <input type="hidden" name="supplierName" value="<%= order.supplierName %>" />
+      <% if (order.projectId) { %>
+        <input type="hidden" name="projectId" value="<%= order.projectId %>" />
+      <% } %>
+
+      <div class="card-body p-4">
+        <!-- Receiving Header Details -->
+        <div class="row g-3 mb-4 p-3 bg-light rounded-3 border">
+          <div class="col-md-3">
+            <label class="form-label small fw-semibold">Receipt Date <span class="text-danger">*</span></label>
+            <input type="date" name="receiptDate" id="receiptDate" class="form-control form-control-sm" value="<%= new Date().toISOString().split('T')[0] %>" required />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small fw-semibold">Receiving Store / Warehouse <span class="text-danger">*</span></label>
+            <input type="text" name="storeLocation" id="storeLocation" class="form-control form-control-sm" value="Main Warehouse" placeholder="e.g. Main Warehouse, Site Yard B" required />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small fw-semibold">Delivery Challan / LR #</label>
+            <input type="text" name="deliveryChallanNumber" id="deliveryChallanNumber" class="form-control form-control-sm" placeholder="e.g. DC-2026-9811" />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small fw-semibold">Inspection Notes</label>
+            <input type="text" name="notes" id="notes" class="form-control form-control-sm" placeholder="e.g. Visual quality checked, packaging intact" />
+          </div>
+        </div>
+
+        <!-- PO Line Items Receiving Grid -->
+        <h5 class="fw-bold text-dark mb-3"><i class="bi bi-boxes text-primary me-2"></i>Order Line Items for Verification</h5>
+        <div class="table-responsive border rounded-3 bg-white mb-4">
+          <table class="table table-hover align-middle mb-0" id="grn-lines-table">
+            <thead class="table-light small">
+              <tr>
+                <th class="ps-3" style="width: 50px;">Line</th>
+                <th>Item / Material Description</th>
+                <th class="text-center" style="width: 80px;">Unit</th>
+                <th class="text-end" style="width: 100px;">Ordered</th>
+                <th class="text-end" style="width: 110px;">Already Rcvd</th>
+                <th class="text-end" style="width: 100px;">Remaining</th>
+                <th class="text-end" style="width: 120px;">Delivered Qty</th>
+                <th class="text-end" style="width: 120px;">Accepted Qty</th>
+                <th class="text-end pe-3" style="width: 120px;">Rejected Qty</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% order.items.forEach((item, idx) => { %>
+                <% const remaining = item.remainingQuantity !== undefined ? item.remainingQuantity : (parseFloat(item.quantity) - (parseFloat(item.receivedQuantity) || 0)); %>
+                <tr class="grn-line-row" data-line-id="<%= item.id %>">
+                  <td class="ps-3 fw-bold text-muted"><%= item.lineNumber || (idx + 1) %></td>
+                  <td>
+                    <div class="fw-bold text-dark"><%= item.name %></div>
+                    <input type="hidden" class="item-name" value="<%= item.name %>" />
+                    <input type="hidden" class="po-item-id" value="<%= item.id %>" />
+                    <input type="hidden" class="item-unit" value="<%= item.unit %>" />
+                    <input type="hidden" class="item-rate" value="<%= item.rate %>" />
+                  </td>
+                  <td class="text-center"><span class="badge bg-light text-dark border"><%= item.unit %></span></td>
+                  <td class="text-end fw-semibold"><%= parseFloat(item.quantity).toFixed(2) %></td>
+                  <td class="text-end text-muted"><%= (parseFloat(item.receivedQuantity) || 0).toFixed(2) %></td>
+                  <td class="text-end fw-bold text-primary remaining-qty-val"><%= remaining.toFixed(2) %></td>
+                  <td>
+                    <input type="number" step="0.01" min="0" max="<%= remaining %>" class="form-control form-control-sm text-end line-received-qty fw-bold" value="<%= remaining > 0 ? remaining : 0 %>" <%= remaining <= 0 ? 'disabled' : '' %> required />
+                  </td>
+                  <td>
+                    <input type="number" step="0.01" min="0" class="form-control form-control-sm text-end line-accepted-qty text-success fw-bold" value="<%= remaining > 0 ? remaining : 0 %>" <%= remaining <= 0 ? 'disabled' : '' %> required />
+                  </td>
+                  <td class="pe-3">
+                    <input type="number" step="0.01" min="0" class="form-control form-control-sm text-end line-rejected-qty text-danger" value="0.00" <%= remaining <= 0 ? 'disabled' : '' %> />
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-3">
+          <div class="small text-muted">
+            <i class="bi bi-info-circle me-1"></i>
+            Accepted goods automatically update warehouse stock on hand. Rejected items are logged for vendor return/credit.
+          </div>
+          <div class="d-flex gap-2">
+            <a href="/purchases/orders/<%= order.id %>" class="btn btn-outline-secondary rounded-pill px-4">Cancel</a>
+            <button type="button" id="btn-submit-grn" class="btn btn-primary rounded-pill px-4 fw-semibold shadow-sm">
+              <i class="bi bi-check2-circle me-1"></i> Post Goods Receipt (GRN)
+            </button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const table = document.getElementById('grn-lines-table');
+  const submitBtn = document.getElementById('btn-submit-grn');
+  const csrfToken = document.getElementById('csrf-token')?.value || '';
+
+  // Auto-sync accepted quantity when delivered quantity changes
+  table.addEventListener('input', function(e) {
+    if (e.target.classList.contains('line-received-qty')) {
+      const row = e.target.closest('tr');
+      const rcvd = parseFloat(e.target.value) || 0;
+      const rejInput = row.querySelector('.line-rejected-qty');
+      const rej = parseFloat(rejInput.value) || 0;
+      const accInput = row.querySelector('.line-accepted-qty');
+      accInput.value = Math.max(0, rcvd - rej).toFixed(2);
+    } else if (e.target.classList.contains('line-rejected-qty')) {
+      const row = e.target.closest('tr');
+      const rej = parseFloat(e.target.value) || 0;
+      const rcvdInput = row.querySelector('.line-received-qty');
+      const rcvd = parseFloat(rcvdInput.value) || 0;
+      const accInput = row.querySelector('.line-accepted-qty');
+      accInput.value = Math.max(0, rcvd - rej).toFixed(2);
+    }
+  });
+
+  submitBtn.addEventListener('click', async function() {
+    submitBtn.disabled = true;
+
+    const rows = table.querySelectorAll('tbody tr.grn-line-row');
+    const items = [];
+
+    for (const row of rows) {
+      const rcvdInput = row.querySelector('.line-received-qty');
+      if (rcvdInput.disabled) continue;
+
+      const receivedQuantity = parseFloat(rcvdInput.value) || 0;
+      if (receivedQuantity <= 0) continue; // Skip lines with zero delivery
+
+      const acceptedQuantity = parseFloat(row.querySelector('.line-accepted-qty').value) || 0;
+      const rejectedQuantity = parseFloat(row.querySelector('.line-rejected-qty').value) || 0;
+
+      if (Math.abs((acceptedQuantity + rejectedQuantity) - receivedQuantity) > 0.01) {
+        alert(`Line "${row.querySelector('.item-name').value}": Accepted (${acceptedQuantity}) + Rejected (${rejectedQuantity}) must equal Delivered (${receivedQuantity}).`);
+        submitBtn.disabled = false;
+        return;
+      }
+
+      items.push({
+        purchaseOrderItemId: parseInt(row.querySelector('.po-item-id').value, 10),
+        name: row.querySelector('.item-name').value,
+        unit: row.querySelector('.item-unit').value,
+        unitCost: parseFloat(row.querySelector('.item-rate').value) || 0,
+        receivedQuantity,
+        acceptedQuantity,
+        rejectedQuantity
+      });
+    }
+
+    if (items.length === 0) {
+      alert('Please enter a received quantity greater than 0 for at least one item line.');
+      submitBtn.disabled = false;
+      return;
+    }
+
+    const payload = {
+      purchaseOrderId: parseInt(document.querySelector('input[name="purchaseOrderId"]').value, 10),
+      supplierId: parseInt(document.querySelector('input[name="supplierId"]').value, 10),
+      supplierName: document.querySelector('input[name="supplierName"]').value,
+      projectId: document.querySelector('input[name="projectId"]') ? parseInt(document.querySelector('input[name="projectId"]').value, 10) : null,
+      receiptDate: document.getElementById('receiptDate').value,
+      storeLocation: document.getElementById('storeLocation').value.trim(),
+      deliveryChallanNumber: document.getElementById('deliveryChallanNumber').value.trim() || null,
+      notes: document.getElementById('notes').value.trim() || null,
+      items
+    };
+
+    try {
+      const res = await fetch(`/api/purchase-orders/${payload.purchaseOrderId}/receipts`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'CSRF-Token': csrfToken
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        window.location.href = `/purchases/orders/${payload.purchaseOrderId}`;
+      } else {
+        alert(data.error || 'Failed to post Goods Receipt.');
+        submitBtn.disabled = false;
+      }
+    } catch (err) {
+      alert('Network error while recording Goods Receipt: ' + err.message);
+      submitBtn.disabled = false;
+    }
+  });
+});
+</script>
+
+<%- include('../layouts/footer') %>

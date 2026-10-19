@@ -3,6 +3,8 @@ const postingService = require('../services/accounting/posting.service');
 const pdfService = require('../services/pdf.service');
 const excelService = require('../services/excel.service');
 const activityService = require('../services/activity.service');
+const businessProfileService = require('../services/businessProfile.service');
+const templateService = require('../services/template.service');
 
 function getRequestMeta(req) {
     const forwarded = req.headers['x-forwarded-for'];
@@ -46,8 +48,11 @@ function handleControllerError(err, res, next) {
  */
 async function listInvoices(req, res, next) {
     try {
-        const { search, status, paymentStatus, type, documentType, dateFrom, dateTo, page, limit, sortBy, sortDirection } = req.query;
+        const { search, status, paymentStatus, type, documentType, projectId, dateFrom, dateTo, page, limit, sortBy, sortDirection } = req.query;
+        const activeBizId = req.businessId || (req.session && req.session.activeBusinessId) || (req.query.businessId ? parseInt(req.query.businessId, 10) : null);
         const result = await invoiceService.listInvoices({
+            businessId: activeBizId,
+            projectId: projectId ? parseInt(projectId, 10) : undefined,
             documentType: type || documentType,
             search,
             status,
@@ -288,7 +293,12 @@ async function exportPdf(req, res, next) {
         }
 
         const invoice = await invoiceService.getInvoiceById(id);
-        const pdfBuffer = await pdfService.generateDocumentPdf(invoice);
+        const docBizId = invoice.businessId || req.businessId;
+        const profile = await businessProfileService.getProfile(docBizId);
+        const activeTemplates = templateService.getActiveTemplates(docBizId);
+        const requestedTemplateId = (req.query && req.query.template) || (invoice.documentType === 'QUOTATION' ? activeTemplates.quotationTemplate : activeTemplates.invoiceTemplate);
+        const templateConfig = templateService.getTemplate(requestedTemplateId, docBizId);
+        const pdfBuffer = await pdfService.generateDocumentPdf(invoice, profile, templateConfig);
 
         if (req.session && req.session.user) {
             await activityService.log({
@@ -320,7 +330,9 @@ async function exportPdf(req, res, next) {
 async function exportExcel(req, res, next) {
     try {
         const { search, status, type, documentType, dateFrom, dateTo, limit } = req.query;
+        const activeBizId = req.businessId || (req.session && req.session.activeBusinessId) || (req.query.businessId ? parseInt(req.query.businessId, 10) : null);
         const excelBuffer = await excelService.generateInvoicesExcel({
+            businessId: activeBizId,
             documentType: type || documentType,
             search,
             status,
@@ -357,7 +369,8 @@ async function exportExcel(req, res, next) {
  */
 async function getDashboardKPIs(req, res, next) {
     try {
-        const kpis = await invoiceService.getDashboardKPIs();
+        const businessId = req.businessId || (req.session && req.session.activeBusinessId) || null;
+        const kpis = await invoiceService.getDashboardKPIs(businessId);
         return res.status(200).json({ success: true, data: kpis, ...kpis });
     } catch (err) {
         return handleControllerError(err, res, next);

@@ -37,6 +37,15 @@ const NAV_ITEMS = [
         isActive: (path, title = '') => path.startsWith('/credit-debit-notes') || title.toLowerCase().includes('credit & debit')
     },
     {
+        id: 'menu-projects',
+        label: 'Projects',
+        url: '/projects',
+        icon: 'bi-kanban-fill',
+        requiredModule: 'PROJECTS',
+        requiredAction: 'VIEW',
+        isActive: (path, title = '') => path.startsWith('/projects') || title.toLowerCase().includes('project')
+    },
+    {
         id: 'menu-reports',
         label: 'Reports & Accounting',
         url: '/reports',
@@ -139,6 +148,8 @@ const QUICK_COMMANDS = [
     { title: 'Create New Invoice', category: 'Actions', icon: 'bi-plus-circle', url: '/documents/new?type=INVOICE', module: 'DOCUMENTS', action: 'CREATE', keywords: ['new invoice', 'add invoice', 'bill client'] },
     { title: 'Create New Quotation', category: 'Actions', icon: 'bi-plus-circle', url: '/documents/new?type=QUOTATION', module: 'DOCUMENTS', action: 'CREATE', keywords: ['new quotation', 'estimate', 'proposal'] },
     { title: 'Credit & Debit Notes', category: 'Navigation', icon: 'bi-receipt', url: '/credit-debit-notes', module: 'CREDIT_DEBIT_NOTES', action: 'VIEW', keywords: ['credit note', 'debit note', 'adjustments'] },
+    { title: 'Projects Workspace', category: 'Projects', icon: 'bi-kanban-fill', url: '/projects', module: 'PROJECTS', action: 'VIEW', keywords: ['projects', 'costing', 'profitability', 'margin', 'labour'] },
+    { title: 'Create New Project', category: 'Projects', icon: 'bi-plus-circle', url: '/projects/new', module: 'PROJECTS', action: 'CREATE', keywords: ['new project', 'add project', 'project costing'] },
     { title: 'Financial Reports & Accounting', category: 'Accounting', icon: 'bi-bar-chart-line', url: '/reports', module: 'REPORTS', action: 'VIEW', keywords: ['reports', 'financials'] },
     { title: 'General Ledger', category: 'Accounting', icon: 'bi-journal-text', url: '/reports/general-ledger', module: 'REPORTS', action: 'VIEW', keywords: ['ledger', 'accounts', 'entries'] },
     { title: 'Trial Balance', category: 'Accounting', icon: 'bi-calculator', url: '/reports/trial-balance', module: 'REPORTS', action: 'VIEW', keywords: ['trial balance', 'debit credit check'] },

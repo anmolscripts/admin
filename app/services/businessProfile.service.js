@@ -1,4 +1,5 @@
 const prisma = require('../config/prisma');
+const templateService = require('./template.service');
 
 class ValidationError extends Error {
     constructor(message) {
@@ -58,9 +59,10 @@ function invalidateBrandingCache() {
  * @param {number|null} [businessId=null]
  */
 async function getProfile(businessId = null) {
+    const targetBusinessId = businessId ? Number(businessId) : null;
     const where = {};
-    if (businessId) {
-        where.businessId = Number(businessId);
+    if (targetBusinessId) {
+        where.businessId = targetBusinessId;
     }
     let profile = await prisma.businessProfile.findFirst({
         where,
@@ -69,14 +71,14 @@ async function getProfile(businessId = null) {
 
     if (!profile) {
         let b = null;
-        if (businessId) {
-            b = await prisma.business.findUnique({ where: { id: Number(businessId) } });
+        if (targetBusinessId) {
+            b = await prisma.business.findUnique({ where: { id: targetBusinessId } });
         }
         const initialData = process.env.NODE_ENV === 'production' ? PROD_DEFAULT_PROFILE : DEFAULT_PROFILE;
         profile = await prisma.businessProfile.create({
             data: {
                 ...initialData,
-                businessId: businessId ? Number(businessId) : 1,
+                businessId: targetBusinessId || 1,
                 displayName: b ? b.name : initialData.displayName,
                 legalName: b ? (b.legalName || b.name) : initialData.legalName,
                 gstin: b ? b.gstin : initialData.gstin,
@@ -89,11 +91,14 @@ async function getProfile(businessId = null) {
 
     const companyName = profile.displayName || profile.legalName;
     const workspaceName = profile.workspaceName || companyName || 'Spark Admin';
+    const activeTemplates = templateService.getActiveTemplates(profile.businessId || targetBusinessId || 1);
 
     return {
         ...profile,
         companyName,
-        workspaceName
+        workspaceName,
+        invoiceTemplate: activeTemplates.invoiceTemplate,
+        quotationTemplate: activeTemplates.quotationTemplate
     };
 }
 
@@ -129,10 +134,12 @@ async function getBranding(businessId = null) {
 /**
  * Update business profile with validation
  */
-async function updateProfile(data = {}) {
+async function updateProfile(data = {}, businessId = null) {
     if (!data || typeof data !== 'object') {
         throw new ValidationError('Profile data is required.');
     }
+
+    const targetBusinessId = businessId ? Number(businessId) : 1;
 
     const legalName = (data.companyName || data.legalName || '').trim();
     if (!legalName) {
@@ -177,7 +184,16 @@ async function updateProfile(data = {}) {
     const timeZone = data.timeZone ? data.timeZone.trim() : 'Asia/Kolkata';
     const currency = data.currency ? data.currency.trim().toUpperCase() : 'INR';
 
+    // Update active templates if specified
+    if (data.invoiceTemplate || data.quotationTemplate) {
+        templateService.setActiveTemplates(targetBusinessId, {
+            invoiceTemplate: data.invoiceTemplate,
+            quotationTemplate: data.quotationTemplate
+        });
+    }
+
     let profile = await prisma.businessProfile.findFirst({
+        where: { businessId: targetBusinessId },
         orderBy: { id: 'asc' }
     });
 
@@ -217,7 +233,8 @@ async function updateProfile(data = {}) {
         profile = await prisma.businessProfile.create({
             data: {
                 ...base,
-                ...updateData
+                ...updateData,
+                businessId: targetBusinessId
             }
         });
     }
@@ -225,10 +242,13 @@ async function updateProfile(data = {}) {
     invalidateBrandingCache();
 
     const companyName = profile.displayName || profile.legalName;
+    const activeTemplates = templateService.getActiveTemplates(targetBusinessId);
     return {
         ...profile,
         companyName,
-        workspaceName: profile.workspaceName || companyName
+        workspaceName: profile.workspaceName || companyName,
+        invoiceTemplate: activeTemplates.invoiceTemplate,
+        quotationTemplate: activeTemplates.quotationTemplate
     };
 }
 

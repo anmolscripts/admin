@@ -20,6 +20,14 @@ function notFound(req, res) {
 function errorHandler(err, req, res, next) {
     console.error(`[SERVER ERROR] ${req.method} ${req.originalUrl || req.url}:`, err.message || err);
 
+    if (err.name === 'MulterError' || err.code === 'INVALID_FILE_TYPE') {
+        const status = err.status || err.statusCode || (err.code === 'LIMIT_FILE_SIZE' ? 413 : (err.code === 'INVALID_FILE_TYPE' ? 415 : 400));
+        return res.status(status).json({
+            success: false,
+            error: err.message
+        });
+    }
+
     if (req.path.startsWith('/api') || req.xhr || (req.headers.accept && req.headers.accept.includes('application/json'))) {
         return res.status(err.status || 500).json({
             success: false,

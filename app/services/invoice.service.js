@@ -328,6 +328,31 @@ async function createDocument(data, userId, meta = {}) {
         }
     }
 
+    let projectId = null;
+    let projectRecord = null;
+    if (data.projectId !== undefined && data.projectId !== null && data.projectId !== '') {
+        const parsedProjectId = parseInt(data.projectId, 10);
+        if (isNaN(parsedProjectId) || parsedProjectId <= 0) {
+            throw new ValidationError('Invalid project ID.');
+        }
+        projectRecord = await prisma.project.findFirst({
+            where: { id: parsedProjectId, businessId: activeBusinessId }
+        });
+        if (!projectRecord) {
+            throw new NotFoundError(`Project #${parsedProjectId} not found in authorized business.`);
+        }
+        if (projectRecord.clientId && clientId && projectRecord.clientId !== clientId) {
+            throw new ValidationError(`Project #${parsedProjectId} is assigned to client #${projectRecord.clientId}, which does not match invoice client #${clientId}.`);
+        }
+        projectId = projectRecord.id;
+        if (!clientId && projectRecord.clientId) {
+            clientId = projectRecord.clientId;
+            if (!clientRecord) {
+                clientRecord = await prisma.client.findUnique({ where: { id: clientId } });
+            }
+        }
+    }
+
     let clientName = typeof data.clientName === 'string' ? data.clientName.trim() : (clientRecord ? clientRecord.name : '');
     if (!clientName) {
         throw new ValidationError('Client name is required.');
@@ -476,6 +501,7 @@ async function createDocument(data, userId, meta = {}) {
                 invoiceNumber,
                 financialYearId: financialYear ? financialYear.id : null,
                 clientId,
+                projectId,
                 clientName,
                 clientEmail,
                 clientPhone,
@@ -527,7 +553,8 @@ async function createDocument(data, userId, meta = {}) {
                 createdBy: { select: { id: true, name: true, email: true } },
                 updatedBy: { select: { id: true, name: true, email: true } },
                 sourceQuotation: { select: { id: true, invoiceNumber: true, clientName: true } },
-                convertedInvoice: { select: { id: true, invoiceNumber: true, clientName: true } }
+                convertedInvoice: { select: { id: true, invoiceNumber: true, clientName: true } },
+                project: { select: { id: true, code: true, name: true, clientId: true } }
             }
         });
 
@@ -617,6 +644,7 @@ async function getInvoiceById(id, businessId = null) {
             deletedBy: { select: { id: true, name: true, email: true } },
             sourceQuotation: { select: { id: true, invoiceNumber: true, clientName: true } },
             convertedInvoice: { select: { id: true, invoiceNumber: true, clientName: true } },
+            project: { select: { id: true, code: true, name: true, clientId: true } },
             payments: {
                 orderBy: [{ paymentDate: 'desc' }, { createdAt: 'desc' }],
                 include: {
@@ -705,6 +733,29 @@ async function updateInvoice(id, data, userId, meta = {}) {
         }
 
         const clientId = data.clientId !== undefined ? (data.clientId ? parseInt(data.clientId, 10) : null) : existing.clientId;
+
+        let projectId = existing.projectId;
+        if (data.projectId !== undefined) {
+            if (data.projectId === null || data.projectId === '') {
+                projectId = null;
+            } else {
+                const parsedProjectId = parseInt(data.projectId, 10);
+                if (isNaN(parsedProjectId) || parsedProjectId <= 0) {
+                    throw new ValidationError('Invalid project ID.');
+                }
+                const projectRecord = await prisma.project.findFirst({
+                    where: { id: parsedProjectId, businessId: existing.businessId }
+                });
+                if (!projectRecord) {
+                    throw new NotFoundError(`Project #${parsedProjectId} not found in authorized business.`);
+                }
+                const effectiveClientId = clientId !== undefined ? clientId : existing.clientId;
+                if (projectRecord.clientId && effectiveClientId && projectRecord.clientId !== effectiveClientId) {
+                    throw new ValidationError(`Project #${parsedProjectId} is assigned to client #${projectRecord.clientId}, which does not match invoice client #${effectiveClientId}.`);
+                }
+                projectId = projectRecord.id;
+            }
+        }
         const clientGSTIN = data.clientGSTIN !== undefined ? (data.clientGSTIN ? data.clientGSTIN.trim().toUpperCase() : null) : existing.clientGSTIN;
         const placeOfSupplyStateCode = data.placeOfSupplyStateCode !== undefined ? (data.placeOfSupplyStateCode ? data.placeOfSupplyStateCode.trim() : null) : existing.placeOfSupplyStateCode;
         const sellerName = data.sellerName !== undefined ? data.sellerName.trim() : existing.sellerName;
@@ -797,6 +848,7 @@ async function updateInvoice(id, data, userId, meta = {}) {
             data: {
                 financialYearId: financialYear ? financialYear.id : null,
                 clientId,
+                projectId,
                 clientName,
                 clientEmail,
                 clientPhone,
@@ -865,7 +917,8 @@ async function updateInvoice(id, data, userId, meta = {}) {
                 createdBy: { select: { id: true, name: true, email: true } },
                 updatedBy: { select: { id: true, name: true, email: true } },
                 sourceQuotation: { select: { id: true, invoiceNumber: true, clientName: true } },
-                convertedInvoice: { select: { id: true, invoiceNumber: true, clientName: true } }
+                convertedInvoice: { select: { id: true, invoiceNumber: true, clientName: true } },
+                project: { select: { id: true, code: true, name: true, clientId: true } }
             }
         });
 
@@ -878,6 +931,9 @@ async function updateInvoice(id, data, userId, meta = {}) {
 
         // Build actual changed fields diff
         const changedFields = {};
+        if (existing.projectId !== projectId) {
+            changedFields.projectId = { from: existing.projectId, to: projectId };
+        }
         if (existing.clientName !== clientName) {
             changedFields.clientName = { from: existing.clientName, to: clientName };
         }
@@ -1480,6 +1536,7 @@ async function convertQuotationToInvoice(quotationId, userId, options = {}, meta
                     invoiceNumber,
                     financialYearId: financialYear ? financialYear.id : null,
                     clientId: quotation.clientId,
+                    projectId: quotation.projectId,
                     clientName: quotation.clientName,
                     clientEmail: quotation.clientEmail,
                     clientPhone: quotation.clientPhone,
@@ -1530,7 +1587,8 @@ async function convertQuotationToInvoice(quotationId, userId, options = {}, meta
                     items: { orderBy: { lineNumber: 'asc' } },
                     createdBy: { select: { id: true, name: true, email: true } },
                     updatedBy: { select: { id: true, name: true, email: true } },
-                    sourceQuotation: { select: { id: true, invoiceNumber: true, clientName: true } }
+                    sourceQuotation: { select: { id: true, invoiceNumber: true, clientName: true } },
+                    project: { select: { id: true, code: true, name: true, clientId: true } }
                 }
             });
         } catch (err) {
@@ -1666,6 +1724,7 @@ async function copyDocument(id, userId = null, meta = {}) {
         copyFromId: doc.id,
         documentType: doc.documentType,
         clientId: doc.clientId || null,
+        projectId: doc.projectId || null,
         clientName: doc.clientName,
         clientEmail: doc.clientEmail,
         clientPhone: doc.clientPhone,
@@ -1699,7 +1758,7 @@ async function copyDocument(id, userId = null, meta = {}) {
 /**
  * List documents with search, documentType filtering, status filtering, and pagination.
  */
-async function listInvoices({ businessId, documentType, search, status, paymentStatus, dateFrom, dateTo, page = 1, limit = 10, sortBy = null, sortDirection = 'desc' } = {}) {
+async function listInvoices({ businessId, projectId, documentType, search, status, paymentStatus, dateFrom, dateTo, page = 1, limit = 10, sortBy = null, sortDirection = 'desc' } = {}) {
     const parsedPage = Math.max(1, parseInt(page, 10) || 1);
     const parsedLimit = Math.min(100, Math.max(1, parseInt(limit, 10) || 10));
     const skip = (parsedPage - 1) * parsedLimit;
@@ -1707,6 +1766,9 @@ async function listInvoices({ businessId, documentType, search, status, paymentS
     const where = {};
     if (businessId) {
         where.businessId = Number(businessId);
+    }
+    if (projectId) {
+        where.projectId = Number(projectId);
     }
 
     if (documentType && ALLOWED_DOCUMENT_TYPES.includes(documentType.toUpperCase())) {
@@ -1805,7 +1867,8 @@ async function listInvoices({ businessId, documentType, search, status, paymentS
                 createdBy: { select: { id: true, name: true, email: true } },
                 updatedBy: { select: { id: true, name: true, email: true } },
                 sourceQuotation: { select: { id: true, invoiceNumber: true } },
-                convertedInvoice: { select: { id: true, invoiceNumber: true } }
+                convertedInvoice: { select: { id: true, invoiceNumber: true } },
+                project: { select: { id: true, code: true, name: true } }
             }
         })
     ]);
@@ -1829,7 +1892,10 @@ async function listInvoices({ businessId, documentType, search, status, paymentS
 async function getDashboardKPIs(businessId = null) {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const baseWhere = businessId ? { businessId: Number(businessId) } : {};
+    const bizIdNum = businessId ? parseInt(businessId, 10) : null;
+    const baseWhere = (bizIdNum && !isNaN(bizIdNum) && bizIdNum > 0)
+        ? { businessId: bizIdNum }
+        : {};
 
     const [activeQuotations, activeInvoices, outstandingAgg, overdueCount] = await Promise.all([
         prisma.invoice.count({
@@ -1850,9 +1916,12 @@ async function getDashboardKPIs(businessId = null) {
             where: {
                 ...baseWhere,
                 documentType: 'INVOICE',
-                status: { in: ['ACTIVE', 'INACTIVE'] },
+                status: 'ACTIVE',
                 outstandingAmount: { gt: 0 },
-                invoiceDate: { lt: thirtyDaysAgo }
+                OR: [
+                    { dueDate: { not: null, lt: new Date() } },
+                    { dueDate: null, invoiceDate: { lt: thirtyDaysAgo } }
+                ]
             }
         })
     ]);
@@ -1861,7 +1930,8 @@ async function getDashboardKPIs(businessId = null) {
         activeQuotations,
         activeInvoices,
         totalOutstanding: Number(outstandingAgg._sum.outstandingAmount) || 0,
-        overdueInvoices: overdueCount
+        overdueInvoices: overdueCount,
+        overdueCount
     };
 }
 

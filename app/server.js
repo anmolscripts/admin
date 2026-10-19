@@ -1,4 +1,7 @@
 require('dotenv').config();
+if (process.env.NODE_ENV === 'test') {
+    require('dotenv').config({ path: '.env.test', override: true });
+}
 
 const { validateEnv } = require('./config/env');
 const { assertSchemaReadiness } = require('./config/schemaReadiness');
@@ -14,6 +17,10 @@ const HOST = process.env.HOST || '127.0.0.1';
 let server = null;
 
 async function start() {
+    if (process.env.NODE_ENV === 'test') {
+        const { validateTestEnv } = require('../scripts/guard');
+        await validateTestEnv(prisma);
+    }
     await assertSchemaReadiness();
     server = app.listen(PORT, HOST, () => {
         console.log(`Server running at http://${HOST}:${PORT}`);

@@ -15,7 +15,7 @@ if (!process.env.DATABASE_NAME) {
   console.error('ERROR: DATABASE_NAME is not set in .env.test');
   process.exit(1);
 }
-const protectedDbs = ['admin', 'spark_admin', 'spark_admin_test', 'spark_admin_prod_test'];
+const protectedDbs = ['admin', 'spark_admin', 'spark_admin_prod'];
 if (protectedDbs.includes(process.env.DATABASE_NAME.toLowerCase())) {
   console.error(`ERROR: Test configuration must not target protected database "${process.env.DATABASE_NAME}".`);
   process.exit(1);

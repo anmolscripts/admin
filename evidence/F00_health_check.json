@@ -1,0 +1,65 @@
+{
+  "flowId": "FLOW-F00",
+  "flowName": "Build Identity, Application Health, Configuration & Database Connectivity",
+  "timestamp": "2026-10-18T08:26:00.000Z",
+  "build": {
+    "packagePath": "dist/candidates/spark-admin-release-candidate-rc2.zip",
+    "manifestPath": "dist/candidates/spark-admin-release-candidate-rc2-manifest.json",
+    "archiveSha256": "38c0b0976e41b659cfaa675bb97f10cd249dcdb1e558b488095f9c1f781d0d74",
+    "archiveSizeBytes": 1854016,
+    "fileCount": 299,
+    "migrationCount": 23,
+    "baseCommit": "bfae7af0fab34bc16d3b832ae0537340f1c4360f",
+    "candidateVersion": "1.0.0-rc2",
+    "hashMatch": true
+  },
+  "runtime": {
+    "nodeVersion": "v24.21.0",
+    "npmVersion": "11.19.0",
+    "platform": "win32",
+    "status": "PASS"
+  },
+  "localPreflightChecks": {
+    "doctorDiagnostic": {
+      "summary": "20/20 PASS, 0 WARN, 0 FAIL",
+      "status": "PASS"
+    },
+    "prismaMigrations": {
+      "targetDatabase": "spark_project_costing_disposable_test",
+      "appliedCount": 23,
+      "statusMessage": "Database schema is up to date!",
+      "status": "PASS"
+    },
+    "httpEndpoint": {
+      "targetUrl": "http://127.0.0.1:3001/login",
+      "httpStatus": 200,
+      "cookieFlags": {
+        "cookieName": "spark.sid",
+        "httpOnly": true,
+        "sameSite": "Lax"
+      },
+      "securityHeaders": {
+        "xContentTypeOptions": "nosniff",
+        "xFrameOptions": "SAMEORIGIN",
+        "referrerPolicy": "strict-origin-when-cross-origin"
+      },
+      "status": "PASS"
+    },
+    "databaseSafety": {
+      "activeDatabase": "spark_project_costing_disposable_test",
+      "isProtected": false,
+      "mutationsExecuted": 0,
+      "status": "PASS"
+    }
+  },
+  "remoteHostDeployment": {
+    "hostTarget": "Designated Staging Host (Linux VPS /etc/systemd/system/spark-admin.service)",
+    "hostAccessStatus": "UNAVAILABLE_FROM_WORKSTATION",
+    "uploadStatus": "NOT RUN",
+    "remoteExtractionStatus": "NOT RUN",
+    "remoteServiceStatus": "NOT RUN",
+    "reverseProxyStatus": "NOT RUN",
+    "operatorActionRequired": "Execute documented operator runbook commands on staging host via SSH"
+  },
+  "outcome": "F00 BLOCKED"
+}

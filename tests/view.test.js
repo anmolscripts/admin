@@ -905,4 +905,12 @@ describe('Document View & Lifecycle (Phase 4) Test Suite', () => {
         assert.ok(html.includes('Created'));
         assert.ok(html.includes('Rev 1'));
     });
+
+    after(async () => {
+        if (server) {
+            if (server.closeAllConnections) server.closeAllConnections();
+            await new Promise((resolve) => server.close(resolve));
+        }
+        await prisma.$disconnect();
+    });
 });

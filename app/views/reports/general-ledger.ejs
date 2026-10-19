@@ -54,16 +54,25 @@
         </select>
       </div>
 
-      <!-- From Date -->
-      <div class="col-md-2">
-        <label class="form-label small text-muted mb-1">From Date</label>
-        <input type="date" name="fromDate" class="form-control form-control-sm" value="<%= filters.fromDate || '' %>">
-      </div>
-
-      <!-- To Date -->
-      <div class="col-md-2">
-        <label class="form-label small text-muted mb-1">To Date</label>
-        <input type="date" name="toDate" class="form-control form-control-sm" value="<%= filters.toDate || '' %>">
+      <!-- Date Range Filter -->
+      <div class="col-md-4">
+        <label class="form-label small text-muted mb-1">Date Range</label>
+        <div class="spark-daterange-picker w-100" data-from-name="fromDate" data-to-name="toDate" data-auto-submit="true">
+          <div class="d-flex align-items-center gap-1">
+            <button class="btn-date-picker btn-date-picker-sm flex-grow-1" type="button" aria-label="Select date range">
+              <span class="d-flex align-items-center gap-2 text-truncate">
+                <i class="bi bi-calendar4-event text-primary"></i>
+                <span class="spark-daterange-label text-truncate">All Dates</span>
+              </span>
+              <i class="bi bi-chevron-down text-muted ms-auto"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary btn-daterange-clear d-none" title="Clear date range" aria-label="Clear date range">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+          <input type="hidden" name="fromDate" value="<%= filters.fromDate || '' %>">
+          <input type="hidden" name="toDate" value="<%= filters.toDate || '' %>">
+        </div>
       </div>
 
       <!-- Actions -->
@@ -174,10 +183,10 @@
 
             <% if (report.transactions.length > 0) { %>
               <% report.transactions.forEach(tx => { %>
-                <tr>
+                <tr class="report-row-clickable cursor-pointer" data-source-type="<%= tx.sourceType %>" data-source-id="<%= tx.sourceId || '' %>" data-journal-id="<%= tx.journalId %>" data-source-ref="<%= tx.journalNumber %>" title="Click to view details in modal">
                   <td class="ps-4 small text-muted"><%= new Date(tx.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) %></td>
                   <td class="font-monospace fw-bold">
-                    <a href="/reports/journals/<%= tx.journalId %>" class="text-decoration-none text-primary">
+                    <a href="/reports/journals/<%= tx.journalId %>" class="text-decoration-none text-primary" onclick="event.stopPropagation()">
                       <%= tx.journalNumber %>
                     </a>
                   </td>
@@ -461,6 +470,7 @@
 
 <%- include('../layouts/footer', {
   extraJs: `
+    <script src="/js/report-drilldown.js"></script>
     <script>
       (function() {
         if (!window.ApexCharts) return;

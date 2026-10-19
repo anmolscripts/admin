@@ -822,7 +822,6 @@ a:hover {
     border-color: rgba(22, 184, 175, 0.25) !important;
     color: #E2F2F5 !important;
 }
-}
 
 .btn-date-picker:hover {
     background-color: var(--border-light);

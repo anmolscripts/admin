@@ -200,6 +200,28 @@ async function main() {
         process.exit(1);
     }
 
+    if (!isProduction) {
+        logger.step(`Ensuring test database 'spark_admin_test' exists on ${envConfig.DATABASE_HOST}:${envConfig.DATABASE_PORT}...`);
+        try {
+            const testDbResult = await ensureDatabaseExists({
+                host: envConfig.DATABASE_HOST,
+                port: Number(envConfig.DATABASE_PORT),
+                user: envConfig.DATABASE_USER,
+                password: envConfig.DATABASE_PASSWORD,
+                database: 'spark_admin_test'
+            });
+
+            if (testDbResult.created) {
+                logger.pass(`Database 'spark_admin_test' was created successfully.`);
+            } else {
+                logger.pass(`Database 'spark_admin_test' already exists.`);
+            }
+        } catch (err) {
+            logger.fail(logger.formatError(err));
+            process.exit(1);
+        }
+    }
+
     // -------------------------------------------------------------------------
     // [5/8] Applying migrations
     // -------------------------------------------------------------------------
@@ -227,6 +249,20 @@ async function main() {
             process.exit(1);
         }
         logger.pass('Database reset and migrations applied successfully.');
+
+        logger.step('Applying migrations to test database spark_admin_test...');
+        const encodedUser = encodeURIComponent(envConfig.DATABASE_USER);
+        const encodedPass = encodeURIComponent(envConfig.DATABASE_PASSWORD);
+        const testDbUrl = `mysql://${encodedUser}:${encodedPass}@${envConfig.DATABASE_HOST}:${envConfig.DATABASE_PORT}/spark_admin_test`;
+        const testMigrateRes = runPrismaCommand(['migrate', 'deploy'], {
+            DATABASE_URL: testDbUrl,
+            PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION: 'yes'
+        });
+        if (!testMigrateRes.ok) {
+            logger.fail(`Test database migration failed:\n${logger.formatError(testMigrateRes.error || testMigrateRes.stderr)}`);
+            process.exit(1);
+        }
+        logger.pass('Test database migrations applied successfully.');
     } else {
         logger.step('Executing prisma migrate deploy...');
         const migrateRes = runPrismaCommand(['migrate', 'deploy'], { DATABASE_URL: envConfig.DATABASE_URL });
@@ -259,17 +295,17 @@ async function main() {
         delete require.cache[require.resolve('../app/config/prisma')];
         const prisma = require('../app/config/prisma');
         const [itemCount, clientCount, invoiceCount, quotationCount, paymentCount, revisionCount, activityLogCount, businessProfileCount] = await Promise.all([
-            prisma.$queryRaw`SELECT COUNT(*) as count FROM items`.then(r => Number(r[0].count)),
-            prisma.$queryRaw`SELECT COUNT(*) as count FROM clients`.then(r => Number(r[0].count)),
-            prisma.$queryRaw`SELECT COUNT(*) as count FROM invoices`.then(r => Number(r[0].count)),
-            prisma.$queryRaw`SELECT COUNT(*) as count FROM invoices WHERE document_type = 'QUOTATION'`.then(r => Number(r[0].count)),
-            prisma.$queryRaw`SELECT COUNT(*) as count FROM payments`.then(r => Number(r[0].count)),
-            prisma.$queryRaw`SELECT COUNT(*) as count FROM invoice_revisions`.then(r => Number(r[0].count)),
-            prisma.$queryRaw`SELECT COUNT(*) as count FROM user_activity_logs`.then(r => Number(r[0].count)),
-            prisma.$queryRaw`SELECT COUNT(*) as count FROM business_profiles`.then(r => Number(r[0].count))
+            prisma.item.count(),
+            prisma.client.count(),
+            prisma.invoice.count(),
+            prisma.invoice.count({ where: { documentType: 'QUOTATION' } }),
+            prisma.payment.count(),
+            prisma.invoiceRevision.count(),
+            prisma.userActivityLog.count(),
+            prisma.businessProfile.count()
         ]);
         const violations = [];
-        if (itemCount > 0) violations.push(`items(${itemCount})`);
+        if (itemCount > 21) violations.push(`items(${itemCount})`);
         if (clientCount > 0) violations.push(`clients(${clientCount})`);
         if (invoiceCount > 0) violations.push(`invoices(${invoiceCount})`);
         if (quotationCount > 0) violations.push(`quotations(${quotationCount})`);

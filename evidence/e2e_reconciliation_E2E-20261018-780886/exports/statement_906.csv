@@ -1,0 +1,13 @@
+"CUSTOMER SUB-LEDGER STATEMENT: Acme Industrial Systems E2E-20261018-780886"
+"Period: Beginning to Current"
+"Opening Balance: ₹0.00"
+"Total Debits: ₹88500.00"
+"Total Credits: ₹88500.00"
+"Closing Balance: ₹0.00"
+
+"Date","Journal #","Source Type","Source Ref","Narration","Debit (INR)","Credit (INR)","Running Balance (INR)"
+"—","—","OPENING","—","Opening Balance","—","—","0.00"
+"18/10/2026","JRNL/2026/10/1256","INVOICE","#5316","Tax Invoice INVO/2026/10/29 posted to ledger for customer Acme Industrial Systems E2E-20261018-780886","88500.00","0.00","88500.00"
+"18/10/2026","JRNL/2026/10/1257","PAYMENT","#566","Customer payment of ₹38500.00 received for Invoice INVO/2026/10/29 (BANK_TRANSFER)","0.00","38500.00","50000.00"
+"18/10/2026","JRNL/2026/10/1258","PAYMENT","#567","Customer payment of ₹50000.00 received for Invoice INVO/2026/10/29 (UPI)","0.00","50000.00","0.00"
+"TOTALS","","","","Period Total & Closing Balance","88500.00","88500.00","0.00"

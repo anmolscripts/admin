@@ -127,6 +127,11 @@ if (require.main === module) {
     copyToStaging(result.files);
 
     const zipPath = path.join(DIST_DIR, 'spark-admin-release.zip');
+    if (fs.existsSync(zipPath) && !process.argv.includes('--force-release-override')) {
+        console.error('\n[CRITICAL RELEASE GUARD]: Existing baseline archive dist/spark-admin-release.zip exists.');
+        console.error('Overwriting the baseline release is blocked. Use scripts/package-candidate.js or specify --force-release-override.');
+        process.exit(1);
+    }
     const isWin = process.platform === 'win32';
     if (isWin) {
         const zipCmd = 'powershell';

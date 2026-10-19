@@ -1,0 +1,264 @@
+<%- include('../layouts/header') %>
+
+<div class="content-wrapper p-4">
+  <!-- Breadcrumbs & Header -->
+  <div class="mb-4">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-1 small">
+        <li class="breadcrumb-item"><a href="/projects" class="text-decoration-none">Projects</a></li>
+        <li class="breadcrumb-item active" aria-current="page"><%= isEdit ? `Edit ${project.code}` : 'New Project' %></li>
+      </ol>
+    </nav>
+    <div class="d-flex justify-content-between align-items-center">
+      <h1 class="h3 fw-bold mb-0"><%= isEdit ? `Edit Project: ${project.name}` : 'Create New Project' %></h1>
+      <a href="/projects<%= isEdit ? `/${project.id}` : '' %>" class="btn btn-outline-secondary rounded-pill px-3 btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Back
+      </a>
+    </div>
+  </div>
+
+  <form id="project-form" class="needs-validation" novalidate>
+    <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>" id="csrf-token" />
+    <input type="hidden" id="is-edit" value="<%= isEdit ? 'true' : 'false' %>" />
+    <input type="hidden" id="project-id" value="<%= isEdit ? project.id : '' %>" />
+
+    <div class="row g-4">
+      <!-- Left Column: Core Identity & Client Info -->
+      <div class="col-lg-8">
+        <!-- Identity Card -->
+        <div class="card-glass p-4 mb-4 shadow-sm">
+          <h5 class="fw-bold text-dark mb-3"><i class="bi bi-info-circle text-primary me-2"></i>Project Identity & Classification</h5>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold">Project Code</label>
+              <input type="text" name="code" class="form-control form-control-sm text-uppercase" placeholder="Auto-generated if blank" value="<%= isEdit ? project.code : '' %>" <%= isEdit ? 'readonly' : '' %> id="field-code" />
+              <div class="form-text small">e.g. PRJ-2026-0001</div>
+            </div>
+
+            <div class="col-md-8">
+              <label class="form-label small fw-semibold">Project Name <span class="text-danger">*</span></label>
+              <input type="text" name="name" class="form-control form-control-sm" placeholder="e.g. Industrial Fabrication & Piping Unit 3" value="<%= isEdit ? project.name : '' %>" required id="field-name" />
+              <div class="invalid-feedback">Project name is required.</div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">Client / Customer</label>
+              <select name="clientId" class="form-select form-select-sm" id="field-clientId">
+                <option value="">-- Internal / Direct Operation --</option>
+                <% (clients || []).forEach(c => { %>
+                  <option value="<%= c.id %>" <%= isEdit && project.clientId == c.id ? 'selected' : '' %>><%= c.name %> (<%= c.clientCode || 'CLI' %>)</option>
+                <% }) %>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">Site / Job Location</label>
+              <input type="text" name="siteLocation" class="form-control form-control-sm" placeholder="e.g. Plot 42, MIDC Industrial Area, Pune" value="<%= isEdit && project.siteLocation ? project.siteLocation : '' %>" id="field-siteLocation" />
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">Project Manager / Lead</label>
+              <select name="managerId" class="form-select form-select-sm" id="field-managerId">
+                <option value="">-- Unassigned --</option>
+                <% (users || []).forEach(u => { %>
+                  <option value="<%= u.id %>" <%= isEdit && project.managerId == u.id ? 'selected' : '' %>><%= u.name %> (<%= u.email %>)</option>
+                <% }) %>
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label small fw-semibold">Lifecycle Status</label>
+              <select name="status" class="form-select form-select-sm" id="field-status">
+                <option value="ACTIVE" <%= isEdit && project.status === 'ACTIVE' ? 'selected' : '' %>>Active</option>
+                <option value="ON_HOLD" <%= isEdit && project.status === 'ON_HOLD' ? 'selected' : '' %>>On Hold</option>
+                <option value="COMPLETED" <%= isEdit && project.status === 'COMPLETED' ? 'selected' : '' %>>Completed</option>
+                <option value="ARCHIVED" <%= isEdit && project.status === 'ARCHIVED' ? 'selected' : '' %>>Archived</option>
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label small fw-semibold">Billing Method</label>
+              <select name="billingType" class="form-select form-select-sm" id="field-billingType">
+                <option value="TIME_AND_MATERIALS" <%= isEdit && project.billingType === 'TIME_AND_MATERIALS' ? 'selected' : '' %>>Time & Materials</option>
+                <option value="FIXED_PRICE" <%= isEdit && project.billingType === 'FIXED_PRICE' ? 'selected' : '' %>>Fixed Price</option>
+                <option value="NON_BILLABLE" <%= isEdit && project.billingType === 'NON_BILLABLE' ? 'selected' : '' %>>Non Billable</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">Start Date <span class="text-danger">*</span></label>
+              <input type="date" name="startDate" class="form-control form-control-sm" value="<%= isEdit && project.startDate ? new Date(project.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0] %>" required id="field-startDate" />
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">Target Completion Date</label>
+              <input type="date" name="endDate" class="form-control form-control-sm" value="<%= isEdit && project.endDate ? new Date(project.endDate).toISOString().split('T')[0] : '' %>" id="field-endDate" />
+            </div>
+
+            <div class="col-12">
+              <label class="form-label small fw-semibold">Scope & Description</label>
+              <textarea name="description" class="form-control form-control-sm" rows="3" placeholder="Provide project scope, milestones, deliverables, engineering specifications..." id="field-description"><%= isEdit && project.description ? project.description : '' %></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Budget by Category -->
+        <div class="card-glass p-4 mb-4 shadow-sm">
+          <h5 class="fw-bold text-dark mb-3"><i class="bi bi-pie-chart text-warning me-2"></i>Cost Budget Allocation by Category</h5>
+          <p class="text-muted small mb-3">Define granular cost budgets to track budget-vs-actual expenditure across procurement, labour, and subcontracting.</p>
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">Materials & Inventory Budget (₹)</label>
+              <input type="number" step="0.01" min="0" name="budgetMaterials" class="form-control form-control-sm" placeholder="0.00" value="<%= isEdit ? project.budgetMaterials : '0.00' %>" id="field-budgetMaterials" />
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">Labour & Staff Compensation Budget (₹)</label>
+              <input type="number" step="0.01" min="0" name="budgetLabour" class="form-control form-control-sm" placeholder="0.00" value="<%= isEdit ? project.budgetLabour : '0.00' %>" id="field-budgetLabour" />
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">Subcontractors & Job Work Budget (₹)</label>
+              <input type="number" step="0.01" min="0" name="budgetSubcontractor" class="form-control form-control-sm" placeholder="0.00" value="<%= isEdit ? project.budgetSubcontractor : '0.00' %>" id="field-budgetSubcontractor" />
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">Direct Expenses & Freight Budget (₹)</label>
+              <input type="number" step="0.01" min="0" name="budgetExpenses" class="form-control form-control-sm" placeholder="0.00" value="<%= isEdit ? project.budgetExpenses : '0.00' %>" id="field-budgetExpenses" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Commercial Terms & Rates -->
+      <div class="col-lg-4">
+        <div class="card-glass p-4 mb-4 shadow-sm">
+          <h5 class="fw-bold text-dark mb-3"><i class="bi bi-currency-rupee text-success me-2"></i>Commercial Contract & Total Budget</h5>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Contract / Order Value (₹)</label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text">₹</span>
+              <input type="number" step="0.01" min="0" name="contractValue" class="form-control fw-bold" placeholder="0.00" value="<%= isEdit ? project.contractValue : '0.00' %>" id="field-contractValue" />
+            </div>
+            <div class="form-text small">Total value agreed with client (distinct from cost budget).</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Total Cost Budget (₹)</label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text">₹</span>
+              <input type="number" step="0.01" min="0" name="budgetAmount" class="form-control fw-bold" placeholder="0.00" value="<%= isEdit ? project.budgetAmount : '0.00' %>" id="field-budgetAmount" />
+            </div>
+            <div class="form-text small">Internal ceiling for project cost.</div>
+          </div>
+
+          <hr class="my-3 text-muted" />
+
+          <h6 class="fw-bold text-dark mb-2">Labour Rates (Separate Cost vs Sales)</h6>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Customer Billable Rate (₹/hr)</label>
+            <input type="number" step="0.01" min="0" name="hourlyRate" class="form-control form-control-sm" placeholder="0.00" value="<%= isEdit ? project.hourlyRate : '0.00' %>" id="field-hourlyRate" />
+            <div class="form-text small">Rate billed to customer on T&M invoices.</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Internal Labour Cost Rate (₹/hr)</label>
+            <input type="number" step="0.01" min="0" name="costRate" class="form-control form-control-sm" placeholder="0.00" value="<%= isEdit ? project.costRate : '0.00' %>" id="field-costRate" />
+            <div class="form-text small">Actual staff cost recognized in subledger.</div>
+          </div>
+
+          <hr class="my-3 text-muted" />
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Revenue Recognition Policy</label>
+            <select name="revenueRecognitionMethod" class="form-select form-select-sm" id="field-revenueMethod">
+              <option value="COMPLETED_CONTRACT" <%= isEdit && project.revenueRecognitionMethod === 'COMPLETED_CONTRACT' ? 'selected' : '' %>>Completed Contract</option>
+              <option value="PERCENTAGE_OF_COMPLETION" <%= isEdit && project.revenueRecognitionMethod === 'PERCENTAGE_OF_COMPLETION' ? 'selected' : '' %>>Percentage of Completion (PoC)</option>
+              <option value="TIME_AND_MATERIALS" <%= isEdit && project.revenueRecognitionMethod === 'TIME_AND_MATERIALS' ? 'selected' : '' %>>As Invoiced (T&M)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="d-grid gap-2">
+          <button type="submit" class="btn btn-primary rounded-pill py-2 shadow-sm" id="btn-save-project">
+            <i class="bi bi-check2-circle me-1"></i> <%= isEdit ? 'Save Changes' : 'Create Project' %>
+          </button>
+          <a href="/projects<%= isEdit ? `/${project.id}` : '' %>" class="btn btn-outline-secondary rounded-pill py-2">
+            Cancel
+          </a>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+document.getElementById('project-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const form = this;
+  if (!form.checkValidity()) {
+    form.classList.add('was-validated');
+    return;
+  }
+
+  const isEdit = document.getElementById('is-edit').value === 'true';
+  const projectId = document.getElementById('project-id').value;
+  const saveBtn = document.getElementById('btn-save-project');
+  saveBtn.disabled = true;
+  saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+
+  const payload = {
+    code: document.getElementById('field-code').value.trim(),
+    name: document.getElementById('field-name').value.trim(),
+    clientId: document.getElementById('field-clientId').value || null,
+    siteLocation: document.getElementById('field-siteLocation').value.trim(),
+    managerId: document.getElementById('field-managerId').value || null,
+    status: document.getElementById('field-status').value,
+    billingType: document.getElementById('field-billingType').value,
+    startDate: document.getElementById('field-startDate').value,
+    endDate: document.getElementById('field-endDate').value || null,
+    description: document.getElementById('field-description').value.trim(),
+    contractValue: parseFloat(document.getElementById('field-contractValue').value) || 0,
+    budgetAmount: parseFloat(document.getElementById('field-budgetAmount').value) || 0,
+    budgetMaterials: parseFloat(document.getElementById('field-budgetMaterials').value) || 0,
+    budgetLabour: parseFloat(document.getElementById('field-budgetLabour').value) || 0,
+    budgetSubcontractor: parseFloat(document.getElementById('field-budgetSubcontractor').value) || 0,
+    budgetExpenses: parseFloat(document.getElementById('field-budgetExpenses').value) || 0,
+    hourlyRate: parseFloat(document.getElementById('field-hourlyRate').value) || 0,
+    costRate: parseFloat(document.getElementById('field-costRate').value) || 0,
+    revenueRecognitionMethod: document.getElementById('field-revenueMethod').value
+  };
+
+  const url = isEdit ? `/api/projects/${projectId}` : '/api/projects';
+  const method = 'POST';
+
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'CSRF-Token': document.getElementById('csrf-token').value
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+    if (res.ok && data.success) {
+      window.location.href = `/projects/${data.project.id}`;
+    } else {
+      alert(data.error || 'Failed to save project. Please review your inputs.');
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> ' + (isEdit ? 'Save Changes' : 'Create Project');
+    }
+  } catch (err) {
+    alert('An unexpected error occurred while communicating with the server: ' + err.message);
+    saveBtn.disabled = false;
+    saveBtn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> ' + (isEdit ? 'Save Changes' : 'Create Project');
+  }
+});
+</script>
+
+<%- include('../layouts/footer') %>

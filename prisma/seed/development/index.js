@@ -123,10 +123,12 @@ async function seedDevelopment(prisma, options = {}) {
             // 1. ACTIVE Invoice
             const invoice1 = await prisma.invoice.create({
                 data: {
+                    businessId: 1,
                     documentType: 'INVOICE',
                     invoiceNumber: 'INV-2026-0001',
                     clientName: 'Acme Corporation',
                     invoiceDate: new Date('2026-02-15'),
+                    dueDate: new Date('2026-03-17'),
                     financialYearId: fy2025_26.id,
                     gstEnabled: true,
                     gstRate: '18.00',
@@ -134,6 +136,8 @@ async function seedDevelopment(prisma, options = {}) {
                     gstAmount: '21600.00',
                     roundOff: '0.00',
                     grandTotal: '141600.00',
+                    paidAmount: '0.00',
+                    outstandingAmount: '141600.00',
                     status: 'ACTIVE',
                     version: 2,
                     createdById: admin.id,
@@ -173,10 +177,12 @@ async function seedDevelopment(prisma, options = {}) {
             // 2. INACTIVE Invoice
             const invoice2 = await prisma.invoice.create({
                 data: {
+                    businessId: 1,
                     documentType: 'INVOICE',
                     invoiceNumber: 'INV-2026-0002',
                     clientName: 'Globex Logistics Ltd',
                     invoiceDate: new Date('2026-02-20'),
+                    dueDate: new Date('2026-03-22'),
                     financialYearId: fy2025_26.id,
                     gstEnabled: false,
                     gstRate: '0.00',
@@ -184,6 +190,8 @@ async function seedDevelopment(prisma, options = {}) {
                     gstAmount: '0.00',
                     roundOff: '0.00',
                     grandTotal: '57500.00',
+                    paidAmount: '0.00',
+                    outstandingAmount: '0.00',
                     status: 'INACTIVE',
                     version: 2,
                     createdById: admin.id,
@@ -222,6 +230,7 @@ async function seedDevelopment(prisma, options = {}) {
             // 3. VOID Invoice
             const invoice3 = await prisma.invoice.create({
                 data: {
+                    businessId: 1,
                     documentType: 'INVOICE',
                     invoiceNumber: 'INV-2026-0003',
                     clientName: 'Stark Industries',
@@ -233,6 +242,8 @@ async function seedDevelopment(prisma, options = {}) {
                     gstAmount: '4800.30',
                     roundOff: '0.20',
                     grandTotal: '44803.00',
+                    paidAmount: '0.00',
+                    outstandingAmount: '0.00',
                     status: 'VOID',
                     version: 2,
                     createdById: admin.id,
@@ -283,6 +294,7 @@ async function seedDevelopment(prisma, options = {}) {
             // 1. ACTIVE Quotation
             const qtn1 = await prisma.invoice.create({
                 data: {
+                    businessId: 1,
                     documentType: 'QUOTATION',
                     invoiceNumber: 'QTN-2026-0001',
                     clientName: 'Nexus Cybernetics',
@@ -294,6 +306,8 @@ async function seedDevelopment(prisma, options = {}) {
                     gstAmount: '15300.00',
                     roundOff: '0.00',
                     grandTotal: '100300.00',
+                    paidAmount: '0.00',
+                    outstandingAmount: '0.00',
                     status: 'ACTIVE',
                     version: 1,
                     createdById: admin.id,
@@ -322,6 +336,7 @@ async function seedDevelopment(prisma, options = {}) {
             // 2. INACTIVE Quotation
             const qtn2 = await prisma.invoice.create({
                 data: {
+                    businessId: 1,
                     documentType: 'QUOTATION',
                     invoiceNumber: 'QTN-2026-0002',
                     clientName: 'Solaris Energy Ltd',
@@ -333,6 +348,8 @@ async function seedDevelopment(prisma, options = {}) {
                     gstAmount: '5400.00',
                     roundOff: '0.00',
                     grandTotal: '50400.00',
+                    paidAmount: '0.00',
+                    outstandingAmount: '0.00',
                     status: 'INACTIVE',
                     version: 2,
                     createdById: admin.id,
@@ -421,6 +438,7 @@ async function seedDevelopment(prisma, options = {}) {
             await prisma.client.createMany({
                 data: [
                     {
+                        businessId: 1,
                         name: 'Tata Consultancy Services',
                         email: 'billing@tcs.example.com',
                         phone: '+91 22 6778 9999',
@@ -432,6 +450,7 @@ async function seedDevelopment(prisma, options = {}) {
                         createdById: admin.id
                     },
                     {
+                        businessId: 1,
                         name: 'Infosys Limited',
                         email: 'accounts@infosys.example.com',
                         phone: '+91 80 2852 0261',

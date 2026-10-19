@@ -149,7 +149,7 @@ async function postInvoice(invoiceId, options = {}, clientOrTxArg = null) {
         throw new ValidationError(`Invoice ${invoice.invoiceNumber} has an invalid invoiceDate.`);
     }
 
-    const fy = await ensureFinancialYear(invoiceDate);
+    const fy = await ensureFinancialYear(invoiceDate, invoice.businessId);
     if (fy.status === 'CLOSED') {
         throw new ValidationError(`Cannot post invoice into CLOSED Financial Year ${fy.code}.`);
     }
@@ -188,10 +188,11 @@ async function postInvoice(invoiceId, options = {}, clientOrTxArg = null) {
     }
 
     // 5. Ensure System Accounts Exist
-    await coaService.ensureSystemAccounts(userId);
+    const bizId = (invoice.businessId && invoice.businessId !== 1) ? invoice.businessId : null;
+    await coaService.ensureSystemAccounts(userId, bizId);
 
-    const arAccount = await coaService.getSystemAccount('ACCOUNTS_RECEIVABLE');
-    const salesAccount = await coaService.getSystemAccount('SALES_REVENUE');
+    const arAccount = await coaService.getSystemAccount('ACCOUNTS_RECEIVABLE', bizId);
+    const salesAccount = await coaService.getSystemAccount('SALES_REVENUE', bizId);
 
     // 6. Precise Integer-Cent Financial Arithmetic
     const grandTotalCents = toCents(invoice.grandTotal);
@@ -228,8 +229,8 @@ async function postInvoice(invoiceId, options = {}, clientOrTxArg = null) {
 
     // GST Lines: Intra-state (CGST + SGST) vs Inter-state (IGST)
     if (cgstCents > 0n || sgstCents > 0n) {
-        const cgstAccount = await coaService.getSystemAccount('OUTPUT_CGST');
-        const sgstAccount = await coaService.getSystemAccount('OUTPUT_SGST');
+        const cgstAccount = await coaService.getSystemAccount('OUTPUT_CGST', bizId);
+        const sgstAccount = await coaService.getSystemAccount('OUTPUT_SGST', bizId);
 
         if (cgstCents > 0n) {
             lines.push({
@@ -251,7 +252,7 @@ async function postInvoice(invoiceId, options = {}, clientOrTxArg = null) {
             });
         }
     } else if (igstCents > 0n) {
-        const igstAccount = await coaService.getSystemAccount('OUTPUT_IGST');
+        const igstAccount = await coaService.getSystemAccount('OUTPUT_IGST', bizId);
         lines.push({
             accountId: igstAccount.id,
             debit: '0.00',
@@ -263,7 +264,7 @@ async function postInvoice(invoiceId, options = {}, clientOrTxArg = null) {
 
     // Round-Off Adjustment Line (if non-zero)
     if (roundOffCents !== 0n) {
-        const roundOffAccount = await coaService.getSystemAccount('ROUND_OFF');
+        const roundOffAccount = await coaService.getSystemAccount('ROUND_OFF', bizId);
         if (roundOffCents > 0n) {
             // Rounding up increases grand total; credit Round Off as gain/balancing credit
             lines.push({
@@ -310,7 +311,8 @@ async function postInvoice(invoiceId, options = {}, clientOrTxArg = null) {
         idempotencyKey,
         narration,
         lines,
-        userId
+        userId,
+        businessId: invoice.businessId || 1
     }, externalTx);
 
     // 10. Audit Activity Logging
@@ -511,7 +513,7 @@ async function postPayment(paymentId, options = {}, clientOrTxArg = null) {
         throw new ValidationError(`Payment #${payment.id} has an invalid paymentDate.`);
     }
 
-    const fy = await ensureFinancialYear(paymentDate);
+    const fy = await ensureFinancialYear(paymentDate, (payment.invoice && payment.invoice.businessId) || null);
     if (fy.status === 'CLOSED') {
         throw new ValidationError(`Cannot post payment into CLOSED Financial Year ${fy.code}.`);
     }
@@ -553,9 +555,10 @@ async function postPayment(paymentId, options = {}, clientOrTxArg = null) {
     }
 
     // 5. Ensure System Accounts Exist
-    await coaService.ensureSystemAccounts(userId);
+    const bizId = (payment.invoice && payment.invoice.businessId && payment.invoice.businessId !== 1) ? payment.invoice.businessId : null;
+    await coaService.ensureSystemAccounts(userId, bizId);
 
-    const arAccount = await coaService.getSystemAccount('ACCOUNTS_RECEIVABLE');
+    const arAccount = await coaService.getSystemAccount('ACCOUNTS_RECEIVABLE', bizId);
     const assetAccount = await resolvePaymentAssetAccount(payment.method, depositAccountId, clientOrTx);
 
     // 6. Precise Integer-Cent Financial Arithmetic
@@ -609,7 +612,8 @@ async function postPayment(paymentId, options = {}, clientOrTxArg = null) {
         idempotencyKey,
         narration,
         lines,
-        userId
+        userId,
+        businessId: (payment.invoice && payment.invoice.businessId) || 1
     }, externalTx);
 
     // 10. Audit Activity Logging
@@ -765,7 +769,7 @@ async function postCreditDebitNote(noteId, options = {}, clientOrTxArg = null) {
             throw new ValidationError(`Invalid note date on note #${note.noteNumber}.`);
         }
 
-        const financialYear = await ensureFinancialYear(noteDate);
+        const financialYear = await ensureFinancialYear(noteDate, note.businessId);
         if (!financialYear) {
             throw new ValidationError(`Could not resolve Financial Year for note date ${noteDate.toISOString().slice(0, 10)}.`);
         }
@@ -796,10 +800,11 @@ async function postCreditDebitNote(noteId, options = {}, clientOrTxArg = null) {
         }
 
         // 5. Ensure System Accounts Exist
-        await coaService.ensureSystemAccounts(userId);
+        const bizId = (note.businessId && note.businessId !== 1) ? note.businessId : null;
+        await coaService.ensureSystemAccounts(userId, bizId);
 
-        const arAccount = await coaService.getSystemAccount('ACCOUNTS_RECEIVABLE');
-        const roundOffAccount = await coaService.getSystemAccount('ROUND_OFF');
+        const arAccount = await coaService.getSystemAccount('ACCOUNTS_RECEIVABLE', bizId);
+        const roundOffAccount = await coaService.getSystemAccount('ROUND_OFF', bizId);
 
         // 6. Integer-Cent Monetary Arithmetic
         const grandTotalCents = toCents(note.grandTotal);
@@ -816,7 +821,7 @@ async function postCreditDebitNote(noteId, options = {}, clientOrTxArg = null) {
         const lines = [];
 
         if (note.noteType === 'CREDIT') {
-            const salesReturnsAccount = await coaService.getSystemAccount('SALES_RETURNS');
+            const salesReturnsAccount = await coaService.getSystemAccount('SALES_RETURNS', bizId);
 
             // Line 1: Debit Sales Returns
             lines.push({
@@ -829,8 +834,8 @@ async function postCreditDebitNote(noteId, options = {}, clientOrTxArg = null) {
 
             // Tax Reversal Lines (Debit Output Tax)
             if (cgstCents > 0n || sgstCents > 0n) {
-                const cgstAccount = await coaService.getSystemAccount('OUTPUT_CGST');
-                const sgstAccount = await coaService.getSystemAccount('OUTPUT_SGST');
+                const cgstAccount = await coaService.getSystemAccount('OUTPUT_CGST', bizId);
+                const sgstAccount = await coaService.getSystemAccount('OUTPUT_SGST', bizId);
 
                 if (cgstCents > 0n) {
                     lines.push({
@@ -851,7 +856,7 @@ async function postCreditDebitNote(noteId, options = {}, clientOrTxArg = null) {
                     });
                 }
             } else if (igstCents > 0n) {
-                const igstAccount = await coaService.getSystemAccount('OUTPUT_IGST');
+                const igstAccount = await coaService.getSystemAccount('OUTPUT_IGST', bizId);
                 lines.push({
                     accountId: igstAccount.id,
                     debit: fromCents(igstCents),
@@ -894,7 +899,7 @@ async function postCreditDebitNote(noteId, options = {}, clientOrTxArg = null) {
             });
         } else {
             // DEBIT NOTE
-            const salesAccount = await coaService.getSystemAccount('SALES_REVENUE');
+            const salesAccount = await coaService.getSystemAccount('SALES_REVENUE', bizId);
 
             // Line 1: Debit Accounts Receivable (Customer Subledger)
             lines.push({
@@ -996,7 +1001,8 @@ async function postCreditDebitNote(noteId, options = {}, clientOrTxArg = null) {
                 narration: `${note.noteType === 'DEBIT' ? 'Debit Note' : 'Credit Note'} ${note.noteNumber} issued for ₹${note.grandTotal} against Invoice ${note.originalInvoiceNumber} (${note.reason})`,
                 idempotencyKey,
                 lines,
-                userId
+                userId,
+                businessId: note.businessId || 1
             },
             tx
         );

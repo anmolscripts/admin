@@ -178,18 +178,32 @@ async function listBusinesses(req, res, next) {
     }
 }
 
+function wantsJson(req) {
+    if (req.xhr) return true;
+    if (req.headers && req.headers['x-requested-with'] === 'XMLHttpRequest') return true;
+    if (req.is && req.is('json')) return true;
+    const accept = req.headers ? (req.headers['accept'] || '') : '';
+    if (accept.includes('application/json')) return true;
+    const contentType = req.headers ? (req.headers['content-type'] || '') : '';
+    const isHtmlForm = contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data');
+    if (req.path && req.path.startsWith('/api') && !isHtmlForm) {
+        return true;
+    }
+    return false;
+}
+
 /**
  * Admin: Create a new business
  */
 async function createBusiness(req, res, next) {
     try {
         const newBiz = await businessService.createBusiness(req.body, req.session.user.id);
-        if (req.xhr || req.path.startsWith('/api')) {
+        if (wantsJson(req)) {
             return res.status(201).json({ success: true, business: newBiz });
         }
         res.redirect('/admin/businesses');
     } catch (err) {
-        if (req.xhr || req.path.startsWith('/api')) {
+        if (wantsJson(req)) {
             return res.status(err.statusCode || 400).json({ success: false, error: err.message });
         }
         next(err);
@@ -203,12 +217,12 @@ async function updateBusiness(req, res, next) {
     try {
         const businessId = req.params.id;
         const updated = await businessService.updateBusiness(businessId, req.body, req.session.user.id);
-        if (req.xhr || req.path.startsWith('/api')) {
+        if (wantsJson(req)) {
             return res.json({ success: true, business: updated });
         }
         res.redirect('/admin/businesses');
     } catch (err) {
-        if (req.xhr || req.path.startsWith('/api')) {
+        if (wantsJson(req)) {
             return res.status(err.statusCode || 400).json({ success: false, error: err.message });
         }
         next(err);
@@ -222,12 +236,12 @@ async function archiveBusiness(req, res, next) {
     try {
         const businessId = req.params.id;
         const updated = await businessService.archiveBusiness(businessId, req.session.user ? req.session.user.id : null);
-        if (req.xhr || req.path.startsWith('/api')) {
+        if (wantsJson(req)) {
             return res.json({ success: true, business: updated });
         }
         res.redirect('/admin/businesses');
     } catch (err) {
-        if (req.xhr || req.path.startsWith('/api')) {
+        if (wantsJson(req)) {
             return res.status(err.statusCode || 400).json({ success: false, error: err.message });
         }
         next(err);
@@ -241,12 +255,12 @@ async function suspendBusiness(req, res, next) {
     try {
         const businessId = req.params.id;
         const updated = await businessService.suspendBusiness(businessId, req.session.user ? req.session.user.id : null);
-        if (req.xhr || req.path.startsWith('/api')) {
+        if (wantsJson(req)) {
             return res.json({ success: true, business: updated });
         }
         res.redirect('/admin/businesses');
     } catch (err) {
-        if (req.xhr || req.path.startsWith('/api')) {
+        if (wantsJson(req)) {
             return res.status(err.statusCode || 400).json({ success: false, error: err.message });
         }
         next(err);
@@ -260,12 +274,12 @@ async function deleteBusiness(req, res, next) {
     try {
         const businessId = req.params.id;
         const result = await businessService.deleteBusiness(businessId, req.session.user ? req.session.user.id : null);
-        if (req.xhr || req.path.startsWith('/api')) {
+        if (wantsJson(req)) {
             return res.json(result);
         }
         res.redirect('/admin/businesses');
     } catch (err) {
-        if (req.xhr || req.path.startsWith('/api')) {
+        if (wantsJson(req)) {
             return res.status(err.statusCode || 400).json({ success: false, error: err.message });
         }
         next(err);

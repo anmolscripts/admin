@@ -69,6 +69,7 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <form id="incomeForm">
+        <input type="hidden" name="_csrf" value="<%= locals.csrfToken || '' %>">
         <div class="modal-header">
           <h5 class="modal-title fw-bold">Record Non-Invoice Other Income</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -83,8 +84,8 @@
             <input type="text" name="source" class="form-control" placeholder="e.g. Bank Interest, Equipment Rental, Rebate" required>
           </div>
           <div class="mb-3">
-            <label class="form-label fw-bold">Amount ($) <span class="text-danger">*</span></label>
-            <input type="number" step="0.01" name="amount" class="form-control" placeholder="0.00" required>
+            <label class="form-label fw-bold">Amount (₹) <span class="text-danger">*</span></label>
+            <input type="number" step="0.01" name="amount" class="form-control font-monospace" placeholder="0.00" required>
           </div>
           <div class="mb-3">
             <label class="form-label fw-bold">Receipt Method</label>
@@ -111,18 +112,23 @@
 document.getElementById('incomeForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const formData = new FormData(e.target);
+  const csrfToken = formData.get('_csrf') || (document.querySelector('input[name="_csrf"]')?.value || '');
   const payload = {
     incomeDate: formData.get('incomeDate'),
     source: formData.get('source'),
     amount: parseFloat(formData.get('amount')),
     receiptMethod: formData.get('receiptMethod'),
-    description: formData.get('description')
+    description: formData.get('description'),
+    _csrf: csrfToken
   };
 
   try {
     const res = await fetch('/api/other-incomes', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': csrfToken
+      },
       body: JSON.stringify(payload)
     });
     const data = await res.json();

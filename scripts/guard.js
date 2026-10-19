@@ -24,7 +24,7 @@ function validateTestEnv(prismaClient) {
   }
 
   // 3. Reject protected databases
-  const protectedDbs = ['admin', 'spark_admin', 'spark_admin_test', 'spark_admin_prod_test'];
+  const protectedDbs = ['admin', 'spark_admin', 'spark_admin_prod', 'spark_admin_test', 'spark_admin_prod_test'];
   if (protectedDbs.includes(DATABASE_NAME.toLowerCase())) {
     throw new Error(`Use of protected database "${DATABASE_NAME}" is prohibited in test mode.`);
   }

@@ -160,11 +160,61 @@ DATABASE_URL="mysql://spark_app_user:YOUR_STRONG_DB_PASSWORD@localhost:3306/spar
 # Session Security (Generate via: openssl rand -hex 32)
 SESSION_SECRET=YOUR_GENERATED_64_CHAR_HEX_SECRET
 
+# Persistent Attachment Storage (Outside web root)
+ATTACHMENT_STORAGE_DIR=/var/lib/spark-admin/attachments
+
 # Initial Seed Credentials (used only once for bootstrap)
 SEED_ADMIN_PASSWORD=YOUR_GENERATED_INITIAL_ADMIN_PASSWORD
 ```
 
-### 5.4. Apply Database Migrations
+### 5.4. Configure Persistent Attachment & Upload Storage
+Spark Admin stores project costing documents, contracts, and vendor attachments outside the public web root. Create and permission the storage volumes for each deployment mode:
+
+#### Mode A: Linux Systemd VPS Deployment (Bare Metal / VM)
+```bash
+# 1. Create dedicated persistent directories outside the application code directory
+sudo mkdir -p /var/lib/spark-admin/attachments
+sudo mkdir -p /opt/spark-admin/app/assets/uploads/avatars
+
+# 2. Assign ownership to the unprivileged service user
+sudo chown -R sparkadmin:sparkadmin /var/lib/spark-admin/attachments
+sudo chown -R sparkadmin:sparkadmin /opt/spark-admin/app/assets/uploads/avatars
+
+# 3. Restrict filesystem permissions (service user read/write/execute only)
+sudo chmod 750 /var/lib/spark-admin/attachments
+sudo chmod 750 /opt/spark-admin/app/assets/uploads/avatars
+```
+
+#### Mode B: Docker / Container Deployment
+```yaml
+# In docker-compose.yml:
+services:
+  app:
+    environment:
+      - ATTACHMENT_STORAGE_DIR=/data/attachments
+    volumes:
+      - spark_attachments:/data/attachments
+      - spark_avatars:/app/assets/uploads/avatars
+
+volumes:
+  spark_attachments:
+    driver: local
+  spark_avatars:
+    driver: local
+```
+
+#### Mode C: Windows / Self-Host Local Deployment
+Defaults to `./data/attachments` (created automatically outside web assets). Ensure the service process has write access to the directory.
+
+#### Attachment Storage Acceptance Checklist:
+- [x] Files stored strictly outside public web root (`assets/` and `app/views/`).
+- [x] Application service user (`sparkadmin`) owns directory with `0750` permissions.
+- [x] Magic bytes verified (PDF, PNG, JPEG, WebP); executables and SVGs rejected with HTTP 415.
+- [x] Inaccessible/read-only storage fails closed without creating orphaned database records.
+- [x] File downloads are authenticated and strictly scoped by tenant (`businessId`).
+- [x] Physical directory `/var/lib/spark-admin/attachments` is included in automated backup scripts.
+
+### 5.5. Apply Database Migrations
 Deploy all forward-only Prisma migrations to the production database:
 ```bash
 sudo -u sparkadmin npx prisma migrate deploy
@@ -180,7 +230,7 @@ Verify migration status:
 sudo -u sparkadmin npx prisma migrate status
 ```
 
-### 5.5. Initial Database Seed (First Deployment Only)
+### 5.6. Initial Database Seed (First Deployment Only)
 Run the seed process to provision system metadata and master data:
 ```bash
 sudo -u sparkadmin node prisma/seed.js
@@ -227,6 +277,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=full
 ProtectHome=true
+ReadWritePaths=/var/lib/spark-admin/attachments /opt/spark-admin/app/assets/uploads/avatars
 
 # Resource limits
 LimitNOFILE=65535

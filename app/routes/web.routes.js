@@ -7,6 +7,7 @@ const itemService = require('../services/item.service');
 const unitService = require('../services/unit.service');
 const unitController = require('../controllers/unit.controller');
 const businessProfileService = require('../services/businessProfile.service');
+const templateService = require('../services/template.service');
 const documentViewService = require('../services/documentView.service');
 const dashboardController = require('../controllers/dashboard.controller');
 const teamController = require('../controllers/team.controller');
@@ -16,12 +17,15 @@ const postingService = require('../services/accounting/posting.service');
 const creditDebitNoteService = require('../services/creditDebitNote.service');
 const reportController = require('../controllers/report.controller');
 const financialYearController = require('../controllers/financialYear.controller');
+const journalService = require('../services/journal.service');
 const profileController = require('../controllers/profile.controller');
-const { uploadAvatar } = require('../middleware/upload.middleware');
+const { uploadAvatar, uploadAttachmentFile, handleAttachmentUpload } = require('../middleware/upload.middleware');
 const purchaseController = require('../controllers/purchase.controller');
 const erpController = require('../controllers/erp.controller');
+const projectController = require('../controllers/project.controller');
 const businessController = require('../controllers/business.controller');
 const reportingWorkbenchController = require('../controllers/reportingWorkbench.controller');
+const prisma = require('../config/prisma');
 
 const router = express.Router();
 
@@ -97,11 +101,48 @@ router.get('/documents/new', requireAuth, requirePermission('DOCUMENTS', 'CREATE
             documentType = rawType === 'QUOTATION' ? 'QUOTATION' : 'INVOICE';
         }
 
-        const clientList = await clientService.searchClients();
-        const unitList = await unitService.getActiveUnits();
-        const profile = await businessProfileService.getProfile();
+        const [clientList, unitList, profile, projectList] = await Promise.all([
+            clientService.searchClients('', req.businessId),
+            unitService.getActiveUnits(),
+            businessProfileService.getProfile(req.businessId),
+            prisma.project.findMany({
+                where: { businessId: req.businessId, status: 'ACTIVE' },
+                select: { id: true, code: true, name: true, clientId: true },
+                orderBy: { name: 'asc' }
+            })
+        ]);
+
         let clientData = null;
-        if (req.query.clientId) {
+        let selectedProjectId = null;
+
+        if (req.query.projectId) {
+            const pid = parseInt(req.query.projectId, 10);
+            if (!isNaN(pid) && pid > 0) {
+                const project = await prisma.project.findFirst({
+                    where: { id: pid, businessId: req.businessId }
+                });
+                if (project) {
+                    selectedProjectId = project.id;
+                    if (!req.query.clientId && project.clientId) {
+                        try {
+                            const c = await clientService.getClientById(project.clientId);
+                            clientData = {
+                                clientId: c.id,
+                                clientName: c.name,
+                                clientEmail: c.email,
+                                clientPhone: c.phone,
+                                clientGSTIN: c.gstin,
+                                placeOfSupplyStateCode: c.stateCode,
+                                billingAddress: c.billingAddress,
+                                shippingAddress: c.shippingAddress
+                            };
+                        } catch (_) {}
+                    }
+                }
+            }
+        }
+
+        if (req.query.clientId && !clientData) {
             const cid = parseInt(req.query.clientId, 10);
             if (!isNaN(cid) && cid > 0) {
                 try {
@@ -128,11 +169,13 @@ router.get('/documents/new', requireAuth, requirePermission('DOCUMENTS', 'CREATE
         } else if (clientData) {
             initialDoc = {
                 ...clientData,
+                projectId: selectedProjectId,
                 termsAndConditions: profile.defaultTerms,
                 remarks: profile.defaultRemarks
             };
         } else {
             initialDoc = {
+                projectId: selectedProjectId,
                 termsAndConditions: profile.defaultTerms,
                 remarks: profile.defaultRemarks
             };
@@ -151,6 +194,7 @@ router.get('/documents/new', requireAuth, requirePermission('DOCUMENTS', 'CREATE
             documentType,
             document: initialDoc,
             clientList,
+            projectList,
             unitList,
             copyOfNumber,
             csrfToken: req.session ? req.session.csrfToken : ''
@@ -193,8 +237,15 @@ router.get('/documents/:id/edit', requireAuth, requirePermission('DOCUMENTS', 'E
         }
 
         const isQuotation = doc.documentType === 'QUOTATION';
-        const clientList = await clientService.searchClients();
-        const unitList = await unitService.getActiveUnits();
+        const [clientList, unitList, projectList] = await Promise.all([
+            clientService.searchClients('', doc.businessId || req.businessId),
+            unitService.getActiveUnits(),
+            prisma.project.findMany({
+                where: { businessId: doc.businessId || req.businessId },
+                select: { id: true, code: true, name: true, clientId: true },
+                orderBy: { name: 'asc' }
+            })
+        ]);
 
         res.render('documents/editor', {
             pageTitle: `Edit ${doc.invoiceNumber}`,
@@ -203,6 +254,7 @@ router.get('/documents/:id/edit', requireAuth, requirePermission('DOCUMENTS', 'E
             documentType: doc.documentType,
             document: doc,
             clientList,
+            projectList,
             unitList,
             csrfToken: req.session ? req.session.csrfToken : ''
         });
@@ -231,8 +283,13 @@ router.get('/documents/:id/print', requireAuth, requirePermission('DOCUMENTS', '
         }
 
         const doc = await invoiceService.getInvoiceById(id);
-        const profile = await businessProfileService.getProfile();
+        const docBizId = doc.businessId || req.businessId;
+        const profile = await businessProfileService.getProfile(docBizId);
+        const activeTemplates = templateService.getActiveTemplates(docBizId);
+        const requestedTemplateId = req.query.template || (doc.documentType === 'QUOTATION' ? activeTemplates.quotationTemplate : activeTemplates.invoiceTemplate);
+        const templateConfig = templateService.getTemplate(requestedTemplateId, docBizId);
         const model = documentViewService.buildDocumentViewModel(doc, profile);
+        model.templateConfig = templateConfig;
 
         // Audit print event
         if (req.session && req.session.user) {
@@ -250,7 +307,8 @@ router.get('/documents/:id/print', requireAuth, requirePermission('DOCUMENTS', '
 
         res.render('documents/print', {
             document: doc,
-            model
+            model,
+            templateConfig
         });
     } catch (err) {
         if (err instanceof invoiceService.NotFoundError) {
@@ -419,11 +477,16 @@ router.post('/clients/:id', requireAuth, requirePermission('CLIENTS', 'EDIT'), a
 // -------------------------------------------------------------
 router.get('/settings', requireAuth, requirePermission('SETTINGS', 'VIEW'), async (req, res, next) => {
     try {
-        const profile = await businessProfileService.getProfile();
+        const profile = await businessProfileService.getProfile(req.businessId);
+        const templates = templateService.listTemplates(req.businessId);
+        const activeTemplates = templateService.getActiveTemplates(req.businessId);
+
         res.render('settings/index', {
             pageTitle: 'Organization Profile & Defaults',
-            pageSubtitle: 'Manage business identity, GST registration, bank details, and default terms.',
+            pageSubtitle: 'Manage business identity, GST registration, bank details, and invoice templates.',
             profile,
+            templates,
+            activeTemplates,
             csrfToken: req.session ? req.session.csrfToken : '',
             user: req.session ? req.session.user : null
         });
@@ -434,24 +497,83 @@ router.get('/settings', requireAuth, requirePermission('SETTINGS', 'VIEW'), asyn
 
 router.post('/settings', requireAuth, requirePermission('SETTINGS', 'EDIT'), async (req, res) => {
     try {
-        const profile = await businessProfileService.updateProfile(req.body);
+        const profile = await businessProfileService.updateProfile(req.body, req.businessId);
+        const templates = templateService.listTemplates(req.businessId);
+        const activeTemplates = templateService.getActiveTemplates(req.businessId);
+
         res.render('settings/index', {
             pageTitle: 'Organization Profile & Defaults',
-            pageSubtitle: 'Manage business identity, GST registration, bank details, and default terms.',
+            pageSubtitle: 'Manage business identity, GST registration, bank details, and invoice templates.',
             profile,
+            templates,
+            activeTemplates,
             success: true,
             csrfToken: req.session ? req.session.csrfToken : '',
             user: req.session ? req.session.user : null
         });
     } catch (err) {
+        const templates = templateService.listTemplates(req.businessId);
+        const activeTemplates = templateService.getActiveTemplates(req.businessId);
         res.status(400).render('settings/index', {
             pageTitle: 'Organization Profile & Defaults',
-            pageSubtitle: 'Manage business identity, GST registration, bank details, and default terms.',
+            pageSubtitle: 'Manage business identity, GST registration, bank details, and invoice templates.',
             profile: req.body,
+            templates,
+            activeTemplates,
             error: err.message,
             csrfToken: req.session ? req.session.csrfToken : '',
             user: req.session ? req.session.user : null
         });
+    }
+});
+
+// -------------------------------------------------------------
+// DOCUMENT TEMPLATE SYSTEM ROUTES
+// -------------------------------------------------------------
+router.get('/settings/templates/preview/:templateId', requireAuth, async (req, res, next) => {
+    try {
+        const { templateId } = req.params;
+        const docType = (req.query.type || 'INVOICE').toUpperCase();
+        const profile = await businessProfileService.getProfile(req.businessId);
+        const templateConfig = templateService.getTemplate(templateId, req.businessId);
+        const sampleModel = templateService.buildSampleViewModel(templateId, docType, profile);
+        sampleModel.templateConfig = templateConfig;
+
+        res.render('documents/print', {
+            model: sampleModel,
+            document: sampleModel,
+            templateConfig
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.post('/api/settings/templates/active', requireAuth, requirePermission('SETTINGS', 'EDIT'), async (req, res) => {
+    try {
+        const { invoiceTemplate, quotationTemplate } = req.body;
+        const updated = templateService.setActiveTemplates(req.businessId, { invoiceTemplate, quotationTemplate });
+        return res.json({ success: true, activeTemplates: updated });
+    } catch (err) {
+        return res.status(400).json({ success: false, error: err.message });
+    }
+});
+
+router.post('/api/settings/templates/save', requireAuth, requirePermission('SETTINGS', 'EDIT'), async (req, res) => {
+    try {
+        const saved = templateService.saveCustomTemplate(req.businessId, req.body);
+        return res.json({ success: true, template: saved });
+    } catch (err) {
+        return res.status(400).json({ success: false, error: err.message });
+    }
+});
+
+router.delete('/api/settings/templates/:id', requireAuth, requirePermission('SETTINGS', 'EDIT'), async (req, res) => {
+    try {
+        templateService.deleteCustomTemplate(req.businessId, req.params.id);
+        return res.json({ success: true, message: 'Template deleted successfully.' });
+    } catch (err) {
+        return res.status(400).json({ success: false, error: err.message });
     }
 });
 
@@ -532,8 +654,8 @@ router.get('/credit-debit-notes/new', requireAuth, requirePermission('CREDIT_NOT
         }
 
         const noteType = (req.query.type || 'CREDIT').toString().trim().toUpperCase() === 'DEBIT' ? 'DEBIT' : 'CREDIT';
-        const clientList = await clientService.searchClients();
-        const profile = await businessProfileService.getProfile();
+        const clientList = await clientService.searchClients('', (invoice && invoice.businessId) || req.businessId);
+        const profile = await businessProfileService.getProfile((invoice && invoice.businessId) || req.businessId);
 
         res.render('notes/editor', {
             pageTitle: `New ${noteType === 'DEBIT' ? 'Debit' : 'Credit'} Note`,
@@ -619,12 +741,25 @@ router.get('/credit-debit-notes/:id/print', requireAuth, requirePermission('CRED
 router.get('/reports', requireAuth, requirePermission('REPORTS', 'VIEW'), reportController.renderReportsOverview);
 router.get('/reports/journals', requireAuth, requirePermission('JOURNALS', 'VIEW'), reportController.renderJournalRegister);
 router.get('/reports/journals/:id', requireAuth, requirePermission('JOURNALS', 'VIEW'), reportController.renderJournalDetail);
+router.get('/api/journals/:id', requireAuth, requirePermission('JOURNALS', 'VIEW'), async (req, res) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        const journal = await journalService.getJournalEntryById(id);
+        res.json({ success: true, data: journal });
+    } catch (err) {
+        res.status(err.statusCode || 500).json({ success: false, error: err.message });
+    }
+});
 router.get('/reports/general-ledger', requireAuth, requirePermission('ACCOUNTS', 'VIEW'), reportController.renderGeneralLedger);
 router.get('/reports/trial-balance', requireAuth, requirePermission('REPORTS', 'VIEW'), reportController.renderTrialBalance);
 router.get('/reports/profit-and-loss', requireAuth, requirePermission('REPORTS', 'VIEW'), reportController.renderProfitAndLoss);
 router.get('/reports/balance-sheet', requireAuth, requirePermission('REPORTS', 'VIEW'), reportController.renderBalanceSheet);
 router.get('/reports/customer-receivables', requireAuth, requirePermission('REPORTS', 'VIEW'), reportController.renderCustomerReceivables);
+router.get('/reports/customer-statement', requireAuth, requirePermission('REPORTS', 'VIEW'), reportController.renderCustomerStatement);
+router.get('/reports/sub-ledger', requireAuth, requirePermission('REPORTS', 'VIEW'), reportController.renderCustomerStatement);
+router.get('/reports/customer-statement/export', requireAuth, requirePermission('REPORTS', 'EXPORT'), reportController.exportCustomerStatement);
 router.get('/reports/customer-statement/:clientId', requireAuth, requirePermission('REPORTS', 'VIEW'), reportController.renderCustomerStatement);
+router.get('/reports/customer-statement/:clientId/export', requireAuth, requirePermission('REPORTS', 'EXPORT'), reportController.exportCustomerStatement);
 
 // -------------------------------------------------------------
 // FINANCIAL YEAR CLOSING, OPENING BALANCES & PERIOD LOCKING (MILESTONE 8)
@@ -642,9 +777,22 @@ router.post('/financial-years/:id/opening-balances', requireAuth, requirePermiss
 // -------------------------------------------------------------
 router.get('/purchases/orders', requireAuth, requirePermission('DOCUMENTS', 'VIEW'), purchaseController.renderPurchaseOrders);
 router.get('/purchases/orders/new', requireAuth, requirePermission('DOCUMENTS', 'CREATE'), purchaseController.renderNewPurchaseOrder);
+router.get('/purchases/orders/:id', requireAuth, requirePermission('DOCUMENTS', 'VIEW'), purchaseController.renderPurchaseOrderDetail);
+router.get('/purchases/orders/:id/receive', requireAuth, requirePermission('DOCUMENTS', 'EDIT'), purchaseController.renderReceivePurchaseOrder);
 router.post('/api/purchase-orders', requireAuth, requirePermission('DOCUMENTS', 'CREATE'), purchaseController.createPurchaseOrder);
 router.get('/api/purchase-orders/:id', requireAuth, requirePermission('DOCUMENTS', 'VIEW'), purchaseController.getPurchaseOrder);
+router.post('/api/purchase-orders/:id', requireAuth, requirePermission('DOCUMENTS', 'EDIT'), purchaseController.updatePurchaseOrder);
+router.put('/api/purchase-orders/:id', requireAuth, requirePermission('DOCUMENTS', 'EDIT'), purchaseController.updatePurchaseOrder);
 router.post('/api/purchase-orders/:id/void', requireAuth, requirePermission('DOCUMENTS', 'VOID'), purchaseController.voidPurchaseOrder);
+router.post('/api/purchase-orders/:id/receipts', requireAuth, requirePermission('DOCUMENTS', 'EDIT'), purchaseController.createGoodsReceipt);
+router.post('/purchases/orders/:id/receive', requireAuth, requirePermission('DOCUMENTS', 'EDIT'), purchaseController.createGoodsReceipt);
+
+// Goods Receipts (GRN)
+router.get('/purchases/receipts', requireAuth, requirePermission('DOCUMENTS', 'VIEW'), purchaseController.renderGoodsReceipts);
+router.get('/purchases/receipts/:id', requireAuth, requirePermission('DOCUMENTS', 'VIEW'), purchaseController.renderGoodsReceiptDetail);
+router.get('/api/goods-receipts', requireAuth, requirePermission('DOCUMENTS', 'VIEW'), purchaseController.listGoodsReceiptsApi);
+router.post('/api/goods-receipts', requireAuth, requirePermission('DOCUMENTS', 'CREATE'), purchaseController.createGoodsReceipt);
+router.get('/api/goods-receipts/:id', requireAuth, requirePermission('DOCUMENTS', 'VIEW'), purchaseController.getGoodsReceipt);
 
 router.get('/purchases/bills', requireAuth, requirePermission('DOCUMENTS', 'VIEW'), purchaseController.renderSupplierBills);
 router.get('/purchases/bills/new', requireAuth, requirePermission('DOCUMENTS', 'CREATE'), purchaseController.renderNewSupplierBill);
@@ -692,15 +840,46 @@ router.post('/api/payroll/reimbursements', requireAuth, requirePermission('TEAM'
 router.post('/api/payroll/reimbursements/:id/approve', requireAuth, requirePermission('TEAM', 'MANAGE'), erpController.approveReimbursement);
 
 // -------------------------------------------------------------
-// PROJECTS, TASKS & LABOUR COSTING (PHASE 7 / TASK-501-505)
+// PROJECTS WORKSPACE, LABOUR & PROFITABILITY (ENTERPRISE ERP)
 // -------------------------------------------------------------
-router.get('/api/projects', requireAuth, requirePermission('DOCUMENTS', 'VIEW'), erpController.listProjects);
-router.post('/api/projects', requireAuth, requirePermission('DOCUMENTS', 'CREATE'), erpController.createProject);
-router.get('/api/projects/:id', requireAuth, requirePermission('DOCUMENTS', 'VIEW'), erpController.getProject);
-router.post('/api/projects/:id/tasks', requireAuth, requirePermission('DOCUMENTS', 'CREATE'), erpController.createProjectTask);
-router.get('/api/projects/:id/tasks', requireAuth, requirePermission('DOCUMENTS', 'VIEW'), erpController.listProjectTasks);
-router.post('/api/timesheets', requireAuth, requirePermission('DOCUMENTS', 'CREATE'), erpController.logTimesheet);
-router.post('/api/timesheets/:id/approve', requireAuth, requirePermission('DOCUMENTS', 'MANAGE'), erpController.approveTimesheet);
-router.get('/api/projects/:id/financials', requireAuth, requirePermission('DOCUMENTS', 'VIEW'), erpController.getProjectFinancials);
+// Web Views
+router.get('/projects', requireAuth, requirePermission('PROJECTS', 'VIEW'), projectController.renderProjectsList);
+router.get('/projects/new', requireAuth, requirePermission('PROJECTS', 'CREATE'), projectController.renderNewProject);
+router.get('/projects/:id/edit', requireAuth, requirePermission('PROJECTS', 'EDIT'), projectController.renderEditProject);
+router.get('/projects/:id', requireAuth, requirePermission('PROJECTS', 'VIEW'), projectController.renderProjectDetails);
+
+// Project JSON APIs
+router.get('/api/projects', requireAuth, requirePermission('PROJECTS', 'VIEW'), projectController.apiListProjects);
+router.post('/api/projects', requireAuth, requirePermission('PROJECTS', 'CREATE'), projectController.apiCreateProject);
+router.get('/api/projects/:id', requireAuth, requirePermission('PROJECTS', 'VIEW'), projectController.apiGetProject);
+router.post('/api/projects/:id', requireAuth, requirePermission('PROJECTS', 'EDIT'), projectController.apiUpdateProject);
+router.get('/api/projects/:id/financials', requireAuth, requirePermission('PROJECTS', 'FINANCIALS_VIEW'), projectController.apiGetProjectFinancials);
+
+// Project Tasks
+router.post('/api/projects/:id/tasks', requireAuth, requirePermission('PROJECTS', 'CREATE'), projectController.apiCreateTask);
+router.get('/api/projects/:id/tasks', requireAuth, requirePermission('PROJECTS', 'VIEW'), erpController.listProjectTasks);
+
+// Timesheets & Internal Labour
+router.post('/api/timesheets', requireAuth, requirePermission('PROJECTS', 'COST_CREATE'), projectController.apiLogTimesheet);
+router.post('/api/timesheets/:id/approve', requireAuth, requirePermission('PROJECTS', 'APPROVE'), projectController.apiApproveTimesheet);
+
+// Casual & Daily Labour
+router.post('/api/daily-workers', requireAuth, requirePermission('PROJECTS', 'CREATE'), projectController.apiCreateDailyWorker);
+router.post('/api/projects/:id/daily-labour', requireAuth, requirePermission('PROJECTS', 'COST_CREATE'), projectController.apiRecordDailyLabour);
+
+// Subcontractor Work Orders
+router.post('/api/projects/:id/contractor-orders', requireAuth, requirePermission('PROJECTS', 'CREATE'), projectController.apiCreateContractorOrder);
+
+// Project Material Allocation, Issue and Return
+router.post('/api/projects/:id/issue-material', requireAuth, requirePermission('PROJECTS', 'COST_CREATE'), projectController.apiIssueMaterial);
+router.post('/api/projects/:id/return-material', requireAuth, requirePermission('PROJECTS', 'COST_CREATE'), projectController.apiReturnMaterial);
+
+// Secure File Attachments & Document Metadata
+router.post('/api/projects/:id/attachments', requireAuth, requirePermission('PROJECTS', 'ATTACHMENT_UPLOAD'), handleAttachmentUpload('file'), projectController.apiUploadAttachment);
+router.post('/api/attachments/upload', requireAuth, requirePermission('PROJECTS', 'ATTACHMENT_UPLOAD'), handleAttachmentUpload('file'), projectController.apiUploadAttachment);
+router.get('/api/attachments/:id/download', requireAuth, requirePermission('PROJECTS', 'ATTACHMENT_VIEW'), projectController.apiDownloadAttachment);
+router.put('/api/attachments/:id', requireAuth, requirePermission('PROJECTS', 'EDIT'), projectController.apiUpdateAttachment);
+router.post('/api/attachments/:id/metadata', requireAuth, requirePermission('PROJECTS', 'EDIT'), projectController.apiUpdateAttachment);
+router.delete('/api/attachments/:id', requireAuth, requirePermission('PROJECTS', 'DELETE'), projectController.apiDeleteAttachment);
 
 module.exports = router;

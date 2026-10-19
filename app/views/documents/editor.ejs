@@ -208,15 +208,17 @@
       <div class="row g-3">
         <!-- Hidden Client ID -->
         <input type="hidden" id="client-id" name="clientId" value="<%= document ? (document.clientId || '') : '' %>">
+        <!-- Hidden Project ID -->
+        <input type="hidden" id="project-id" name="projectId" value="<%= document ? (document.projectId || '') : '' %>">
 
         <!-- Select Existing Client Dropdown -->
-        <div class="col-12">
-          <div class="client-quick-select-card p-3 rounded-3 mb-2">
+        <div class="col-12 col-md-6">
+          <div class="client-quick-select-card p-3 rounded-3 mb-2 h-100">
             <div class="d-flex align-items-center justify-content-between mb-2">
               <label class="form-label-custom mb-0 fw-bold" for="client-select">
                 <i class="bi bi-person-check-fill me-1 text-info"></i> Choose Saved Client
               </label>
-              <span class="small text-muted">Prefills name, contact, GSTIN & addresses</span>
+              <span class="small text-muted">Prefills contact, GSTIN & addresses</span>
             </div>
             <div class="input-group">
               <select class="form-select-custom flex-grow-1" id="client-select" aria-label="Select saved client">
@@ -237,6 +239,35 @@
                 <% } %>
               </select>
               <button class="btn btn-outline-secondary btn-clear-client <%= (document && document.clientId) ? '' : 'd-none' %>" type="button" id="btn-clear-client" title="Clear selected client">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Select Associated Project Dropdown -->
+        <div class="col-12 col-md-6">
+          <div class="client-quick-select-card p-3 rounded-3 mb-2 h-100">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <label class="form-label-custom mb-0 fw-bold text-primary" for="project-select">
+                <i class="bi bi-kanban me-1 text-primary"></i> Link to Project (Optional)
+              </label>
+              <span class="small text-muted">Attaches invoice to project revenue</span>
+            </div>
+            <div class="input-group">
+              <select class="form-select-custom flex-grow-1" id="project-select" aria-label="Select associated project">
+                <option value="">-- No Project (Standard Invoice) --</option>
+                <% if (locals.projectList && projectList.length > 0) { %>
+                  <% projectList.forEach(p => { %>
+                    <option value="<%= p.id %>" <%= (document && Number(document.projectId) === p.id) ? 'selected' : '' %>
+                      data-code="<%= p.code %>"
+                      data-client-id="<%= p.clientId || '' %>">
+                      <%= p.code %> — <%= p.name %>
+                    </option>
+                  <% }); %>
+                <% } %>
+              </select>
+              <button class="btn btn-outline-secondary btn-clear-project <%= (document && document.projectId) ? '' : 'd-none' %>" type="button" id="btn-clear-project" title="Clear selected project">
                 <i class="bi bi-x-lg"></i>
               </button>
             </div>
@@ -605,6 +636,7 @@
     documentType: document.documentType,
     invoiceNumber: document.invoiceNumber,
     clientId: document.clientId || null,
+    projectId: document.projectId || null,
     clientName: document.clientName,
     clientEmail: document.clientEmail,
     clientPhone: document.clientPhone,

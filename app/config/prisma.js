@@ -1,5 +1,8 @@
 require('dotenv').config();
-if (process.env.NODE_ENV === 'test') {
+const isTestExecution = process.env.NODE_ENV === 'test' ||
+                        process.argv.some(arg => typeof arg === 'string' && (arg.includes('--test') || arg.includes('tests\\') || arg.includes('tests/')));
+if (isTestExecution) {
+  process.env.NODE_ENV = 'test';
   require('dotenv').config({ path: '.env.test', override: true });
 }
 const { PrismaClient } = require('@prisma/client');
@@ -32,13 +35,18 @@ function createPrismaClient() {
         }
     }
 
+    const protectedDbs = ['admin', 'spark_admin', 'spark_admin_prod', 'spark_admin_test', 'spark_admin_prod_test'];
+    if (isTestExecution && (!database || protectedDbs.includes(database.toLowerCase()))) {
+        throw new Error(`[PRISMA GUARD]: Direct connection to protected or unspecified database "${database}" is strictly prohibited during test execution.`);
+    }
+
     const adapter = new PrismaMariaDb({
         host,
         port,
         user,
         password,
         database,
-        connectionLimit: 30
+        connectionLimit: Number(process.env.DB_POOL_LIMIT) || 30
     });
 
     prismaInstance = new PrismaClient({

@@ -50,6 +50,7 @@ function sanitizeOrderItems(items) {
         }
 
         const amount = Math.round(quantity * rate * 100) / 100;
+        const pId = item.projectId ? parseInt(item.projectId, 10) : null;
 
         return {
             lineNumber: idx + 1,
@@ -58,7 +59,8 @@ function sanitizeOrderItems(items) {
             quantity,
             unit: item.unit ? String(item.unit).trim() : 'PCS',
             rate,
-            amount
+            amount,
+            projectId: pId && !isNaN(pId) && pId > 0 ? pId : null
         };
     });
 }
@@ -98,6 +100,14 @@ async function createPurchaseOrder(data = {}, userId) {
     const orderDate = data.orderDate ? new Date(data.orderDate) : new Date();
     if (isNaN(orderDate.getTime())) throw new ValidationError('Invalid order date.');
 
+    let projectId = null;
+    if (data.projectId) {
+        projectId = parseInt(data.projectId, 10);
+        if (isNaN(projectId) || projectId <= 0) throw new ValidationError('Invalid project ID.');
+        const project = await prisma.project.findFirst({ where: { id: projectId, businessId: activeBusinessId } });
+        if (!project) throw new NotFoundError(`Project with ID ${projectId} not found in this organization.`);
+    }
+
     const sanitizedItems = sanitizeOrderItems(data.items);
     const fy = await ensureFinancialYear(orderDate, activeBusinessId);
 
@@ -125,6 +135,7 @@ async function createPurchaseOrder(data = {}, userId) {
                 orderDate,
                 dueDate: data.dueDate ? new Date(data.dueDate) : null,
                 status: 'ACTIVE',
+                projectId,
                 financialYearId: fy.id,
                 createdById: userId,
                 updatedById: userId,
@@ -133,7 +144,7 @@ async function createPurchaseOrder(data = {}, userId) {
                     create: sanitizedItems
                 }
             },
-            include: { items: true, supplier: true }
+            include: { items: true, supplier: true, project: true }
         });
 
         if (userId) {
@@ -148,7 +159,15 @@ async function createPurchaseOrder(data = {}, userId) {
             });
         }
 
-        return po;
+        return {
+            ...po,
+            items: (po.items || []).map(it => ({
+                ...it,
+                receivedQuantity: 0,
+                remainingQuantity: parseFloat(it.quantity) || 0,
+                receiptStatus: 'NOT_RECEIVED'
+            }))
+        };
     });
 }
 
@@ -160,16 +179,57 @@ async function getPurchaseOrderById(id, businessId = null) {
 
     const po = await prisma.purchaseOrder.findFirst({
         where,
-        include: { items: true, supplier: true, financialYear: true }
+        include: {
+            items: true,
+            supplier: true,
+            financialYear: true,
+            project: { select: { id: true, code: true, name: true } },
+            goodsReceipts: {
+                where: { status: { not: 'CANCELLED' } },
+                include: { items: true }
+            }
+        }
     });
     if (!po) throw new NotFoundError(`Purchase Order with ID ${numId} not found.`);
-    return po;
+
+    // Annotate line items with received & remaining quantities
+    const enrichedItems = po.items.map(item => {
+        const ordered = parseFloat(item.quantity) || 0;
+        let received = 0;
+        if (po.goodsReceipts) {
+            for (const gr of po.goodsReceipts) {
+                for (const gri of gr.items) {
+                    if (gri.purchaseOrderItemId === item.id) {
+                        received += parseFloat(gri.receivedQuantity) || 0;
+                    }
+                }
+            }
+        }
+        received = Math.round(received * 100) / 100;
+        const remaining = Math.max(0, Math.round((ordered - received) * 100) / 100);
+        let receiptStatus = 'NOT_RECEIVED';
+        if (received >= ordered - 0.001 && ordered > 0) receiptStatus = 'RECEIVED';
+        else if (received > 0) receiptStatus = 'PARTIALLY_RECEIVED';
+
+        return {
+            ...item,
+            receivedQuantity: received,
+            remainingQuantity: remaining,
+            receiptStatus
+        };
+    });
+
+    return {
+        ...po,
+        items: enrichedItems
+    };
 }
 
-async function listPurchaseOrders({ businessId, supplierId, status, dateFrom, dateTo, search, page = 1, limit = 20 } = {}) {
+async function listPurchaseOrders({ businessId, supplierId, projectId, status, dateFrom, dateTo, search, page = 1, limit = 20 } = {}) {
     const where = {};
     if (businessId) where.businessId = Number(businessId);
     if (supplierId) where.supplierId = parseInt(supplierId, 10);
+    if (projectId) where.projectId = parseInt(projectId, 10);
     if (status) where.status = status;
     if (dateFrom || dateTo) {
         where.orderDate = {};
@@ -191,7 +251,11 @@ async function listPurchaseOrders({ businessId, supplierId, status, dateFrom, da
         prisma.purchaseOrder.count({ where }),
         prisma.purchaseOrder.findMany({
             where,
-            include: { supplier: true, items: true },
+            include: {
+                supplier: true,
+                items: true,
+                project: { select: { id: true, code: true, name: true } }
+            },
             orderBy: { orderDate: 'desc' },
             skip,
             take: pageSize
@@ -227,17 +291,30 @@ async function updatePurchaseOrder(id, data = {}, userId) {
             });
         }
 
+        let projectUpdate = {};
+        if (data.projectId !== undefined) {
+            if (data.projectId === null || data.projectId === '' || data.projectId === 0) {
+                projectUpdate = { projectId: null };
+            } else {
+                const pId = parseInt(data.projectId, 10);
+                const proj = await tx.project.findFirst({ where: { id: pId, businessId: existing.businessId } });
+                if (!proj) throw new NotFoundError(`Project #${pId} not found in this organization.`);
+                projectUpdate = { projectId: pId };
+            }
+        }
+
         const updated = await tx.purchaseOrder.update({
             where: { id: existing.id },
             data: {
                 ...supplierUpdate,
+                ...projectUpdate,
                 termsAndConditions: data.termsAndConditions !== undefined ? data.termsAndConditions : existing.termsAndConditions,
                 remarks: data.remarks !== undefined ? data.remarks : existing.remarks,
                 dueDate: data.dueDate ? new Date(data.dueDate) : existing.dueDate,
                 updatedById: userId,
                 version: { increment: 1 }
             },
-            include: { items: true, supplier: true }
+            include: { items: true, supplier: true, project: true }
         });
 
         if (userId) {

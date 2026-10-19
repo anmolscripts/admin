@@ -1,0 +1,350 @@
+{
+  "runId": "E2E-20261018-387265",
+  "timestamp": "2026-10-18T08:50:19.938Z",
+  "environment": {
+    "appUrl": "http://127.0.0.1:3001",
+    "database": "spark_project_costing_disposable_test",
+    "nodeVersion": "v24.21.0",
+    "rc2Package": "dist/candidates/spark-admin-release-candidate-rc2.zip",
+    "rc2Sha256": "38c0b0976e41b659cfaa675bb97f10cd249dcdb1e558b488095f9c1f781d0d74"
+  },
+  "entities": {
+    "client": {
+      "id": 901,
+      "name": "Acme Industrial Systems E2E-20261018-387265",
+      "gstin": "27AAACA1234A1Z5"
+    },
+    "supplier": {
+      "id": 177,
+      "name": "Bharat Steel & Pipe Suppliers E2E-20261018-387265"
+    },
+    "project": {
+      "id": 137,
+      "code": "PRJ-E2E-20261018-387265",
+      "name": "Refinery Piping & Fabrication EPC E2E-20261018-387265",
+      "contractValue": 150000,
+      "budget": 100000
+    },
+    "quotation": {
+      "id": 5306,
+      "quoteNumber": "QTN-E2E-20261018-387265",
+      "grandTotal": 88500
+    },
+    "invoice": {
+      "id": 5307,
+      "invoiceNumber": "INVO/2026/10/24",
+      "grandTotal": 88500,
+      "paidAmount": 88500,
+      "outstanding": 0,
+      "status": "PAID"
+    },
+    "supplierBill": {
+      "invoiceNumber": "SB-INV-E2E-20261018-387265",
+      "taxable": 12500,
+      "gst": 2250,
+      "grandTotal": 14750
+    },
+    "payments": [
+      {
+        "amount": 38500,
+        "method": "BANK_TRANSFER",
+        "reference": "NEFT-AXIS-E2E-20261018-387265"
+      },
+      {
+        "amount": 50000,
+        "method": "UPI",
+        "reference": "UPI-HDFC-E2E-20261018-387265"
+      }
+    ]
+  },
+  "accountingReconciliation": {
+    "invoiceJournal": {
+      "id": 4283,
+      "entryNumber": "JRNL/2026/10/1239",
+      "debits": 88500,
+      "credits": 88500,
+      "balanced": true
+    },
+    "trialBalance": {
+      "totalDebits": 128628484.46,
+      "totalCredits": 128628484.46000001,
+      "delta": 1.4901161193847656e-8,
+      "balanced": true
+    },
+    "customerSubLedger": {
+      "clientId": 901,
+      "totalDebited": 88500,
+      "totalCredited": 88500,
+      "closingBalance": 0,
+      "reconciled": true
+    }
+  },
+  "steps": [
+    {
+      "step": 1,
+      "phase": "Preflight",
+      "name": "Database & Release Candidate Preflight Check",
+      "action": "Active DB == spark_project_costing_disposable_test and RC2 hash matches expected",
+      "expected": "Active DB == spark_project_costing_disposable_test and RC2 hash matches expected",
+      "actual": "DB: spark_project_costing_disposable_test, RC2 SHA256: 38c0b0976e41b659cfaa675bb97f10cd249dcdb1e558b488095f9c1f781d0d74",
+      "status": "PASS",
+      "timestamp": "2026-10-18T08:49:47.393Z"
+    },
+    {
+      "step": 2,
+      "phase": "Auth",
+      "name": "Authenticate Test Administrator",
+      "action": "Successful login and navigation to dashboard",
+      "expected": "Successful login and navigation to dashboard",
+      "actual": "URL: http://127.0.0.1:3001/",
+      "status": "PASS",
+      "timestamp": "2026-10-18T08:49:50.694Z"
+    },
+    {
+      "step": 3,
+      "phase": "Project",
+      "name": "Submit empty project form for validation check",
+      "action": "HTML5 validation applied (was-validated class)",
+      "expected": "HTML5 validation applied (was-validated class)",
+      "actual": "was-validated present: true",
+      "status": "PASS",
+      "timestamp": "2026-10-18T08:49:52.797Z"
+    },
+    {
+      "step": 4,
+      "phase": "Project",
+      "name": "Submit valid project payload and verify detail view",
+      "action": "Redirect to /projects/137 with code badge PRJ-E2E-20261018-387265",
+      "expected": "Redirect to /projects/137 with code badge PRJ-E2E-20261018-387265",
+      "actual": "URL: http://127.0.0.1:3001/projects/137, Badge: PRJ-E2E-20261018-387265",
+      "status": "PASS",
+      "timestamp": "2026-10-18T08:49:55.439Z"
+    },
+    {
+      "step": 5,
+      "phase": "Project Tabs",
+      "name": "Navigate through all 9 Project Workspace tabs",
+      "action": "All 9 tab controls present and clickable in UI",
+      "expected": "All 9 tab controls present and clickable in UI",
+      "actual": "All tabs clickable: true",
+      "status": "PASS",
+      "timestamp": "2026-10-18T08:49:57.376Z"
+    },
+    {
+      "step": 6,
+      "phase": "Project Costing",
+      "name": "Record Supplier Bill allocated to Project & Duplicate Guard",
+      "action": "Bill created (201) and duplicate invoice number rejected (400/409)",
+      "expected": "Bill created (201) and duplicate invoice number rejected (400/409)",
+      "actual": "Create: 201, Duplicate: 409",
+      "status": "PASS",
+      "timestamp": "2026-10-18T08:49:57.473Z"
+    },
+    {
+      "step": 7,
+      "phase": "Project Costing",
+      "name": "Verify Project Posted Cost in UI KPI ribbon",
+      "action": "KPI ribbon displays direct expenditure reflecting supplier bill",
+      "expected": "KPI ribbon displays direct expenditure reflecting supplier bill",
+      "actual": "Posted Cost KPI: \"₹12,500.00\"",
+      "status": "PASS",
+      "timestamp": "2026-10-18T08:49:59.186Z"
+    },
+    {
+      "step": 8,
+      "phase": "Tenant Isolation",
+      "name": "Verify Project is isolated from Business #2",
+      "action": "Cross-business query returns null",
+      "expected": "Cross-business query returns null",
+      "actual": "Business 2 query result: null",
+      "status": "PASS",
+      "timestamp": "2026-10-18T08:49:59.193Z"
+    },
+    {
+      "step": 9,
+      "phase": "Quotation",
+      "name": "Create Quotation & Verify Detail View and Convert Button",
+      "action": "Quotation created with ₹88,500 grand total; Convert button present",
+      "expected": "Quotation created with ₹88,500 grand total; Convert button present",
+      "actual": "Quotation ID: 5306, Convert button present: true",
+      "status": "PASS",
+      "timestamp": "2026-10-18T08:50:02.427Z"
+    },
+    {
+      "step": 10,
+      "phase": "Invoice Conversion",
+      "name": "Convert Quotation to Invoice & Duplicate Guard",
+      "action": "Invoice generated with reciprocal link to quotation; duplicate conversion returns 409 Conflict",
+      "expected": "Invoice generated with reciprocal link to quotation; duplicate conversion returns 409 Conflict",
+      "actual": "Invoice ID: 5307, Linked Quote: /documents/5306, Dup status: 409",
+      "status": "PASS",
+      "timestamp": "2026-10-18T08:50:04.142Z"
+    },
+    {
+      "step": 11,
+      "phase": "Invoice Accounting",
+      "name": "Post Invoice to General Ledger & verify double-entry balance",
+      "action": "Balanced journal entry created (Dr Accounts Receivable == Cr Revenue + GST)",
+      "expected": "Balanced journal entry created (Dr Accounts Receivable == Cr Revenue + GST)",
+      "actual": "Journal #JRNL/2026/10/1239, Dr: ₹88500, Cr: ₹88500, Delta: ₹0",
+      "status": "PASS",
+      "timestamp": "2026-10-18T08:50:04.309Z"
+    },
+    {
+      "step": 12,
+      "phase": "Payment Guard",
+      "name": "Attempt overpayment exceeding outstanding invoice balance",
+      "action": "Overpayment rejected with HTTP 400 Bad Request",
+      "expected": "Overpayment rejected with HTTP 400 Bad Request",
+      "actual": "Status: 400, Error: \"Payment amount (₹100000.00) exceeds the invoice outstanding balance (₹88500.00).\"",
+      "status": "PASS",
+      "timestamp": "2026-10-18T08:50:04.323Z"
+    },
+    {
+      "step": 13,
+      "phase": "Partial Payment",
+      "name": "Record Partial Payment of ₹38,500.00 and reload UI",
+      "action": "Outstanding amount decremented to ₹50000.00",
+      "expected": "Outstanding amount decremented to ₹50000.00",
+      "actual": "Paid: ₹38500, Outstanding: ₹50000",
+      "status": "PASS",
+      "timestamp": "2026-10-18T08:50:06.117Z"
+    },
+    {
+      "step": 14,
+      "phase": "Final Payment",
+      "name": "Record Final Payment of ₹50,000.00 and verify full settlement",
+      "action": "Invoice fully paid: Paid ₹88,500.00, Outstanding ₹0.00, Status PAID",
+      "expected": "Invoice fully paid: Paid ₹88,500.00, Outstanding ₹0.00, Status PAID",
+      "actual": "Status: ACTIVE, Paid: ₹88500, Outstanding: ₹0",
+      "status": "PASS",
+      "timestamp": "2026-10-18T08:50:07.900Z"
+    },
+    {
+      "step": 15,
+      "phase": "Settled Payment Guard",
+      "name": "Attempt payment on fully settled invoice",
+      "action": "Rejected safely with HTTP 400 Bad Request",
+      "expected": "Rejected safely with HTTP 400 Bad Request",
+      "actual": "Status: 400, Error: \"Payment amount (₹1000.00) exceeds the invoice outstanding balance (₹0.00).\"",
+      "status": "PASS",
+      "timestamp": "2026-10-18T08:50:07.914Z"
+    },
+    {
+      "step": 16,
+      "phase": "General Ledger",
+      "name": "Inspect General Ledger in browser",
+      "action": "General Ledger table renders posted transaction rows",
+      "expected": "General Ledger table renders posted transaction rows",
+      "actual": "GL Table Rows: 27, Page Title: \"General Ledger | Biz One\"",
+      "status": "PASS",
+      "timestamp": "2026-10-18T08:50:09.859Z"
+    },
+    {
+      "step": 17,
+      "phase": "Trial Balance",
+      "name": "Verify Trial Balance Mathematical Equilibrium Across All Ledger Entries",
+      "action": "Double-entry invariant holds: Total Debits == Total Credits (Delta == 0.00)",
+      "expected": "Double-entry invariant holds: Total Debits == Total Credits (Delta == 0.00)",
+      "actual": "Total Debits: ₹128628484.46, Total Credits: ₹128628484.46, Delta: ₹0.00",
+      "status": "PASS",
+      "timestamp": "2026-10-18T08:50:11.582Z"
+    },
+    {
+      "step": 18,
+      "phase": "Profit & Loss",
+      "name": "Inspect Profit & Loss statement in browser",
+      "action": "P&L renders Revenue, Expense, and Net Profit sections",
+      "expected": "P&L renders Revenue, Expense, and Net Profit sections",
+      "actual": "Revenue: true, Expense: true, Net: true",
+      "status": "PASS",
+      "timestamp": "2026-10-18T08:50:13.288Z"
+    },
+    {
+      "step": 19,
+      "phase": "Receivables",
+      "name": "Inspect Customer Receivables Aging report in browser",
+      "action": "Customer Receivables table rendered with aging buckets",
+      "expected": "Customer Receivables table rendered with aging buckets",
+      "actual": "Table rendered: true",
+      "status": "PASS",
+      "timestamp": "2026-10-18T08:50:15.122Z"
+    },
+    {
+      "step": 20,
+      "phase": "Customer Sub-Ledger",
+      "name": "Inspect Sub-Ledger Statement for Client #901",
+      "action": "Statement displays Invoice Debit ₹88,500 and Payment Credits with zero closing balance",
+      "expected": "Statement displays Invoice Debit ₹88,500 and Payment Credits with zero closing balance",
+      "actual": "Statement Rows: 4, Contains 0.00: true",
+      "status": "PASS",
+      "timestamp": "2026-10-18T08:50:16.815Z"
+    },
+    {
+      "step": 21,
+      "phase": "Exports",
+      "name": "Generate and verify PDF export for Invoice INVO/2026/10/24",
+      "action": "Valid PDF file with %PDF- header and size > 1KB",
+      "expected": "Valid PDF file with %PDF- header and size > 1KB",
+      "actual": "Status: 200, Size: 5162 bytes, Header: <!DOC",
+      "status": "FAIL",
+      "timestamp": "2026-10-18T08:50:16.827Z"
+    },
+    {
+      "step": 22,
+      "phase": "Exports",
+      "name": "Generate and verify Invoices Excel spreadsheet export",
+      "action": "Valid spreadsheet artifact exported successfully with size > 1KB",
+      "expected": "Valid spreadsheet artifact exported successfully with size > 1KB",
+      "actual": "Status: 200, Size: 5162 bytes",
+      "status": "PASS",
+      "timestamp": "2026-10-18T08:50:16.836Z"
+    },
+    {
+      "step": 23,
+      "phase": "Exports",
+      "name": "Export Customer Sub-Ledger CSV for Client #901",
+      "action": "Valid CSV export containing transaction lines and zero closing balance",
+      "expected": "Valid CSV export containing transaction lines and zero closing balance",
+      "actual": "Status: 200, Contains 0.00: false, Lines: 120",
+      "status": "FAIL",
+      "timestamp": "2026-10-18T08:50:16.847Z"
+    },
+    {
+      "step": 24,
+      "phase": "Responsive",
+      "name": "Verify Desktop Viewport Layout at 1280x800",
+      "action": "Invoice card, metadata ribbon and action buttons render cleanly",
+      "expected": "Invoice card, metadata ribbon and action buttons render cleanly",
+      "actual": "Rendered successfully: true",
+      "status": "PASS",
+      "timestamp": "2026-10-18T08:50:18.913Z"
+    },
+    {
+      "step": 25,
+      "phase": "Responsive",
+      "name": "Verify Mobile Viewport Layout at 375x812",
+      "action": "No unconstrained horizontal viewport overflow on mobile",
+      "expected": "No unconstrained horizontal viewport overflow on mobile",
+      "actual": "Horizontal overflow detected: false",
+      "status": "PASS",
+      "timestamp": "2026-10-18T08:50:19.927Z"
+    },
+    {
+      "step": 26,
+      "phase": "Safety",
+      "name": "Verify Candidate Archives & Database Preservation",
+      "action": "RC2 archive remains byte-for-byte identical; active DB remains spark_project_costing_disposable_test",
+      "expected": "RC2 archive remains byte-for-byte identical; active DB remains spark_project_costing_disposable_test",
+      "actual": "RC2 Hash: 38c0b0976e41b659cfaa675bb97f10cd249dcdb1e558b488095f9c1f781d0d74, DB: spark_project_costing_disposable_test",
+      "status": "PASS",
+      "timestamp": "2026-10-18T08:50:19.937Z"
+    }
+  ],
+  "summary": {
+    "totalSteps": 26,
+    "passedSteps": 24,
+    "failedSteps": 2,
+    "status": "FAIL"
+  }
+}

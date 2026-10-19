@@ -167,6 +167,24 @@
   </div>
   <% } %>
 
+  <% if (document.project) { %>
+  <div class="conversion-relation-card d-flex align-items-center justify-content-between shadow-sm" id="project-linkage-card">
+    <div class="d-flex align-items-center gap-3">
+      <i class="bi bi-kanban text-primary fs-3"></i>
+      <div>
+        <div class="fw-bold text-forest-dark">Associated Project</div>
+        <div class="small text-muted">
+          This <%= isQuotation ? 'quotation' : 'invoice' %> is linked to project
+          <strong class="font-monospace text-primary"><%= document.project.code %> — <%= document.project.name %></strong>.
+        </div>
+      </div>
+    </div>
+    <a href="/projects/<%= document.project.id %>" class="btn-custom btn-custom-outline-primary btn-custom-sm" id="btn-view-linked-project">
+      <i class="bi bi-kanban me-1"></i> View Project
+    </a>
+  </div>
+  <% } %>
+
   <!-- ===================================================================
        TOP ACTION & IDENTITY BAR
        =================================================================== -->
@@ -426,6 +444,18 @@
           <div class="meta-field-label">Accounting Journal</div>
           <div class="meta-field-value font-monospace fw-bold text-success">
             <i class="bi bi-journal-check me-1"></i><%= accounting.entryNumber %>
+          </div>
+        </div>
+      </div>
+      <% } %>
+      <% if (document.project) { %>
+      <div class="col-6 col-md-3">
+        <div class="meta-field">
+          <div class="meta-field-label">Linked Project</div>
+          <div class="meta-field-value">
+            <a href="/projects/<%= document.project.id %>" class="fw-semibold text-primary text-decoration-none" id="meta-linked-project-link">
+              <i class="bi bi-kanban me-1"></i><%= document.project.code %>
+            </a>
           </div>
         </div>
       </div>

@@ -153,9 +153,12 @@ async function ensureSystemAccounts(adminUserId = null, businessId = null) {
  */
 async function getSystemAccount(systemAccountKey, businessId = null) {
     if (!systemAccountKey) throw new ValidationError('systemAccountKey is required.');
-    const where = { systemAccountKey };
-    if (businessId) where.businessId = businessId;
-    const account = await prisma.chartOfAccount.findFirst({ where });
+    const targetBusinessId = (businessId !== null && businessId !== undefined && businessId !== '') ? parseInt(businessId, 10) : null;
+    const where = { systemAccountKey, businessId: targetBusinessId };
+    let account = await prisma.chartOfAccount.findFirst({ where });
+    if (!account && targetBusinessId !== null) {
+        account = await prisma.chartOfAccount.findFirst({ where: { systemAccountKey, businessId: null } });
+    }
     if (!account) {
         throw new NotFoundError(`System account '${systemAccountKey}' not found.`);
     }

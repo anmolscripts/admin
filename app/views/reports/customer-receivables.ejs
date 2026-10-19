@@ -185,9 +185,9 @@
             </tr>
           <% } else { %>
             <% report.clients.forEach(c => { %>
-              <tr>
+              <tr class="cursor-pointer" onclick="window.location.href='/reports/customer-statement/' + <%= c.id %>" title="View Customer Sub-Ledger Statement">
                 <td class="ps-4">
-                  <a href="/reports/customer-statement/<%= c.id %>" class="fw-bold text-dark text-decoration-none">
+                  <a href="/reports/customer-statement/<%= c.id %>" class="fw-bold text-dark text-decoration-none" onclick="event.stopPropagation()">
                     <%= c.name %>
                   </a>
                   <% if (c.gstin) { %>

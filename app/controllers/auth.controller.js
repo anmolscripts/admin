@@ -1,12 +1,21 @@
+const crypto = require('node:crypto');
 const authService = require('../services/auth.service');
 const { refreshCsrfToken } = require('../middleware/csrf.middleware');
 const { recordFailedLogin, resetLoginAttempts } = require('../middleware/rateLimit.middleware');
 const { SESSION_COOKIE_NAME, cookieOptions } = require('../config/session');
+const { isValidRedirectUrl } = require('../middleware/auth.middleware');
 const prisma = require('../config/prisma');
 const activityService = require('../services/activity.service');
 const businessService = require('../services/business.service');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function generateRememberToken(userId) {
+    const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
+    const secret = process.env.SESSION_SECRET || 'spark-admin-dev-secret-key-change-in-prod-32chars';
+    const signature = crypto.createHmac('sha256', secret).update(`${userId}:${expiresAt}`).digest('hex');
+    return `${userId}.${expiresAt}.${signature}`;
+}
 
 /**
  * Render Login Page
@@ -16,11 +25,15 @@ function showLoginForm(req, res) {
     if (req.query && req.query.setup === 'success') {
         success = 'Password successfully configured! Please sign in with your credentials.';
     }
+    const rawReturnTo = (req.query && req.query.returnTo) || (req.session && req.session.returnTo) || '';
+    const returnTo = isValidRedirectUrl(rawReturnTo) ? rawReturnTo : '';
+
     res.render('auth/login', {
         pageTitle: 'Login',
         error: null,
         success,
-        email: ''
+        email: '',
+        returnTo
     });
 }
 
@@ -99,6 +112,11 @@ async function login(req, res, next) {
             userAgent: req.headers ? req.headers['user-agent'] : null
         });
 
+        // Determine returnTo and rememberMe prior to session regeneration
+        const rawReturnTo = (req.body && req.body.returnTo) || (req.session && req.session.returnTo) || (req.query && req.query.returnTo) || '';
+        const returnTo = isValidRedirectUrl(rawReturnTo) ? rawReturnTo : '';
+        const rememberMe = req.body && (req.body.rememberMe === 'true' || req.body.rememberMe === 'on' || req.body.rememberMe === '1' || req.body.rememberMe === true);
+
         // Prevent session fixation by regenerating session
         if (typeof req.session.regenerate === 'function') {
             await new Promise((resolve, reject) => {
@@ -114,8 +132,23 @@ async function login(req, res, next) {
             role: result.user.role
         };
 
+        // If rememberMe was requested, extend session lifetime and issue persistent remember cookie
+        if (rememberMe) {
+            if (req.session.cookie) {
+                req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
+            }
+            const rememberToken = generateRememberToken(result.user.id);
+            res.cookie('spark_remember', rememberToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production' ? 'auto' : false,
+                sameSite: 'lax',
+                maxAge: 30 * 24 * 60 * 60 * 1000,
+                path: '/'
+            });
+        }
+
         // Automatic business selection / routing
-        let redirectUrl = '/';
+        let redirectUrl = returnTo || '/';
         try {
             const accessibleBusinesses = await businessService.getUserAccessibleBusinesses(result.user.id, result.user.role);
             if (accessibleBusinesses.length === 1) {
@@ -127,7 +160,11 @@ async function login(req, res, next) {
                 } else if (result.user.role === 'ADMIN') {
                     req.session.activeBusinessId = accessibleBusinesses.find(b => b.id === 1)?.id || accessibleBusinesses[0].id;
                 } else {
-                    redirectUrl = '/select-business';
+                    if (!returnTo) {
+                        redirectUrl = '/select-business';
+                    } else {
+                        req.session.activeBusinessId = accessibleBusinesses[0].id;
+                    }
                 }
             } else if (result.user.role === 'ADMIN') {
                 req.session.activeBusinessId = 1;
@@ -159,6 +196,13 @@ async function login(req, res, next) {
  * Handle Logout
  */
 async function logout(req, res, next) {
+    res.clearCookie('spark_remember', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production' ? 'auto' : false,
+        sameSite: 'lax',
+        path: '/'
+    });
+
     if (!req.session) {
         res.clearCookie(SESSION_COOKIE_NAME, cookieOptions);
         return res.redirect('/login');

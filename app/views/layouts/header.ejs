@@ -14,6 +14,12 @@
       try {
         var theme = localStorage.getItem('spark-theme') || 'light';
         document.documentElement.setAttribute('data-theme', theme);
+        var isMinimized = localStorage.getItem('spark-sidebar-minimized');
+        if (isMinimized === 'true') {
+          document.documentElement.classList.add('sidebar-minimized');
+        } else if (isMinimized === 'false') {
+          document.documentElement.classList.remove('sidebar-minimized');
+        }
       } catch (e) {
         document.documentElement.setAttribute('data-theme', 'light');
       }
@@ -38,6 +44,9 @@
   <!-- Flatpickr -->
   <link rel="stylesheet" href="/libs/flatpickr/flatpickr.min.css" />
 
+  <!-- Tom Select -->
+  <link rel="stylesheet" href="/libs/tom-select/css/tom-select.bootstrap5.min.css" />
+
   <!-- Spark Admin -->
   <link rel="stylesheet" href="/css/main.css" />
   <link rel="stylesheet" href="/css/spark-datatable.css" />
@@ -60,8 +69,10 @@
   const isTeam = currentNavPath.startsWith('/team') || currentNavTitle.includes('team');
   const isReports = currentNavPath.startsWith('/reports') || Boolean(locals.isReports) || currentNavTitle.includes('report') || currentNavTitle.includes('ledger') || currentNavTitle.includes('trial balance') || currentNavTitle.includes('balance sheet') || currentNavTitle.includes('profit & loss') || currentNavTitle.includes('receivables') || currentNavTitle.includes('journal');
   const isSettings = currentNavPath.startsWith('/settings') || currentNavTitle.includes('setting') || currentNavTitle.includes('organization');
+  const isProjects = currentNavPath.startsWith('/projects') || currentNavTitle.includes('project');
 
   // Permission resolution for dynamic navigation visibility
+  const canViewProjects = typeof locals.hasPermission === 'function' ? locals.hasPermission('PROJECTS', 'VIEW') : true;
   const canViewTeam = typeof locals.hasPermission === 'function' ? locals.hasPermission('TEAM', 'VIEW') : (locals.user && (locals.user.role === 'ADMIN' || locals.user.role === 'OWNER'));
   const canViewReports = typeof locals.hasPermission === 'function' ? (locals.hasPermission('REPORTS', 'VIEW') || locals.hasPermission('JOURNALS', 'VIEW') || locals.hasPermission('ACCOUNTS', 'VIEW')) : true;
   const canViewFinancialYears = typeof locals.hasPermission === 'function' ? locals.hasPermission('FINANCIAL_YEARS', 'VIEW') : true;
@@ -114,6 +125,14 @@
               <span>Expenses</span>
             </a>
           </li>
+          <% if (canViewProjects) { %>
+          <li class="sidebar-menu-item">
+            <a href="/projects" class="sidebar-menu-link <%= isProjects ? 'active' : '' %>" id="menu-projects" title="Projects & Costing">
+              <i class="bi bi-kanban-fill"></i>
+              <span>Projects</span>
+            </a>
+          </li>
+          <% } %>
           <% if (canViewReports) { %>
           <li class="sidebar-menu-item">
             <a href="/reports" class="sidebar-menu-link <%= isReports && !currentNavPath.startsWith('/reports/workbench') ? 'active' : '' %>" id="menu-reports" title="Accounting & Reports">

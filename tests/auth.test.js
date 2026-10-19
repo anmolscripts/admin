@@ -1045,5 +1045,168 @@ describe('Authentication Module Test Suite', () => {
             }, /MemoryStore.*prohibited in production/);
         });
     });
+
+    describe('Remember Me & Return-To Navigation Tests', () => {
+        it('verifies social logins and forgot-password are removed from login UI, and rememberMe input has proper name/value', async () => {
+            const res = await fetch(`${baseUrl}/login`);
+            assert.strictEqual(res.status, 200);
+            const html = await res.text();
+
+            // Must NOT contain social sign-in or forgot password
+            assert.ok(!html.includes('Or sign in with'), 'Social login divider must be removed');
+            assert.ok(!html.includes('btn-google'), 'Google login button must be removed');
+            assert.ok(!html.includes('btn-github'), 'GitHub login button must be removed');
+            assert.ok(!html.includes('Forgot Password?'), 'Forgot password link must be removed');
+
+            // Must contain rememberMe input with proper name and returnTo hidden input
+            assert.ok(html.includes('name="rememberMe"'), 'rememberMe checkbox must have name="rememberMe"');
+            assert.ok(html.includes('name="returnTo"'), 'returnTo hidden input must be present');
+        });
+
+        it('redirects to returnTo URL after successful login', async () => {
+            const getRes = await fetch(`${baseUrl}/login?returnTo=%2Fsettings`);
+            const cookie = extractCookie(getRes);
+            const csrfToken = extractCsrfToken(await getRes.text());
+
+            const body = new URLSearchParams({
+                _csrf: csrfToken,
+                email: testAdminEmail,
+                password: testAdminPassword,
+                returnTo: '/settings'
+            });
+
+            const loginRes = await fetch(`${baseUrl}/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    Cookie: cookie
+                },
+                body: body.toString(),
+                redirect: 'manual'
+            });
+
+            assert.strictEqual(loginRes.status, 302);
+            assert.strictEqual(loginRes.headers.get('location'), '/settings');
+        });
+
+        it('rejects external/open-redirect URLs and falls back safely to root', async () => {
+            const getRes = await fetch(`${baseUrl}/login?returnTo=%2F%2Fevil.com`);
+            const cookie = extractCookie(getRes);
+            const csrfToken = extractCsrfToken(await getRes.text());
+
+            const body = new URLSearchParams({
+                _csrf: csrfToken,
+                email: testAdminEmail,
+                password: testAdminPassword,
+                returnTo: '//evil.com'
+            });
+
+            const loginRes = await fetch(`${baseUrl}/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    Cookie: cookie
+                },
+                body: body.toString(),
+                redirect: 'manual'
+            });
+
+            assert.strictEqual(loginRes.status, 302);
+            assert.strictEqual(loginRes.headers.get('location'), '/');
+        });
+
+        it('sets persistent spark_remember cookie when rememberMe is checked and enables auto-login', async () => {
+            const getRes = await fetch(`${baseUrl}/login`);
+            const cookie = extractCookie(getRes);
+            const csrfToken = extractCsrfToken(await getRes.text());
+
+            const body = new URLSearchParams({
+                _csrf: csrfToken,
+                email: testAdminEmail,
+                password: testAdminPassword,
+                rememberMe: 'true'
+            });
+
+            const loginRes = await fetch(`${baseUrl}/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    Cookie: cookie
+                },
+                body: body.toString(),
+                redirect: 'manual'
+            });
+
+            assert.strictEqual(loginRes.status, 302);
+            const rawSetCookie = loginRes.headers.get('set-cookie');
+            assert.ok(rawSetCookie.includes('spark_remember='), 'Must set spark_remember persistent cookie');
+
+            const rememberCookieMatch = rawSetCookie.match(/spark_remember=[^;]+/);
+            assert.ok(rememberCookieMatch, 'Must find spark_remember token');
+            const rememberCookie = rememberCookieMatch[0];
+
+            // Access protected route / using ONLY the spark_remember cookie (no session spark.sid cookie)
+            const autoLoginRes = await fetch(`${baseUrl}/`, {
+                headers: {
+                    Cookie: rememberCookie
+                },
+                redirect: 'manual'
+            });
+
+            // Must NOT redirect to /login, must return 200 OK
+            assert.strictEqual(autoLoginRes.status, 200, 'Auto-login via spark_remember cookie must grant 200 OK');
+        });
+
+        it('clears both session and spark_remember cookies upon logout', async () => {
+            // First login with rememberMe
+            const getRes = await fetch(`${baseUrl}/login`);
+            const cookie = extractCookie(getRes);
+            const csrfToken = extractCsrfToken(await getRes.text());
+
+            const body = new URLSearchParams({
+                _csrf: csrfToken,
+                email: testAdminEmail,
+                password: testAdminPassword,
+                rememberMe: 'true'
+            });
+
+            const loginRes = await fetch(`${baseUrl}/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    Cookie: cookie
+                },
+                body: body.toString(),
+                redirect: 'manual'
+            });
+
+            const rawSetCookie = loginRes.headers.get('set-cookie');
+            const rememberMatch = rawSetCookie.match(/spark_remember=[^;]+/);
+            const sessionMatch = rawSetCookie.match(/spark\.sid=[^;]+/);
+            const comboCookie = `${sessionMatch[0]}; ${rememberMatch[0]}`;
+
+            // Obtain dashboard CSRF token
+            const dashRes = await fetch(`${baseUrl}/`, {
+                headers: { Cookie: comboCookie }
+            });
+            const dashCsrf = extractCsrfToken(await dashRes.text());
+
+            // POST /logout
+            const logoutRes = await fetch(`${baseUrl}/logout`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    Cookie: comboCookie
+                },
+                body: new URLSearchParams({ _csrf: dashCsrf }).toString(),
+                redirect: 'manual'
+            });
+
+            assert.strictEqual(logoutRes.status, 302);
+            const logoutSetCookie = logoutRes.headers.get('set-cookie');
+            assert.ok(logoutSetCookie.includes('spark_remember=;'), 'spark_remember must be cleared on logout');
+            assert.ok(logoutSetCookie.includes('spark.sid=;'), 'spark.sid must be cleared on logout');
+        });
+    });
 });
 

@@ -105,6 +105,46 @@ function getFinancialYearDateBounds(fy) {
     return { startDate: new Date(fy.startDate), endDate: new Date(fy.endDate) };
 }
 
+function resolveBusinessScoping(filters = {}, fy = null) {
+    if (filters.allBusinesses === true) {
+        return { targetBizId: null, accountBusinessFilter: undefined, journalBusinessFilter: undefined, clientBusinessFilter: undefined };
+    }
+    let targetBizId = null;
+    if (filters.businessId !== undefined) {
+        if (filters.businessId !== null && filters.businessId !== '' && filters.businessId !== 'null') {
+            const parsed = parseInt(filters.businessId, 10);
+            targetBizId = isNaN(parsed) ? null : parsed;
+        }
+    } else if (fy && fy.businessId !== undefined && fy.businessId !== null) {
+        targetBizId = fy.businessId;
+    }
+
+    if (!targetBizId || targetBizId === 1) {
+        return {
+            targetBizId: 1,
+            accountBusinessFilter: null,
+            journalBusinessFilter: 'DEFAULT_COMPANY',
+            clientBusinessFilter: 'DEFAULT_COMPANY'
+        };
+    } else {
+        return {
+            targetBizId,
+            accountBusinessFilter: targetBizId,
+            journalBusinessFilter: targetBizId,
+            clientBusinessFilter: targetBizId
+        };
+    }
+}
+
+function applyJournalBusinessScope(targetObj, scoping) {
+    if (!scoping || scoping.journalBusinessFilter === undefined) return;
+    if (scoping.journalBusinessFilter === 'DEFAULT_COMPANY') {
+        targetObj.OR = [{ businessId: 1 }, { businessId: null }];
+    } else {
+        targetObj.businessId = scoping.journalBusinessFilter;
+    }
+}
+
 /**
  * 1. JOURNAL REGISTER
  * Searchable register of journal entries with debit/credit balance verification.
@@ -118,6 +158,8 @@ async function getJournalRegister(filters = {}) {
     const skip = (page - 1) * limit;
 
     const where = {};
+    const scoping = resolveBusinessScoping(filters);
+    applyJournalBusinessScope(where, scoping);
 
     // Financial Year filter
     if (filters.financialYearId) {
@@ -393,25 +435,33 @@ async function getGeneralLedgerReport(filters = {}) {
         };
     }
 
+    let fy = null;
+    if (filters.financialYearId) {
+        fy = await prisma.financialYear.findUnique({
+            where: { id: parseInt(filters.financialYearId, 10) }
+        });
+    }
+
+    const scoping = resolveBusinessScoping(filters, fy);
+
     // Multi-account General Ledger Summary
     const accounts = await prisma.chartOfAccount.findMany({
-        where: { allowPosting: true, active: true },
-        orderBy: { code: 'asc' },
+        where: {
+            allowPosting: true,
+            active: true,
+            ...(scoping.accountBusinessFilter !== undefined ? { businessId: scoping.accountBusinessFilter } : {})
+        },
+        orderBy: [{ code: 'asc' }, { id: 'asc' }],
         include: { parent: { select: { id: true, code: true, name: true } } }
     });
 
     let fromDateObj = null;
     let toDateObj = null;
 
-    if (filters.financialYearId) {
-        const fy = await prisma.financialYear.findUnique({
-            where: { id: parseInt(filters.financialYearId, 10) }
-        });
-        if (fy) {
-            const bounds = getFinancialYearDateBounds(fy);
-            if (!filters.fromDate) fromDateObj = bounds.startDate;
-            if (!filters.toDate) toDateObj = bounds.endDate;
-        }
+    if (fy) {
+        const bounds = getFinancialYearDateBounds(fy);
+        if (!filters.fromDate) fromDateObj = bounds.startDate;
+        if (!filters.toDate) toDateObj = bounds.endDate;
     }
 
     if (filters.fromDate) fromDateObj = parseStartOfDay(filters.fromDate);
@@ -422,6 +472,7 @@ async function getGeneralLedgerReport(filters = {}) {
             status: { in: ['POSTED', 'REVERSED'] }
         }
     };
+    applyJournalBusinessScope(whereLines.journalEntry, scoping);
 
     if (fromDateObj || toDateObj) {
         whereLines.journalEntry.entryDate = {};
@@ -503,6 +554,8 @@ async function getTrialBalance(filters = {}) {
         });
     }
 
+    const scoping = resolveBusinessScoping(filters, fy);
+
     let cutoffDate = null;
     if (filters.asOfDate) {
         cutoffDate = parseEndOfDay(filters.asOfDate);
@@ -517,6 +570,7 @@ async function getTrialBalance(filters = {}) {
             status: { in: ['POSTED', 'REVERSED'] }
         }
     };
+    applyJournalBusinessScope(whereLines.journalEntry, scoping);
 
     if (cutoffDate) {
         whereLines.journalEntry.entryDate = { lte: cutoffDate };
@@ -528,8 +582,12 @@ async function getTrialBalance(filters = {}) {
 
     const [accounts, lines] = await Promise.all([
         prisma.chartOfAccount.findMany({
-            where: { allowPosting: true, active: true },
-            orderBy: { code: 'asc' },
+            where: {
+                allowPosting: true,
+                active: true,
+                ...(scoping.accountBusinessFilter !== undefined ? { businessId: scoping.accountBusinessFilter } : {})
+            },
+            orderBy: [{ code: 'asc' }, { id: 'asc' }],
             include: { parent: { select: { id: true, code: true, name: true } } }
         }),
         prisma.journalEntryLine.findMany({
@@ -647,6 +705,8 @@ async function getProfitAndLoss(filters = {}) {
         });
     }
 
+    const scoping = resolveBusinessScoping(filters, fy);
+
     let fromDateObj = null;
     let toDateObj = null;
     if (fy) {
@@ -663,6 +723,7 @@ async function getProfitAndLoss(filters = {}) {
             sourceType: { notIn: ['YEAR_END_CLOSE', 'YEAR_END_CLOSE_REVERSAL'] }
         }
     };
+    applyJournalBusinessScope(whereLines.journalEntry, scoping);
 
     if (fromDateObj || toDateObj) {
         whereLines.journalEntry.entryDate = {};
@@ -672,12 +733,22 @@ async function getProfitAndLoss(filters = {}) {
 
     const [incomeAccounts, expenseAccounts, lines] = await Promise.all([
         prisma.chartOfAccount.findMany({
-            where: { type: 'INCOME', allowPosting: true, active: true },
-            orderBy: { code: 'asc' }
+            where: {
+                type: 'INCOME',
+                allowPosting: true,
+                active: true,
+                ...(scoping.accountBusinessFilter !== undefined ? { businessId: scoping.accountBusinessFilter } : {})
+            },
+            orderBy: [{ code: 'asc' }, { id: 'asc' }]
         }),
         prisma.chartOfAccount.findMany({
-            where: { type: 'EXPENSE', allowPosting: true, active: true },
-            orderBy: { code: 'asc' }
+            where: {
+                type: 'EXPENSE',
+                allowPosting: true,
+                active: true,
+                ...(scoping.accountBusinessFilter !== undefined ? { businessId: scoping.accountBusinessFilter } : {})
+            },
+            orderBy: [{ code: 'asc' }, { id: 'asc' }]
         }),
         prisma.journalEntryLine.findMany({
             where: whereLines,
@@ -799,6 +870,8 @@ async function getBalanceSheet(filters = {}) {
         });
     }
 
+    const scoping = resolveBusinessScoping(filters, fy);
+
     let cutoffDate = new Date();
     if (filters.asOfDate) {
         cutoffDate = parseEndOfDay(filters.asOfDate);
@@ -813,11 +886,16 @@ async function getBalanceSheet(filters = {}) {
             entryDate: { lte: cutoffDate }
         }
     };
+    applyJournalBusinessScope(whereLines.journalEntry, scoping);
 
     const [accounts, lines] = await Promise.all([
         prisma.chartOfAccount.findMany({
-            where: { allowPosting: true, active: true },
-            orderBy: { code: 'asc' },
+            where: {
+                allowPosting: true,
+                active: true,
+                ...(scoping.accountBusinessFilter !== undefined ? { businessId: scoping.accountBusinessFilter } : {})
+            },
+            orderBy: [{ code: 'asc' }, { id: 'asc' }],
             include: { parent: { select: { id: true, code: true, name: true } } }
         }),
         prisma.journalEntryLine.findMany({
@@ -930,13 +1008,19 @@ async function getBalanceSheet(filters = {}) {
  */
 async function getCustomerReceivablesReport(filters = {}) {
     const asOfDate = filters.asOfDate ? parseEndOfDay(filters.asOfDate) : new Date();
+    const scoping = resolveBusinessScoping(filters);
 
     // 1. Fetch Accounts Receivable control account (1121)
-    const arAccount = await coaService.getSystemAccount('ACCOUNTS_RECEIVABLE');
+    const arAccount = await coaService.getSystemAccount('ACCOUNTS_RECEIVABLE', scoping.accountBusinessFilter);
     if (!arAccount) throw new Error('Accounts Receivable (1121) control account not found.');
 
     // 2. Fetch all clients
     const clientWhere = { active: true };
+    if (scoping.clientBusinessFilter === 'DEFAULT_COMPANY') {
+        clientWhere.OR = [{ businessId: 1 }, { businessId: null }];
+    } else if (scoping.clientBusinessFilter !== undefined) {
+        clientWhere.businessId = scoping.clientBusinessFilter;
+    }
     if (filters.clientId) {
         clientWhere.id = parseInt(filters.clientId, 10);
     }
@@ -984,6 +1068,7 @@ async function getCustomerReceivablesReport(filters = {}) {
             entryDate: { lte: asOfDate }
         }
     };
+    applyJournalBusinessScope(arLineWhere.journalEntry, scoping);
     if (filters.clientId) {
         arLineWhere.clientId = parseInt(filters.clientId, 10);
     }

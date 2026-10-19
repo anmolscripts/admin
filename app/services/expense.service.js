@@ -6,6 +6,7 @@ const { ensureFinancialYear } = require('./financialYear.service');
 const journalService = require('./journal.service');
 const numberingService = require('./numbering.service');
 const businessService = require('./business.service');
+const projectCostLedgerService = require('./projectCostLedger.service');
 const { ValidationError, NotFoundError, ConflictError } = require('./errorTypes');
 
 /**
@@ -53,6 +54,14 @@ async function createExpense(data = {}, userId) {
 
     const roundAmount = Math.round(amount * 100) / 100;
 
+    let projectId = null;
+    if (data.projectId) {
+        projectId = parseInt(data.projectId, 10);
+        if (isNaN(projectId) || projectId <= 0) throw new ValidationError('Invalid project ID.');
+        const project = await prisma.project.findFirst({ where: { id: projectId, businessId } });
+        if (!project) throw new NotFoundError(`Project #${projectId} not found in this organization.`);
+    }
+
     return prisma.$transaction(async (tx) => {
         const expenseNumber = data.expenseNumber || await numberingService.allocateNumber({
             businessId,
@@ -66,6 +75,7 @@ async function createExpense(data = {}, userId) {
             data: {
                 expenseNumber,
                 businessId,
+                projectId,
                 expenseDate,
                 amount: roundAmount,
                 description,
@@ -104,7 +114,8 @@ async function createExpense(data = {}, userId) {
         }
 
         // 3. Post double-entry journal
-        await journalService.postJournalEntry({
+        const journal = await journalService.postJournalEntry({
+            businessId,
             entryDate: expenseDate,
             financialYearId: fy.id,
             sourceType: 'EXPENSE',
@@ -127,6 +138,25 @@ async function createExpense(data = {}, userId) {
             ],
             userId
         }, tx);
+
+        // 4. If project-linked, record in Project Cost Subledger (idempotent)
+        if (projectId) {
+            await projectCostLedgerService.recordCost({
+                businessId,
+                projectId,
+                category: 'EXPENSE',
+                costType: 'EXPENSE',
+                sourceType: 'EXPENSE',
+                sourceId: expense.id,
+                sourceLineId: 0,
+                sourceReference: `EXP:${expense.expenseNumber}`,
+                amount: roundAmount,
+                costDate: expenseDate,
+                description: `Operating Expense (${category}): ${description}`,
+                journalEntryId: journal ? journal.id : null,
+                createdById: userId
+            }, tx);
+        }
 
         if (userId) {
             await activityService.log({
@@ -154,9 +184,10 @@ async function getExpenseById(id) {
     return expense;
 }
 
-async function listExpenses({ businessId, category, dateFrom, dateTo, search, page = 1, limit = 20 } = {}) {
+async function listExpenses({ businessId, projectId, category, dateFrom, dateTo, search, page = 1, limit = 20 } = {}) {
     const where = {};
     if (businessId) where.businessId = Number(businessId);
+    if (projectId) where.projectId = Number(projectId);
     if (category) where.category = category;
     if (dateFrom || dateTo) {
         where.expenseDate = {};
@@ -175,6 +206,10 @@ async function listExpenses({ businessId, category, dateFrom, dateTo, search, pa
         prisma.expense.count({ where }),
         prisma.expense.findMany({
             where,
+            include: {
+                project: { select: { id: true, code: true, name: true } },
+                createdBy: { select: { id: true, name: true } }
+            },
             orderBy: { expenseDate: 'desc' },
             skip,
             take: pageSize

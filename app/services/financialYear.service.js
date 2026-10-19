@@ -67,23 +67,28 @@ async function createFinancialYear(year, businessId = null) {
  * @param {Date|string|number} date - Date for which to ensure FY.
  * @param {number} [businessId]
  * @returns {Promise<Object>} The FinancialYear record.
+/**
+ * Ensure a FinancialYear record exists for the given date.
+ * If one does not exist, compute the range and insert it with status OPEN.
+ * Returns the FinancialYear record (existing or newly created).
  */
-async function ensureFinancialYear(date, businessId = null) {
+async function ensureFinancialYear(date, businessId = null, tx = null) {
   let activeBusinessId = (businessId !== null && businessId !== undefined) ? parseInt(businessId, 10) : null;
   if (!activeBusinessId && (process.env.NODE_ENV === 'test' || !process.env.NODE_ENV || process.env.NODE_ENV === 'development')) {
     activeBusinessId = 1;
   }
   const { code, startDate, endDate } = computeFinancialYear(date);
+  const client = tx || prisma;
   const where = { code };
   if (activeBusinessId) {
     where.businessId = activeBusinessId;
   }
-  const existing = await prisma.financialYear.findFirst({ where });
+  const existing = await client.financialYear.findFirst({ where });
   if (existing) {
     return existing;
   }
-  await validateNoOverlap(startDate, endDate, null, activeBusinessId);
-  const fy = await prisma.financialYear.create({
+  await validateNoOverlap(startDate, endDate, null, activeBusinessId, client);
+  const fy = await client.financialYear.create({
     data: {
       code,
       startDate,
@@ -100,12 +105,13 @@ async function ensureFinancialYear(date, businessId = null) {
  * Validate that a new financial year does not overlap any existing period.
  * Throws if an overlap is detected.
  */
-async function validateNoOverlap(startDate, endDate, excludeId = null, businessId = null) {
+async function validateNoOverlap(startDate, endDate, excludeId = null, businessId = null, client = null) {
+  const dbClient = client || prisma;
   let activeBusinessId = (businessId !== null && businessId !== undefined) ? parseInt(businessId, 10) : null;
   if (!activeBusinessId && (process.env.NODE_ENV === 'test' || !process.env.NODE_ENV || process.env.NODE_ENV === 'development')) {
     activeBusinessId = 1;
   }
-  const overlapping = await prisma.financialYear.findFirst({
+  const overlapping = await dbClient.financialYear.findFirst({
     where: {
       ...(activeBusinessId ? { businessId: activeBusinessId } : {}),
       AND: [

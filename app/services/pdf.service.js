@@ -55,9 +55,17 @@ function findBrowserExecutable() {
  * Render the unified document template to an HTML string
  * Consumes the exact same Normalized Document View Model as Print.
  */
-async function renderDocumentHtml(document, businessProfile = {}) {
+async function renderDocumentHtml(document, businessProfile = {}, templateConfig = null) {
+    const templateService = require('./template.service');
+    const docBizId = document.businessId || (businessProfile && businessProfile.businessId) || 1;
+    if (!templateConfig) {
+        const activeTemplates = templateService.getActiveTemplates(docBizId);
+        const tplId = document.documentType === 'QUOTATION' ? activeTemplates.quotationTemplate : activeTemplates.invoiceTemplate;
+        templateConfig = templateService.getTemplate(tplId, docBizId);
+    }
     const model = documentViewService.buildDocumentViewModel(document, businessProfile);
-    const bodyHtml = await ejs.renderFile(TEMPLATE_PATH, { model });
+    model.templateConfig = templateConfig;
+    const bodyHtml = await ejs.renderFile(TEMPLATE_PATH, { model, templateConfig });
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -134,9 +142,10 @@ function renderPdfWithBrowser(browserPath, htmlContent) {
  *
  * @param {Object} document - Full document record with items and relations
  * @param {Object} businessProfile - Optional business profile settings
+ * @param {Object} [templateConfig=null] - Optional template styling configuration
  * @returns {Promise<Buffer>} PDF file buffer
  */
-async function generateDocumentPdf(document, businessProfile = {}) {
+async function generateDocumentPdf(document, businessProfile = {}, templateConfig = null) {
     const browserPath = findBrowserExecutable();
 
     if (!browserPath) {
@@ -146,7 +155,7 @@ async function generateDocumentPdf(document, businessProfile = {}) {
         );
     }
 
-    const html = await renderDocumentHtml(document, businessProfile);
+    const html = await renderDocumentHtml(document, businessProfile, templateConfig);
     return renderPdfWithBrowser(browserPath, html);
 }
 

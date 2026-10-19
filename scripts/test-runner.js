@@ -95,15 +95,16 @@ if (cliArgs.length > 0) {
     }
 }
 
-// Safety check: ensure test runner is not pointing at the production 'admin' database
-if (process.env.DATABASE_NAME && process.env.DATABASE_NAME.toLowerCase() === 'admin') {
-  console.error('\n[TEST RUNNER ERROR]: Detected DATABASE_NAME=admin. Abort to protect production data.');
+// Safety check: ensure test runner is not pointing at any protected database
+const protectedDbs = ['admin', 'spark_admin', 'spark_admin_prod', 'spark_admin_test', 'spark_admin_prod_test'];
+if (process.env.DATABASE_NAME && protectedDbs.includes(process.env.DATABASE_NAME.toLowerCase())) {
+  console.error(`\n[TEST RUNNER ERROR]: Detected protected DATABASE_NAME="${process.env.DATABASE_NAME}". Abort to protect data.`);
   process.exit(1);
 }
-// Additional validation: resolve effective DB target and verify it's not 'admin' and reachable
+// Additional validation: resolve effective DB target and verify it's not protected and reachable
 const { database } = resolveDbTarget();
-if (database.toLowerCase() === 'admin') {
-  console.error('\n[TEST RUNNER ERROR]: Resolved database name is admin. Abort to protect production data.');
+if (protectedDbs.includes(database.toLowerCase())) {
+  console.error(`\n[TEST RUNNER ERROR]: Resolved database name "${database}" is protected. Abort to protect data.`);
   process.exit(1);
 }
 const args = ['--test', '--test-concurrency=1', ...selectedFiles];

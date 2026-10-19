@@ -107,14 +107,29 @@ describe('Milestone 8: Financial Year Closing, Opening Balances & Period Locking
         await prisma.journalEntry.deleteMany({
             where: { financialYearId: { in: isolatedFyIds } }
         });
-        await prisma.payment.deleteMany({
-            where: { financialYearId: { in: isolatedFyIds } }
-        });
         await prisma.creditDebitNoteItem.deleteMany({
-            where: { note: { financialYearId: { in: isolatedFyIds } } }
+            where: {
+                OR: [
+                    { note: { financialYearId: { in: isolatedFyIds } } },
+                    { note: { invoice: { financialYearId: { in: isolatedFyIds } } } }
+                ]
+            }
         });
         await prisma.creditDebitNote.deleteMany({
-            where: { financialYearId: { in: isolatedFyIds } }
+            where: {
+                OR: [
+                    { financialYearId: { in: isolatedFyIds } },
+                    { invoice: { financialYearId: { in: isolatedFyIds } } }
+                ]
+            }
+        });
+        await prisma.payment.deleteMany({
+            where: {
+                OR: [
+                    { financialYearId: { in: isolatedFyIds } },
+                    { invoice: { financialYearId: { in: isolatedFyIds } } }
+                ]
+            }
         });
         await prisma.invoiceItem.deleteMany({
             where: { invoice: { financialYearId: { in: isolatedFyIds } } }

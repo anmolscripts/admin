@@ -60,6 +60,9 @@ tmp/
 temp/
 .cache/
 .artifacts/
+data/
+*.sql
+.last_backup_path
 assets/uploads/avatars/*
 !assets/uploads/avatars/.gitkeep
 

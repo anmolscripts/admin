@@ -11,6 +11,10 @@
         <i class="bi bi-plus-circle"></i>
         <span>New Purchase Order</span>
       </a>
+      <a href="/purchases/receipts" class="btn btn-outline-primary d-inline-flex align-items-center gap-2">
+        <i class="bi bi-box-seam"></i>
+        <span>Goods Receipts (GRN)</span>
+      </a>
       <a href="/purchases/bills" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2">
         <i class="bi bi-receipt"></i>
         <span>Supplier Bills</span>
@@ -49,6 +53,7 @@
             <tr>
               <th class="ps-3">PO Number</th>
               <th>Supplier</th>
+              <th>Project</th>
               <th>Order Date</th>
               <th>Due Date</th>
               <th>Items</th>
@@ -60,8 +65,19 @@
             <% if (records && records.length > 0) { %>
               <% records.forEach(po => { %>
                 <tr>
-                  <td class="ps-3 fw-bold"><%= po.orderNumber %></td>
+                  <td class="ps-3 fw-bold">
+                    <a href="/purchases/orders/<%= po.id %>" class="text-decoration-none fw-bold text-primary"><%= po.orderNumber %></a>
+                  </td>
                   <td><%= po.supplierName %></td>
+                  <td>
+                    <% if (po.project) { %>
+                      <a href="/projects/<%= po.project.id %>" class="badge bg-primary-subtle text-primary border border-primary-subtle text-decoration-none">
+                        <%= po.project.code %>
+                      </a>
+                    <% } else { %>
+                      <span class="text-muted small">—</span>
+                    <% } %>
+                  </td>
                   <td><%= new Date(po.orderDate).toLocaleDateString() %></td>
                   <td><%= po.dueDate ? new Date(po.dueDate).toLocaleDateString() : '—' %></td>
                   <td><%= po.items ? po.items.length : 0 %> items</td>
@@ -71,7 +87,11 @@
                     </span>
                   </td>
                   <td class="text-end pe-3">
+                    <a href="/purchases/orders/<%= po.id %>" class="btn btn-sm btn-outline-secondary me-1">View / Edit</a>
                     <% if (po.status === 'ACTIVE') { %>
+                      <a href="/purchases/orders/<%= po.id %>/receive" class="btn btn-sm btn-outline-success me-1" title="Receive Goods">
+                        <i class="bi bi-box-arrow-in-down me-1"></i>Receive
+                      </a>
                       <button class="btn btn-sm btn-outline-danger" onclick="voidOrder(<%= po.id %>)">Void</button>
                     <% } %>
                   </td>
@@ -79,7 +99,7 @@
               <% }); %>
             <% } else { %>
               <tr>
-                <td colspan="7" class="text-center py-4 text-muted">No purchase orders found.</td>
+                <td colspan="8" class="text-center py-4 text-muted">No purchase orders found.</td>
               </tr>
             <% } %>
           </tbody>
@@ -96,8 +116,12 @@ async function voidOrder(id) {
   try {
     const res = await fetch(`/api/purchase-orders/${id}/void`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reason })
+      headers: {
+        'Content-Type': 'application/json',
+        'CSRF-Token': '<%= csrfToken %>',
+        'X-CSRF-Token': '<%= csrfToken %>'
+      },
+      body: JSON.stringify({ reason, _csrf: '<%= csrfToken %>' })
     });
     const data = await res.json();
     if (data.success) {

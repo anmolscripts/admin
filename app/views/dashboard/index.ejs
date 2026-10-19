@@ -31,16 +31,27 @@
   <!-- Collapsible Custom Date Range Form -->
   <div class="mt-3 pt-3 border-top <%= metrics.range === 'custom' ? '' : 'd-none' %>" id="custom-range-panel">
     <form class="row g-2 align-items-end" id="custom-range-form">
-      <div class="col-sm-4 col-md-3">
-        <label for="custom-date-from" class="form-label small text-muted mb-1">From Date</label>
-        <input type="date" class="form-control form-control-sm" id="custom-date-from" value="<%= metrics.dateFilter.startDate ? metrics.dateFilter.startDate.split('T')[0] : '' %>" required>
+      <div class="col-sm-8 col-md-5">
+        <label class="form-label small text-muted mb-1">Custom Period</label>
+        <div class="spark-daterange-picker w-100" data-from-name="from" data-to-name="to">
+          <div class="d-flex align-items-center gap-1">
+            <button class="btn-date-picker btn-date-picker-sm flex-grow-1" type="button" aria-label="Select custom date range">
+              <span class="d-flex align-items-center gap-2 text-truncate">
+                <i class="bi bi-calendar4-event text-primary"></i>
+                <span class="spark-daterange-label text-truncate">Select Range</span>
+              </span>
+              <i class="bi bi-chevron-down text-muted ms-auto"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary btn-daterange-clear d-none" title="Clear date range">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+          <input type="hidden" id="custom-date-from" name="from" value="<%= metrics.dateFilter.startDate ? metrics.dateFilter.startDate.split('T')[0] : '' %>" required>
+          <input type="hidden" id="custom-date-to" name="to" value="<%= metrics.dateFilter.endDate ? metrics.dateFilter.endDate.split('T')[0] : '' %>" required>
+        </div>
       </div>
       <div class="col-sm-4 col-md-3">
-        <label for="custom-date-to" class="form-label small text-muted mb-1">To Date</label>
-        <input type="date" class="form-control form-control-sm" id="custom-date-to" value="<%= metrics.dateFilter.endDate ? metrics.dateFilter.endDate.split('T')[0] : '' %>" required>
-      </div>
-      <div class="col-sm-4 col-md-3">
-        <button type="submit" class="btn btn-sm btn-primary w-100" id="btn-apply-custom-range">
+        <button type="submit" class="btn btn-sm btn-primary w-100 rounded-pill" id="btn-apply-custom-range">
           <i class="bi bi-check2"></i> Apply Range
         </button>
       </div>
@@ -715,6 +726,7 @@
         });
 
         async function fetchMetrics(params) {
+          window.fetchDashboardMetrics = fetchMetrics;
           const loadingOverlay = document.getElementById('dashboard-loading');
           loadingOverlay.classList.remove('d-none');
 

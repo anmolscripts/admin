@@ -222,28 +222,43 @@ class ReportController {
     }
 
     /**
-     * Customer Account Statement: /reports/customer-statement/:clientId
+     * Customer Account Statement & Subledger Hub: /reports/customer-statement, /reports/sub-ledger, or /reports/customer-statement/:clientId
      */
     async renderCustomerStatement(req, res, next) {
         try {
-            const clientId = parseInt(req.params.clientId, 10);
-            if (isNaN(clientId) || clientId <= 0) {
-                return res.status(400).render('errors/500', {
-                    pageTitle: 'Bad Request',
-                    error: new Error('Invalid client ID.')
+            const businessId = req.businessId || (req.session && req.session.activeBusinessId) || null;
+            const clients = await clientService.searchClients('', businessId);
+
+            let clientId = null;
+            if (req.params.clientId) {
+                clientId = parseInt(req.params.clientId, 10);
+            } else if (req.query.clientId) {
+                clientId = parseInt(req.query.clientId, 10);
+            } else if (clients && clients.length > 0) {
+                clientId = clients[0].id;
+            }
+
+            if (!clientId || isNaN(clientId)) {
+                return res.render('reports/customer-statement', {
+                    pageTitle: 'Customer Sub-Ledger Statement',
+                    pageSubtitle: 'Chronological client subledger statement with invoices, payments, and running balance.',
+                    report: null,
+                    clients: clients || [],
+                    selectedClientId: null,
+                    filters: req.query,
+                    isReports: true,
+                    csrfToken: req.session ? req.session.csrfToken : '',
+                    user: req.session ? req.session.user : null
                 });
             }
 
-            const [report, clients] = await Promise.all([
-                reportService.getCustomerStatement(clientId, req.query),
-                clientService.searchClients()
-            ]);
+            const report = await reportService.getCustomerStatement(clientId, req.query);
 
             res.render('reports/customer-statement', {
                 pageTitle: `Customer Statement: ${report.client.name}`,
                 pageSubtitle: 'Chronological client subledger statement with invoices, payments, and running balance.',
                 report,
-                clients,
+                clients: clients || [],
                 selectedClientId: clientId,
                 filters: req.query,
                 isReports: true,
@@ -256,6 +271,62 @@ class ReportController {
                     pageTitle: 'Client Not Found'
                 });
             }
+            next(err);
+        }
+    }
+
+    /**
+     * Export Customer Sub-Ledger Statement as CSV: /reports/customer-statement/export
+     */
+    async exportCustomerStatement(req, res, next) {
+        try {
+            const rawId = req.params.clientId || req.query.clientId;
+            const clientId = parseInt(rawId, 10);
+            if (isNaN(clientId) || clientId <= 0) {
+                return res.status(400).send('Invalid or missing client ID.');
+            }
+
+            const report = await reportService.getCustomerStatement(clientId, req.query);
+
+            const escapeCsv = (str) => {
+                if (str === null || str === undefined) return '""';
+                const s = String(str).replace(/"/g, '""');
+                return `"${s}"`;
+            };
+
+            const lines = [];
+            lines.push(`"CUSTOMER SUB-LEDGER STATEMENT: ${report.client.name.replace(/"/g, '""')}"`);
+            lines.push(`"Period: ${req.query.fromDate || 'Beginning'} to ${req.query.toDate || 'Current'}"`);
+            lines.push(`"Opening Balance: ₹${parseFloat(report.statement.openingBalance).toFixed(2)}"`);
+            lines.push(`"Total Debits: ₹${parseFloat(report.statement.totalDebit).toFixed(2)}"`);
+            lines.push(`"Total Credits: ₹${parseFloat(report.statement.totalCredit).toFixed(2)}"`);
+            lines.push(`"Closing Balance: ₹${parseFloat(report.statement.closingBalance).toFixed(2)}"`);
+            lines.push('');
+            lines.push(['Date', 'Journal #', 'Source Type', 'Source Ref', 'Narration', 'Debit (INR)', 'Credit (INR)', 'Running Balance (INR)'].map(escapeCsv).join(','));
+
+            lines.push(['—', '—', 'OPENING', '—', 'Opening Balance', '—', '—', parseFloat(report.statement.openingBalance).toFixed(2)].map(escapeCsv).join(','));
+
+            for (const t of report.transactions) {
+                lines.push([
+                    new Date(t.entryDate).toLocaleDateString('en-IN'),
+                    t.entryNumber,
+                    t.sourceType,
+                    t.sourceId ? '#' + t.sourceId : '—',
+                    t.narration || '',
+                    parseFloat(t.debit) > 0 ? parseFloat(t.debit).toFixed(2) : '0.00',
+                    parseFloat(t.credit) > 0 ? parseFloat(t.credit).toFixed(2) : '0.00',
+                    parseFloat(t.runningBalance).toFixed(2)
+                ].map(escapeCsv).join(','));
+            }
+
+            lines.push(['TOTALS', '', '', '', 'Period Total & Closing Balance', parseFloat(report.statement.totalDebit).toFixed(2), parseFloat(report.statement.totalCredit).toFixed(2), parseFloat(report.statement.closingBalance).toFixed(2)].map(escapeCsv).join(','));
+
+            const csvContent = '\uFEFF' + lines.join('\r\n');
+            const sanitizedName = report.client.name.replace(/[^a-zA-Z0-9_-]/g, '_');
+            res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+            res.setHeader('Content-Disposition', `attachment; filename="SubLedger_${sanitizedName}_${Date.now()}.csv"`);
+            return res.send(csvContent);
+        } catch (err) {
             next(err);
         }
     }

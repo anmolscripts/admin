@@ -1,0 +1,149 @@
+<%- include('../layouts/header') %>
+
+<div class="content-wrapper p-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <h1 class="h3 fw-bold mb-0"><%= pageTitle %></h1>
+        <span class="badge bg-<%= grn.status === 'ACTIVE' ? 'success' : 'secondary' %> fs-6">
+          <%= grn.status %>
+        </span>
+      </div>
+      <p class="text-muted small mb-0"><%= pageSubtitle %></p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="/purchases/receipts" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Back to Receipts
+      </a>
+      <% if (grn.purchaseOrderId) { %>
+        <a href="/purchases/orders/<%= grn.purchaseOrderId %>" class="btn btn-outline-primary">
+          <i class="bi bi-file-earmark-text me-1"></i> View PO <%= grn.purchaseOrder ? grn.purchaseOrder.orderNumber : '' %>
+        </a>
+      <% } %>
+      <% if (grn.projectId) { %>
+        <a href="/projects/<%= grn.projectId %>" class="btn btn-outline-info">
+          <i class="bi bi-kanban me-1"></i> View Project
+        </a>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Header Details Card -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+      <div class="row g-4">
+        <div class="col-md-3">
+          <div class="text-muted small fw-semibold">Goods Receipt #</div>
+          <div class="fs-5 fw-bold text-primary font-monospace"><%= grn.receiptNumber %></div>
+          <div class="small text-muted mt-1">Date: <%= new Date(grn.receiptDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) %></div>
+        </div>
+        <div class="col-md-3">
+          <div class="text-muted small fw-semibold">Supplier / Vendor</div>
+          <div class="fs-6 fw-bold text-dark"><%= grn.supplierName %></div>
+          <% if (grn.supplier && grn.supplier.gstin) { %>
+            <div class="small text-muted">GSTIN: <%= grn.supplier.gstin %></div>
+          <% } %>
+        </div>
+        <div class="col-md-3">
+          <div class="text-muted small fw-semibold">Delivery Challan / Store</div>
+          <div class="fw-semibold">Challan: <span class="font-monospace text-dark"><%= grn.deliveryChallanNumber || 'N/A' %></span></div>
+          <div class="small text-muted">Store Location: <span class="badge bg-light text-dark border"><%= grn.storeLocation || 'Main Store' %></span></div>
+        </div>
+        <div class="col-md-3">
+          <div class="text-muted small fw-semibold">Purchase Commitment</div>
+          <% if (grn.purchaseOrder) { %>
+            <div><a href="/purchases/orders/<%= grn.purchaseOrderId %>" class="fw-bold text-decoration-none"><%= grn.purchaseOrder.orderNumber %></a></div>
+          <% } else { %>
+            <div class="text-muted">Direct / Unlinked</div>
+          <% } %>
+          <% if (grn.project) { %>
+            <div class="mt-1"><span class="badge bg-primary-subtle text-primary border border-primary-subtle">Project <%= grn.project.code %></span></div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Invariant Accounting Banner -->
+  <div class="alert alert-info border-0 shadow-sm d-flex align-items-center gap-3 mb-4">
+    <i class="bi bi-shield-check fs-3 text-info"></i>
+    <div class="small">
+      <strong>Procurement & Inventory Invariant:</strong> This Goods Receipt recorded inventory physical acceptance into <code><%= grn.storeLocation || 'Main Store' %></code>.
+      No duplicate expense or general ledger vendor liability is created upon GRN. Project actual material cost is recorded strictly when materials are issued from store to the project.
+    </div>
+  </div>
+
+  <!-- Received Line Items Table -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-transparent py-3 border-bottom">
+      <h5 class="card-title fw-bold mb-0">Inspected & Received Line Items</h5>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-3" style="width: 30%;">Item Description</th>
+              <th class="text-end" style="width: 12%;">Ordered</th>
+              <th class="text-end" style="width: 12%;">Received</th>
+              <th class="text-end" style="width: 12%;">Accepted</th>
+              <th class="text-end" style="width: 12%;">Rejected</th>
+              <th class="text-end" style="width: 12%;">Unit Cost (₹)</th>
+              <th class="text-end pe-3" style="width: 12%;">Total (₹)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (grn.items && grn.items.length > 0) { %>
+              <% grn.items.forEach(it => { %>
+                <tr>
+                  <td class="ps-3">
+                    <div class="fw-semibold text-dark"><%= it.name %></div>
+                    <div class="small text-muted font-monospace"><%= it.unit || 'PCS' %></div>
+                  </td>
+                  <td class="text-end font-monospace"><%= parseFloat(it.orderedQuantity || 0).toFixed(2) %></td>
+                  <td class="text-end font-monospace"><%= parseFloat(it.receivedQuantity || 0).toFixed(2) %></td>
+                  <td class="text-end font-monospace fw-bold text-success"><%= parseFloat(it.acceptedQuantity || 0).toFixed(2) %></td>
+                  <td class="text-end font-monospace <%= parseFloat(it.rejectedQuantity || 0) > 0 ? 'text-danger fw-bold' : 'text-muted' %>">
+                    <%= parseFloat(it.rejectedQuantity || 0).toFixed(2) %>
+                  </td>
+                  <td class="text-end font-monospace">₹<%= parseFloat(it.unitCost || 0).toFixed(2) %></td>
+                  <td class="text-end pe-3 font-monospace fw-bold text-dark">₹<%= parseFloat(it.totalCost || 0).toFixed(2) %></td>
+                </tr>
+              <% }); %>
+            <% } else { %>
+              <tr>
+                <td colspan="7" class="text-center py-4 text-muted">No items recorded in this receipt.</td>
+              </tr>
+            <% } %>
+          </tbody>
+          <tfoot class="table-light fw-bold">
+            <% 
+              const totalAccepted = (grn.items || []).reduce((sum, i) => sum + (parseFloat(i.acceptedQuantity) || 0), 0);
+              const totalVal = (grn.items || []).reduce((sum, i) => sum + (parseFloat(i.totalCost) || 0), 0);
+            %>
+            <tr>
+              <td class="ps-3">Totals</td>
+              <td></td>
+              <td></td>
+              <td class="text-end text-success font-monospace"><%= totalAccepted.toFixed(2) %></td>
+              <td></td>
+              <td></td>
+              <td class="text-end pe-3 font-monospace text-primary">₹<%= totalVal.toFixed(2) %></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <% if (grn.notes) { %>
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-3">
+        <h6 class="fw-bold mb-1">Inspection & Receiving Remarks</h6>
+        <p class="text-muted small mb-0"><%= grn.notes %></p>
+      </div>
+    </div>
+  <% } %>
+</div>
+
+<%- include('../layouts/footer') %>

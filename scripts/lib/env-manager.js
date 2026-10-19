@@ -140,8 +140,9 @@ async function collectConfiguration(opts) {
     }
 
     try {
-        // If .env exists, ask confirmation to overwrite
-        if (fs.existsSync(envPath) && !opts.overwriteEnv) {
+        // If .env exists, ask confirmation to overwrite only if it contains database config
+        const existingHasDb = Boolean(existingEnv.DATABASE_URL || (existingEnv.DATABASE_HOST && existingEnv.DATABASE_USER));
+        if (fs.existsSync(envPath) && !opts.overwriteEnv && existingHasDb) {
             if (isInteractive) {
                 const answer = await askQuestion(rl, 'Existing .env file detected. Keep existing configuration? (Y/n)', 'Y');
                 if (answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes') {
@@ -257,7 +258,8 @@ async function collectConfiguration(opts) {
                 || 'admin@email.com';
 
             adminPassword = cliArgs['admin-password']
-                || process.env.SEED_ADMIN_PASSWORD;
+                || process.env.SEED_ADMIN_PASSWORD
+                || existingEnv.SEED_ADMIN_PASSWORD;
 
             if (!adminPassword) {
                 if (isInteractive) {
@@ -293,6 +295,17 @@ async function collectConfiguration(opts) {
             writeEnvFile(envPath, config);
         }
 
+        // In development mode, ensure .env.test exists
+        if (!isProduction) {
+            const envTestPath = path.join(rootPath, '.env.test');
+            if (!fs.existsSync(envTestPath) || shouldWriteEnv) {
+                writeTestEnvFile(envTestPath, {
+                    ...config,
+                    SEED_ADMIN_PASSWORD: adminPassword
+                });
+            }
+        }
+
         return {
             config: {
                 ...config,
@@ -309,6 +322,59 @@ async function collectConfiguration(opts) {
             rl.close();
         }
     }
+}
+
+/**
+ * Serializes and writes configuration to a .env.test file for isolated test suites.
+ *
+ * @param {string} filePath
+ * @param {Record<string, string>} config
+ */
+function writeTestEnvFile(filePath, config) {
+    const encodedUser = encodeURIComponent(config.DATABASE_USER || 'root');
+    const encodedPass = encodeURIComponent(config.DATABASE_PASSWORD || '');
+    const dbHost = config.DATABASE_HOST || 'localhost';
+    const dbPort = config.DATABASE_PORT || '3306';
+    const testDbName = 'spark_admin_test';
+    const shadowDbName = 'spark_admin_test_shadow';
+    const testDatabaseUrl = `mysql://${encodedUser}:${encodedPass}@${dbHost}:${dbPort}/${testDbName}`;
+    const shadowDatabaseUrl = `mysql://${encodedUser}:${encodedPass}@${dbHost}:${dbPort}/${shadowDbName}`;
+
+    const lines = [
+        '# ==============================================================================',
+        '# SPARK ADMIN - AUTOMATICALLY GENERATED TEST CONFIGURATION (.env.test)',
+        `# Generated: ${new Date().toISOString()}`,
+        '# ==============================================================================',
+        '',
+        'NODE_ENV=test',
+        `PORT=${Number(config.PORT || 3000) + 1}`,
+        `HOST=${config.HOST || '0.0.0.0'}`,
+        `TRUST_PROXY=${config.TRUST_PROXY || 'false'}`,
+        `REQUEST_BODY_LIMIT=${config.REQUEST_BODY_LIMIT || '2mb'}`,
+        '',
+        `SESSION_SECRET=${config.SESSION_SECRET}`,
+        `SESSION_COOKIE_NAME=${config.SESSION_COOKIE_NAME || 'spark.sid'}`,
+        `SESSION_MAX_AGE_HOURS=${config.SESSION_MAX_AGE_HOURS || '8'}`,
+        `BCRYPT_SALT_ROUNDS=${config.BCRYPT_SALT_ROUNDS || '12'}`,
+        '',
+        `DATABASE_HOST=${dbHost}`,
+        `DATABASE_PORT=${dbPort}`,
+        `DATABASE_USER=${config.DATABASE_USER || 'root'}`,
+        `DATABASE_PASSWORD=${config.DATABASE_PASSWORD || ''}`,
+        `DATABASE_NAME=${testDbName}`,
+        `DATABASE_URL="${testDatabaseUrl}"`,
+        `SHADOW_DATABASE_URL="${shadowDatabaseUrl}"`,
+        '',
+        `SEED_ADMIN_EMAIL=${config.SEED_ADMIN_EMAIL || 'admin@email.com'}`
+    ];
+
+    if (config.SEED_ADMIN_PASSWORD) {
+        lines.push(`SEED_ADMIN_PASSWORD=${config.SEED_ADMIN_PASSWORD}`);
+    }
+
+    lines.push('');
+
+    fs.writeFileSync(filePath, lines.join('\n'), { mode: 0o600 });
 }
 
 /**
@@ -367,5 +433,6 @@ module.exports = {
     generateRandomPassword,
     parseEnvFile,
     collectConfiguration,
-    writeEnvFile
+    writeEnvFile,
+    writeTestEnvFile
 };

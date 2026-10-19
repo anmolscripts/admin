@@ -19,7 +19,7 @@ function handleControllerError(err, res) {
  */
 async function getProfile(req, res) {
     try {
-        const profile = await businessProfileService.getProfile();
+        const profile = await businessProfileService.getProfile(req.businessId);
         return res.status(200).json({ success: true, data: profile });
     } catch (err) {
         return handleControllerError(err, res);
@@ -31,7 +31,7 @@ async function getProfile(req, res) {
  */
 async function updateProfile(req, res) {
     try {
-        const updated = await businessProfileService.updateProfile(req.body);
+        const updated = await businessProfileService.updateProfile(req.body, req.businessId);
         return res.status(200).json({ success: true, data: updated });
     } catch (err) {
         return handleControllerError(err, res);

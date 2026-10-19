@@ -188,7 +188,7 @@
 
     <div class="row g-4">
       <!-- Customer Receivables -->
-      <div class="col-md-6">
+      <div class="col-md-6 col-lg-4">
         <div class="card-glass h-100 p-4 d-flex flex-column">
           <div class="d-flex align-items-center gap-3 mb-3">
             <div class="p-3 rounded-3" style="background: rgba(255, 137, 111, 0.14); color: var(--sa-coral, #FF896F);">
@@ -196,15 +196,39 @@
             </div>
             <div>
               <h5 class="fw-bold mb-1" style="color: var(--sa-text-main);">Customer Receivables & Ageing</h5>
-              <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill">Subledger & Ageing</span>
+              <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill">Ageing & GL 1121</span>
             </div>
           </div>
           <p class="small flex-grow-1" style="color: var(--sa-text-secondary); line-height: 1.5;">
-            Accounts receivable ageing breakdown (0-30, 31-60, 61-90, 90+ days), client statements, and full cross-reconciliation with General Ledger control account 1121.
+            Accounts receivable ageing breakdown (0-30, 31-60, 61-90, 90+ days) and cross-reconciliation with General Ledger control account 1121.
           </p>
           <div class="pt-3 border-top mt-auto" style="border-color: var(--sa-border) !important;">
             <a href="/reports/customer-receivables" class="btn btn-sm btn-outline-danger w-100 d-inline-flex justify-content-center align-items-center gap-2 rounded-pill py-2">
-              <span>Open Customer Receivables</span>
+              <span>Open Receivables</span>
+              <i class="bi bi-arrow-right"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Customer Sub-Ledger Reports & Statements -->
+      <div class="col-md-6 col-lg-4">
+        <div class="card-glass h-100 p-4 d-flex flex-column">
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="p-3 rounded-3" style="background: rgba(2, 132, 199, 0.14); color: var(--sa-primary, #0284c7);">
+              <i class="bi bi-person-lines-fill fs-4"></i>
+            </div>
+            <div>
+              <h5 class="fw-bold mb-1" style="color: var(--sa-text-main);">Customer Sub-Ledger</h5>
+              <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill">Sub-Ledger & Export</span>
+            </div>
+          </div>
+          <p class="small flex-grow-1" style="color: var(--sa-text-secondary); line-height: 1.5;">
+            Chronological customer sub-ledger statements with partial search, date range filtering, opening balances, payment settlements, and CSV export.
+          </p>
+          <div class="pt-3 border-top mt-auto" style="border-color: var(--sa-border) !important;">
+            <a href="/reports/customer-statement" class="btn btn-sm btn-outline-primary w-100 d-inline-flex justify-content-center align-items-center gap-2 rounded-pill py-2">
+              <span>Open Sub-Ledger</span>
               <i class="bi bi-arrow-right"></i>
             </a>
           </div>
@@ -212,22 +236,22 @@
       </div>
 
       <!-- Reporting & Analytics Workbench -->
-      <div class="col-md-6">
+      <div class="col-md-12 col-lg-4">
         <div class="card-glass h-100 p-4 d-flex flex-column">
           <div class="d-flex align-items-center gap-3 mb-3">
             <div class="p-3 rounded-3" style="background: rgba(22, 184, 175, 0.14); color: var(--sa-turquoise, #16B8AF);">
               <i class="bi bi-clipboard-data-fill fs-4"></i>
             </div>
             <div>
-              <h5 class="fw-bold mb-1" style="color: var(--sa-text-main);">Reporting & Analytics Workbench</h5>
+              <h5 class="fw-bold mb-1" style="color: var(--sa-text-main);">Analytics Workbench</h5>
               <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill">Visual Analytics</span>
             </div>
           </div>
           <p class="small flex-grow-1" style="color: var(--sa-text-secondary); line-height: 1.5;">
-            Interactive multi-dimensional financial explorer with revenue trends, document breakdown charts, quotation conversion metrics, and date range comparative filters.
+            Interactive multi-dimensional financial explorer with revenue trends, document breakdown charts, quotation conversion metrics, and comparative filters.
           </p>
           <div class="pt-3 border-top mt-auto" style="border-color: var(--sa-border) !important;">
-            <a href="/reports/workbench" class="btn btn-sm btn-outline-primary w-100 d-inline-flex justify-content-center align-items-center gap-2 rounded-pill py-2">
+            <a href="/reports/workbench" class="btn btn-sm btn-outline-info w-100 d-inline-flex justify-content-center align-items-center gap-2 rounded-pill py-2">
               <span>Open Analytics Workbench</span>
               <i class="bi bi-arrow-right"></i>
             </a>

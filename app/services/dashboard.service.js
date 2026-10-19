@@ -66,7 +66,9 @@ async function getDashboardMetrics({ range = 'this_month', from = null, to = nul
 
     // Tenant Scoping Clause
     const bizIdNum = businessId ? parseInt(businessId, 10) : null;
-    const businessClause = (bizIdNum && !isNaN(bizIdNum) && bizIdNum > 0) ? { businessId: bizIdNum } : {};
+    const businessClause = (bizIdNum && !isNaN(bizIdNum) && bizIdNum > 0)
+        ? { businessId: bizIdNum }
+        : {};
 
     const invoiceDateClause = hasDateFilter ? { invoiceDate: dateCondition } : {};
     const paymentDateClause = hasDateFilter ? { paymentDate: dateCondition } : {};
@@ -177,7 +179,7 @@ async function getDashboardMetrics({ range = 'this_month', from = null, to = nul
         // 9. Payment Collection Aggregation
         prisma.payment.aggregate({
             where: {
-                status: 'RECORDED',
+                status: { in: ['POSTED', 'RECORDED'] },
                 ...businessClause,
                 ...paymentDateClause
             },
@@ -351,13 +353,13 @@ async function getDashboardMetrics({ range = 'this_month', from = null, to = nul
 
     // Format Invoices by Status for Donut Chart
     const paidInvoicesCount = await prisma.invoice.count({
-        where: { documentType: 'INVOICE', status: 'ACTIVE', outstandingAmount: 0, ...businessClause, ...invoiceDateClause }
+        where: { documentType: 'INVOICE', status: 'ACTIVE', paidAmount: { gt: 0 }, outstandingAmount: 0, ...businessClause, ...invoiceDateClause }
     });
     const partiallyPaidInvoicesCount = await prisma.invoice.count({
         where: { documentType: 'INVOICE', status: 'ACTIVE', paidAmount: { gt: 0 }, outstandingAmount: { gt: 0 }, ...businessClause, ...invoiceDateClause }
     });
     const unpaidInvoicesCount = await prisma.invoice.count({
-        where: { documentType: 'INVOICE', status: 'ACTIVE', paidAmount: 0, outstandingAmount: { gt: 0 }, ...businessClause, ...invoiceDateClause }
+        where: { documentType: 'INVOICE', status: 'ACTIVE', paidAmount: 0, ...businessClause, ...invoiceDateClause }
     });
 
     const statusBreakdown = {
@@ -491,7 +493,7 @@ async function generateTrendSeries(dateFilter, now, businessClause = {}) {
             }),
             prisma.payment.aggregate({
                 where: {
-                    status: 'RECORDED',
+                    status: { in: ['POSTED', 'RECORDED'] },
                     paymentDate: { gte: bStart, lte: bEnd },
                     ...businessClause
                 },

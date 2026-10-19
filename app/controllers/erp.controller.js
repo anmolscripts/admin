@@ -21,7 +21,7 @@ async function recordSupplierPayment(req, res, next) {
     try {
         const payment = await supplierPaymentService.recordSupplierPayment({
             ...req.body,
-            businessId: req.body.businessId || req.businessId
+            businessId: req.businessId || req.body.businessId
         }, req.user?.id);
         res.status(201).json({ success: true, payment });
     } catch (err) {
@@ -69,7 +69,7 @@ async function recordStockMovement(req, res, next) {
     try {
         const movement = await stockMovementService.recordStockMovement({
             ...req.body,
-            businessId: req.body.businessId || req.businessId
+            businessId: req.businessId || req.body.businessId
         }, req.user?.id);
         res.status(201).json({ success: true, movement });
     } catch (err) {
@@ -205,7 +205,7 @@ async function createReimbursement(req, res, next) {
     try {
         const reimbursement = await payrollService.createReimbursement({
             ...req.body,
-            businessId: req.body.businessId || req.businessId
+            businessId: req.businessId || req.body.businessId
         }, req.user?.id);
         res.status(201).json({ success: true, reimbursement });
     } catch (err) {
@@ -228,9 +228,16 @@ async function approveReimbursement(req, res, next) {
 // -------------------------------------------------------------
 // PROJECTS & LABOUR COSTING
 // -------------------------------------------------------------
+// PROJECTS & LABOUR COSTING (STRICT TENANT SCOPING)
+// -------------------------------------------------------------
 async function listProjects(req, res, next) {
     try {
-        const result = await projectService.listProjects(req.query);
+        const businessId = req.businessId;
+        if (!businessId) return res.status(400).json({ success: false, error: 'Business context required' });
+        const result = await projectService.listProjects({
+            ...req.query,
+            businessId
+        });
         res.json({ success: true, ...result });
     } catch (err) {
         next(err);
@@ -239,31 +246,36 @@ async function listProjects(req, res, next) {
 
 async function createProject(req, res, next) {
     try {
-        const project = await projectService.createProject({
-            ...req.body,
-            businessId: req.body.businessId || req.businessId
-        }, req.user?.id);
+        const businessId = req.businessId;
+        if (!businessId) return res.status(400).json({ success: false, error: 'Business context required' });
+        const project = await projectService.createProject(req.body, req.user?.id, businessId);
         res.status(201).json({ success: true, project });
     } catch (err) {
         if (err.name === 'ValidationError') return res.status(400).json({ success: false, error: err.message });
         if (err.name === 'ConflictError') return res.status(409).json({ success: false, error: err.message });
+        if (err.name === 'NotFoundError') return res.status(404).json({ success: false, error: err.message });
         next(err);
     }
 }
 
 async function getProject(req, res, next) {
     try {
-        const project = await projectService.getProjectById(req.params.id);
+        const businessId = req.businessId;
+        if (!businessId) return res.status(400).json({ success: false, error: 'Business context required' });
+        const project = await projectService.getProjectById(req.params.id, businessId);
         res.json({ success: true, project });
     } catch (err) {
         if (err.name === 'NotFoundError') return res.status(404).json({ success: false, error: err.message });
+        if (err.name === 'ValidationError') return res.status(400).json({ success: false, error: err.message });
         next(err);
     }
 }
 
 async function createProjectTask(req, res, next) {
     try {
-        const task = await projectService.createProjectTask(req.params.id, req.body, req.user?.id);
+        const businessId = req.businessId;
+        if (!businessId) return res.status(400).json({ success: false, error: 'Business context required' });
+        const task = await projectService.createProjectTask(req.params.id, req.body, req.user?.id, businessId);
         res.status(201).json({ success: true, task });
     } catch (err) {
         if (err.name === 'ValidationError') return res.status(400).json({ success: false, error: err.message });
@@ -274,17 +286,22 @@ async function createProjectTask(req, res, next) {
 
 async function listProjectTasks(req, res, next) {
     try {
-        const tasks = await projectService.listProjectTasks(req.params.id, req.query);
-        res.json({ success: true, tasks });
+        const businessId = req.businessId;
+        if (!businessId) return res.status(400).json({ success: false, error: 'Business context required' });
+        const project = await projectService.getProjectById(req.params.id, businessId);
+        res.json({ success: true, tasks: project.tasks });
     } catch (err) {
         if (err.name === 'ValidationError') return res.status(400).json({ success: false, error: err.message });
+        if (err.name === 'NotFoundError') return res.status(404).json({ success: false, error: err.message });
         next(err);
     }
 }
 
 async function logTimesheet(req, res, next) {
     try {
-        const entry = await projectService.logTimesheetEntry(req.body, req.user?.id);
+        const businessId = req.businessId;
+        if (!businessId) return res.status(400).json({ success: false, error: 'Business context required' });
+        const entry = await projectService.logTimesheet(req.body, req.user?.id, businessId);
         res.status(201).json({ success: true, entry });
     } catch (err) {
         if (err.name === 'ValidationError') return res.status(400).json({ success: false, error: err.message });
@@ -295,7 +312,9 @@ async function logTimesheet(req, res, next) {
 
 async function approveTimesheet(req, res, next) {
     try {
-        const entry = await projectService.approveTimesheetEntry(req.params.id, req.user?.id);
+        const businessId = req.businessId;
+        if (!businessId) return res.status(400).json({ success: false, error: 'Business context required' });
+        const entry = await projectService.approveTimesheetEntry(req.params.id, req.user?.id, businessId);
         res.json({ success: true, entry });
     } catch (err) {
         if (err.name === 'NotFoundError') return res.status(404).json({ success: false, error: err.message });
@@ -306,7 +325,9 @@ async function approveTimesheet(req, res, next) {
 
 async function getProjectFinancials(req, res, next) {
     try {
-        const summary = await projectService.getProjectFinancialSummary(req.params.id);
+        const businessId = req.businessId;
+        if (!businessId) return res.status(400).json({ success: false, error: 'Business context required' });
+        const summary = await projectService.getProjectFinancialSummary(req.params.id, businessId);
         res.json({ success: true, summary });
     } catch (err) {
         if (err.name === 'ValidationError') return res.status(400).json({ success: false, error: err.message });

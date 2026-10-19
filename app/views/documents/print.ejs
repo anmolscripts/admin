@@ -108,7 +108,7 @@
 
   <!-- Reusable Shared Template Container -->
   <div class="print-wrapper">
-    <%- include('./templates/document', { model }) %>
+    <%- include('./templates/document', { model, templateConfig: locals.templateConfig || (model && model.templateConfig) }) %>
   </div>
 
   <script>

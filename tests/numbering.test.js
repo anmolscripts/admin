@@ -51,6 +51,12 @@ describe('Enterprise Centralized Numbering Service Test Suite', () => {
         await prisma.payment.deleteMany({
             where: { invoice: { businessId: testBusiness1Id, invoiceNumber: { startsWith: 'INVO/2026/10/' } } }
         }).catch(() => {});
+        await prisma.creditDebitNoteItem.deleteMany({
+            where: { note: { businessId: testBusiness1Id } }
+        }).catch(() => {});
+        await prisma.creditDebitNote.deleteMany({
+            where: { businessId: testBusiness1Id }
+        }).catch(() => {});
         await prisma.invoice.deleteMany({
             where: { businessId: testBusiness1Id, invoiceNumber: { startsWith: 'INVO/2026/10/' } }
         }).catch(() => {});
@@ -308,6 +314,18 @@ describe('Enterprise Centralized Numbering Service Test Suite', () => {
 
     it('11. High concurrency: 20 concurrent requests allocate 20 unique numbers without collision', async () => {
         const dateJune = new Date('2026-06-15T10:00:00Z');
+        await prisma.invoiceItem.deleteMany({
+            where: { invoice: { businessId: testBusiness1Id, invoiceNumber: { startsWith: 'INVO/2026/06/' } } }
+        }).catch(() => {});
+        await prisma.invoiceRevision.deleteMany({
+            where: { invoice: { businessId: testBusiness1Id, invoiceNumber: { startsWith: 'INVO/2026/06/' } } }
+        }).catch(() => {});
+        await prisma.payment.deleteMany({
+            where: { invoice: { businessId: testBusiness1Id, invoiceNumber: { startsWith: 'INVO/2026/06/' } } }
+        }).catch(() => {});
+        await prisma.invoice.deleteMany({
+            where: { businessId: testBusiness1Id, invoiceNumber: { startsWith: 'INVO/2026/06/' } }
+        }).catch(() => {});
         await prisma.numberingSequence.deleteMany({
             where: {
                 businessId: testBusiness1Id,
@@ -774,7 +792,15 @@ describe('Enterprise Centralized Numbering Service Test Suite', () => {
         const octDate = new Date('2026-10-20T10:00:00Z');
         const novDate = new Date('2026-11-01T10:00:00Z');
 
-        // Clear existing sequences for this test window
+        // Clear existing client codes and sequences for this test window
+        await prisma.client.updateMany({
+            where: {
+                businessId: { in: [testBusiness1Id, testBusiness2Id] },
+                clientCode: { in: ['CUST/2026/10/1', 'CUST/2026/11/1'] }
+            },
+            data: { clientCode: null }
+        }).catch(() => {});
+
         await prisma.numberingSequence.deleteMany({
             where: {
                 businessId: { in: [testBusiness1Id, testBusiness2Id] },

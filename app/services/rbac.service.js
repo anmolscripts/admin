@@ -18,7 +18,8 @@ const MODULES = [
     'JOURNALS',
     'CREDIT_NOTES',
     'REPORTS',
-    'FINANCIAL_YEARS'
+    'FINANCIAL_YEARS',
+    'PROJECTS'
 ];
 
 /**
@@ -38,7 +39,12 @@ const ACTIONS = [
     'ACTIVITY_VIEW',
     'FULL_ACCESS',
     'CLOSE',
-    'REOPEN'
+    'REOPEN',
+    'FINANCIALS_VIEW',
+    'COST_CREATE',
+    'APPROVE',
+    'ATTACHMENT_VIEW',
+    'ATTACHMENT_UPLOAD'
 ];
 
 /**
@@ -59,7 +65,8 @@ const MODULE_ACTION_MATRIX = {
     JOURNALS: ['VIEW', 'CREATE', 'VOID', 'EXPORT', 'PRINT', 'MANAGE', 'FULL_ACCESS'],
     CREDIT_NOTES: ['VIEW', 'CREATE', 'EDIT', 'VOID', 'DELETE', 'EXPORT', 'PRINT', 'MANAGE', 'FULL_ACCESS'],
     REPORTS: ['VIEW', 'EXPORT', 'PRINT', 'FULL_ACCESS'],
-    FINANCIAL_YEARS: ['VIEW', 'CREATE', 'EDIT', 'CLOSE', 'REOPEN', 'MANAGE', 'FULL_ACCESS']
+    FINANCIAL_YEARS: ['VIEW', 'CREATE', 'EDIT', 'CLOSE', 'REOPEN', 'MANAGE', 'FULL_ACCESS'],
+    PROJECTS: ['VIEW', 'CREATE', 'EDIT', 'DELETE', 'MANAGE', 'FINANCIALS_VIEW', 'COST_CREATE', 'APPROVE', 'ATTACHMENT_VIEW', 'ATTACHMENT_UPLOAD', 'EXPORT', 'PRINT', 'FULL_ACCESS']
 };
 
 /**
@@ -143,7 +150,8 @@ async function seedPermissionsAndRoles() {
                 'REPORTS:VIEW', 'REPORTS:EXPORT', 'REPORTS:PRINT',
                 'AUDIT_LOGS:VIEW',
                 'TEAM:VIEW',
-                'FINANCIAL_YEARS:VIEW'
+                'FINANCIAL_YEARS:VIEW',
+                'PROJECTS:VIEW', 'PROJECTS:CREATE', 'PROJECTS:EDIT', 'PROJECTS:MANAGE', 'PROJECTS:FINANCIALS_VIEW', 'PROJECTS:COST_CREATE', 'PROJECTS:APPROVE', 'PROJECTS:ATTACHMENT_VIEW', 'PROJECTS:ATTACHMENT_UPLOAD', 'PROJECTS:EXPORT', 'PROJECTS:PRINT'
             ]
         },
         {
@@ -160,7 +168,8 @@ async function seedPermissionsAndRoles() {
                 'ACCOUNTS:VIEW',
                 'JOURNALS:VIEW',
                 'CREDIT_NOTES:VIEW', 'CREDIT_NOTES:CREATE', 'CREDIT_NOTES:EDIT', 'CREDIT_NOTES:PRINT',
-                'REPORTS:VIEW', 'REPORTS:PRINT'
+                'REPORTS:VIEW', 'REPORTS:PRINT',
+                'PROJECTS:VIEW', 'PROJECTS:COST_CREATE', 'PROJECTS:ATTACHMENT_VIEW', 'PROJECTS:ATTACHMENT_UPLOAD', 'PROJECTS:PRINT'
             ]
         },
         {
@@ -176,7 +185,8 @@ async function seedPermissionsAndRoles() {
                 'ACCOUNTS:VIEW',
                 'JOURNALS:VIEW',
                 'CREDIT_NOTES:VIEW', 'CREDIT_NOTES:PRINT',
-                'REPORTS:VIEW', 'REPORTS:PRINT'
+                'REPORTS:VIEW', 'REPORTS:PRINT',
+                'PROJECTS:VIEW', 'PROJECTS:ATTACHMENT_VIEW', 'PROJECTS:PRINT'
             ]
         },
         {
@@ -192,7 +202,8 @@ async function seedPermissionsAndRoles() {
                 'PAYMENTS:VIEW', 'PAYMENTS:CREATE',
                 'ACCOUNTS:VIEW',
                 'JOURNALS:VIEW',
-                'CREDIT_NOTES:VIEW', 'CREDIT_NOTES:CREATE', 'CREDIT_NOTES:EDIT', 'CREDIT_NOTES:PRINT'
+                'CREDIT_NOTES:VIEW', 'CREDIT_NOTES:CREATE', 'CREDIT_NOTES:EDIT', 'CREDIT_NOTES:PRINT',
+                'PROJECTS:VIEW', 'PROJECTS:COST_CREATE', 'PROJECTS:ATTACHMENT_VIEW', 'PROJECTS:ATTACHMENT_UPLOAD', 'PROJECTS:PRINT'
             ]
         }
     ];
