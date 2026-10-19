@@ -54,6 +54,27 @@ async function recordPayment(req, res) {
 }
 
 /**
+ * POST /api/payments/:id/clear
+ */
+async function clearPayment(req, res) {
+    try {
+        const userId = req.session && req.session.user ? req.session.user.id : null;
+        if (!userId) {
+            return res.status(401).json({ success: false, error: 'Authentication required.' });
+        }
+        const result = await paymentService.clearPayment(
+            req.params.id,
+            userId,
+            req.body && req.body.clearedAt,
+            getRequestMeta(req)
+        );
+        return res.status(200).json({ success: true, data: result });
+    } catch (err) {
+        return handleControllerError(err, res);
+    }
+}
+
+/**
  * POST /api/payments/:id/void
  */
 async function voidPayment(req, res) {
@@ -109,6 +130,7 @@ async function getPaymentAccounting(req, res) {
 module.exports = {
     getInvoicePayments,
     recordPayment,
+    clearPayment,
     voidPayment,
     postPaymentAccounting,
     getPaymentAccounting

@@ -104,6 +104,11 @@ async function recordPayment(invoiceIdInput, paymentData, userId, meta = {}) {
     if (!ALLOWED_METHODS.includes(rawMethod) && !ALLOWED_METHODS.includes(method)) {
         throw new ValidationError(`Unsupported payment method: "${paymentData.method}". Allowed methods are ${ALLOWED_METHODS.join(', ')}.`);
     }
+    const reference = typeof paymentData.reference === 'string' ? paymentData.reference.trim() : '';
+    if (method === 'CHEQUE' && !reference) {
+        throw new ValidationError('A cheque number or reference is required for cheque payments.');
+    }
+    const isPendingCheque = method === 'CHEQUE';
 
     const paymentDate = paymentData.paymentDate ? new Date(paymentData.paymentDate) : new Date();
     if (isNaN(paymentDate.getTime())) {
@@ -142,20 +147,38 @@ async function recordPayment(invoiceIdInput, paymentData, userId, meta = {}) {
         }
 
         const currentOutstanding = Number(invoice.outstandingAmount);
-        if (amount > currentOutstanding + 0.001) {
+        const pendingCheques = await tx.payment.findMany({
+            where: { invoiceId: invoice.id, status: 'PENDING_CLEARANCE' },
+            select: { amount: true }
+        });
+        const reservedAmount = pendingCheques.reduce((sum, payment) => sum + Number(payment.amount), 0);
+        const availableOutstanding = Math.max(0, Math.round((currentOutstanding - reservedAmount) * 100) / 100);
+        if (amount > availableOutstanding + 0.001) {
+            if (reservedAmount > 0) {
+                throw new ValidationError(
+                    `Payment amount (₹${amount.toFixed(2)}) exceeds the available balance after pending cheques (₹${availableOutstanding.toFixed(2)}).`
+                );
+            }
             throw new ValidationError(
                 `Payment amount (₹${amount.toFixed(2)}) exceeds the invoice outstanding balance (₹${currentOutstanding.toFixed(2)}).`
             );
         }
 
-        const activeBusinessId = invoice.businessId || (meta && meta.businessId);
+        const activeBusinessId = Number(invoice.businessId || (meta && meta.businessId)) || null;
         if (!activeBusinessId) {
             throw new ValidationError('Invoice is missing business context.');
         }
         if (meta && meta.businessId && parseInt(meta.businessId, 10) !== activeBusinessId) {
             throw new ValidationError(`Invoice ${invoice.id} does not belong to authorized business ${meta.businessId}. Cross-business access denied.`);
         }
-        const financialYear = await ensureFinancialYear(paymentDate, activeBusinessId);
+        const invoiceJournal = await tx.journalEntry.findUnique({
+            where: { idempotencyKey: postingService.getInvoiceIdempotencyKey(invoice.id) },
+            select: { id: true }
+        });
+        if (!invoiceJournal) {
+            await postingService.postInvoice(invoice.id, { userId, externalTx: tx });
+        }
+        const financialYear = await ensureFinancialYear(paymentDate, activeBusinessId, tx);
         if (financialYear && financialYear.status === 'CLOSED') {
             throw new ValidationError(`Cannot record payment in CLOSED Financial Year ${financialYear.code}.`);
         }
@@ -176,50 +199,62 @@ async function recordPayment(invoiceIdInput, paymentData, userId, meta = {}) {
                 amount,
                 paymentDate,
                 method,
-                reference: paymentData.reference ? paymentData.reference.trim() : null,
-                notes: paymentData.notes ? paymentData.notes.trim() : null,
-                status: 'POSTED',
+                reference: reference || null,
+                notes: typeof paymentData.notes === 'string' && paymentData.notes.trim() ? paymentData.notes.trim() : null,
+                status: isPendingCheque ? 'PENDING_CLEARANCE' : 'POSTED',
                 createdById: userId || null
             }
         });
 
-        // Recalculate totals from all POSTED payments
-        const postedPayments = await tx.payment.findMany({
-            where: { invoiceId: invoice.id, status: 'POSTED' }
-        });
-        const totalPaid = Math.round(postedPayments.reduce((acc, p) => acc + Number(p.amount), 0) * 100) / 100;
-        const grandTotal = Number(invoice.grandTotal);
+        let updatedInvoice;
+        let totalPaid = Number(invoice.paidAmount);
+        let newOutstanding = Number(invoice.outstandingAmount);
 
-        if (totalPaid > grandTotal + 0.001) {
-            throw new ValidationError(
-                `Payment cannot be recorded: total paid (₹${totalPaid.toFixed(2)}) would exceed grand total (₹${grandTotal.toFixed(2)}).`
-            );
-        }
+        if (isPendingCheque) {
+            updatedInvoice = await tx.invoice.update({
+                where: { id: invoice.id },
+                data: { version: { increment: 1 } }
+            });
+        } else {
+            // Recalculate totals from all POSTED payments
+            const postedPayments = await tx.payment.findMany({
+                where: { invoiceId: invoice.id, status: 'POSTED' }
+            });
+            totalPaid = Math.round(postedPayments.reduce((acc, p) => acc + Number(p.amount), 0) * 100) / 100;
+            const grandTotal = Number(invoice.grandTotal);
 
-        const newOutstanding = Math.max(0, Math.round((grandTotal - totalPaid) * 100) / 100);
-
-        const updatedInvoice = await tx.invoice.update({
-            where: { id: invoice.id },
-            data: {
-                paidAmount: totalPaid,
-                outstandingAmount: newOutstanding,
-                version: { increment: 1 }
+            if (totalPaid > grandTotal + 0.001) {
+                throw new ValidationError(
+                    `Payment cannot be recorded: total paid (₹${totalPaid.toFixed(2)}) would exceed grand total (₹${grandTotal.toFixed(2)}).`
+                );
             }
-        });
+
+            newOutstanding = Math.max(0, Math.round((grandTotal - totalPaid) * 100) / 100);
+
+            updatedInvoice = await tx.invoice.update({
+                where: { id: invoice.id },
+                data: {
+                    paidAmount: totalPaid,
+                    outstandingAmount: newOutstanding,
+                    version: { increment: 1 }
+                }
+            });
+        }
 
         // Append Revision record
         const lastRev = invoice.revisions[0];
         const nextRevNo = (lastRev ? lastRev.revisionNo : 0) + 1;
+        const revisionAction = isPendingCheque ? 'CHEQUE_RECEIVED' : 'PAYMENT_RECORDED';
         await tx.invoiceRevision.create({
             data: {
                 invoiceId: invoice.id,
                 revisionNo: nextRevNo,
-                action: 'PAYMENT_RECORDED',
+                action: revisionAction,
                 changedById: userId || invoice.createdById,
                 ipAddress: meta ? meta.ipAddress : null,
                 userAgent: meta ? meta.userAgent : null,
                 changes: {
-                    action: 'PAYMENT_RECORDED',
+                    action: revisionAction,
                     paymentId: payment.id,
                     amount,
                     method,
@@ -228,7 +263,9 @@ async function recordPayment(invoiceIdInput, paymentData, userId, meta = {}) {
                     newOutstandingAmount: newOutstanding,
                     paidAmount: totalPaid,
                     outstandingAmount: newOutstanding,
-                    summary: `Payment of ₹${amount.toFixed(2)} recorded via ${method}.${payment.reference ? ' Ref: ' + payment.reference : ''} Outstanding balance: ₹${newOutstanding.toFixed(2)}.`
+                    summary: isPendingCheque
+                        ? `Cheque of ₹${amount.toFixed(2)} received and is pending clearance.${payment.reference ? ' Cheque: ' + payment.reference + '.' : ''} Invoice balance remains ₹${newOutstanding.toFixed(2)} until cleared.`
+                        : `Payment of ₹${amount.toFixed(2)} recorded via ${method}.${payment.reference ? ' Ref: ' + payment.reference : ''} Outstanding balance: ₹${newOutstanding.toFixed(2)}.`
                 },
                 snapshot: {
                     ...updatedInvoice,
@@ -247,19 +284,20 @@ async function recordPayment(invoiceIdInput, paymentData, userId, meta = {}) {
                 targetType: 'PAYMENT',
                 targetId: payment.id,
                 targetReference: payment.reference || `Payment #${payment.id}`,
-                metadata: { invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber, amount: Number(payment.amount), method: payment.method }
-            }, tx).catch(() => {});
+                metadata: { invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber, amount: Number(payment.amount), method: payment.method, status: payment.status }
+            }, tx);
         }
 
-        // Post double-entry journal entry atomically in the same transaction
-        const postingResult = await postingService.postPayment(
-            payment.id,
-            {
-                userId,
-                depositAccountId: paymentData.depositAccountId || null
-            },
-            tx
-        );
+        const postingResult = isPendingCheque
+            ? { journal: null }
+            : await postingService.postPayment(
+                payment.id,
+                {
+                    userId,
+                    depositAccountId: paymentData.depositAccountId || null
+                },
+                tx
+            );
 
         return {
             payment: {
@@ -275,7 +313,182 @@ async function recordPayment(invoiceIdInput, paymentData, userId, meta = {}) {
             },
             journal: postingResult.journal
         };
-    }, { timeout: 15000, maxWait: 10000 });
+    }, { timeout: 30000, maxWait: 10000 });
+}
+
+/**
+ * Clear a pending customer cheque and post it on the date it cleared.
+ */
+async function clearPayment(paymentIdInput, userId, clearedAtInput, meta = {}) {
+    const paymentId = parseInt(paymentIdInput, 10);
+    if (isNaN(paymentId) || paymentId <= 0) {
+        throw new ValidationError('Invalid payment ID.');
+    }
+
+    let clearedAt;
+    if (!clearedAtInput) {
+        clearedAt = new Date();
+    } else if (typeof clearedAtInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(clearedAtInput)) {
+        clearedAt = new Date(`${clearedAtInput}T00:00:00.000Z`);
+        if (clearedAt.toISOString().slice(0, 10) !== clearedAtInput) {
+            throw new ValidationError('Invalid cheque clearance date.');
+        }
+    } else {
+        clearedAt = new Date(clearedAtInput);
+    }
+    if (isNaN(clearedAt.getTime())) {
+        throw new ValidationError('Invalid cheque clearance date.');
+    }
+
+    return prisma.$transaction(async (tx) => {
+        await tx.$executeRawUnsafe('SELECT id FROM payments WHERE id = ? FOR UPDATE', paymentId);
+        const payment = await tx.payment.findUnique({
+            where: { id: paymentId },
+            include: { invoice: true }
+        });
+
+        if (!payment) {
+            throw new NotFoundError(`Payment with ID ${paymentId} not found.`);
+        }
+        if (payment.method !== 'CHEQUE' || payment.status !== 'PENDING_CLEARANCE') {
+            throw new ValidationError('Only pending cheque payments can be marked cleared.');
+        }
+        if (payment.invoice.status !== 'ACTIVE') {
+            throw new ValidationError(`Cannot clear a cheque for an invoice with status ${payment.invoice.status}.`);
+        }
+        if (clearedAt < new Date(payment.paymentDate)) {
+            throw new ValidationError('Cheque clearance date cannot be before the payment date.');
+        }
+        const clearanceDay = new Date(clearedAt);
+        clearanceDay.setUTCHours(0, 0, 0, 0);
+        const today = new Date();
+        today.setUTCHours(0, 0, 0, 0);
+        if (clearanceDay > today) {
+            throw new ValidationError('Cheque clearance date cannot be in the future.');
+        }
+
+        await tx.$executeRawUnsafe('SELECT id FROM invoices WHERE id = ? FOR UPDATE', payment.invoiceId);
+        const invoice = await tx.invoice.findUnique({
+            where: { id: payment.invoiceId },
+            include: { revisions: { orderBy: { revisionNo: 'desc' }, take: 1 } }
+        });
+        if (!invoice) {
+            throw new NotFoundError(`Invoice with ID ${payment.invoiceId} not found.`);
+        }
+
+        const activeBusinessId = Number(invoice.businessId || payment.businessId || (meta && meta.businessId)) || null;
+        if (!activeBusinessId) {
+            throw new ValidationError('Invoice is missing business context.');
+        }
+        if (payment.businessId && invoice.businessId && payment.businessId !== invoice.businessId) {
+            throw new ValidationError('Payment business does not match its invoice business.');
+        }
+        if (meta && meta.businessId && parseInt(meta.businessId, 10) !== activeBusinessId) {
+            throw new ValidationError(`Payment ${payment.id} does not belong to authorized business ${meta.businessId}. Cross-business access denied.`);
+        }
+
+        const financialYear = await ensureFinancialYear(clearedAt, activeBusinessId, tx);
+        if (financialYear && financialYear.status === 'CLOSED') {
+            throw new ValidationError(`Cannot clear cheque in CLOSED Financial Year ${financialYear.code}.`);
+        }
+
+        const outstanding = Number(invoice.outstandingAmount);
+        if (Number(payment.amount) > outstanding + 0.001) {
+            throw new ValidationError(
+                `Cheque amount (₹${Number(payment.amount).toFixed(2)}) exceeds the invoice outstanding balance (₹${outstanding.toFixed(2)}).`
+            );
+        }
+
+        const updatedPayment = await tx.payment.update({
+            where: { id: payment.id },
+            data: {
+                status: 'POSTED',
+                clearedAt,
+                financialYearId: financialYear ? financialYear.id : null
+            }
+        });
+
+        const postedPayments = await tx.payment.findMany({
+            where: { invoiceId: invoice.id, status: 'POSTED' },
+            select: { amount: true }
+        });
+        const totalPaid = Math.round(postedPayments.reduce((sum, item) => sum + Number(item.amount), 0) * 100) / 100;
+        const grandTotal = Number(invoice.grandTotal);
+        if (totalPaid > grandTotal + 0.001) {
+            throw new ValidationError(
+                `Cheque cannot be cleared: total paid (₹${totalPaid.toFixed(2)}) would exceed grand total (₹${grandTotal.toFixed(2)}).`
+            );
+        }
+        const newOutstanding = Math.max(0, Math.round((grandTotal - totalPaid) * 100) / 100);
+        const updatedInvoice = await tx.invoice.update({
+            where: { id: invoice.id },
+            data: {
+                paidAmount: totalPaid,
+                outstandingAmount: newOutstanding,
+                version: { increment: 1 }
+            }
+        });
+
+        const lastRev = invoice.revisions[0];
+        await tx.invoiceRevision.create({
+            data: {
+                invoiceId: invoice.id,
+                revisionNo: (lastRev ? lastRev.revisionNo : 0) + 1,
+                action: 'CHEQUE_CLEARED',
+                changedById: userId || invoice.createdById,
+                ipAddress: meta ? meta.ipAddress : null,
+                userAgent: meta ? meta.userAgent : null,
+                changes: {
+                    action: 'CHEQUE_CLEARED',
+                    paymentId: payment.id,
+                    amount: Number(payment.amount),
+                    reference: payment.reference,
+                    clearedAt: clearedAt.toISOString().slice(0, 10),
+                    previousOutstandingAmount: Number(invoice.outstandingAmount),
+                    newOutstandingAmount: newOutstanding,
+                    paidAmount: totalPaid,
+                    outstandingAmount: newOutstanding,
+                    summary: `Cheque ${payment.reference || `#${payment.id}`} cleared on ${clearedAt.toISOString().slice(0, 10)}. Outstanding balance: ₹${newOutstanding.toFixed(2)}.`
+                },
+                snapshot: {
+                    ...updatedInvoice,
+                    grandTotal: Number(updatedInvoice.grandTotal),
+                    paidAmount: Number(updatedInvoice.paidAmount),
+                    outstandingAmount: Number(updatedInvoice.outstandingAmount)
+                }
+            }
+        });
+
+        if (userId) {
+            await activityService.log({
+                actorUserId: userId,
+                action: 'CLEAR_PAYMENT',
+                module: 'PAYMENTS',
+                targetType: 'PAYMENT',
+                targetId: payment.id,
+                targetReference: payment.reference || `Payment #${payment.id}`,
+                metadata: {
+                    invoiceId: invoice.id,
+                    invoiceNumber: invoice.invoiceNumber,
+                    amount: Number(payment.amount),
+                    method: payment.method,
+                    clearedAt: clearedAt.toISOString().slice(0, 10)
+                }
+            }, tx);
+        }
+
+        const postingResult = await postingService.postPayment(payment.id, { userId }, tx);
+        return {
+            payment: { ...updatedPayment, amount: Number(updatedPayment.amount), journal: postingResult.journal },
+            invoice: {
+                ...updatedInvoice,
+                grandTotal: Number(updatedInvoice.grandTotal),
+                paidAmount: Number(updatedInvoice.paidAmount),
+                outstandingAmount: Number(updatedInvoice.outstandingAmount)
+            },
+            journal: postingResult.journal
+        };
+    }, { timeout: 30000, maxWait: 10000 });
 }
 
 /**
@@ -300,7 +513,7 @@ async function voidPayment(paymentIdInput, userId, reason = '', meta = {}) {
             throw new NotFoundError(`Payment with ID ${paymentId} not found.`);
         }
 
-        if (payment.financialYear && payment.financialYear.status === 'CLOSED') {
+        if (payment.status === 'POSTED' && payment.financialYear && payment.financialYear.status === 'CLOSED') {
             throw new ValidationError(`Cannot void payment in CLOSED Financial Year ${payment.financialYear.code}.`);
         }
 
@@ -428,5 +641,6 @@ module.exports = {
     getPaymentStatus,
     getInvoicePayments,
     recordPayment,
+    clearPayment,
     voidPayment
 };

@@ -11,6 +11,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { spawnSync } = require('node:child_process');
+const releasePolicy = require('./package-release');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 const DEFAULT_CANDIDATES_DIR = path.join(ROOT_DIR, 'dist', 'candidates');
@@ -27,87 +28,7 @@ const PROTECTED_PATHS = [
 ];
 
 
-const FORBIDDEN_PATTERNS = [
-    /^\.git([\/\\]|$)/,
-    /^node_modules([\/\\]|$)/,
-    /^dist([\/\\]|$)/,
-    /\.log$/,
-    /^\.artifacts([\/\\]|$)/,
-    /assets[\/\\]uploads[\/\\]avatars[\/\\](?!(\.gitkeep$))/,
-    /\.sql\.dump$/,
-    /\.swp$/
-];
-
-const ALLOWED_DIRECTORIES = [
-    'app',
-    'assets',
-    'docs',
-    'prisma',
-    'scripts'
-];
-
-const ALLOWED_ROOT_FILES = [
-    'package.json',
-    'package-lock.json',
-    '.env.example',
-    '.env.production.example',
-    '.gitignore',
-    'README.md',
-    'prisma7.config.ts'
-];
-
-function isForbidden(relPath) {
-    const norm = relPath.replace(/\\/g, '/');
-    const base = path.basename(norm);
-    if (base === '.env.example' || base === '.env.production.example') return false;
-    if (norm === '.gitignore' || norm.endsWith('/.gitkeep') || norm === '.gitkeep') return false;
-    if (base.startsWith('.env') || /(^|\/)\.env/i.test(norm)) return true;
-    return FORBIDDEN_PATTERNS.some(pat => pat.test(norm));
-}
-
-function scanFiles(dir, baseDir = ROOT_DIR) {
-    const list = [];
-    if (!fs.existsSync(dir)) return list;
-    const entries = fs.readdirSync(dir, { withFileTypes: true });
-    for (const entry of entries) {
-        const fullPath = path.join(dir, entry.name);
-        const relPath = path.relative(baseDir, fullPath);
-        if (isForbidden(relPath)) continue;
-        if (entry.isDirectory()) {
-            list.push(...scanFiles(fullPath, baseDir));
-        } else if (entry.isFile()) {
-            list.push(relPath);
-        }
-    }
-    return list;
-}
-
-function buildFileList() {
-    const files = [];
-    for (const f of ALLOWED_ROOT_FILES) {
-        const full = path.join(ROOT_DIR, f);
-        if (fs.existsSync(full)) files.push(f);
-    }
-    for (const d of ALLOWED_DIRECTORIES) {
-        const full = path.join(ROOT_DIR, d);
-        if (fs.existsSync(full)) files.push(...scanFiles(full, ROOT_DIR));
-    }
-    return files;
-}
-
-function verifyPackaging() {
-    const files = buildFileList();
-    const violations = [];
-    for (const f of files) {
-        if (isForbidden(f)) violations.push(f);
-    }
-    if (violations.length > 0) {
-        console.error('[PACKAGING ERROR] Forbidden files detected in candidate manifest:');
-        violations.forEach(v => console.error(` - ${v}`));
-        return { ok: false, violations, files };
-    }
-    return { ok: true, violations: [], files };
-}
+const { isForbidden, buildFileList, verifyPackaging } = releasePolicy;
 
 function assertNotProtectedOutput(targetPath) {
     const resolved = path.resolve(targetPath);
@@ -146,8 +67,6 @@ function packageCandidate(customOptions = {}) {
     const versionSuffix = opts.candidateVersion ? `-${opts.candidateVersion.replace(/^1\.0\.0-/, '')}` : '';
     const archiveName = opts.archiveName || (opts.candidateVersion ? `spark-admin-release-candidate${versionSuffix}.zip` : 'spark-admin-release-candidate.zip');
     const manifestName = opts.manifestName || (opts.candidateVersion ? `spark-admin-release-candidate${versionSuffix}-manifest.json` : 'spark-admin-release-candidate-manifest.json');
-    const allowOverwrite = Boolean(opts.allowOverwrite);
-
     const zipPath = path.join(outDir, archiveName);
     const manifestPath = path.join(outDir, manifestName);
 
@@ -156,8 +75,11 @@ function packageCandidate(customOptions = {}) {
     assertNotProtectedOutput(manifestPath);
 
     // 2. Reject accidental overwrite of existing archive if allowOverwrite is not set
-    if (fs.existsSync(zipPath) && !allowOverwrite) {
-        throw new Error(`[PACKAGING GUARD]: Target file "${zipPath}" already exists. Set distinct candidate name or use --allow-overwrite for ephemeral output.`);
+    if (fs.existsSync(zipPath)) {
+        throw new Error(`[PACKAGING GUARD]: Target file "${zipPath}" already exists. Choose a new candidate name.`);
+    }
+    if (fs.existsSync(manifestPath)) {
+        throw new Error(`[PACKAGING GUARD]: Target manifest "${manifestPath}" already exists.`);
     }
 
     console.log('='.repeat(70));
@@ -173,18 +95,13 @@ function packageCandidate(customOptions = {}) {
     console.log(`\n✔ Package verification passed: ${result.files.length} clean files identified.`);
     console.log('✔ Verified zero secrets, .env files, node_modules, or private logs.');
 
-    const stagingDir = path.join(outDir, `.staging_${Date.now()}`);
-    if (fs.existsSync(stagingDir)) fs.rmSync(stagingDir, { recursive: true, force: true });
+    const stagingDir = path.join(outDir, `.staging_${Date.now()}_${process.pid}`);
+    if (fs.existsSync(stagingDir)) {
+        throw new Error(`[PACKAGING GUARD]: Staging path "${stagingDir}" already exists.`);
+    }
     fs.mkdirSync(stagingDir, { recursive: true });
 
-    // Copy files to ephemeral staging directory
-    for (const rel of result.files) {
-        const src = path.join(ROOT_DIR, rel);
-        const dest = path.join(stagingDir, rel);
-        const destDir = path.dirname(dest);
-        fs.mkdirSync(destDir, { recursive: true });
-        fs.copyFileSync(src, dest);
-    }
+    releasePolicy.copyToStaging(result.files, stagingDir);
 
     if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
 
@@ -261,7 +178,7 @@ function packageCandidate(customOptions = {}) {
         files: result.files
     };
 
-    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), { encoding: 'utf8', flag: 'wx' });
     console.log(`✔ Release candidate manifest written to ${manifestPath}`);
     console.log(`✔ Candidate ZIP size: ${zipBytes.length} bytes, SHA-256: ${zipSha256}`);
     console.log(`✔ Included files: ${result.files.length}, Migrations: ${migrationDirs.length}`);

@@ -150,7 +150,7 @@ async function saveAttachment({
 
     const sanitizedOriginal = path.basename(originalFilename || `attachment.${validation.ext}`).replace(/[^a-zA-Z0-9._-]/g, '_');
 
-    const validCategories = ['CERTIFICATE', 'TPT', 'DELIVERY_CHALLAN', 'INSPECTION', 'WARRANTY', 'COMPLIANCE', 'OTHER'];
+    const validCategories = ['CERTIFICATE', 'TPT', 'DELIVERY_CHALLAN', 'INSPECTION', 'WARRANTY', 'COMPLIANCE', 'INSURANCE', 'DRAWING', 'CONTRACT', 'PERMIT', 'INVOICE_SCAN', 'OTHER'];
     const docCategory = validCategories.includes(String(category).toUpperCase()) ? String(category).toUpperCase() : 'OTHER';
     const parsedIssueDate = issueDate ? new Date(issueDate) : null;
     const parsedExpiryDate = expiryDate ? new Date(expiryDate) : null;

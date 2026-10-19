@@ -6,6 +6,10 @@ const { ensureFinancialYear } = require('./financialYear.service');
 const { ValidationError, NotFoundError, ConflictError } = require('./errorTypes');
 const businessService = require('./business.service');
 const numberingService = require('./numbering.service');
+const businessProfileService = require('./businessProfile.service');
+
+const ALLOWED_GST_RATES = [0, 5, 12, 18, 28];
+const money = value => Math.round((Number(value) || 0) * 100) / 100;
 
 /**
  * Generates an atomic, sequential Purchase Order Number (e.g. PO/2026/10/1).
@@ -30,26 +34,42 @@ async function generatePurchaseOrderNumber(tx, orderDate = new Date(), businessI
 /**
  * Validate and sanitize line items for a purchase order.
  */
-function sanitizeOrderItems(items) {
+function sanitizeOrderItems(items, isInterState = false) {
     if (!Array.isArray(items) || items.length === 0) {
         throw new ValidationError('At least one order line item is required.');
     }
 
     return items.map((item, idx) => {
-        const name = (item.name || '').trim();
+        const name = typeof item.name === 'string' ? item.name.trim() : '';
         if (!name) throw new ValidationError(`Item name is required for line ${idx + 1}.`);
 
-        const quantity = parseFloat(item.quantity);
-        if (isNaN(quantity) || quantity <= 0) {
+        const rawQuantity = Number(item.quantity);
+        if (!Number.isFinite(rawQuantity) || rawQuantity <= 0) {
             throw new ValidationError(`Quantity must be greater than 0 for line ${idx + 1}.`);
         }
+        const quantity = money(rawQuantity);
+        if (quantity <= 0) throw new ValidationError(`Quantity must be at least 0.01 for line ${idx + 1}.`);
 
-        const rate = parseFloat(item.rate);
-        if (isNaN(rate) || rate < 0) {
+        const rawRate = Number(item.rate);
+        if (!Number.isFinite(rawRate) || rawRate < 0) {
             throw new ValidationError(`Rate must be non-negative for line ${idx + 1}.`);
         }
+        const rate = money(rawRate);
 
-        const amount = Math.round(quantity * rate * 100) / 100;
+        const amount = money(quantity * rate);
+        const rawDiscountAmount = item.discountAmount === undefined || item.discountAmount === '' ? 0 : Number(item.discountAmount);
+        if (!Number.isFinite(rawDiscountAmount) || rawDiscountAmount < 0) {
+            throw new ValidationError(`Discount must be non-negative for line ${idx + 1}.`);
+        }
+        const discountAmount = money(rawDiscountAmount);
+        if (discountAmount > amount) throw new ValidationError(`Discount cannot exceed amount for line ${idx + 1}.`);
+        const taxableAmount = money(amount - discountAmount);
+        const gstRate = item.gstRate === undefined || item.gstRate === '' ? 0 : Number(item.gstRate);
+        if (!Number.isFinite(gstRate) || !ALLOWED_GST_RATES.includes(gstRate)) throw new ValidationError(`Invalid GST rate for line ${idx + 1}. Allowed rates are: ${ALLOWED_GST_RATES.join('%, ')}%.`);
+        const tax = money(taxableAmount * gstRate / 100);
+        const cgstAmount = isInterState ? 0 : money(tax / 2);
+        const sgstAmount = isInterState ? 0 : money(tax - cgstAmount);
+        const igstAmount = isInterState ? tax : 0;
         const pId = item.projectId ? parseInt(item.projectId, 10) : null;
 
         return {
@@ -60,9 +80,50 @@ function sanitizeOrderItems(items) {
             unit: item.unit ? String(item.unit).trim() : 'PCS',
             rate,
             amount,
+            discountAmount,
+            taxableAmount,
+            gstRate,
+            cgstAmount,
+            sgstAmount,
+            igstAmount,
+            totalAmount: money(taxableAmount + tax),
             projectId: pId && !isNaN(pId) && pId > 0 ? pId : null
         };
     });
+}
+
+function calculatePurchaseOrderTotals(items) {
+    const totals = items.reduce((sum, item) => ({
+        taxableSubtotal: sum.taxableSubtotal + item.taxableAmount,
+        cgstAmount: sum.cgstAmount + item.cgstAmount,
+        sgstAmount: sum.sgstAmount + item.sgstAmount,
+        igstAmount: sum.igstAmount + item.igstAmount
+    }), { taxableSubtotal: 0, cgstAmount: 0, sgstAmount: 0, igstAmount: 0 });
+    totals.taxableSubtotal = money(totals.taxableSubtotal);
+    totals.cgstAmount = money(totals.cgstAmount);
+    totals.sgstAmount = money(totals.sgstAmount);
+    totals.igstAmount = money(totals.igstAmount);
+    totals.totalTaxAmount = money(totals.cgstAmount + totals.sgstAmount + totals.igstAmount);
+    totals.totalAmount = money(totals.taxableSubtotal + totals.totalTaxAmount);
+    return totals;
+}
+
+async function getPurchaseTaxContext(businessId, supplier) {
+    const profile = await businessProfileService.getProfile(businessId);
+    const businessStateCode = String(profile?.stateCode || profile?.gstin?.slice(0, 2) || '').trim();
+    const supplierStateCode = String(supplier?.stateCode || supplier?.gstin?.slice(0, 2) || '').trim();
+    return resolvePurchaseTaxContext(businessStateCode, supplierStateCode);
+}
+
+function resolvePurchaseTaxContext(businessStateCode, supplierStateCode) {
+    const sellerState = String(businessStateCode || '').trim();
+    const supplierState = String(supplierStateCode || '').trim();
+    return {
+        businessStateCode: sellerState,
+        supplierStateCode: supplierState,
+        // Match the invoice and supplier-bill convention: missing state codes default to intra-state.
+        isInterState: Boolean(sellerState && supplierState && sellerState !== supplierState)
+    };
 }
 
 /**
@@ -91,11 +152,9 @@ async function createPurchaseOrder(data = {}, userId) {
     const supplierId = parseInt(data.supplierId, 10);
     if (isNaN(supplierId) || supplierId <= 0) throw new ValidationError('Invalid supplier ID.');
 
-    const supplier = await prisma.supplier.findUnique({ where: { id: supplierId } });
+    const supplier = await prisma.supplier.findFirst({ where: { id: supplierId, businessId: activeBusinessId } });
     if (!supplier) throw new NotFoundError(`Supplier with ID ${supplierId} not found.`);
-    if (supplier.businessId && supplier.businessId !== activeBusinessId) {
-        throw new ValidationError(`Supplier ${supplierId} does not belong to authorized business ${activeBusinessId}. Cross-business access denied.`);
-    }
+    if (!supplier.active) throw new ValidationError('Inactive suppliers cannot be selected for a new purchase order.');
 
     const orderDate = data.orderDate ? new Date(data.orderDate) : new Date();
     if (isNaN(orderDate.getTime())) throw new ValidationError('Invalid order date.');
@@ -108,7 +167,9 @@ async function createPurchaseOrder(data = {}, userId) {
         if (!project) throw new NotFoundError(`Project with ID ${projectId} not found in this organization.`);
     }
 
-    const sanitizedItems = sanitizeOrderItems(data.items);
+    const taxContext = await getPurchaseTaxContext(activeBusinessId, supplier);
+    const sanitizedItems = sanitizeOrderItems(data.items, taxContext.isInterState);
+    const totals = calculatePurchaseOrderTotals(sanitizedItems);
     const fy = await ensureFinancialYear(orderDate, activeBusinessId);
 
     return prisma.$transaction(async (tx) => {
@@ -129,7 +190,8 @@ async function createPurchaseOrder(data = {}, userId) {
                 supplierId: supplier.id,
                 supplierName: supplier.name,
                 supplierGSTIN: supplier.gstin || null,
-                placeOfSupplyStateCode: data.placeOfSupplyStateCode || supplier.stateCode || null,
+                placeOfSupplyStateCode: taxContext.supplierStateCode || null,
+                ...totals,
                 termsAndConditions: data.termsAndConditions || null,
                 remarks: data.remarks || null,
                 orderDate,
@@ -254,6 +316,7 @@ async function listPurchaseOrders({ businessId, supplierId, projectId, status, d
             include: {
                 supplier: true,
                 items: true,
+                goodsReceipts: { where: { status: { not: 'CANCELLED' } }, include: { items: true } },
                 project: { select: { id: true, code: true, name: true } }
             },
             orderBy: { orderDate: 'desc' },
@@ -262,29 +325,73 @@ async function listPurchaseOrders({ businessId, supplierId, projectId, status, d
         })
     ]);
 
-    return { total, page: pageNum, limit: pageSize, records };
+    const enriched = records.map(po => {
+        const storedTotal = Number(po.totalAmount) || 0;
+        const legacySubtotal = po.items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+        const hasTaxSnapshots = po.items.some(item =>
+            Number(item.taxableAmount) > 0 ||
+            Number(item.discountAmount) > 0 ||
+            Number(item.gstRate) > 0 ||
+            Number(item.cgstAmount) > 0 ||
+            Number(item.sgstAmount) > 0 ||
+            Number(item.igstAmount) > 0 ||
+            Number(item.totalAmount) > 0
+        );
+        const orderTotal = hasTaxSnapshots ? storedTotal : legacySubtotal;
+        const orderedQuantity = po.items.reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
+        const receivedQuantity = po.goodsReceipts.reduce((sum, receipt) => sum + receipt.items.reduce((lineSum, item) => lineSum + (parseFloat(item.receivedQuantity) || 0), 0), 0);
+        return {
+            ...po,
+            orderTotal: Math.round(orderTotal * 100) / 100,
+            receiptProgress: { orderedQuantity, receivedQuantity, remainingQuantity: Math.max(0, orderedQuantity - receivedQuantity) }
+        };
+    });
+    return { total, page: pageNum, limit: pageSize, records: enriched };
 }
 
-async function updatePurchaseOrder(id, data = {}, userId) {
-    const existing = await getPurchaseOrderById(id);
-    if (['VOID', 'DELETED'].includes(existing.status)) {
+async function updatePurchaseOrder(id, data = {}, userId, businessId = null) {
+    if (!businessId) throw new ValidationError('Authorized business context is required to update a purchase order.');
+    const existing = await getPurchaseOrderById(id, businessId);
+    if (existing.status !== 'ACTIVE') {
         throw new ValidationError(`Cannot update Purchase Order in ${existing.status} status.`);
     }
 
+    let supplier = existing.supplier;
     let supplierUpdate = {};
-    if (data.supplierId && data.supplierId !== existing.supplierId) {
-        const supplier = await prisma.supplier.findUnique({ where: { id: parseInt(data.supplierId, 10) } });
+    const hasSupplierId = data.supplierId !== undefined && data.supplierId !== null && data.supplierId !== '';
+    const requestedSupplierId = hasSupplierId ? parseInt(data.supplierId, 10) : existing.supplierId;
+    if (hasSupplierId && (!requestedSupplierId || isNaN(requestedSupplierId))) throw new ValidationError('Invalid supplier ID.');
+    const supplierChanged = hasSupplierId && requestedSupplierId !== existing.supplierId;
+    if (supplierChanged) {
+        supplier = await prisma.supplier.findFirst({
+            where: { id: requestedSupplierId, businessId: existing.businessId }
+        });
         if (!supplier) throw new NotFoundError(`Supplier with ID ${data.supplierId} not found.`);
+        if (!supplier.active) throw new ValidationError('Inactive suppliers cannot be selected for a purchase order.');
         supplierUpdate = {
             supplierId: supplier.id,
             supplierName: supplier.name,
-            supplierGSTIN: supplier.gstin
+            supplierGSTIN: supplier.gstin || null
         };
     }
 
+    const taxContext = await getPurchaseTaxContext(existing.businessId, supplierChanged ? supplier : {
+        stateCode: existing.placeOfSupplyStateCode || supplier?.stateCode,
+        gstin: existing.supplierGSTIN || supplier?.gstin
+    });
+    const sourceItems = data.items || existing.items;
+    const sanitizedItems = sanitizeOrderItems(sourceItems, taxContext.isInterState);
+    const totals = calculatePurchaseOrderTotals(sanitizedItems);
+
     return prisma.$transaction(async (tx) => {
-        if (data.items) {
-            const sanitizedItems = sanitizeOrderItems(data.items);
+        const receiptCount = await tx.goodsReceipt.count({ where: { purchaseOrderId: existing.id, status: { not: 'CANCELLED' } } });
+        if (data.items && receiptCount > 0) {
+            throw new ValidationError('Purchase-order lines cannot be replaced after goods receipts exist. Use a correction workflow instead.');
+        }
+        if ((supplierChanged || data.projectId !== undefined) && receiptCount > 0) {
+            throw new ValidationError('Supplier or project allocation cannot be changed after goods receipts exist.');
+        }
+        if (data.items || supplierChanged) {
             await tx.purchaseOrderItem.deleteMany({ where: { purchaseOrderId: existing.id } });
             await tx.purchaseOrderItem.createMany({
                 data: sanitizedItems.map(item => ({ ...item, purchaseOrderId: existing.id }))
@@ -308,6 +415,8 @@ async function updatePurchaseOrder(id, data = {}, userId) {
             data: {
                 ...supplierUpdate,
                 ...projectUpdate,
+                placeOfSupplyStateCode: taxContext.supplierStateCode || null,
+                ...totals,
                 termsAndConditions: data.termsAndConditions !== undefined ? data.termsAndConditions : existing.termsAndConditions,
                 remarks: data.remarks !== undefined ? data.remarks : existing.remarks,
                 dueDate: data.dueDate ? new Date(data.dueDate) : existing.dueDate,
@@ -332,9 +441,12 @@ async function updatePurchaseOrder(id, data = {}, userId) {
     });
 }
 
-async function voidPurchaseOrder(id, userId, reason = '') {
-    const existing = await getPurchaseOrderById(id);
+async function voidPurchaseOrder(id, userId, reason = '', businessId = null) {
+    if (!businessId) throw new ValidationError('Authorized business context is required to void a purchase order.');
+    const existing = await getPurchaseOrderById(id, businessId);
     if (existing.status === 'VOID') throw new ConflictError('Purchase Order is already VOID.');
+    const receiptCount = await prisma.goodsReceipt.count({ where: { purchaseOrderId: existing.id, status: { not: 'CANCELLED' } } });
+    if (receiptCount > 0) throw new ValidationError('A purchase order with goods receipts cannot be voided. Use a documented correction workflow.');
 
     const updated = await prisma.purchaseOrder.update({
         where: { id: existing.id },
@@ -395,6 +507,9 @@ module.exports = {
     voidPurchaseOrder,
     deletePurchaseOrder,
     generatePurchaseOrderNumber,
+    sanitizeOrderItems,
+    calculatePurchaseOrderTotals,
+    resolvePurchaseTaxContext,
     ValidationError,
     NotFoundError,
     ConflictError

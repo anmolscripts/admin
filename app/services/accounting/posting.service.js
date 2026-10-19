@@ -397,7 +397,7 @@ const SUPPORTED_PAYMENT_METHODS = ['BANK_TRANSFER', 'UPI', 'CASH', 'CHEQUE', 'CA
 /**
  * Resolves the Cash/Bank asset account for a given payment method or custom deposit account.
  */
-async function resolvePaymentAssetAccount(method, customDepositAccountId = null, clientOrTx = prisma) {
+async function resolvePaymentAssetAccount(method, customDepositAccountId = null, clientOrTx = prisma, businessId = null) {
     if (customDepositAccountId) {
         const depositAccId = parseInt(customDepositAccountId, 10);
         if (isNaN(depositAccId) || depositAccId <= 0) {
@@ -431,11 +431,11 @@ async function resolvePaymentAssetAccount(method, customDepositAccountId = null,
     }
 
     if (normMethod === 'CASH') {
-        return await coaService.getSystemAccount('CASH_ON_HAND');
+        return await coaService.getSystemAccount('CASH_ON_HAND', businessId, clientOrTx);
     }
 
     // Default operating bank account for BANK_TRANSFER, UPI, CHEQUE, CARD
-    return await coaService.getSystemAccount('BANK_ACCOUNT');
+    return await coaService.getSystemAccount('BANK_ACCOUNT', businessId, clientOrTx);
 }
 
 /**
@@ -507,22 +507,23 @@ async function postPayment(paymentId, options = {}, clientOrTxArg = null) {
         throw new ValidationError(`Cannot post payment for INACTIVE invoice ${payment.invoice.invoiceNumber}.`);
     }
 
-    // 3. Financial Year validation (derived strictly from paymentDate)
-    const paymentDate = new Date(payment.paymentDate);
-    if (isNaN(paymentDate.getTime())) {
-        throw new ValidationError(`Payment #${payment.id} has an invalid paymentDate.`);
+    // Cleared cheques use the date funds entered the bank; other payments use their receipt date.
+    const accountingDate = new Date(payment.clearedAt || payment.paymentDate);
+    if (isNaN(accountingDate.getTime())) {
+        throw new ValidationError(`Payment #${payment.id} has an invalid accounting date.`);
     }
 
-    const fy = await ensureFinancialYear(paymentDate, (payment.invoice && payment.invoice.businessId) || null);
+    const businessId = payment.invoice && payment.invoice.businessId ? payment.invoice.businessId : null;
+    const fy = await ensureFinancialYear(accountingDate, businessId, clientOrTx);
     if (fy.status === 'CLOSED') {
         throw new ValidationError(`Cannot post payment into CLOSED Financial Year ${fy.code}.`);
     }
 
     if (payment.financialYearId && payment.financialYearId !== fy.id) {
-        const expectedFy = computeFinancialYear(paymentDate);
+        const expectedFy = computeFinancialYear(accountingDate);
         if (expectedFy.code !== fy.code) {
             throw new ValidationError(
-                `Payment date ${paymentDate.toISOString().slice(0, 10)} does not match assigned Financial Year.`
+                `Payment accounting date ${accountingDate.toISOString().slice(0, 10)} does not match assigned Financial Year.`
             );
         }
     }
@@ -556,10 +557,10 @@ async function postPayment(paymentId, options = {}, clientOrTxArg = null) {
 
     // 5. Ensure System Accounts Exist
     const bizId = (payment.invoice && payment.invoice.businessId && payment.invoice.businessId !== 1) ? payment.invoice.businessId : null;
-    await coaService.ensureSystemAccounts(userId, bizId);
+    await coaService.ensureSystemAccounts(userId, bizId, clientOrTx);
 
-    const arAccount = await coaService.getSystemAccount('ACCOUNTS_RECEIVABLE', bizId);
-    const assetAccount = await resolvePaymentAssetAccount(payment.method, depositAccountId, clientOrTx);
+    const arAccount = await coaService.getSystemAccount('ACCOUNTS_RECEIVABLE', bizId, clientOrTx);
+    const assetAccount = await resolvePaymentAssetAccount(payment.method, depositAccountId, clientOrTx, bizId);
 
     // 6. Precise Integer-Cent Financial Arithmetic
     const paymentCents = toCents(payment.amount);
@@ -605,7 +606,7 @@ async function postPayment(paymentId, options = {}, clientOrTxArg = null) {
     const narration = `Customer payment of ₹${fromCents(paymentCents)} received for Invoice ${payment.invoice.invoiceNumber} (${payment.method})`;
 
     const journal = await journalService.postJournalEntry({
-        entryDate: paymentDate,
+        entryDate: accountingDate,
         financialYearId: fy.id,
         sourceType: 'PAYMENT',
         sourceId: payment.id,
@@ -625,7 +626,7 @@ async function postPayment(paymentId, options = {}, clientOrTxArg = null) {
             targetType: 'PAYMENT',
             targetId: payment.id,
             targetReference: payment.reference || `Payment #${payment.id}`
-        }).catch(() => {});
+        }, externalTx || clientOrTx);
     }
 
     return {

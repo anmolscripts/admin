@@ -642,9 +642,11 @@ async function getInvoiceById(id, businessId = null) {
             createdBy: { select: { id: true, name: true, email: true } },
             updatedBy: { select: { id: true, name: true, email: true } },
             deletedBy: { select: { id: true, name: true, email: true } },
+            acceptedBy: { select: { id: true, name: true, email: true } },
             sourceQuotation: { select: { id: true, invoiceNumber: true, clientName: true } },
             convertedInvoice: { select: { id: true, invoiceNumber: true, clientName: true } },
             project: { select: { id: true, code: true, name: true, clientId: true } },
+            sourceProject: { select: { id: true, code: true, name: true } },
             payments: {
                 orderBy: [{ paymentDate: 'desc' }, { createdAt: 'desc' }],
                 include: {
@@ -1665,6 +1667,28 @@ async function convertQuotationToInvoice(quotationId, userId, options = {}, meta
     });
 }
 
+async function acceptQuotation(quotationId, userId, { businessId, version, acceptanceNote } = {}) {
+    const id = parseInt(quotationId, 10);
+    const scopedBusinessId = parseInt(businessId, 10);
+    if (!id || !userId || !scopedBusinessId) throw new ValidationError('Quotation, authenticated user, and business context are required.');
+    return prisma.$transaction(async tx => {
+        const quotation = await tx.invoice.findFirst({ where: { id, businessId: scopedBusinessId } });
+        if (!quotation) throw new NotFoundError('Quotation was not found in the active business.');
+        if (quotation.documentType !== 'QUOTATION' || quotation.status !== 'ACTIVE') throw new ValidationError('Only an active quotation can be accepted.');
+        if (quotation.acceptedAt) return quotation;
+        const expectedVersion = version === undefined ? quotation.version : parseInt(version, 10);
+        if (!expectedVersion || expectedVersion !== quotation.version) throw new ConflictError('Quotation has changed. Refresh before recording acceptance.');
+        const updated = await tx.invoice.updateMany({
+            where: { id, businessId: scopedBusinessId, documentType: 'QUOTATION', status: 'ACTIVE', acceptedAt: null, version: expectedVersion },
+            data: { acceptedAt: new Date(), acceptedById: userId, acceptanceNote: acceptanceNote ? String(acceptanceNote).trim() : null, updatedById: userId, version: { increment: 1 } }
+        });
+        if (!updated.count) throw new ConflictError('Quotation was accepted or changed concurrently.');
+        const accepted = await tx.invoice.findUnique({ where: { id } });
+        await activityService.log({ actorUserId: userId, businessId: scopedBusinessId, action: 'ACCEPT', module: 'DOCUMENTS', targetType: 'QUOTATION', targetId: id, description: `Accepted quotation ${quotation.invoiceNumber}` });
+        return accepted;
+    });
+}
+
 /**
  * Prepares an unsaved copy of a document.
  * Records a COPIED revision on the source document and returns template data.
@@ -1990,6 +2014,7 @@ module.exports = {
     softDeleteDocument,
     restoreDocument,
     convertQuotationToInvoice,
+    acceptQuotation,
     copyDocument,
     listInvoices,
     getInvoiceHistory,

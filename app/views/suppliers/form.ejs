@@ -1,0 +1,21 @@
+<%- include('../layouts/header') %>
+<% const isEdit = Boolean(supplier && supplier.id); %>
+<div class="content-wrapper p-4">
+  <div class="d-flex justify-content-between align-items-center mb-4"><div><h1 class="h3 fw-bold mb-1"><%= pageTitle %></h1><p class="text-muted small mb-0"><%= pageSubtitle %></p></div><a href="/suppliers" class="btn btn-outline-secondary">Back to Suppliers</a></div>
+  <div class="card border-0 shadow-sm"><div class="card-body p-4"><form method="POST" action="<%= isEdit ? '/suppliers/' + supplier.id : '/suppliers' %>">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>"><% if (!isEdit && typeof returnTo !== 'undefined' && returnTo) { %><input type="hidden" name="returnTo" value="<%= returnTo %>"><% } %>
+    <% if (typeof error !== 'undefined' && error) { %><div class="alert alert-danger" role="alert"><%= error %></div><% } %>
+    <div class="row g-3">
+      <div class="col-md-3"><label class="form-label">Supplier Code</label><input class="form-control text-uppercase" name="supplierCode" maxlength="50" value="<%= supplier.supplierCode || '' %>" placeholder="Auto-generated if blank" <%= isEdit ? 'required' : '' %>><div class="form-text">Unique within this business.</div></div>
+      <div class="col-md-9"><label class="form-label">Legal / Business Name <span class="text-danger">*</span></label><input class="form-control" name="name" required maxlength="191" value="<%= supplier.name || '' %>"></div>
+      <div class="col-md-4"><label class="form-label">GSTIN</label><input class="form-control text-uppercase" name="gstin" maxlength="15" value="<%= supplier.gstin || '' %>" placeholder="15-character GSTIN"></div>
+      <div class="col-md-2"><label class="form-label">State Code</label><input class="form-control" name="stateCode" maxlength="5" value="<%= supplier.stateCode || '' %>"></div>
+      <div class="col-md-3"><label class="form-label">Email</label><input type="email" class="form-control" name="email" maxlength="191" value="<%= supplier.email || '' %>"></div>
+      <div class="col-md-3"><label class="form-label">Phone</label><input type="tel" class="form-control" name="phone" maxlength="50" value="<%= supplier.phone || '' %>"></div>
+      <div class="col-12"><label class="form-label">Address</label><textarea class="form-control" name="address" rows="3"><%= supplier.address || '' %></textarea></div>
+      <% if (isEdit) { %><div class="col-12"><div class="form-check"><input class="form-check-input" type="checkbox" name="active" value="true" id="supplier-active" <%= supplier.active ? 'checked' : '' %>><label class="form-check-label" for="supplier-active">Supplier is active and may be selected for new purchasing documents.</label></div></div><% } %>
+    </div>
+    <div class="mt-4 d-flex gap-2"><button class="btn btn-primary"><i class="bi bi-check2-circle me-1"></i><%= isEdit ? 'Save Changes' : 'Create Supplier' %></button><a class="btn btn-outline-secondary" href="/suppliers">Cancel</a></div>
+  </form></div></div>
+</div>
+<%- include('../layouts/footer') %>

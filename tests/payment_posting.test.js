@@ -157,10 +157,10 @@ describe('Milestone 5: Payment Accounting Posting & Double-Entry Integration', (
             assert.equal(Number(debitLine.debit), 1000.00);
         });
 
-        it('2.2 should debit BANK_ACCOUNT (code 1112) for UPI, CHEQUE, and CARD', async () => {
+        it('2.2 should post UPI and CARD immediately but hold cheques until clearance', async () => {
             const bankAccount = await coaService.getSystemAccount('BANK_ACCOUNT');
 
-            for (const method of ['UPI', 'CHEQUE', 'CARD']) {
+            for (const method of ['UPI', 'CARD']) {
                 const payRes = await paymentService.recordPayment(invoice.id, {
                     amount: 500,
                     paymentDate: '2026-06-03',
@@ -172,9 +172,68 @@ describe('Milestone 5: Payment Accounting Posting & Double-Entry Integration', (
                 assert.equal(debitLine.accountId, bankAccount.id);
                 assert.equal(Number(debitLine.debit), 500.00);
             }
+
+            const chequeRes = await paymentService.recordPayment(invoice.id, {
+                amount: 500,
+                paymentDate: '2026-06-03',
+                method: 'CHEQUE',
+                reference: 'CHQ-TEST-006'
+            }, testAdmin ? testAdmin.id : 1);
+
+            assert.equal(chequeRes.payment.status, 'PENDING_CLEARANCE');
+            assert.equal(chequeRes.journal, null);
+            assert.equal(chequeRes.invoice.paidAmount, 2000);
+            assert.equal(chequeRes.invoice.outstandingAmount, 3000);
+            assert.equal(await prisma.journalEntry.findUnique({
+                where: { idempotencyKey: `PAYMENT:${chequeRes.payment.id}` }
+            }), null);
+            await assert.rejects(
+                postingService.postPayment(chequeRes.payment.id),
+                /PENDING_CLEARANCE/
+            );
+
+            await assert.rejects(
+                paymentService.recordPayment(invoice.id, {
+                    amount: 2501,
+                    paymentDate: '2026-06-03',
+                    method: 'BANK_TRANSFER'
+                }, testAdmin ? testAdmin.id : 1),
+                /available balance after pending cheques/
+            );
+            await assert.rejects(
+                paymentService.clearPayment(chequeRes.payment.id, testAdmin ? testAdmin.id : 1, '2026-06-02'),
+                /cannot be before the payment date/
+            );
+
+            const cleared = await paymentService.clearPayment(
+                chequeRes.payment.id,
+                testAdmin ? testAdmin.id : 1,
+                '2026-06-04'
+            );
+            assert.equal(cleared.payment.status, 'POSTED');
+            assert.equal(cleared.payment.clearedAt.toISOString().slice(0, 10), '2026-06-04');
+            assert.equal(cleared.invoice.paidAmount, 2500);
+            assert.equal(cleared.invoice.outstandingAmount, 2500);
+            assert.ok(cleared.journal);
+            assert.equal(cleared.journal.entryDate.toISOString().slice(0, 10), '2026-06-04');
+            await assert.rejects(
+                paymentService.clearPayment(chequeRes.payment.id, testAdmin ? testAdmin.id : 1, '2026-06-04'),
+                /Only pending cheque payments/
+            );
         });
 
-        it('2.3 should reject unsupported payment methods with ValidationError', async () => {
+        it('2.3 should require a cheque reference', async () => {
+            await assert.rejects(
+                paymentService.recordPayment(invoice.id, {
+                    amount: 100,
+                    paymentDate: '2026-06-04',
+                    method: 'CHEQUE'
+                }, testAdmin ? testAdmin.id : 1),
+                /cheque number or reference is required/
+            );
+        });
+
+        it('2.4 should reject unsupported payment methods with ValidationError', async () => {
             await assert.rejects(
                 async () => {
                     await paymentService.recordPayment(invoice.id, {
@@ -278,6 +337,13 @@ describe('Milestone 5: Payment Accounting Posting & Double-Entry Integration', (
 
             assert.equal(payRes1.invoice.paidAmount, 2000);
             assert.equal(payRes1.invoice.outstandingAmount, 3000);
+
+            const invoiceJournal = await prisma.journalEntry.findUnique({
+                where: { idempotencyKey: postingService.getInvoiceIdempotencyKey(testInv.id) },
+                include: { lines: true }
+            });
+            assert.ok(invoiceJournal, 'Recording a payment must also ensure its invoice is posted');
+            assert.ok(invoiceJournal.lines.some(line => line.clientId === testClient.id && Number(line.debit) === 5000));
         });
 
         it('4.2 should support settling remaining balance exactly to zero outstanding', async () => {
@@ -745,4 +811,3 @@ describe('Milestone 5: Payment Accounting Posting & Double-Entry Integration', (
         });
     });
 });
-

@@ -78,6 +78,8 @@
 .toolbar-search-group {
     position: relative;
     flex-grow: 1;
+    width: 100%;
+    min-width: 0;
 }
 
 .toolbar-search-icon {
@@ -99,6 +101,12 @@
     color: var(--sa-text-main, #171B2D);
     transition: all 0.2s ease;
     height: 42px;
+}
+
+.documents-toolbar-card .toolbar-search-input {
+    padding: 0 2.5rem !important;
+    text-align: left;
+    line-height: normal !important;
 }
 
 .toolbar-search-input:focus {

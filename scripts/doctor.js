@@ -25,8 +25,8 @@ const dotenv = require('dotenv');
 
 const logger = require('./lib/logger');
 const { checkNodeVersion, checkNpmVersion, checkMySqlTcpConnectivity } = require('./lib/prerequisites');
-const { parseEnvFile } = require('./lib/env-manager');
-const { runPrismaCommand } = require('./lib/db-manager');
+const { parseEnvFile } = require('./lib/env-file');
+const { runPrismaCommand } = require('./lib/prisma-cli');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 

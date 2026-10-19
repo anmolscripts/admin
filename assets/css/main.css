@@ -1422,12 +1422,25 @@ a:hover {
 
 /* Weekday labels row */
 .flatpickr-weekdays {
+    display: flex !important;
+    width: 294px !important;
     height: 30px !important;
     margin-top: 10px !important;
     margin-bottom: 6px !important;
 }
 
+.flatpickr-weekdaycontainer {
+    display: flex !important;
+    flex: 1 0 100% !important;
+    width: 100% !important;
+}
+
 span.flatpickr-weekday {
+    flex: 1 1 0 !important;
+    width: 14.2857% !important;
+    min-width: 0 !important;
+    text-align: center !important;
+    white-space: nowrap !important;
     font-weight: 700 !important;
     color: var(--text-sidebar-muted) !important;
     font-size: 0.8rem !important;
@@ -3503,5 +3516,4 @@ span.flatpickr-weekday {
     box-shadow: 0 12px 28px -4px rgba(99, 91, 255, 0.1);
     border-color: rgba(99, 91, 255, 0.2);
 }
-
 

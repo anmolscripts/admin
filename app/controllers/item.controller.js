@@ -24,11 +24,16 @@ function handleControllerError(err, res, next) {
 async function searchItems(req, res, next) {
     try {
         const { q, limit, active } = req.query;
+        const businessId = req.businessId || req.session?.activeBusinessId;
+        if (!businessId) {
+            return res.status(400).json({ success: false, error: 'Business context required.' });
+        }
         const activeOnly = active !== 'false' && active !== false;
         const items = await itemService.searchItems({
             query: q || '',
             activeOnly,
-            limit: limit ? parseInt(limit, 10) : 10
+            limit: limit ? parseInt(limit, 10) : 10,
+            businessId
         });
 
         return res.status(200).json({
@@ -157,4 +162,3 @@ module.exports = {
     previewImport,
     commitImport
 };
-

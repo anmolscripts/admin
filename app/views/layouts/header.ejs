@@ -70,9 +70,12 @@
   const isReports = currentNavPath.startsWith('/reports') || Boolean(locals.isReports) || currentNavTitle.includes('report') || currentNavTitle.includes('ledger') || currentNavTitle.includes('trial balance') || currentNavTitle.includes('balance sheet') || currentNavTitle.includes('profit & loss') || currentNavTitle.includes('receivables') || currentNavTitle.includes('journal');
   const isSettings = currentNavPath.startsWith('/settings') || currentNavTitle.includes('setting') || currentNavTitle.includes('organization');
   const isProjects = currentNavPath.startsWith('/projects') || currentNavTitle.includes('project');
+  const isSuppliers = currentNavPath.startsWith('/suppliers') || currentNavTitle.includes('supplier');
+  const isPurchases = Boolean(locals.isPurchaseNavigationActive);
 
   // Permission resolution for dynamic navigation visibility
   const canViewProjects = typeof locals.hasPermission === 'function' ? locals.hasPermission('PROJECTS', 'VIEW') : true;
+  const canViewSuppliers = typeof locals.hasPermission === 'function' ? locals.hasPermission('CLIENTS', 'VIEW') : true;
   const canViewTeam = typeof locals.hasPermission === 'function' ? locals.hasPermission('TEAM', 'VIEW') : (locals.user && (locals.user.role === 'ADMIN' || locals.user.role === 'OWNER'));
   const canViewReports = typeof locals.hasPermission === 'function' ? (locals.hasPermission('REPORTS', 'VIEW') || locals.hasPermission('JOURNALS', 'VIEW') || locals.hasPermission('ACCOUNTS', 'VIEW')) : true;
   const canViewFinancialYears = typeof locals.hasPermission === 'function' ? locals.hasPermission('FINANCIAL_YEARS', 'VIEW') : true;
@@ -114,11 +117,18 @@
             </a>
           </li>
           <li class="sidebar-menu-item">
-            <a href="/purchases/orders" class="sidebar-menu-link" id="menu-purchases" title="Purchases & Vendor Bills">
+            <a href="/purchases/orders" class="sidebar-menu-link <%= isPurchases ? 'active' : '' %>" id="menu-purchases" title="Purchases & Vendor Bills">
               <i class="bi bi-cart-fill"></i>
               <span>Purchases</span>
             </a>
           </li>
+          <% if (canViewSuppliers) { %><li class="sidebar-menu-item">
+            <a href="/suppliers" class="sidebar-menu-link <%= isSuppliers ? 'active' : '' %>" id="menu-suppliers" title="Supplier Management">
+              <i class="bi bi-truck"></i>
+              <span>Suppliers</span>
+            </a>
+          </li>
+          <% } %>
           <li class="sidebar-menu-item">
             <a href="/financials/expenses" class="sidebar-menu-link" id="menu-expenses" title="Operating Expenses & Other Income">
               <i class="bi bi-wallet2"></i>

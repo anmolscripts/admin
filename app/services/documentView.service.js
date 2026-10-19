@@ -175,8 +175,9 @@ function buildDocumentViewModel(doc, businessProfile = {}) {
         receiptNumber: p.receiptNumber,
         amount: Number(p.amount).toFixed(2),
         formattedAmount: formatCurrency(p.amount),
-        paymentMethod: p.paymentMethod,
+        paymentMethod: p.method,
         paymentDate: formatDate(p.paymentDate),
+        clearedAt: p.clearedAt ? formatDate(p.clearedAt) : null,
         status: p.status,
         notes: p.notes
     }));

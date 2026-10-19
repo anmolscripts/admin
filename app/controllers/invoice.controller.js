@@ -261,6 +261,15 @@ async function convertQuotation(req, res, next) {
     }
 }
 
+async function acceptQuotation(req, res, next) {
+    try {
+        const userId = req.session?.user?.id;
+        const businessId = req.businessId || req.session?.activeBusinessId;
+        const quotation = await invoiceService.acceptQuotation(req.params.id, userId, { ...req.body, businessId });
+        return res.status(200).json({ success: true, data: quotation });
+    } catch (err) { return handleControllerError(err, res, next); }
+}
+
 /**
  * GET /api/invoices/:id/copy
  * Prepare an unsaved copy of a document.
@@ -414,6 +423,7 @@ module.exports = {
     softDeleteInvoice,
     restoreInvoice,
     convertQuotation,
+    acceptQuotation,
     copyInvoice,
     exportPdf,
     exportExcel,

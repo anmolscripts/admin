@@ -142,6 +142,10 @@ Spark Admin enforces standard Indian Goods & Services Tax (GST) rules:
   - The entire tax is applied as **18% IGST**.
   - Example: Subtotal ₹10,000 + ₹1,800 IGST = **₹11,800 Grand Total**.
 
+### Purchase Order GST
+
+Purchase Order lines support the GST rates already used by the application (0%, 5%, 12%, 18%, and 28%), with line discounts and taxable, GST, and inclusive totals. The business state is compared with the selected supplier's state code (or GSTIN prefix): matching states use CGST + SGST, and different states use IGST. A Purchase Order remains a procurement commitment; it does not create an expense, supplier liability, or journal. Record and post the supplier's actual tax through the Supplier Bill workflow.
+
 ---
 
 ## 10. Billing & Shipping Addresses

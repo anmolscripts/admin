@@ -37,6 +37,15 @@ const NAV_ITEMS = [
         isActive: (path, title = '') => path.startsWith('/credit-debit-notes') || title.toLowerCase().includes('credit & debit')
     },
     {
+        id: 'menu-purchases',
+        label: 'Purchases',
+        url: '/purchases/orders',
+        icon: 'bi-cart-fill',
+        requiredModule: 'PURCHASE',
+        requiredAction: 'VIEW',
+        isActive: path => isPathWithin(path, '/purchases')
+    },
+    {
         id: 'menu-projects',
         label: 'Projects',
         url: '/projects',
@@ -171,6 +180,18 @@ const QUICK_COMMANDS = [
     { title: 'My User Profile', category: 'Settings', icon: 'bi-person', url: '/profile', module: null, action: null, keywords: ['my account', 'change password', 'avatar'] }
 ];
 
+function normalizePath(path = '') {
+    const pathname = String(path).split(/[?#]/, 1)[0];
+    const normalized = pathname.replace(/\/+$/, '') || '/';
+    return normalized.startsWith('/') ? normalized : `/${normalized}`;
+}
+
+function isPathWithin(path, basePath) {
+    const normalizedPath = normalizePath(path);
+    const normalizedBase = normalizePath(basePath);
+    return normalizedPath === normalizedBase || normalizedPath.startsWith(`${normalizedBase}/`);
+}
+
 function checkPermission(user, module, action, hasPermissionFn) {
     if (!module) return true; // public to all authenticated users
     if (typeof hasPermissionFn === 'function') {
@@ -223,5 +244,7 @@ module.exports = {
     QUICK_COMMANDS,
     getPermittedNavItems,
     searchCommands,
-    checkPermission
+    checkPermission,
+    normalizePath,
+    isPathWithin
 };

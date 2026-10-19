@@ -80,9 +80,11 @@ app.use(businessContextMiddleware);
 
 // Global EJS variables & RBAC permission resolution
 const businessProfileService = require('./services/businessProfile.service');
+const navigationService = require('./services/navigation.service');
 app.use(async (req, res, next) => {
     res.locals.user = req.session ? req.session.user || null : null;
-    res.locals.currentPath = req.path;
+    res.locals.currentPath = navigationService.normalizePath(req.path);
+    res.locals.isPurchaseNavigationActive = navigationService.isPathWithin(req.path, '/purchases');
     try {
         res.locals.branding = await businessProfileService.getBranding(req.businessId || null);
     } catch (_) {

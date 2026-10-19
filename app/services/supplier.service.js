@@ -110,24 +110,35 @@ async function createSupplier(data = {}, userId = null) {
     return supplier;
 }
 
-async function getSupplierById(id) {
+async function getSupplierById(id, businessId = null) {
     const numId = parseInt(id, 10);
     if (isNaN(numId) || numId <= 0) throw new ValidationError('Invalid supplier ID.');
-    const supplier = await prisma.supplier.findUnique({
-        where: { id: numId }
+    const where = { id: numId };
+    if (businessId) where.businessId = parseInt(businessId, 10);
+    const supplier = await prisma.supplier.findFirst({
+        where
     });
     if (!supplier) throw new NotFoundError(`Supplier with ID ${numId} not found.`);
     return supplier;
 }
 
-async function updateSupplier(id, data = {}, userId = null) {
-    const existing = await getSupplierById(id);
+async function updateSupplier(id, data = {}, userId = null, businessId = null) {
+    const existing = await getSupplierById(id, businessId);
 
     const updateData = {};
     if (data.name !== undefined) {
         const name = (data.name || '').trim();
         if (!name) throw new ValidationError('Supplier name cannot be empty.');
         updateData.name = name;
+    }
+    if (data.supplierCode !== undefined) {
+        const supplierCode = String(data.supplierCode || '').trim().toUpperCase();
+        if (!supplierCode) throw new ValidationError('Supplier code cannot be empty.');
+        const duplicate = await prisma.supplier.findFirst({
+            where: { businessId: existing.businessId, supplierCode, NOT: { id: existing.id } }
+        });
+        if (duplicate) throw new ConflictError(`Supplier code "${supplierCode}" already exists for this business.`);
+        updateData.supplierCode = supplierCode;
     }
     if (data.email !== undefined) updateData.email = validateEmail(data.email);
     if (data.phone !== undefined) updateData.phone = validatePhone(data.phone);
@@ -160,12 +171,31 @@ async function updateSupplier(id, data = {}, userId = null) {
     return updated;
 }
 
-async function searchSuppliers(query = '', limit = 50, businessId = null) {
+async function setSupplierActive(id, active, userId = null, businessId = null) {
+    const supplier = await getSupplierById(id, businessId);
+    if (supplier.active === Boolean(active)) return supplier;
+    const updated = await prisma.supplier.update({ where: { id: supplier.id }, data: { active: Boolean(active) } });
+    if (userId) {
+        await activityService.log({
+            actorUserId: userId,
+            businessId: supplier.businessId,
+            action: updated.active ? 'REACTIVATE' : 'DEACTIVATE',
+            module: 'PURCHASES',
+            targetType: 'SUPPLIER',
+            targetId: updated.id,
+            description: `${updated.active ? 'Reactivated' : 'Deactivated'} supplier ${updated.name}`
+        });
+    }
+    return updated;
+}
+
+async function searchSuppliers(query = '', limit = 50, businessId = null, { activeOnly = false } = {}) {
     const q = (query || '').trim();
     const where = {};
     if (businessId) {
         where.businessId = parseInt(businessId, 10);
     }
+    if (activeOnly) where.active = true;
     if (q) {
         where.OR = [
             { supplierCode: { contains: q } },
@@ -186,6 +216,7 @@ module.exports = {
     createSupplier,
     getSupplierById,
     updateSupplier,
+    setSupplierActive,
     searchSuppliers,
     ValidationError,
     NotFoundError,

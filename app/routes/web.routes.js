@@ -21,6 +21,7 @@ const journalService = require('../services/journal.service');
 const profileController = require('../controllers/profile.controller');
 const { uploadAvatar, uploadAttachmentFile, handleAttachmentUpload } = require('../middleware/upload.middleware');
 const purchaseController = require('../controllers/purchase.controller');
+const supplierController = require('../controllers/supplier.controller');
 const erpController = require('../controllers/erp.controller');
 const projectController = require('../controllers/project.controller');
 const businessController = require('../controllers/business.controller');
@@ -807,7 +808,12 @@ router.get('/financials/other-income', requireAuth, requirePermission('ACCOUNTS'
 router.post('/api/other-incomes', requireAuth, requirePermission('ACCOUNTS', 'CREATE'), purchaseController.createOtherIncome);
 
 router.get('/api/suppliers', requireAuth, requirePermission('CLIENTS', 'VIEW'), purchaseController.searchSuppliers);
-router.post('/api/suppliers', requireAuth, requirePermission('CLIENTS', 'CREATE'), purchaseController.createSupplier);
+router.get('/suppliers', requireAuth, requirePermission('CLIENTS', 'VIEW'), supplierController.renderSuppliersList);
+router.get('/suppliers/new', requireAuth, requirePermission('CLIENTS', 'CREATE'), supplierController.renderNewSupplier);
+router.post('/suppliers', requireAuth, requirePermission('CLIENTS', 'CREATE'), supplierController.createSupplier);
+router.get('/suppliers/:id/edit', requireAuth, requirePermission('CLIENTS', 'EDIT'), supplierController.renderEditSupplier);
+router.post('/suppliers/:id', requireAuth, requirePermission('CLIENTS', 'EDIT'), supplierController.updateSupplier);
+router.post('/suppliers/:id/active', requireAuth, requirePermission('CLIENTS', 'EDIT'), supplierController.setSupplierActive);
 
 // -------------------------------------------------------------
 // SUPPLIER PAYMENTS & ALLOCATIONS (PHASE 4 / TASK-204)
@@ -851,9 +857,12 @@ router.get('/projects/:id', requireAuth, requirePermission('PROJECTS', 'VIEW'), 
 // Project JSON APIs
 router.get('/api/projects', requireAuth, requirePermission('PROJECTS', 'VIEW'), projectController.apiListProjects);
 router.post('/api/projects', requireAuth, requirePermission('PROJECTS', 'CREATE'), projectController.apiCreateProject);
+router.post('/api/projects/from-quotation/:quotationId', requireAuth, requirePermission('PROJECTS', 'CREATE'), projectController.apiCreateProjectFromQuotation);
 router.get('/api/projects/:id', requireAuth, requirePermission('PROJECTS', 'VIEW'), projectController.apiGetProject);
 router.post('/api/projects/:id', requireAuth, requirePermission('PROJECTS', 'EDIT'), projectController.apiUpdateProject);
 router.get('/api/projects/:id/financials', requireAuth, requirePermission('PROJECTS', 'FINANCIALS_VIEW'), projectController.apiGetProjectFinancials);
+router.get('/api/projects/:id/closure-preview', requireAuth, requirePermission('PROJECTS', 'VIEW'), projectController.apiGetProjectClosurePreview);
+router.post('/api/projects/:id/close', requireAuth, requirePermission('PROJECTS', 'CLOSE'), projectController.apiCloseProject);
 
 // Project Tasks
 router.post('/api/projects/:id/tasks', requireAuth, requirePermission('PROJECTS', 'CREATE'), projectController.apiCreateTask);

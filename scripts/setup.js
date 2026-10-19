@@ -24,6 +24,7 @@ const { checkNodeVersion, checkNpmVersion, checkMySqlTcpConnectivity } = require
 const { collectConfiguration, parseEnvFile } = require('./lib/env-manager');
 const { ensureDatabaseExists, runPrismaCommand } = require('./lib/db-manager');
 const { verifyDatabaseState } = require('./lib/verifier');
+const { PROTECTED_DATABASES, readTestDatabaseConfig } = require('./lib/test-database-config');
 
 // Root repository path
 const ROOT_DIR = path.resolve(__dirname, '..');
@@ -61,6 +62,12 @@ async function main() {
     const isProduction = mode === 'production';
     const isInteractive = !cliArgs['non-interactive'] && process.stdin.isTTY;
     const skipTests = Boolean(cliArgs['skip-tests']);
+
+    // Existing production installations must never enter the development/fresh
+    // seed flow below. In particular, business records are not demo indicators.
+    if (isProduction) {
+        return require('./lib/production-install').installProduction(process.argv.slice(2));
+    }
 
     console.log('\n' + '═'.repeat(64));
     console.log(`   SPARK ADMIN — ${mode.toUpperCase()} INSTALLATION`);
@@ -175,6 +182,20 @@ async function main() {
     // Explicitly expose SEED_ADMIN_PASSWORD so automatic prisma seed picks it up
     process.env.SEED_ADMIN_PASSWORD = adminCredentials.password;
 
+    let testDatabaseConfig = null;
+    if (!isProduction) {
+        if (PROTECTED_DATABASES.has(String(envConfig.DATABASE_NAME).toLowerCase())) {
+            logger.fail(`Refusing to reset protected development database '${envConfig.DATABASE_NAME}'.`);
+            process.exit(1);
+        }
+        try {
+            testDatabaseConfig = readTestDatabaseConfig(ROOT_DIR);
+        } catch (err) {
+            logger.fail(logger.formatError(err));
+            process.exit(1);
+        }
+    }
+
     // -------------------------------------------------------------------------
     // [4/8] Preparing database
     // -------------------------------------------------------------------------
@@ -201,20 +222,20 @@ async function main() {
     }
 
     if (!isProduction) {
-        logger.step(`Ensuring test database 'spark_admin_test' exists on ${envConfig.DATABASE_HOST}:${envConfig.DATABASE_PORT}...`);
+        logger.step(`Ensuring configured test database '${testDatabaseConfig.database}' exists on ${testDatabaseConfig.host}:${testDatabaseConfig.port}...`);
         try {
             const testDbResult = await ensureDatabaseExists({
-                host: envConfig.DATABASE_HOST,
-                port: Number(envConfig.DATABASE_PORT),
-                user: envConfig.DATABASE_USER,
-                password: envConfig.DATABASE_PASSWORD,
-                database: 'spark_admin_test'
+                host: testDatabaseConfig.host,
+                port: Number(testDatabaseConfig.port),
+                user: testDatabaseConfig.user,
+                password: testDatabaseConfig.password,
+                database: testDatabaseConfig.database
             });
 
             if (testDbResult.created) {
-                logger.pass(`Database 'spark_admin_test' was created successfully.`);
+                logger.pass(`Test database '${testDatabaseConfig.database}' was created successfully.`);
             } else {
-                logger.pass(`Database 'spark_admin_test' already exists.`);
+                logger.pass(`Test database '${testDatabaseConfig.database}' already exists.`);
             }
         } catch (err) {
             logger.fail(logger.formatError(err));
@@ -250,12 +271,16 @@ async function main() {
         }
         logger.pass('Database reset and migrations applied successfully.');
 
-        logger.step('Applying migrations to test database spark_admin_test...');
-        const encodedUser = encodeURIComponent(envConfig.DATABASE_USER);
-        const encodedPass = encodeURIComponent(envConfig.DATABASE_PASSWORD);
-        const testDbUrl = `mysql://${encodedUser}:${encodedPass}@${envConfig.DATABASE_HOST}:${envConfig.DATABASE_PORT}/spark_admin_test`;
+        logger.step(`Applying migrations to configured test database ${testDatabaseConfig.database}...`);
         const testMigrateRes = runPrismaCommand(['migrate', 'deploy'], {
-            DATABASE_URL: testDbUrl,
+            ...process.env,
+            DATABASE_URL: testDatabaseConfig.databaseUrl,
+            DATABASE_NAME: testDatabaseConfig.database,
+            DATABASE_HOST: testDatabaseConfig.host,
+            DATABASE_PORT: testDatabaseConfig.port,
+            DATABASE_USER: testDatabaseConfig.user,
+            DATABASE_PASSWORD: testDatabaseConfig.password,
+            NODE_ENV: 'test',
             PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION: 'yes'
         });
         if (!testMigrateRes.ok) {
@@ -415,7 +440,7 @@ async function main() {
         `Database:         ${envConfig.DATABASE_NAME} (${envConfig.DATABASE_HOST}:${envConfig.DATABASE_PORT})`,
         `Administrator ID: ${verifyResult.summary.admin ? verifyResult.summary.admin.id : 'N/A'}`,
         `Admin Email:      ${adminCredentials.email}`,
-        `Admin Password:   ${adminCredentials.password ? adminCredentials.password : '[Hidden / Unchanged]'}`,
+        'Admin Password:   [not displayed]',
         `Application URL:  ${appUrl}`,
         `Next Step:        ${nextCommand}`
     ]);

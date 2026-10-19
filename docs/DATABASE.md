@@ -120,6 +120,12 @@ All database schema evolutions are captured in forward-only SQL migration script
 9. `20261003060017_add_unit_master`: Unit Master table with symbol uniqueness constraint and user audit relation.
 10. `20261003071507_add_team_rbac_and_user_activity`: Team management, RBAC tables (`roles`, `permissions`, `role_permissions`, `user_permissions`), user invitations, and `user_activity_logs`.
 
+### Prepared Purchase Order GST snapshot change
+
+`20261019133000_add_purchase_order_gst_snapshots` adds line-level discount, taxable value, GST rate, CGST/SGST/IGST, and inclusive line-total snapshots, plus matching order-level taxable, tax-component, total-tax, and final-total snapshots. The migration is additive; existing POs retain zero-default tax snapshots and are rendered with a legacy amount fallback. It was not applied as part of this change. Apply it only through the normal reviewed migration workflow against an approved database.
+
+Purchase Orders remain procurement commitments: their GST snapshots do not post expenses, supplier liabilities, or journals. Supplier Bills remain the source of accounting and input-tax-credit postings.
+
 ---
 
 ## 4. Migration Execution Commands

@@ -10,6 +10,8 @@ npm test
 ```
 All tests execute deterministically and terminate cleanly with process exit code 0.
 
+The test runner and development installer use the database configured in `.env.test`. The development installer applies migrations to that configured test database before running the suite; it must not infer a separate test target or redirect tests to the development database. Protected database names (including `spark_admin_test`) are rejected for test execution and test migration deployment. Configure `.env.test` to use a dedicated, disposable database.
+
 ---
 
 ## 2. Test Suite Organization

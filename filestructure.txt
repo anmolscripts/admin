@@ -412,10 +412,12 @@
         |-- item.controller.js
         |-- payment.controller.js
         |-- profile.controller.js
+        |-- project.controller.js
         |-- purchase.controller.js
         |-- report.controller.js
         |-- reportingWorkbench.controller.js
         |-- search.controller.js
+        |-- supplier.controller.js
         |-- team.controller.js
         |-- unit.controller.js
     |-- middleware
@@ -439,6 +441,7 @@
             |-- posting.service.js
             |-- report.service.js
         |-- activity.service.js
+        |-- attachment.service.js
         |-- auth.service.js
         |-- business.service.js
         |-- businessProfile.service.js
@@ -452,6 +455,7 @@
         |-- expense.service.js
         |-- financialYear.service.js
         |-- financialYearClosing.service.js
+        |-- goodsReceipt.service.js
         |-- invitation.service.js
         |-- invoice.service.js
         |-- item.service.js
@@ -464,6 +468,7 @@
         |-- pdf.service.js
         |-- profile.service.js
         |-- project.service.js
+        |-- projectCostLedger.service.js
         |-- purchaseOrder.service.js
         |-- rbac.service.js
         |-- reportingWorkbench.service.js
@@ -473,6 +478,7 @@
         |-- supplierBill.service.js
         |-- supplierPayment.service.js
         |-- team.service.js
+        |-- template.service.js
         |-- unit.service.js
     |-- views
         |-- admin
@@ -519,11 +525,18 @@
             |-- view.ejs
         |-- profile
             |-- index.ejs
+        |-- projects
+            |-- details.ejs
+            |-- editor.ejs
+            |-- index.ejs
         |-- purchases
             |-- bill-editor.ejs
             |-- bills.ejs
+            |-- grn-detail.ejs
+            |-- grn-editor.ejs
             |-- orders.ejs
             |-- po-editor.ejs
+            |-- receipts.ejs
         |-- reports
             |-- balance-sheet.ejs
             |-- customer-receivables.ejs
@@ -536,6 +549,9 @@
             |-- trial-balance.ejs
             |-- workbench.ejs
         |-- settings
+            |-- index.ejs
+        |-- suppliers
+            |-- form.ejs
             |-- index.ejs
         |-- team
             |-- activity.ejs
@@ -557,6 +573,7 @@
         |-- editor.css
         |-- main.css
         |-- premium-refresh.css
+        |-- projects.css
         |-- spark-datatable.css
         |-- theme.css
         |-- view.css
@@ -578,7 +595,12 @@
         |-- documents.js
         |-- editor.js
         |-- global-search.js
+        |-- report-drilldown.js
+        |-- spark-ajax-loader.js
         |-- spark-datatable.js
+        |-- spark-daterange.js
+        |-- spark-modals.js
+        |-- spark-tom-select.js
         |-- view.js
     |-- libs
         |-- apexcharts
@@ -597,9 +619,64 @@
         |-- flatpickr
             |-- flatpickr.min.css
             |-- flatpickr.min.js
+        |-- tom-select
+            |-- css
+                |-- tom-select.bootstrap5.min.css
+            |-- js
+                |-- tom-select.complete.min.js
     |-- uploads
         |-- avatars
             |-- .gitkeep
+|-- data
+    |-- attachments
+        |-- 1792387074458_738331f9adef9553341152bf0f591c7d.pdf
+        |-- 1792387134105_45f8b0e3b27448af6d07900257e7738f.pdf
+        |-- 1792387134123_bcb3e30a52dff7c4e424d98b62028474.png
+        |-- 1792387463970_ff691e6df445513bab633dc8b44b5f62.pdf
+        |-- 1792387523270_a1d3b2c1ee1d3859b2d1631cf2514e67.pdf
+        |-- 1792387523289_8ce01e2e9c68db3a541b1938ba211969.png
+        |-- 1792387591911_ced88a0225113568f9cddf5ec8403fa3.pdf
+        |-- 1792387650976_46726c2468a2cf4b5a7e3ac4eae8e8b3.pdf
+        |-- 1792387650997_df128107ca85b06645b39e99fb032d7e.png
+        |-- 1792388098449_ce439701ca4c47a49ebc5efa49d1e957.pdf
+        |-- 1792388158912_85045b911a61c5b7b8fc530f2fbb1724.pdf
+        |-- 1792388158930_f8efc54649d7cb48f16560928246a364.png
+        |-- 1792389107525_2866bb305a297298bdf6b41d7473a522.pdf
+        |-- 1792389143269_382961cadb16af589183d52b5449b73c.pdf
+        |-- 1792389143287_3b8a6ea1f23df429fbeb9cb81fbea908.png
+        |-- 1792389198999_a0933ddce260f988d1f43bd92416fc8c.pdf
+        |-- 1792389235268_ac2a97b6126779ada571c4ec3c3d9547.pdf
+        |-- 1792389235285_a6d44001f833e55478aa7eb497c4c021.png
+        |-- 1792389448008_cf1249f53960c9cee93a71b60fab7e56.pdf
+        |-- 1792389512727_11d3ab98266b7ca7f0fb5642e0d80017.pdf
+        |-- 1792389512744_6ffe812cab17de057edd3e833a40be96.png
+        |-- 1792399008088_20f71eed38b92d0929fc823706b55576.pdf
+        |-- 1792399101446_ebcb2d558a323972965ef5044d99623e.pdf
+        |-- 1792399101473_cce0850a97ac60289573d8349a6e23cc.png
+        |-- 1792399343681_7618b6c719a11cc606afeae32661b1fc.pdf
+        |-- 1792399432856_cdf1f442d18263456ce1172804ea56f5.pdf
+        |-- 1792399432878_8379b89ae80354c1cd529121f3c0917e.png
+        |-- 1792399583535_323241d3f8510637d67d420d5146c32d.pdf
+        |-- 1792399665469_b77085eff70a90db1fa3bf983dc2e061.pdf
+        |-- 1792399665503_d741f12edc93eeb35561facb11b5860d.png
+        |-- 1792400066105_26500661838659fd0c03d06419f6197c.pdf
+        |-- 1792400131203_fb4aa5d95dcf8a2805019c490328f7ba.pdf
+        |-- 1792400131221_a13f36c1f8e7c031a62b65af118f930a.png
+        |-- 1792401684731_fc2b0fb690b27315a8f304eb52bf176a.pdf
+        |-- 1792402437270_bbf529459e15a23039e563c61b5f250c.pdf
+        |-- 1792403122338_bfa842d587c0c745631cf3ed65bf4b50.pdf
+        |-- 1792403207069_90365a7363a55478daa3c2f6f9415a47.pdf
+        |-- 1792403207098_5890584949fce42209b6866b07f321b7.png
+        |-- 1792405672707_c41611c34fa3bccab59927926db07c82.pdf
+        |-- 1792405751114_9fff255d8e32b6915ae09d90088056c1.pdf
+        |-- 1792405751141_9c023b1ac95ddd2c929e5dccbb2730bc.png
+        |-- 1792405848050_10e89ee4da7e842de71771c60c471af5.pdf
+        |-- 1792405931326_a5a85c35b2a56e47258e788c12326f36.pdf
+        |-- 1792405931354_b8678821c53d7a2024e91f2222b5aa2c.png
+    |-- templates
+        |-- business_1.json
+        |-- business_8881.json
+        |-- business_8882.json
 |-- DEPLOYMENT.md
 |-- docs
     |-- ADR
@@ -615,6 +692,7 @@
     |-- ARCHITECTURE.md
     |-- CHANGELOG.md
     |-- CODING_STANDARDS.md
+    |-- CONTROLLED_STAGING_CHECKLIST.md
     |-- CORE_CONTRACTS.md
     |-- DATABASE.md
     |-- DATABASE_OPERATIONS.md
@@ -623,6 +701,7 @@
     |-- DEVELOPER_HANDBOOK.md
     |-- DEVELOPMENT_WORKFLOW.md
     |-- DOCUMENT_LIFECYCLE.md
+    |-- FINAL_ACCEPTANCE_REPORT.md
     |-- GLOBAL_SEARCH.md
     |-- INSTALLATION.md
     |-- MILESTONE_8_FINAL_REPORT.md
@@ -630,12 +709,24 @@
     |-- product
         |-- ACCOUNTING_AND_DATA_INTEGRITY_MATRIX.md
         |-- ERP_PRODUCT_SPEC.md
+    |-- PRODUCTION_ACCEPTANCE_FLOWS.md
+    |-- PRODUCTION_ACCEPTANCE_TRACKER.md
     |-- PRODUCT_READINESS_FINAL_REPORT.md
     |-- PRODUCT_READINESS_REMEDIATION_LOG.md
     |-- PROJECT_COMPLETION_ROADMAP.md
+    |-- PROJECT_INTEGRATION_AUDIT.md
+    |-- PROJECT_INTEGRATION_FINAL_REPORT.md
+    |-- PROJECT_INTEGRATION_IMPLEMENTATION_PLAN.md
+    |-- PROJECT_INVOICE_PAYMENT_E2E_REPORT.md
+    |-- PROJECT_LIFECYCLE_AUDIT.md
+    |-- PROJECT_LIFECYCLE_IMPLEMENTATION_PLAN.md
+    |-- PROJECT_LIFECYCLE_RUNBOOK.md
+    |-- PROJECT_PROGRESS.md
     |-- RBAC.md
     |-- README.md
+    |-- RELEASE_AND_MIGRATION_ARCHITECTURE.md
     |-- RELEASE_CHECKLIST.md
+    |-- RELEASE_MIGRATION_REVIEW_2026-10-19.md
     |-- SECURITY.md
     |-- TESTING.md
     |-- UPGRADE_GUIDE.md
@@ -648,6 +739,219 @@
         |-- js
             |-- docs.js
     |-- index.html
+|-- evidence
+    |-- E2E_PROJECT_INVOICE_PAYMENT_RECONCILIATION.json
+    |-- e2e_reconciliation_E2E-20261018-195450
+        |-- screenshots
+            |-- 01_login_dashboard.png
+    |-- e2e_reconciliation_E2E-20261018-271451
+        |-- exports
+            |-- invoices_export_E2E-20261018-271451.xlsx
+            |-- invoice_INVO_2026_10_21.pdf
+            |-- statement_977.csv
+        |-- reconciliation_summary.json
+        |-- screenshots
+            |-- 01_login_dashboard.png
+            |-- 02_project_created.png
+            |-- 03_project_costing_kpi.png
+            |-- 04_quotation_detail.png
+            |-- 05b_project_sales_tab.png
+            |-- 05_converted_invoice.png
+            |-- 06_partial_payment.png
+            |-- 07_invoice_fully_settled.png
+            |-- 08_general_ledger.png
+            |-- 09_trial_balance.png
+            |-- 10_profit_and_loss.png
+            |-- 11_customer_receivables.png
+            |-- 12_customer_subledger.png
+            |-- 13_invoice_desktop_1280.png
+            |-- 14_invoice_mobile_375.png
+    |-- e2e_reconciliation_E2E-20261018-306296
+        |-- screenshots
+            |-- 01_login_dashboard.png
+            |-- 02_project_created.png
+    |-- e2e_reconciliation_E2E-20261018-339142
+        |-- screenshots
+            |-- 01_login_dashboard.png
+            |-- 02_project_created.png
+            |-- 03_project_costing_kpi.png
+            |-- 04_quotation_detail.png
+            |-- 05_converted_invoice.png
+            |-- 06_partial_payment.png
+            |-- 07_invoice_fully_settled.png
+            |-- 08_general_ledger.png
+            |-- 09_trial_balance.png
+            |-- 10_profit_and_loss.png
+            |-- 11_customer_receivables.png
+            |-- 12_customer_subledger.png
+    |-- e2e_reconciliation_E2E-20261018-387265
+        |-- exports
+            |-- invoices_export_E2E-20261018-387265.xlsx
+            |-- invoice_INVO_2026_10_24.pdf
+            |-- statement_901.csv
+        |-- reconciliation_summary.json
+        |-- screenshots
+            |-- 01_login_dashboard.png
+            |-- 02_project_created.png
+            |-- 03_project_costing_kpi.png
+            |-- 04_quotation_detail.png
+            |-- 05_converted_invoice.png
+            |-- 06_partial_payment.png
+            |-- 07_invoice_fully_settled.png
+            |-- 08_general_ledger.png
+            |-- 09_trial_balance.png
+            |-- 10_profit_and_loss.png
+            |-- 11_customer_receivables.png
+            |-- 12_customer_subledger.png
+            |-- 13_invoice_desktop_1280.png
+            |-- 14_invoice_mobile_375.png
+    |-- e2e_reconciliation_E2E-20261018-493931
+        |-- exports
+            |-- invoices_export_E2E-20261018-493931.xlsx
+            |-- invoice_INVO_2026_10_25.pdf
+            |-- statement_902.csv
+        |-- reconciliation_summary.json
+        |-- screenshots
+            |-- 01_login_dashboard.png
+            |-- 02_project_created.png
+            |-- 03_project_costing_kpi.png
+            |-- 04_quotation_detail.png
+            |-- 05_converted_invoice.png
+            |-- 06_partial_payment.png
+            |-- 07_invoice_fully_settled.png
+            |-- 08_general_ledger.png
+            |-- 09_trial_balance.png
+            |-- 10_profit_and_loss.png
+            |-- 11_customer_receivables.png
+            |-- 12_customer_subledger.png
+            |-- 13_invoice_desktop_1280.png
+            |-- 14_invoice_mobile_375.png
+    |-- e2e_reconciliation_E2E-20261018-539650
+        |-- exports
+            |-- invoices_export_E2E-20261018-539650.xlsx
+            |-- invoice_INVO_2026_10_21.pdf
+            |-- statement_1087.csv
+        |-- reconciliation_summary.json
+        |-- screenshots
+            |-- 01_login_dashboard.png
+            |-- 02_project_created.png
+            |-- 03_project_costing_kpi.png
+            |-- 04_quotation_detail.png
+            |-- 05b_project_sales_tab.png
+            |-- 05_converted_invoice.png
+            |-- 06_partial_payment.png
+            |-- 07_invoice_fully_settled.png
+            |-- 08_general_ledger.png
+            |-- 09_trial_balance.png
+            |-- 10_profit_and_loss.png
+            |-- 11_customer_receivables.png
+            |-- 12_customer_subledger.png
+            |-- 13_invoice_desktop_1280.png
+            |-- 14_invoice_mobile_375.png
+    |-- e2e_reconciliation_E2E-20261018-572656
+        |-- exports
+            |-- invoices_export_E2E-20261018-572656.xlsx
+            |-- invoice_INVO_2026_10_22.pdf
+            |-- statement_1197.csv
+        |-- reconciliation_summary.json
+        |-- screenshots
+            |-- 01_login_dashboard.png
+            |-- 02_project_created.png
+            |-- 03_project_costing_kpi.png
+            |-- 04_quotation_detail.png
+            |-- 05b_project_sales_tab.png
+            |-- 05_converted_invoice.png
+            |-- 06_partial_payment.png
+            |-- 07_invoice_fully_settled.png
+            |-- 08_general_ledger.png
+            |-- 09_trial_balance.png
+            |-- 10_profit_and_loss.png
+            |-- 11_customer_receivables.png
+            |-- 12_customer_subledger.png
+            |-- 13_invoice_desktop_1280.png
+            |-- 14_invoice_mobile_375.png
+    |-- e2e_reconciliation_E2E-20261018-664707
+        |-- screenshots
+            |-- 01_login_dashboard.png
+            |-- 02_project_created.png
+            |-- 03_project_costing_kpi.png
+            |-- 04_quotation_detail.png
+            |-- 05_converted_invoice.png
+            |-- 06_partial_payment.png
+    |-- e2e_reconciliation_E2E-20261018-736944
+        |-- screenshots
+            |-- 01_login_dashboard.png
+            |-- 02_project_created.png
+            |-- 03_project_costing_kpi.png
+            |-- 04_quotation_detail.png
+            |-- 05_converted_invoice.png
+            |-- 06_partial_payment.png
+    |-- e2e_reconciliation_E2E-20261018-780886
+        |-- exports
+            |-- invoices_export_E2E-20261018-780886.xlsx
+            |-- invoice_INVO_2026_10_29.pdf
+            |-- statement_906.csv
+        |-- reconciliation_summary.json
+        |-- screenshots
+            |-- 01_login_dashboard.png
+            |-- 02_project_created.png
+            |-- 03_project_costing_kpi.png
+            |-- 04_quotation_detail.png
+            |-- 05_converted_invoice.png
+            |-- 06_partial_payment.png
+            |-- 07_invoice_fully_settled.png
+            |-- 08_general_ledger.png
+            |-- 09_trial_balance.png
+            |-- 10_profit_and_loss.png
+            |-- 11_customer_receivables.png
+            |-- 12_customer_subledger.png
+            |-- 13_invoice_desktop_1280.png
+            |-- 14_invoice_mobile_375.png
+    |-- e2e_reconciliation_E2E-20261018-832050
+        |-- exports
+            |-- invoices_export_E2E-20261018-832050.xlsx
+            |-- invoice_INVO_2026_10_2.pdf
+            |-- statement_1098.csv
+        |-- reconciliation_summary.json
+        |-- screenshots
+            |-- 01_login_dashboard.png
+            |-- 02_project_created.png
+            |-- 03_project_costing_kpi.png
+            |-- 04_quotation_detail.png
+            |-- 05b_project_sales_tab.png
+            |-- 05_converted_invoice.png
+            |-- 06_partial_payment.png
+            |-- 07_invoice_fully_settled.png
+            |-- 08_general_ledger.png
+            |-- 09_trial_balance.png
+            |-- 10_profit_and_loss.png
+            |-- 11_customer_receivables.png
+            |-- 12_customer_subledger.png
+            |-- 13_invoice_desktop_1280.png
+            |-- 14_invoice_mobile_375.png
+    |-- e2e_reconciliation_E2E-20261018-961418
+        |-- exports
+            |-- invoices_export_E2E-20261018-961418.xlsx
+            |-- invoice_INVO_2026_10_22.pdf
+            |-- statement_1151.csv
+        |-- reconciliation_summary.json
+        |-- screenshots
+            |-- 01_login_dashboard.png
+            |-- 02_project_created.png
+            |-- 03_project_costing_kpi.png
+            |-- 04_quotation_detail.png
+            |-- 05b_project_sales_tab.png
+            |-- 05_converted_invoice.png
+            |-- 06_partial_payment.png
+            |-- 07_invoice_fully_settled.png
+            |-- 08_general_ledger.png
+            |-- 09_trial_balance.png
+            |-- 10_profit_and_loss.png
+            |-- 11_customer_receivables.png
+            |-- 12_customer_subledger.png
+            |-- 13_invoice_desktop_1280.png
+            |-- 14_invoice_mobile_375.png
+    |-- F00_health_check.json
 |-- index.html
 |-- package-lock.json
 |-- package.json
@@ -700,6 +1004,16 @@
             |-- migration.sql
         |-- 20261012120000_require_explicit_payroll_period_business_id
             |-- migration.sql
+        |-- 20261017183000_add_project_costing_and_attachments
+            |-- migration.sql
+        |-- 20261018200000_add_goods_receipts_and_enhanced_attachments
+            |-- migration.sql
+        |-- 20261019120000_add_quotation_acceptance_project_lifecycle
+            |-- migration.sql
+        |-- 20261019133000_add_purchase_order_gst_snapshots
+            |-- migration.sql
+        |-- 20261019150000_add_payment_cheque_clearance
+            |-- migration.sql
         |-- migration_lock.toml
     |-- schema.prisma
     |-- seed
@@ -714,7 +1028,16 @@
 |-- PRODUCTION_CHECKLIST.md
 |-- README.md
 |-- scripts
+    |-- apply_migration_to_admin.js
+    |-- audit_accounting_invariants.js
+    |-- audit_rc4_package.js
     |-- backfill-payment-accounting.js
+    |-- backup_admin.js
+    |-- build-runtime-smoke.js
+    |-- build.js
+    |-- cdp_crawler_audit.js
+    |-- cdp_inspect_dark.js
+    |-- cdp_inspect_login.js
     |-- check-db-connection.js
     |-- check-test-db-exists.js
     |-- create-test-db.js
@@ -725,43 +1048,90 @@
     |-- diagnostic-env.js
     |-- disposable-release-verification.js
     |-- doctor.js
+    |-- e2e_browser_acceptance.js
+    |-- e2e_business_and_financial_acceptance.js
+    |-- e2e_complete_project_integration.js
+    |-- e2e_financials_and_ops_acceptance.js
+    |-- e2e_full_business_reconciliation.js
+    |-- e2e_purchase_order_acceptance.js
+    |-- e2e_sales_lifecycle_acceptance.js
     |-- guard.js
+    |-- inspect-admin-readonly.js
+    |-- inspect_business_summary.js
+    |-- inspect_financial_ground_truth.js
+    |-- inspect_payment_journals.js
+    |-- inspect_users_safe.js
+    |-- invalidate_test_session.js
     |-- lib
         |-- db-manager.js
+        |-- env-file.js
         |-- env-manager.js
         |-- logger.js
+        |-- migration-preflight.js
         |-- prerequisites.js
+        |-- prisma-cli.js
+        |-- production-install.js
+        |-- test-database-config.js
         |-- verifier.js
+    |-- package-candidate.js
     |-- package-release.js
+    |-- postmigration_verify.js
+    |-- preflight-db-check.js
+    |-- premigration_compat_check.js
     |-- prisma-test.js
     |-- qa_browser_e2e.js
     |-- qa_search_browser_e2e.js
+    |-- readonly_admin_inspect.js
+    |-- readonly_collation_check.js
+    |-- readonly_db_comparison.js
+    |-- readonly_real_acceptance.js
+    |-- rotate-password.js
+    |-- scan_hardcoded_creds.js
+    |-- seed_dev_admin.js
     |-- setup.js
+    |-- setup_dev_database.js
+    |-- start_test_server.js
+    |-- sweep_six_businesses_accounting.js
     |-- test-fixtures.js
     |-- test-genuine-upgrade.js
     |-- test-runner.js
     |-- test-upgrade-from-m16.js
+    |-- test_dev_server_flow.js
+    |-- validate_export_content.js
     |-- verify-all.js
+    |-- verify_backup_restoration.js
+    |-- verify_db_target.js
+    |-- verify_dev_readiness.js
+    |-- verify_login_endpoint.js
+    |-- verify_protected_dbs.js
+    |-- verify_status_isolated.js
 |-- skills-lock.json
 |-- tables-basic.html
 |-- tests
     |-- accounting.test.js
+    |-- accounting_report_isolation.test.js
+    |-- attachment_storage_readiness.test.js
     |-- auth.test.js
     |-- business_retention_archiving.test.js
+    |-- complete_project_integration_flows.test.js
     |-- contracts.test.js
     |-- credit_debit_notes.test.js
     |-- documents.test.js
+    |-- e2e_security_payment_audit.test.js
     |-- editor.test.js
     |-- enterprise_multibusiness_isolation.test.js
     |-- erp_workflow_integration.test.js
     |-- export.test.js
     |-- financial_year_closing.test.js
+    |-- gate8_packaging_protection.test.js
     |-- hardening.test.js
     |-- installer.test.js
     |-- inventory_accounting_integration.test.js
     |-- invoice.test.js
     |-- invoice_posting.test.js
     |-- item_import_inventory.test.js
+    |-- migration_provenance.test.js
+    |-- migration_upgrade.test.js
     |-- numbering.test.js
     |-- numbering_recovery.test.js
     |-- packaging_and_safety.test.js
@@ -769,16 +1139,25 @@
     |-- payroll.test.js
     |-- phase6.test.js
     |-- phase8.test.js
+    |-- production_install.test.js
     |-- profile.test.js
     |-- project_costing.test.js
+    |-- project_costing_enterprise.test.js
+    |-- project_invoice_linkage.test.js
     |-- purchases_and_financials.test.js
+    |-- purchase_order_gst.test.js
     |-- quotation_long_item_regression.test.js
     |-- rbac_team_activity.test.js
+    |-- release_build.test.js
+    |-- release_migration_compatibility.test.js
     |-- reporting_format_parity.test.js
     |-- reports_reconciliation.test.js
+    |-- rotate_password_guard.test.js
     |-- search.test.js
     |-- stock_movements.test.js
     |-- supplier_payments.test.js
+    |-- templates.test.js
+    |-- test_database_config.test.js
     |-- unit.test.js
     |-- Untitled-1.html
     |-- ux_polish.test.js

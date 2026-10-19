@@ -35,11 +35,13 @@ function sanitizeMetadata(obj) {
  */
 async function log({
     actorUserId = null,
+    businessId = null,
     action,
     module: mod,
     targetType = null,
     targetId = null,
     targetReference = null,
+    description = null,
     ipAddress = null,
     userAgent = null,
     metadata = null
@@ -50,13 +52,18 @@ async function log({
     }
 
     try {
-        const cleanMetadata = metadata ? sanitizeMetadata(metadata) : null;
+        const metadataObject = metadata && typeof metadata === 'object' && !Array.isArray(metadata)
+            ? { ...metadata }
+            : (metadata === null ? {} : { value: metadata });
+        if (description) metadataObject.description = String(description);
+        const cleanMetadata = Object.keys(metadataObject).length ? sanitizeMetadata(metadataObject) : null;
         const normalizedTargetId = targetId !== null && targetId !== undefined ? String(targetId) : null;
         const normalizedTargetRef = targetReference !== null && targetReference !== undefined ? String(targetReference) : null;
 
         const record = await db.userActivityLog.create({
             data: {
                 actorUserId: actorUserId ? Number(actorUserId) : null,
+                businessId: businessId ? Number(businessId) : null,
                 action: String(action).toUpperCase(),
                 module: String(mod).toUpperCase(),
                 targetType: targetType ? String(targetType).toUpperCase() : null,
@@ -93,6 +100,8 @@ function formatEventDescription(logItem) {
     const actor = logItem.actorUser ? logItem.actorUser.name : (logItem.metadata?.actorEmail || 'System');
     const ref = logItem.targetReference || (logItem.targetId ? `#${logItem.targetId}` : '');
 
+    if (logItem.metadata?.description) return `${actor}: ${String(logItem.metadata.description)}`;
+
     switch (logItem.action) {
         case 'LOGIN': return `${actor} logged in successfully.`;
         case 'LOGOUT': return `${actor} logged out.`;
@@ -120,7 +129,11 @@ function formatEventDescription(logItem) {
         case 'EDIT_UNIT': return `${actor} updated unit ${ref}.`;
         case 'ACTIVATE_UNIT': return `${actor} activated unit ${ref}.`;
         case 'DEACTIVATE_UNIT': return `${actor} deactivated unit ${ref}.`;
-        case 'CREATE_PAYMENT': return `${actor} recorded payment for ${ref}.`;
+        case 'CREATE_PAYMENT':
+            return logItem.metadata?.method === 'CHEQUE' && logItem.metadata?.status === 'PENDING_CLEARANCE'
+                ? `${actor} recorded cheque ${ref} pending clearance.`
+                : `${actor} recorded payment for ${ref}.`;
+        case 'CLEAR_PAYMENT': return `${actor} marked cheque ${ref} as cleared.`;
         case 'VOID_PAYMENT': return `${actor} voided payment for ${ref}.`;
         case 'CREATE_USER': return `${actor} created team member ${ref}.`;
         case 'EDIT_USER': return `${actor} updated profile for ${ref}.`;

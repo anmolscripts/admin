@@ -7,21 +7,19 @@
  */
 
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
+const { migrationSource } = require('./lib/migration-preflight');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 const DIST_DIR = path.join(ROOT_DIR, 'dist');
-const STAGING_DIR = path.join(DIST_DIR, 'staging');
 
 const FORBIDDEN_PATTERNS = [
-    /^\.git([\/\\]|$)/,
-    /^node_modules([\/\\]|$)/,
+    /(^|\/)(?:\.git|node_modules|dist|build|coverage|\.artifacts|evidence|data|test-results|playwright-report)(\/|$)/i,
+    /(^|\/)uploads(\/|$)/i,
     /\.log$/,
-    /^\.artifacts([\/\\]|$)/,
-    /assets[\/\\]uploads[\/\\]avatars[\/\\]/,
-    /\.sql\.dump$/,
-    /\.swp$/
+    /\.(?:sql\.dump|dump|bak|backup|sqlite|db|zip|tar|gz|swp|swo)$/i
 ];
 
 const ALLOWED_DIRECTORIES = [
@@ -31,6 +29,16 @@ const ALLOWED_DIRECTORIES = [
     'prisma',
     'scripts'
 ];
+
+const RELEASE_SCRIPT_FILES = new Set([
+    'scripts/db-upgrade.js',
+    'scripts/doctor.js',
+    'scripts/lib/env-file.js',
+    'scripts/lib/logger.js',
+    'scripts/lib/prerequisites.js',
+    'scripts/lib/prisma-cli.js',
+    'scripts/lib/migration-preflight.js'
+]);
 
 const ALLOWED_ROOT_FILES = [
     'package.json',
@@ -43,11 +51,14 @@ const ALLOWED_ROOT_FILES = [
 ];
 
 function isForbidden(relPath) {
-    const norm = relPath.replace(/\\/g, '/');
-    const base = path.basename(norm);
-    if (base === '.env.example' || base === '.env.production.example') return false;
-    if (norm === '.gitignore' || norm.endsWith('/.gitkeep') || norm === '.gitkeep') return false;
-    if (base.startsWith('.env') || /(^|\/)\.env/i.test(norm)) return true;
+    const norm = relPath.replace(/\\/g, '/').replace(/^\.\//, '');
+    if (norm === '.env.example' || norm === '.env.production.example' || norm === '.gitignore') return false;
+    if (norm === 'assets/uploads/avatars/.gitkeep') return false;
+    if (/(^|\/)\.env[^/]*(?:\/|$)/i.test(norm)) return true;
+    if (/^docs\/DATABASE_OPERATIONS\.md$/i.test(norm)) return true;
+    if (norm.startsWith('scripts/') && !RELEASE_SCRIPT_FILES.has(norm) &&
+        ![...RELEASE_SCRIPT_FILES].some(file => file.startsWith(`${norm}/`))) return true;
+    if (/\.sql$/i.test(norm) && !/^prisma\/migrations\/[^/]+\/migration\.sql$/i.test(norm)) return true;
     return FORBIDDEN_PATTERNS.some(pat => pat.test(norm));
 }
 
@@ -56,7 +67,7 @@ function scanFiles(dir, baseDir = ROOT_DIR) {
     const entries = fs.readdirSync(dir, { withFileTypes: true });
     for (const entry of entries) {
         const fullPath = path.join(dir, entry.name);
-        const relPath = path.relative(baseDir, fullPath);
+        const relPath = path.relative(baseDir, fullPath).replace(/\\/g, '/');
         if (isForbidden(relPath)) continue;
         if (entry.isDirectory()) {
             list.push(...scanFiles(fullPath, baseDir));
@@ -94,21 +105,30 @@ function verifyPackaging() {
     return { ok: true, violations: [], files };
 }
 
-function cleanStaging() {
-    if (fs.existsSync(STAGING_DIR)) {
-        fs.rmSync(STAGING_DIR, { recursive: true, force: true });
-    }
-    fs.mkdirSync(STAGING_DIR, { recursive: true });
+function sanitizePackageJson(packageJson) {
+    const result = JSON.parse(JSON.stringify(packageJson));
+    result.scripts = {
+        start: 'node app/server.js',
+        doctor: 'node scripts/doctor.js',
+        'install:migrate': 'node scripts/db-upgrade.js'
+    };
+    return result;
 }
 
-function copyToStaging(files) {
+function copyToStaging(files, stagingDir) {
     for (const rel of files) {
         const src = path.join(ROOT_DIR, rel);
-        const dest = path.join(STAGING_DIR, rel);
+        const dest = path.join(stagingDir, rel);
         const destDir = path.dirname(dest);
         fs.mkdirSync(destDir, { recursive: true });
-        fs.copyFileSync(src, dest);
+        if (rel === 'package.json') {
+            const packageJson = JSON.parse(fs.readFileSync(src, 'utf8'));
+            fs.writeFileSync(dest, `${JSON.stringify(sanitizePackageJson(packageJson), null, 2)}\n`);
+        } else {
+            fs.copyFileSync(src, dest);
+        }
     }
+    fs.writeFileSync(path.join(stagingDir, 'migration-source.json'), `${JSON.stringify(migrationSource(ROOT_DIR), null, 2)}\n`, { flag: 'wx' });
 }
 
 if (require.main === module) {
@@ -120,38 +140,36 @@ if (require.main === module) {
     if (!result.ok) process.exit(1);
 
     console.log(`\n✔ Package verification passed: ${result.files.length} clean release files included.`);
-    console.log('✔ Zero forbidden files (.env, .git, node_modules, private logs/uploads).');
-
-    if (!fs.existsSync(DIST_DIR)) fs.mkdirSync(DIST_DIR, { recursive: true });
-    cleanStaging();
-    copyToStaging(result.files);
+    console.log('✔ Secret, local-data, evidence, backup, fixture, and generated-artifact exclusions passed.');
 
     const zipPath = path.join(DIST_DIR, 'spark-admin-release.zip');
-    if (fs.existsSync(zipPath) && !process.argv.includes('--force-release-override')) {
+    const manifestPath = path.join(DIST_DIR, 'release-manifest.json');
+    if (fs.existsSync(zipPath) || fs.existsSync(manifestPath)) {
         console.error('\n[CRITICAL RELEASE GUARD]: Existing baseline archive dist/spark-admin-release.zip exists.');
-        console.error('Overwriting the baseline release is blocked. Use scripts/package-candidate.js or specify --force-release-override.');
+        console.error('Overwriting either baseline release artifact is blocked. Use scripts/package-candidate.js with a new output name.');
         process.exit(1);
     }
-    const isWin = process.platform === 'win32';
-    if (isWin) {
-        const zipCmd = 'powershell';
-        // Archive contents of staging directory without a top-level folder
-        const zipArgs = ['-Command', `Set-Location '${STAGING_DIR}'; Compress-Archive -Path * -DestinationPath '${zipPath}' -Force`];
-        console.log('Creating release ZIP at', zipPath);
-        const zipResult = spawnSync(zipCmd, zipArgs, { stdio: 'inherit', shell: true });
-        if (zipResult.status !== 0) {
-            console.error('Failed to create release ZIP.');
-            process.exit(1);
+    fs.mkdirSync(DIST_DIR, { recursive: true });
+    const stagingDir = fs.mkdtempSync(path.join(os.tmpdir(), 'spark-admin-release-'));
+    copyToStaging(result.files, stagingDir);
+
+    try {
+        const isWin = process.platform === 'win32';
+        if (isWin) {
+            const escapedStage = stagingDir.replace(/'/g, "''");
+            const escapedZip = zipPath.replace(/'/g, "''");
+            const command = `Compress-Archive -Path (Get-ChildItem -LiteralPath '${escapedStage}' -Force | ForEach-Object { $_.FullName }) -DestinationPath '${escapedZip}'`;
+            const zipResult = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', command], { stdio: 'inherit' });
+            if (zipResult.status !== 0) throw new Error('Failed to create release ZIP.');
+        } else {
+            const zipResult = spawnSync('zip', ['-r', zipPath, '.'], { cwd: stagingDir, stdio: 'inherit' });
+            if (zipResult.status !== 0) throw new Error('Failed to create release ZIP.');
         }
-    } else {
-        const zipCmd = 'zip';
-        const zipArgs = ['-r', zipPath, '.'];
-        console.log('Creating release ZIP at', zipPath);
-        const zipResult = spawnSync(zipCmd, zipArgs, { cwd: STAGING_DIR, stdio: 'inherit' });
-        if (zipResult.status !== 0) {
-            console.error('Failed to create release ZIP.');
-            process.exit(1);
-        }
+    } catch (error) {
+        console.error(error.message);
+        process.exitCode = 1;
+        fs.rmSync(stagingDir, { recursive: true, force: true });
+        process.exit();
     }
 
     // Generate release-manifest.json
@@ -177,12 +195,19 @@ if (require.main === module) {
         files: result.files
     };
 
-    const manifestPath = path.join(DIST_DIR, 'release-manifest.json');
-    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), { encoding: 'utf8', flag: 'wx' });
     console.log(`✔ Release manifest written to ${manifestPath}`);
 
+    fs.rmSync(stagingDir, { recursive: true, force: true });
     console.log(`\n✔ Release ZIP created at ${zipPath}`);
     process.exit(0);
 }
 
-module.exports = { isForbidden, buildFileList, verifyPackaging, FORBIDDEN_PATTERNS };
+module.exports = {
+    isForbidden,
+    buildFileList,
+    verifyPackaging,
+    FORBIDDEN_PATTERNS,
+    copyToStaging,
+    sanitizePackageJson
+};

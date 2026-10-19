@@ -252,7 +252,10 @@ class ReportController {
                 });
             }
 
-            const report = await reportService.getCustomerStatement(clientId, req.query);
+            const report = await reportService.getCustomerStatement(clientId, {
+                ...req.query,
+                businessId
+            });
 
             res.render('reports/customer-statement', {
                 pageTitle: `Customer Statement: ${report.client.name}`,
@@ -280,13 +283,17 @@ class ReportController {
      */
     async exportCustomerStatement(req, res, next) {
         try {
+            const businessId = req.businessId || (req.session && req.session.activeBusinessId) || null;
             const rawId = req.params.clientId || req.query.clientId;
             const clientId = parseInt(rawId, 10);
             if (isNaN(clientId) || clientId <= 0) {
                 return res.status(400).send('Invalid or missing client ID.');
             }
 
-            const report = await reportService.getCustomerStatement(clientId, req.query);
+            const report = await reportService.getCustomerStatement(clientId, {
+                ...req.query,
+                businessId
+            });
 
             const escapeCsv = (str) => {
                 if (str === null || str === undefined) return '""';

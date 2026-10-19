@@ -436,6 +436,10 @@ describe('Clients, Business Profile, GST & Payments (Phase 6) Test Suite', () =>
             assert.strictEqual(voidResult.payment.status, 'VOID');
             assert.strictEqual(voidResult.invoice.paidAmount, 0);
             assert.strictEqual(voidResult.invoice.outstandingAmount, 15000);
+            assert.strictEqual(voidResult.reversalJournal, null);
+            assert.strictEqual(await prisma.journalEntry.findUnique({
+                where: { idempotencyKey: `PAYMENT:${payment.id}` }
+            }), null);
 
             await assert.rejects(
                 async () => {

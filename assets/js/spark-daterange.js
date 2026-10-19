@@ -107,7 +107,7 @@
       mode: 'range',
       dateFormat: 'Y-m-d',
       defaultDate: initialDates.length === 2 ? initialDates : undefined,
-      showMonths: window.innerWidth < 768 ? 1 : 2,
+      showMonths: 1,
       onClose: function (selectedDates) {
         if (selectedDates.length === 2) {
           const fromStr = formatISODate(selectedDates[0]);
@@ -193,4 +193,3 @@
     formatISODate: formatISODate
   };
 })();
-

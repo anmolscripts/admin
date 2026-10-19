@@ -202,12 +202,19 @@
               <tr class="report-row-clickable cursor-pointer" data-source-type="<%= t.sourceType %>" data-source-id="<%= t.sourceId || '' %>" data-journal-id="<%= t.journalId %>" data-source-ref="<%= t.entryNumber %>" title="Click to view transaction details in modal">
                 <td class="ps-4 text-nowrap small text-muted"><%= new Date(t.entryDate).toLocaleDateString('en-IN') %></td>
                 <td class="font-monospace fw-bold">
-                  <a href="/reports/journals/<%= t.journalId %>" class="text-decoration-none text-primary" onclick="event.stopPropagation()">
-                    <%= t.entryNumber %>
-                  </a>
+                  <% if (t.journalId) { %>
+                    <a href="/reports/journals/<%= t.journalId %>" class="text-decoration-none text-primary" onclick="event.stopPropagation()">
+                      <%= t.entryNumber %>
+                    </a>
+                  <% } else { %>
+                    <span class="text-warning-emphasis"><%= t.entryNumber %></span>
+                  <% } %>
                 </td>
                 <td>
                   <span class="badge bg-secondary-subtle text-secondary font-monospace" style="font-size: 0.72rem;"><%= t.sourceType %> <%= t.sourceId ? '#' + t.sourceId : '' %></span>
+                  <% if (t.status === 'UNPOSTED') { %>
+                    <span class="badge bg-warning-subtle text-warning ms-1">NOT POSTED</span>
+                  <% } %>
                 </td>
                 <td>
                   <div class="fw-medium text-dark small"><%= t.narration %></div>

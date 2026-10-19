@@ -54,11 +54,13 @@ router.get('/invoices/:id/history', requirePermission('DOCUMENTS', 'VIEW'), invo
 router.patch('/invoices/:id/status', requirePermission('DOCUMENTS', 'EDIT'), invoiceController.updateInvoiceStatus);
 router.post('/invoices/:id/restore', requirePermission('DOCUMENTS', 'RESTORE'), invoiceController.restoreInvoice);
 router.post('/invoices/:id/convert', requirePermission('DOCUMENTS', 'CONVERT'), invoiceController.convertQuotation);
+router.post('/invoices/:id/accept', requirePermission('DOCUMENTS', 'EDIT'), invoiceController.acceptQuotation);
 router.get('/invoices/:id/copy', requirePermission('DOCUMENTS', 'CREATE'), invoiceController.copyInvoice);
 router.post('/invoices/:id/post', requirePermission('JOURNALS', 'CREATE'), invoiceController.postInvoiceAccounting);
 router.get('/invoices/:id/accounting', requirePermission('JOURNALS', 'VIEW'), invoiceController.getInvoiceAccounting);
 
 // Payment lifecycle and accounting routes
+router.post('/payments/:id/clear', requirePermission('PAYMENTS', 'EDIT'), paymentController.clearPayment);
 router.post('/payments/:id/void', requirePermission('PAYMENTS', 'VOID'), paymentController.voidPayment);
 router.post('/payments/:id/post', requirePermission('JOURNALS', 'CREATE'), paymentController.postPaymentAccounting);
 router.get('/payments/:id/accounting', requirePermission('JOURNALS', 'VIEW'), paymentController.getPaymentAccounting);

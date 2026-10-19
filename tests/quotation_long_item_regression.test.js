@@ -6,6 +6,7 @@ const prisma = require('../app/config/prisma');
 const invoiceService = require('../app/services/invoice.service');
 const pdfService = require('../app/services/pdf.service');
 const documentViewService = require('../app/services/documentView.service');
+const templateService = require('../app/services/template.service');
 
 describe('Quotation & Invoice Shared Template Redesign Verification Suite', () => {
     let server;
@@ -61,6 +62,9 @@ describe('Quotation & Invoice Shared Template Redesign Verification Suite', () =
 
         authCookie = extractCookie(loginRes);
         assert.ok(authCookie, 'Authentication session cookie must be established');
+
+        // Ensure industrial-bold is active for template assertions
+        templateService.setActiveTemplates(1, { invoiceTemplate: 'industrial-bold', quotationTemplate: 'executive-emerald' });
 
         // Create client
         const client = await prisma.client.create({

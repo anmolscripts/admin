@@ -3,6 +3,11 @@
   const typeLabel = isQuotation ? 'Quotation' : 'Invoice';
   const typeBadgeClass = isQuotation ? 'badge-type-quotation' : 'badge-type-invoice';
   const typeIcon = isQuotation ? 'bi-file-earmark-text' : 'bi-receipt';
+  const invoiceOutstanding = isQuotation ? 0 : Number(document.outstandingAmount !== undefined ? document.outstandingAmount : document.grandTotal) || 0;
+  const pendingChequeAmount = (document.payments || [])
+    .filter(payment => payment.method === 'CHEQUE' && payment.status === 'PENDING_CLEARANCE')
+    .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+  const availablePaymentBalance = Math.max(0, Math.round((invoiceOutstanding - pendingChequeAmount) * 100) / 100);
 
   function formatMoney(amount) {
     const num = Number(amount);
@@ -237,6 +242,11 @@
             <i class="bi bi-arrow-repeat me-1"></i> Convert to Invoice
           </button>
         <% } %>
+        <% if (isQuotation && !document.acceptedAt) { %>
+          <button type="button" class="btn-custom btn-custom-success" id="btn-accept-quotation"><i class="bi bi-check2-circle me-1"></i>Record Acceptance</button>
+        <% } else if (isQuotation && document.acceptedAt && !document.sourceProject) { %>
+          <button type="button" class="btn-custom btn-custom-success" id="btn-create-project"><i class="bi bi-kanban me-1"></i>Create Project</button>
+        <% } %>
 
         <a href="/documents/<%= document.id %>/edit" class="btn-custom btn-custom-outline-primary" id="btn-action-edit">
           <i class="bi bi-pencil me-1"></i> Edit
@@ -250,7 +260,7 @@
           <i class="bi bi-printer me-1"></i> Print
         </a>
 
-        <% if (!isQuotation && Number(document.outstandingAmount !== undefined ? document.outstandingAmount : document.grandTotal) > 0) { %>
+        <% if (!isQuotation && availablePaymentBalance > 0) { %>
           <button type="button" class="btn-custom btn-custom-success" id="btn-action-record-payment" data-bs-toggle="modal" data-bs-target="#modal-record-payment">
             <i class="bi bi-wallet2 me-1"></i> Record Payment
           </button>
@@ -295,7 +305,7 @@
           <i class="bi bi-play-circle me-1"></i> Activate
         </button>
 
-        <% if (!isQuotation && Number(document.outstandingAmount !== undefined ? document.outstandingAmount : document.grandTotal) > 0) { %>
+        <% if (!isQuotation && availablePaymentBalance > 0) { %>
           <button type="button" class="btn-custom btn-custom-success" id="btn-action-record-payment-inactive" data-bs-toggle="modal" data-bs-target="#modal-record-payment">
             <i class="bi bi-wallet2 me-1"></i> Record Payment
           </button>
@@ -696,7 +706,7 @@
   <%
     const grandTotal = Number(document.grandTotal) || 0;
     const paidAmount = Number(document.paidAmount) || 0;
-    const outstanding = Number(document.outstandingAmount !== undefined ? document.outstandingAmount : (grandTotal - paidAmount));
+    const outstanding = invoiceOutstanding;
     let payBadgeClass = 'bg-secondary-subtle text-secondary';
     let payStatusText = 'UNPAID';
     if (paidAmount >= grandTotal && grandTotal > 0) {
@@ -722,7 +732,7 @@
       </h3>
       <div class="d-flex align-items-center gap-2">
         <span class="badge <%= payBadgeClass %> px-2 py-1"><%= payStatusText %></span>
-        <% if (outstanding > 0 && ['ACTIVE', 'INACTIVE'].includes(document.status)) { %>
+        <% if (availablePaymentBalance > 0 && ['ACTIVE', 'INACTIVE'].includes(document.status)) { %>
           <button type="button" class="btn-custom btn-custom-primary btn-custom-sm" data-bs-toggle="modal" data-bs-target="#modal-record-payment" id="btn-open-payment-modal">
             <i class="bi bi-plus-circle me-1"></i> Record Payment
           </button>
@@ -754,6 +764,15 @@
 
     <!-- Payments Table -->
     <div class="table-responsive">
+      <% if (pendingChequeAmount > 0) { %>
+        <div class="alert alert-warning d-flex align-items-start gap-2 mb-3" role="status">
+          <i class="bi bi-hourglass-split mt-1"></i>
+          <div>
+            <strong><%= formatMoney(pendingChequeAmount) %> in cheques pending clearance.</strong>
+            These amounts are reserved and will update the invoice balance and ledger only after clearance.
+          </div>
+        </div>
+      <% } %>
       <table class="table align-middle view-items-table mb-0" id="payments-table" data-spark-datatable="true" data-title="Recorded Payments">
         <thead>
           <tr>
@@ -769,7 +788,7 @@
         <tbody id="payments-tbody">
           <% if (document.payments && document.payments.length > 0) { %>
             <% document.payments.forEach(p => { %>
-              <tr class="<%= p.status === 'VOID' ? 'text-muted bg-light' : '' %>" id="payment-row-<%= p.id %>">
+              <tr class="<%= p.status === 'VOID' ? 'text-muted bg-light' : (p.status === 'PENDING_CLEARANCE' ? 'table-warning' : '') %>" id="payment-row-<%= p.id %>">
                 <td data-sort="<%= p.paymentDate ? new Date(p.paymentDate).toISOString() : '' %>"><%= formatDate(p.paymentDate) %></td>
                 <td data-sort="<%= p.method %>"><span class="badge bg-light text-dark border font-monospace"><%= p.method %></span></td>
                 <td data-sort="<%= p.reference || '' %>">
@@ -782,10 +801,15 @@
                   <%= formatMoney(p.amount) %>
                 </td>
                 <td class="text-center" data-sort="<%= p.status %>">
-                  <% if (p.status === 'POSTED') { %>
+                  <% if (p.status === 'PENDING_CLEARANCE') { %>
+                    <span class="badge bg-warning-subtle text-warning">PENDING CLEARANCE</span>
+                  <% } else if (p.status === 'POSTED') { %>
                     <span class="badge bg-success-subtle text-success">POSTED</span>
                   <% } else { %>
                     <span class="badge bg-secondary-subtle text-secondary">VOID</span>
+                  <% } %>
+                  <% if (p.clearedAt) { %>
+                    <div class="small text-muted mt-1">Cleared <%= formatDate(p.clearedAt) %></div>
                   <% } %>
                 </td>
                 <td class="text-center">
@@ -799,6 +823,8 @@
                         <i class="bi bi-journal-text me-1"></i><%= p.accounting.entryNumber %>
                       </a>
                     <% } %>
+                  <% } else if (p.status === 'PENDING_CLEARANCE') { %>
+                    <span class="badge bg-warning-subtle text-warning" title="Ledger posting waits for cheque clearance">Awaiting clearance</span>
                   <% } else if (p.status === 'POSTED') { %>
                     <span class="badge bg-secondary-subtle text-secondary" title="Payment pending ledger post">Unposted</span>
                   <% } else { %>
@@ -806,7 +832,11 @@
                   <% } %>
                 </td>
                 <td class="text-end">
-                  <% if (p.status === 'POSTED' && !['VOID', 'DELETED'].includes(document.status)) { %>
+                  <% if (p.status === 'PENDING_CLEARANCE' && document.status === 'ACTIVE') { %>
+                    <button type="button" class="btn btn-sm btn-outline-success btn-clear-payment" data-id="<%= p.id %>" title="Mark cheque as cleared">
+                      <i class="bi bi-check-circle me-1"></i> Mark Cleared
+                    </button>
+                  <% } else if (p.status === 'POSTED' && !['VOID', 'DELETED'].includes(document.status)) { %>
                     <button type="button" class="btn btn-sm btn-outline-danger btn-void-payment" data-id="<%= p.id %>" data-amount="<%= p.amount %>" title="Void this payment">
                       <i class="bi bi-slash-circle me-1"></i> Void
                     </button>
@@ -965,6 +995,8 @@
               CONVERTED: 'Converted',
               COPIED: 'Copied',
               PAYMENT_RECORDED: 'Payment Recorded',
+              CHEQUE_RECEIVED: 'Cheque Received — Pending Clearance',
+              CHEQUE_CLEARED: 'Cheque Cleared',
               PAYMENT_VOIDED: 'Payment Voided',
               STATUS_CHANGED: 'Status Changed'
             };
@@ -979,6 +1011,8 @@
             else if (rev.action === 'CONVERTED') { badgeClass = 'action-badge-converted'; iconClass = 'bi-arrow-repeat text-purple'; }
             else if (rev.action === 'COPIED') { badgeClass = 'action-badge-copied'; iconClass = 'bi-copy text-secondary'; }
             else if (rev.action === 'PAYMENT_RECORDED') { badgeClass = 'action-badge-payment'; iconClass = 'bi-cash-coin text-success'; }
+            else if (rev.action === 'CHEQUE_RECEIVED') { badgeClass = 'action-badge-payment'; iconClass = 'bi-hourglass-split text-warning'; }
+            else if (rev.action === 'CHEQUE_CLEARED') { badgeClass = 'action-badge-payment'; iconClass = 'bi-check-circle-fill text-success'; }
             else if (rev.action === 'PAYMENT_VOIDED') { badgeClass = 'action-badge-payment-void'; iconClass = 'bi-x-circle text-danger'; }
             else if (rev.action === 'STATUS_CHANGED') { badgeClass = 'action-badge-status-changed'; iconClass = 'bi-arrow-left-right text-info'; }
             const displayAction = ACTION_LABELS[rev.action] || rev.action;
@@ -1244,8 +1278,9 @@
         <div class="modal-body p-4">
           <div class="mb-3">
             <label class="form-label small fw-semibold text-muted" for="payment-amount">Payment Amount (₹) *</label>
-            <input type="number" class="form-control font-monospace fw-bold" id="payment-amount" name="amount" step="0.01" min="0.01" max="<%= Number(document.outstandingAmount !== undefined ? document.outstandingAmount : document.grandTotal) %>" value="<%= Number(document.outstandingAmount !== undefined ? document.outstandingAmount : document.grandTotal).toFixed(2) %>" required />
+            <input type="number" class="form-control font-monospace fw-bold" id="payment-amount" name="amount" step="0.01" min="0.01" max="<%= availablePaymentBalance %>" value="<%= availablePaymentBalance.toFixed(2) %>" required />
             <div class="small text-muted mt-1">Outstanding balance: <strong class="font-monospace"><%= formatMoney(document.outstandingAmount !== undefined ? document.outstandingAmount : document.grandTotal) %></strong></div>
+            <% if (pendingChequeAmount > 0) { %><div class="small text-warning mt-1">Available after pending cheques: <strong class="font-monospace"><%= formatMoney(availablePaymentBalance) %></strong></div><% } %>
           </div>
           <div class="row g-2 mb-3">
             <div class="col-6">
@@ -1264,13 +1299,15 @@
             </div>
           </div>
           <div class="mb-3">
-            <label class="form-label small fw-semibold text-muted" for="payment-reference">Transaction / Reference Number</label>
+            <label class="form-label small fw-semibold text-muted" for="payment-reference" id="payment-reference-label">Transaction / Reference Number</label>
             <input type="text" class="form-control font-monospace" id="payment-reference" name="reference" placeholder="e.g. UTR12345678, CHQ-0045" maxlength="100" />
+            <div class="small text-warning mt-1 d-none" id="cheque-clearance-help">A cheque number is required. The payment will remain pending and will not affect the invoice balance until marked cleared.</div>
           </div>
           <div class="mb-2">
             <label class="form-label small fw-semibold text-muted" for="payment-notes">Notes / Remarks</label>
             <input type="text" class="form-control" id="payment-notes" name="notes" placeholder="Optional payment note" maxlength="255" />
           </div>
+          <div id="payment-form-error" class="alert alert-danger d-none mb-0" role="alert"></div>
         </div>
         <div class="modal-footer bg-light">
           <button type="button" class="btn-custom btn-custom-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -1284,7 +1321,37 @@
   </div>
 </div>
 
-<!-- 8. Void Payment Modal (Invoices Only) -->
+<!-- 8. Clear Cheque Modal (Invoices Only) -->
+<div class="modal fade" id="modal-clear-payment" tabindex="-1" aria-labelledby="modal-clear-payment-title" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="modal-clear-payment-title">
+          <i class="bi bi-check-circle me-1"></i> Mark Cheque Cleared
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p>Confirm the date the cheque cleared. The invoice balance and bank ledger will be updated on this date.</p>
+        <input type="hidden" id="clear-payment-id" />
+        <div class="mb-2">
+          <label class="form-label small fw-semibold text-muted" for="clear-payment-date">Clearance Date *</label>
+          <input type="date" class="form-control" id="clear-payment-date" required />
+        </div>
+        <div id="clear-payment-error" class="alert alert-danger d-none mb-0 mt-3" role="alert"></div>
+      </div>
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn-custom btn-custom-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn-custom btn-custom-success" id="btn-confirm-clear-payment">
+          <span class="spinner-border spinner-border-sm d-none me-1" id="spinner-clear-payment" role="status" aria-hidden="true"></span>
+          Confirm Clearance
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 9. Void Payment Modal (Invoices Only) -->
 <div class="modal fade" id="modal-void-payment" tabindex="-1" aria-labelledby="modal-void-payment-title" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-0 shadow">
@@ -1334,8 +1401,22 @@
     extraJs: `
       <script>
         window.__DOCUMENT_DATA__ = ${JSON.stringify(clientViewDoc)};
+        (function () {
+          const csrf = document.getElementById('csrf-token')?.value;
+          const accept = document.getElementById('btn-accept-quotation');
+          const createProject = document.getElementById('btn-create-project');
+          if (accept) accept.addEventListener('click', async () => {
+            if (!confirm('Record this quotation as accepted?')) return;
+            const response = await fetch('/api/invoices/${document.id}/accept', { method: 'POST', headers: { 'Content-Type': 'application/json', 'CSRF-Token': csrf, 'X-CSRF-Token': csrf }, body: JSON.stringify({ version: ${document.version}, _csrf: csrf }) });
+            const payload = await response.json(); if (!payload.success) return alert(payload.error || 'Acceptance failed.'); location.reload();
+          });
+          if (createProject) createProject.addEventListener('click', async () => {
+            if (!confirm('Create a project from this accepted quotation?')) return;
+            const response = await fetch('/api/projects/from-quotation/${document.id}', { method: 'POST', headers: { 'Content-Type': 'application/json', 'CSRF-Token': csrf, 'X-CSRF-Token': csrf }, body: JSON.stringify({ _csrf: csrf }) });
+            const payload = await response.json(); if (!payload.success) return alert(payload.error || 'Project creation failed.'); location.assign('/projects/' + payload.project.id);
+          });
+        })();
       </script>
       <script src="/js/view.js"></script>
     ` 
 }) %>
-

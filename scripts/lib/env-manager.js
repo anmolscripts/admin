@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const readline = require('node:readline');
+const { parseEnvFile } = require('./env-file');
 
 /**
  * Generates a cryptographically strong 64-character hexadecimal session secret.
@@ -37,42 +38,19 @@ function askQuestion(rl, promptText, defaultValue = '', isMasked = false) {
         const displayPrompt = defaultValue ? `${promptText} [${defaultValue}]: ` : `${promptText}: `;
 
         if (isMasked && process.stdin.isTTY) {
-            // Mask password typing
-            process.stdout.write(displayPrompt);
-            let input = '';
-
-            const onData = (char) => {
-                const str = char.toString('utf8');
-                switch (str) {
-                    case '\n':
-                    case '\r':
-                    case '\u0004':
-                        process.stdin.removeListener('data', onData);
-                        process.stdin.setRawMode(false);
-                        console.log();
-                        resolve(input || defaultValue);
-                        break;
-                    case '\u0003': // Ctrl+C
-                        process.stdin.setRawMode(false);
-                        process.exit(1);
-                        break;
-                    case '\u0008':
-                    case '\x7f': // Backspace
-                        if (input.length > 0) {
-                            input = input.slice(0, -1);
-                            process.stdout.write('\b \b');
-                        }
-                        break;
-                    default:
-                        input += str;
-                        process.stdout.write('*');
-                        break;
-                }
-            };
-
-            process.stdin.setRawMode(true);
-            process.stdin.resume();
-            process.stdin.on('data', onData);
+            // Keep one input consumer. A second raw-data listener allowed the
+            // existing readline interface to echo the actual password as well.
+            process.stdout.write(`${promptText}: `);
+            const originalWrite = rl._writeToOutput;
+            const restore = () => { rl._writeToOutput = originalWrite; };
+            rl._writeToOutput = () => {};
+            rl.once('close', restore);
+            rl.question('', answer => {
+                restore();
+                rl.removeListener('close', restore);
+                process.stdout.write('\n');
+                resolve(answer || defaultValue);
+            });
         } else {
             rl.question(displayPrompt, (answer) => {
                 const trimmed = answer.trim();
@@ -80,34 +58,6 @@ function askQuestion(rl, promptText, defaultValue = '', isMasked = false) {
             });
         }
     });
-}
-
-/**
- * Parses a simple .env file into key-value pairs without third-party libraries.
- * @param {string} filePath
- * @returns {Record<string, string>}
- */
-function parseEnvFile(filePath) {
-    if (!fs.existsSync(filePath)) return {};
-    const content = fs.readFileSync(filePath, 'utf8');
-    const result = {};
-    const lines = content.split(/\r?\n/);
-
-    for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed || trimmed.startsWith('#')) continue;
-        const eqIdx = trimmed.indexOf('=');
-        if (eqIdx <= 0) continue;
-        const key = trimmed.substring(0, eqIdx).trim();
-        let val = trimmed.substring(eqIdx + 1).trim();
-        // Remove enclosing quotes if any
-        if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
-            val = val.slice(1, -1);
-        }
-        result[key] = val;
-    }
-
-    return result;
 }
 
 /**
@@ -429,6 +379,7 @@ function writeEnvFile(filePath, config) {
 }
 
 module.exports = {
+    askQuestion,
     generateSessionSecret,
     generateRandomPassword,
     parseEnvFile,

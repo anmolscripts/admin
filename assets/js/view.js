@@ -31,6 +31,7 @@
     const modalRestoreEl = document.getElementById('modal-restore');
     const modalConvertEl = document.getElementById('modal-convert');
     const modalRecordPaymentEl = document.getElementById('modal-record-payment');
+    const modalClearPaymentEl = document.getElementById('modal-clear-payment');
     const modalVoidPaymentEl = document.getElementById('modal-void-payment');
 
     const modalActivate = modalActivateEl ? new bootstrap.Modal(modalActivateEl) : null;
@@ -40,6 +41,7 @@
     const modalRestore = modalRestoreEl ? new bootstrap.Modal(modalRestoreEl) : null;
     const modalConvert = modalConvertEl ? new bootstrap.Modal(modalConvertEl) : null;
     const modalRecordPayment = modalRecordPaymentEl ? new bootstrap.Modal(modalRecordPaymentEl) : null;
+    const modalClearPayment = modalClearPaymentEl ? new bootstrap.Modal(modalClearPaymentEl) : null;
     const modalVoidPayment = modalVoidPaymentEl ? new bootstrap.Modal(modalVoidPaymentEl) : null;
 
     // Confirmation Buttons
@@ -301,6 +303,26 @@
             paymentDateInput.value = `${yyyy}-${mm}-${dd}`;
         }
 
+        const paymentMethodSelect = document.getElementById('payment-method');
+        const paymentReferenceInput = document.getElementById('payment-reference');
+        const paymentReferenceLabel = document.getElementById('payment-reference-label');
+        const chequeClearanceHelp = document.getElementById('cheque-clearance-help');
+        const updatePaymentMethodFields = () => {
+            const isCheque = paymentMethodSelect && paymentMethodSelect.value === 'CHEQUE';
+            if (paymentReferenceInput) {
+                paymentReferenceInput.required = Boolean(isCheque);
+                paymentReferenceInput.placeholder = isCheque ? 'Enter cheque number' : 'e.g. UTR12345678';
+            }
+            if (paymentReferenceLabel) {
+                paymentReferenceLabel.textContent = isCheque ? 'Cheque Number *' : 'Transaction / Reference Number';
+            }
+            if (chequeClearanceHelp) chequeClearanceHelp.classList.toggle('d-none', !isCheque);
+        };
+        if (paymentMethodSelect) {
+            paymentMethodSelect.addEventListener('change', updatePaymentMethodFields);
+            updatePaymentMethodFields();
+        }
+
         if (formRecordPayment) {
             formRecordPayment.addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -310,11 +332,16 @@
                 const methodSelect = document.getElementById('payment-method');
                 const referenceInput = document.getElementById('payment-reference');
                 const notesInput = document.getElementById('payment-notes');
+                const paymentFormError = document.getElementById('payment-form-error');
 
                 const amount = parseFloat(amountInput.value);
                 if (isNaN(amount) || amount <= 0) {
                     showErrorFeedback('Please enter a valid positive payment amount.');
                     return;
+                }
+                if (paymentFormError) {
+                    paymentFormError.textContent = '';
+                    paymentFormError.classList.add('d-none');
                 }
 
                 if (btnSubmitPayment) btnSubmitPayment.disabled = true;
@@ -350,8 +377,12 @@
                     if (modalRecordPayment) modalRecordPayment.hide();
                     window.location.reload();
                 } catch (err) {
-                    if (modalRecordPayment) modalRecordPayment.hide();
-                    showErrorFeedback(err.message);
+                    if (paymentFormError) {
+                        paymentFormError.textContent = err.message || 'Payment could not be recorded.';
+                        paymentFormError.classList.remove('d-none');
+                    } else {
+                        showErrorFeedback(err.message || 'Payment could not be recorded.');
+                    }
                 } finally {
                     if (btnSubmitPayment) btnSubmitPayment.disabled = false;
                     if (spinnerPayment) spinnerPayment.classList.add('d-none');
@@ -369,6 +400,78 @@
                 if (modalVoidPayment) modalVoidPayment.show();
             });
         });
+
+        // 9a. Clear pending cheque payments
+        const clearPaymentIdInput = document.getElementById('clear-payment-id');
+        const clearPaymentDateInput = document.getElementById('clear-payment-date');
+        const clearPaymentError = document.getElementById('clear-payment-error');
+        document.querySelectorAll('.btn-clear-payment').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const paymentId = btn.getAttribute('data-id');
+                if (!paymentId) return;
+                if (clearPaymentIdInput) clearPaymentIdInput.value = paymentId;
+                if (clearPaymentDateInput) {
+                    const now = new Date();
+                    clearPaymentDateInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                }
+                if (clearPaymentError) {
+                    clearPaymentError.textContent = '';
+                    clearPaymentError.classList.add('d-none');
+                }
+                if (modalClearPayment) modalClearPayment.show();
+            });
+        });
+
+        const btnConfirmClearPayment = document.getElementById('btn-confirm-clear-payment');
+        if (btnConfirmClearPayment) {
+            btnConfirmClearPayment.addEventListener('click', async () => {
+                const paymentId = clearPaymentIdInput ? clearPaymentIdInput.value : null;
+                const clearedAt = clearPaymentDateInput ? clearPaymentDateInput.value : '';
+                if (!paymentId || !clearedAt) {
+                    if (clearPaymentError) {
+                        clearPaymentError.textContent = 'Select the date the cheque cleared.';
+                        clearPaymentError.classList.remove('d-none');
+                    }
+                    return;
+                }
+
+                const spinnerClearPayment = document.getElementById('spinner-clear-payment');
+                btnConfirmClearPayment.disabled = true;
+                if (spinnerClearPayment) spinnerClearPayment.classList.remove('d-none');
+
+                try {
+                    const res = await fetch(`/api/payments/${paymentId}/clear`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'x-csrf-token': csrfTokenInput ? csrfTokenInput.value : ''
+                        },
+                        body: JSON.stringify({ clearedAt })
+                    });
+
+                    if (res.status === 401) {
+                        window.location.href = '/login?expired=1';
+                        return;
+                    }
+                    if (!res.ok) {
+                        const errData = await res.json().catch(() => ({}));
+                        throw new Error(errData.error || `Failed to clear cheque with status ${res.status}`);
+                    }
+                    if (modalClearPayment) modalClearPayment.hide();
+                    window.location.reload();
+                } catch (err) {
+                    if (clearPaymentError) {
+                        clearPaymentError.textContent = err.message || 'Cheque could not be cleared.';
+                        clearPaymentError.classList.remove('d-none');
+                    } else {
+                        showErrorFeedback(err.message || 'Cheque could not be cleared.');
+                    }
+                } finally {
+                    btnConfirmClearPayment.disabled = false;
+                    if (spinnerClearPayment) spinnerClearPayment.classList.add('d-none');
+                }
+            });
+        }
 
         // 10. Confirm Void Payment
         const btnConfirmVoidPayment = document.getElementById('btn-confirm-void-payment');
@@ -456,4 +559,3 @@
     document.addEventListener('DOMContentLoaded', attachListeners);
 
 })();
-

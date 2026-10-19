@@ -80,13 +80,13 @@ sudo mysql
 Execute the following SQL statements (replace `YOUR_STRONG_DB_PASSWORD` with a strong 32+ character random password):
 ```sql
 -- 1. Create production database with UTF-8 support
-CREATE DATABASE spark_admin_prod CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE spark_admin_live CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- 2. Create dedicated non-root application user bound to localhost
 CREATE USER 'spark_app_user'@'localhost' IDENTIFIED BY 'YOUR_STRONG_DB_PASSWORD';
 
 -- 3. Grant necessary DML and DDL privileges on production database
-GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, ALTER, INDEX, REFERENCES ON spark_admin_prod.* TO 'spark_app_user'@'localhost';
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, ALTER, INDEX, REFERENCES ON spark_admin_live.* TO 'spark_app_user'@'localhost';
 
 -- 4. Apply privileges
 FLUSH PRIVILEGES;
@@ -98,11 +98,15 @@ EXIT;
 ## 5. APPLICATION DEPLOYMENT PROCEDURE
 
 > [!NOTE]
-> **Build Architecture:** Spark Admin does not require a frontend compilation/build step.
-> Production readiness is achieved through dependency installation, Prisma migration, Prisma client generation, production seed, configuration validation and smoke verification.
+> **Build Architecture:** Spark Admin has no frontend asset-compilation step.
+> `npm run build` validates and smoke-tests a clean release candidate without a
+> database connection. It does not install application data or migrate a database.
 
-### 5.0. Automated Deployment via Production Installer (Recommended)
-You can perform steps 5.2 through 5.5 in a single command using the automated production installer:
+### 5.0. First-Time Provisioning from Source Checkout
+The production installer is for a first-time installation from the full source
+checkout only. It provisions and seeds initial production system/admin data; it
+is not included in the clean release candidate and must not be used to upgrade
+an existing customer database.
 
 ```bash
 cd /opt/spark-admin/app
@@ -154,8 +158,8 @@ DATABASE_HOST=localhost
 DATABASE_PORT=3306
 DATABASE_USER=spark_app_user
 DATABASE_PASSWORD=YOUR_STRONG_DB_PASSWORD
-DATABASE_NAME=spark_admin_prod
-DATABASE_URL="mysql://spark_app_user:YOUR_STRONG_DB_PASSWORD@localhost:3306/spark_admin_prod"
+DATABASE_NAME=spark_admin_live
+DATABASE_URL="mysql://spark_app_user:YOUR_STRONG_DB_PASSWORD@localhost:3306/spark_admin_live"
 
 # Session Security (Generate via: openssl rand -hex 32)
 SESSION_SECRET=YOUR_GENERATED_64_CHAR_HEX_SECRET
@@ -215,10 +219,17 @@ Defaults to `./data/attachments` (created automatically outside web assets). Ens
 - [x] Physical directory `/var/lib/spark-admin/attachments` is included in automated backup scripts.
 
 ### 5.5. Apply Database Migrations
-Deploy all forward-only Prisma migrations to the production database:
+After taking and verifying a pre-upgrade backup, deploy committed forward-only
+migrations using the guarded command. The target name must exactly match
+`DATABASE_URL`; the operator must also acknowledge the verified backup:
 ```bash
-sudo -u sparkadmin npx prisma migrate deploy
+sudo -u sparkadmin npm run install:migrate -- --confirm-db=<exact-database-name> --backup-confirmed
 ```
+
+This command refuses protected database names, does not create/reset/seed a
+database, and does not promise transactional rollback of MariaDB DDL. Review
+the protected-target policy and recovery steps in the upgrade guide before
+running it.
 
 Generate the Prisma Client matching the target architecture:
 ```bash

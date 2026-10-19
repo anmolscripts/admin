@@ -1,8 +1,9 @@
-<%- include('../layouts/header') %>
+<%- include('../layouts/header', { extraCss: '<link rel="stylesheet" href="/css/editor.css">' }) %>
 
 <% const isEdit = typeof order !== 'undefined' && order && order.id; %>
+<% const supplierReturnPath = `/purchases/orders/new${typeof preselectedProjectId !== 'undefined' && preselectedProjectId ? `?projectId=${preselectedProjectId}` : ''}`; %>
 
-<div class="content-wrapper p-4">
+<div class="content-wrapper p-4 po-editor-page">
   <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
     <div>
       <div class="d-flex align-items-center gap-2 mb-1">
@@ -32,7 +33,7 @@
 
   <div class="card border-0 shadow-sm">
     <div class="card-body p-4">
-      <form id="poForm">
+      <form id="poForm" data-business-state-code="<%= typeof businessStateCode !== 'undefined' ? businessStateCode : '' %>">
         <input type="hidden" id="csrfToken" name="_csrf" value="<%= csrfToken %>">
         <% if (isEdit) { %>
           <input type="hidden" id="orderId" value="<%= order.id %>">
@@ -48,19 +49,21 @@
             <div class="form-text small">Auto-generated if blank.</div>
           </div>
           <div class="col-md-3">
-            <label class="form-label fw-bold">Supplier <span class="text-danger">*</span></label>
-            <select name="supplierId" id="supplierSelect" class="form-select" required <%= isEdit && order.status !== 'ACTIVE' ? 'disabled' : '' %>>
+            <label class="form-label fw-bold d-flex justify-content-between">Supplier <span class="text-danger">*</span></label>
+            <select name="supplierId" id="supplierSelect" class="form-select" data-no-tomselect="true" required <%= isEdit && order.status !== 'ACTIVE' ? 'disabled' : '' %>>
               <option value="">Select Supplier...</option>
               <% suppliers.forEach(s => { %>
-                <option value="<%= s.id %>" <%= isEdit && order.supplierId === s.id ? 'selected' : '' %>>
+                <option value="<%= s.id %>" data-state-code="<%= isEdit && order.supplierId === s.id ? (order.placeOfSupplyStateCode || s.stateCode || s.gstin?.slice(0, 2) || '') : (s.stateCode || s.gstin?.slice(0, 2) || '') %>" <%= isEdit && order.supplierId === s.id ? 'selected' : '' %>>
                   <%= s.name %> <%= s.gstin ? '(' + s.gstin + ')' : '' %>
                 </option>
               <% }); %>
             </select>
+            <div class="form-text"><a href="/suppliers/new?returnTo=<%= encodeURIComponent(supplierReturnPath) %>">Add or manage suppliers</a></div>
+            <div class="form-text" id="taxTreatmentDisplay"></div>
           </div>
           <div class="col-md-3">
             <label class="form-label fw-bold">Project (Optional)</label>
-            <select name="projectId" id="projectSelect" class="form-select" <%= isEdit && order.status !== 'ACTIVE' ? 'disabled' : '' %>>
+            <select name="projectId" id="projectSelect" class="form-select" data-no-tomselect="true" <%= isEdit && order.status !== 'ACTIVE' ? 'disabled' : '' %>>
               <option value="">No Project (General Overhead)</option>
               <% if (typeof projects !== 'undefined' && projects) { %>
                 <% projects.forEach(p => { %>
@@ -94,12 +97,16 @@
           <table class="table table-bordered align-middle" id="itemsTable">
             <thead class="table-light">
               <tr>
-                <th style="width: 35%;">Item Name / Description <span class="text-danger">*</span></th>
-                <th style="width: 15%;">HSN/SAC</th>
-                <th style="width: 12%;" class="text-end">Quantity <span class="text-danger">*</span></th>
-                <th style="width: 10%;">Unit</th>
-                <th style="width: 15%;" class="text-end">Rate (₹) <span class="text-danger">*</span></th>
-                <th style="width: 13%;" class="text-end">Amount (₹)</th>
+                <th>Item Name / Description <span class="text-danger">*</span></th>
+                <th>HSN/SAC</th>
+                <th class="text-end">Quantity <span class="text-danger">*</span></th>
+                <th>Unit</th>
+                <th class="text-end">Rate (₹) <span class="text-danger">*</span></th>
+                <th class="text-end">Discount (₹)</th>
+                <th class="text-end">Taxable (₹)</th>
+                <th>GST Rate</th>
+                <th class="text-end">GST (₹)</th>
+                <th class="text-end">Line Total (₹)</th>
                 <th style="width: 5%;"></th>
               </tr>
             </thead>
@@ -107,12 +114,22 @@
               <% if (isEdit && order.items && order.items.length > 0) { %>
                 <% order.items.forEach((item, idx) => { %>
                   <tr>
-                    <td><input type="text" class="form-control form-control-sm item-name" required value="<%= item.name %>" placeholder="Item description" <%= order.status !== 'ACTIVE' ? 'readonly' : '' %>></td>
+                    <td><input type="text" class="form-control form-control-sm item-name" required value="<%= item.name %>" placeholder="Search item master or enter description" autocomplete="off" aria-autocomplete="list" aria-expanded="false" <%= order.status !== 'ACTIVE' ? 'readonly' : '' %>></td>
                     <td><input type="text" class="form-control form-control-sm item-hsn" value="<%= item.hsnSac || '' %>" placeholder="HSN/SAC" <%= order.status !== 'ACTIVE' ? 'readonly' : '' %>></td>
                     <td><input type="number" step="0.01" class="form-control form-control-sm item-qty text-end font-monospace" value="<%= item.quantity %>" required oninput="calcTotals()" <%= order.status !== 'ACTIVE' ? 'readonly' : '' %>></td>
                     <td><input type="text" class="form-control form-control-sm item-unit text-center font-monospace" value="<%= item.unit || 'PCS' %>" <%= order.status !== 'ACTIVE' ? 'readonly' : '' %>></td>
                     <td><input type="number" step="0.01" class="form-control form-control-sm item-rate text-end font-monospace" value="<%= item.rate %>" required oninput="calcTotals()" <%= order.status !== 'ACTIVE' ? 'readonly' : '' %>></td>
-                    <td><input type="text" class="form-control form-control-sm item-amt text-end font-monospace" readonly value="<%= parseFloat(item.amount).toFixed(2) %>"></td>
+                    <td><input type="number" min="0" step="0.01" class="form-control form-control-sm item-discount text-end font-monospace" value="<%= Number(item.discountAmount || 0).toFixed(2) %>" oninput="calcTotals()" <%= order.status !== 'ACTIVE' ? 'readonly' : '' %>></td>
+                    <td><input type="text" class="form-control form-control-sm item-taxable text-end font-monospace" readonly value="<%= Number(Number(item.discountAmount || 0) > 0 || Number(item.gstRate || 0) > 0 || Number(item.taxableAmount || 0) > 0 ? item.taxableAmount : item.amount || 0).toFixed(2) %>"></td>
+                    <td>
+                      <select class="form-select form-select-sm item-gst-rate" data-no-tomselect="true" onchange="calcTotals()" <%= order.status !== 'ACTIVE' ? 'disabled' : '' %>>
+                        <% [0, 5, 12, 18, 28].forEach(rate => { %>
+                          <option value="<%= rate %>" <%= Number(item.gstRate || 0) === rate ? 'selected' : '' %>><%= rate %>%</option>
+                        <% }); %>
+                      </select>
+                    </td>
+                    <td><input type="text" class="form-control form-control-sm item-tax text-end font-monospace" readonly value="<%= (Number(item.cgstAmount || 0) + Number(item.sgstAmount || 0) + Number(item.igstAmount || 0)).toFixed(2) %>"></td>
+                    <td><input type="text" class="form-control form-control-sm item-total text-end font-monospace" readonly value="<%= Number(Number(item.discountAmount || 0) > 0 || Number(item.gstRate || 0) > 0 || Number(item.taxableAmount || 0) > 0 ? item.totalAmount : item.amount || 0).toFixed(2) %>"></td>
                     <td class="text-center">
                       <% if (order.status === 'ACTIVE') { %>
                         <button type="button" class="btn btn-sm text-danger p-1" title="Remove Item" onclick="removeItem(this)"><i class="bi bi-x-lg"></i></button>
@@ -122,12 +139,20 @@
                 <% }); %>
               <% } else { %>
                 <tr>
-                  <td><input type="text" class="form-control form-control-sm item-name" required placeholder="Item description / Raw material"></td>
+                  <td><input type="text" class="form-control form-control-sm item-name" required placeholder="Search item master or enter description" autocomplete="off" aria-autocomplete="list" aria-expanded="false"></td>
                   <td><input type="text" class="form-control form-control-sm item-hsn" placeholder="HSN/SAC"></td>
                   <td><input type="number" step="0.01" class="form-control form-control-sm item-qty text-end font-monospace" value="1" required oninput="calcTotals()"></td>
                   <td><input type="text" class="form-control form-control-sm item-unit text-center font-monospace" value="PCS"></td>
                   <td><input type="number" step="0.01" class="form-control form-control-sm item-rate text-end font-monospace" value="0.00" required oninput="calcTotals()"></td>
-                  <td><input type="text" class="form-control form-control-sm item-amt text-end font-monospace" readonly value="0.00"></td>
+                  <td><input type="number" min="0" step="0.01" class="form-control form-control-sm item-discount text-end font-monospace" value="0.00" oninput="calcTotals()"></td>
+                  <td><input type="text" class="form-control form-control-sm item-taxable text-end font-monospace" readonly value="0.00"></td>
+                  <td>
+                    <select class="form-select form-select-sm item-gst-rate" data-no-tomselect="true" onchange="calcTotals()">
+                      <option value="0">0%</option><option value="5">5%</option><option value="12">12%</option><option value="18">18%</option><option value="28">28%</option>
+                    </select>
+                  </td>
+                  <td><input type="text" class="form-control form-control-sm item-tax text-end font-monospace" readonly value="0.00"></td>
+                  <td><input type="text" class="form-control form-control-sm item-total text-end font-monospace" readonly value="0.00"></td>
                   <td class="text-center"><button type="button" class="btn btn-sm text-danger p-1" title="Remove Item" onclick="removeItem(this)"><i class="bi bi-x-lg"></i></button></td>
                 </tr>
               <% } %>
@@ -151,9 +176,13 @@
                   <span class="fw-bold font-monospace" id="totalQtyDisplay">0.00</span>
                 </div>
                 <div class="d-flex justify-content-between mb-2">
-                  <span class="text-muted">Order Subtotal:</span>
+                  <span class="text-muted">Taxable Subtotal:</span>
                   <span class="fw-bold font-monospace" id="subtotalDisplay">₹0.00</span>
                 </div>
+                <div class="d-flex justify-content-between mb-2"><span class="text-muted">CGST:</span><span class="fw-bold font-monospace" id="cgstDisplay">₹0.00</span></div>
+                <div class="d-flex justify-content-between mb-2"><span class="text-muted">SGST:</span><span class="fw-bold font-monospace" id="sgstDisplay">₹0.00</span></div>
+                <div class="d-flex justify-content-between mb-2"><span class="text-muted">IGST:</span><span class="fw-bold font-monospace" id="igstDisplay">₹0.00</span></div>
+                <div class="d-flex justify-content-between mb-2"><span class="text-muted">Total GST:</span><span class="fw-bold font-monospace" id="totalGstDisplay">₹0.00</span></div>
                 <hr class="my-2">
                 <div class="d-flex justify-content-between align-items-center">
                   <span class="h6 fw-bold mb-0">Total PO Value:</span>
@@ -191,40 +220,301 @@
 </div>
 
 <script>
+const businessStateCode = document.getElementById('poForm')?.dataset.businessStateCode || '';
+let itemAutocompletePortal = null;
+let activeItemInput = null;
+let itemSuggestions = [];
+let highlightedItemIndex = -1;
+let itemSearchTimer = null;
+let itemSearchSequence = 0;
+
+function money(value) {
+  return Math.round(Number(value) * 100) / 100;
+}
+
+function getItemAutocompletePortal() {
+  if (!itemAutocompletePortal) {
+    itemAutocompletePortal = document.createElement('div');
+    itemAutocompletePortal.id = 'po-item-autocomplete-portal';
+    itemAutocompletePortal.className = 'item-autocomplete-portal d-none';
+    itemAutocompletePortal.setAttribute('role', 'listbox');
+    itemAutocompletePortal.setAttribute('aria-label', 'Item suggestions');
+    document.body.appendChild(itemAutocompletePortal);
+  }
+  return itemAutocompletePortal;
+}
+
+function positionItemAutocomplete() {
+  if (!activeItemInput || !itemAutocompletePortal || itemAutocompletePortal.classList.contains('d-none')) return;
+  const rect = activeItemInput.getBoundingClientRect();
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const width = Math.min(Math.max(620, rect.width), viewportWidth - 24);
+  const left = Math.max(12, Math.min(rect.left, viewportWidth - width - 12));
+  const estimatedHeight = Math.min(itemAutocompletePortal.scrollHeight || 300, 320);
+  const spaceBelow = viewportHeight - rect.bottom;
+  const spaceAbove = rect.top;
+  const openBelow = spaceBelow >= estimatedHeight + 8 || spaceBelow >= spaceAbove;
+  const availableSpace = openBelow ? spaceBelow : spaceAbove;
+
+  itemAutocompletePortal.style.position = 'fixed';
+  itemAutocompletePortal.style.left = `${left}px`;
+  itemAutocompletePortal.style.width = `${width}px`;
+  itemAutocompletePortal.style.maxHeight = `${Math.min(320, Math.max(120, availableSpace - 16))}px`;
+  itemAutocompletePortal.style.top = openBelow
+    ? `${rect.bottom + 4}px`
+    : `${Math.max(8, rect.top - estimatedHeight - 4)}px`;
+}
+
+function hideItemAutocomplete() {
+  if (itemAutocompletePortal) {
+    itemAutocompletePortal.classList.add('d-none');
+    itemAutocompletePortal.innerHTML = '';
+  }
+  if (activeItemInput) {
+    activeItemInput.setAttribute('aria-expanded', 'false');
+    activeItemInput.removeAttribute('aria-activedescendant');
+  }
+  activeItemInput = null;
+  itemSuggestions = [];
+  highlightedItemIndex = -1;
+  itemSearchSequence++;
+}
+
+function renderItemSuggestions(items, message = '') {
+  const portal = getItemAutocompletePortal();
+  portal.replaceChildren();
+  itemSuggestions = items;
+  highlightedItemIndex = -1;
+
+  if (message || items.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'item-autocomplete-empty';
+    empty.textContent = message || 'No matching items found in Item Master';
+    portal.appendChild(empty);
+  } else {
+    items.forEach((item, index) => {
+      const option = document.createElement('div');
+      option.className = 'item-autocomplete-item';
+      option.id = `po-item-option-${index}`;
+      option.setAttribute('role', 'option');
+      option.setAttribute('aria-selected', 'false');
+
+      const content = document.createElement('div');
+      content.className = 'item-autocomplete-content';
+      const name = document.createElement('span');
+      name.className = 'item-autocomplete-item-name';
+      name.textContent = item.name;
+      content.appendChild(name);
+      if (item.hsnSac) {
+        const hsn = document.createElement('span');
+        hsn.className = 'item-autocomplete-item-hsn';
+        hsn.textContent = `HSN/SAC: ${item.hsnSac}`;
+        content.appendChild(hsn);
+      }
+
+      const meta = document.createElement('span');
+      meta.className = 'item-autocomplete-item-meta';
+      const badge = document.createElement('span');
+      badge.className = 'item-autocomplete-price-badge font-monospace';
+      const rate = document.createElement('span');
+      rate.className = 'badge-rate-num';
+      rate.textContent = `₹${Number(item.rate || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      const unit = document.createElement('span');
+      unit.className = 'badge-rate-unit';
+      unit.textContent = ` / ${item.unit || 'PCS'}`;
+      badge.append(rate, unit);
+      meta.appendChild(badge);
+      option.append(content, meta);
+
+      option.addEventListener('mousedown', event => {
+        event.preventDefault();
+        selectPurchaseItem(item);
+      });
+      option.addEventListener('mouseenter', () => setHighlightedItem(index));
+      portal.appendChild(option);
+    });
+  }
+
+  portal.classList.remove('d-none');
+  activeItemInput?.setAttribute('aria-expanded', 'true');
+  positionItemAutocomplete();
+}
+
+function setHighlightedItem(index) {
+  if (!itemAutocompletePortal) return;
+  const options = itemAutocompletePortal.querySelectorAll('.item-autocomplete-item');
+  options.forEach(option => {
+    option.classList.remove('active');
+    option.setAttribute('aria-selected', 'false');
+  });
+  if (index < 0 || index >= options.length) {
+    highlightedItemIndex = -1;
+    activeItemInput?.removeAttribute('aria-activedescendant');
+    return;
+  }
+  highlightedItemIndex = index;
+  options[index].classList.add('active');
+  options[index].setAttribute('aria-selected', 'true');
+  options[index].scrollIntoView({ block: 'nearest' });
+  activeItemInput?.setAttribute('aria-activedescendant', options[index].id);
+}
+
+function selectPurchaseItem(item) {
+  if (!activeItemInput) return;
+  const row = activeItemInput.closest('tr');
+  activeItemInput.value = item.name;
+  row.querySelector('.item-hsn').value = item.hsnSac || '';
+  row.querySelector('.item-unit').value = item.unit || 'PCS';
+  row.querySelector('.item-rate').value = Number(item.rate || 0).toFixed(2);
+
+  const gstSelect = row.querySelector('.item-gst-rate');
+  const matchingRate = Array.from(gstSelect.options).find(option => Number(option.value) === Number(item.gstRate));
+  if (matchingRate) gstSelect.value = matchingRate.value;
+
+  hideItemAutocomplete();
+  calcTotals();
+}
+
+async function searchPurchaseItems(input) {
+  const query = input.value.trim();
+  clearTimeout(itemSearchTimer);
+  activeItemInput = input;
+  if (!query) {
+    hideItemAutocomplete();
+    return;
+  }
+
+  const sequence = ++itemSearchSequence;
+  const portal = getItemAutocompletePortal();
+  portal.innerHTML = '<div class="item-autocomplete-loading">Searching Item Master...</div>';
+  portal.classList.remove('d-none');
+  input.setAttribute('aria-expanded', 'true');
+  positionItemAutocomplete();
+
+  itemSearchTimer = setTimeout(async () => {
+    try {
+      const response = await fetch(`/api/items/search?q=${encodeURIComponent(query)}&limit=10`);
+      if (!response.ok) throw new Error(`Item search failed (${response.status}).`);
+      const result = await response.json();
+      if (!result.success) throw new Error(result.error || 'Unable to load item suggestions.');
+      if (sequence === itemSearchSequence && activeItemInput === input) {
+        renderItemSuggestions(result.data || []);
+      }
+    } catch (error) {
+      if (sequence === itemSearchSequence && activeItemInput === input) {
+        renderItemSuggestions([], error.message || 'Unable to load item suggestions.');
+      }
+    }
+  }, 180);
+}
+
+const itemsBody = document.getElementById('itemsBody');
+itemsBody.addEventListener('input', event => {
+  if (event.target.matches('.item-name')) searchPurchaseItems(event.target);
+});
+itemsBody.addEventListener('focusin', event => {
+  if (event.target.matches('.item-name')) {
+    activeItemInput = event.target;
+    if (event.target.value.trim()) searchPurchaseItems(event.target);
+  }
+});
+itemsBody.addEventListener('keydown', event => {
+  if (!event.target.matches('.item-name') || !itemAutocompletePortal || itemAutocompletePortal.classList.contains('d-none')) return;
+  if (event.key === 'ArrowDown' && itemSuggestions.length) {
+    event.preventDefault();
+    setHighlightedItem((highlightedItemIndex + 1) % itemSuggestions.length);
+  } else if (event.key === 'ArrowUp' && itemSuggestions.length) {
+    event.preventDefault();
+    setHighlightedItem((highlightedItemIndex - 1 + itemSuggestions.length) % itemSuggestions.length);
+  } else if (event.key === 'Enter') {
+    event.preventDefault();
+    if (highlightedItemIndex >= 0) selectPurchaseItem(itemSuggestions[highlightedItemIndex]);
+  } else if (event.key === 'Escape') {
+    hideItemAutocomplete();
+  }
+});
+itemsBody.addEventListener('focusout', event => {
+  if (event.target.matches('.item-name')) {
+    setTimeout(() => {
+      if (activeItemInput === event.target && !itemAutocompletePortal?.contains(document.activeElement)) {
+        hideItemAutocomplete();
+      }
+    }, 200);
+  }
+});
+document.addEventListener('click', event => {
+  if (activeItemInput && event.target !== activeItemInput && !itemAutocompletePortal?.contains(event.target)) {
+    hideItemAutocomplete();
+  }
+});
+window.addEventListener('scroll', positionItemAutocomplete, true);
+window.addEventListener('resize', positionItemAutocomplete);
+
 function calcTotals() {
   let totalQty = 0;
   let subtotal = 0;
+  let cgst = 0;
+  let sgst = 0;
+  let igst = 0;
+  const selectedSupplier = document.getElementById('supplierSelect')?.selectedOptions[0];
+  const supplierStateCode = selectedSupplier?.dataset.stateCode || '';
+  const isInterState = Boolean(businessStateCode && supplierStateCode && businessStateCode !== supplierStateCode);
 
   document.querySelectorAll('#itemsBody tr').forEach(tr => {
-    const qty = parseFloat(tr.querySelector('.item-qty')?.value) || 0;
-    const rate = parseFloat(tr.querySelector('.item-rate')?.value) || 0;
-    const lineAmt = Math.round(qty * rate * 100) / 100;
-    const amtInput = tr.querySelector('.item-amt');
-    if (amtInput) {
-      amtInput.value = lineAmt.toFixed(2);
-    }
+    const qty = money(parseFloat(tr.querySelector('.item-qty')?.value) || 0);
+    const rate = money(parseFloat(tr.querySelector('.item-rate')?.value) || 0);
+    const discount = money(parseFloat(tr.querySelector('.item-discount')?.value) || 0);
+    const gstRate = parseFloat(tr.querySelector('.item-gst-rate')?.value) || 0;
+    const lineAmount = money(qty * rate);
+    const taxableAmount = Math.max(0, money(lineAmount - discount));
+    const taxAmount = money(taxableAmount * gstRate / 100);
+    const lineCgst = isInterState ? 0 : money(taxAmount / 2);
+    const lineSgst = isInterState ? 0 : money(taxAmount - lineCgst);
+    const lineIgst = isInterState ? taxAmount : 0;
+    const taxableInput = tr.querySelector('.item-taxable');
+    const taxInput = tr.querySelector('.item-tax');
+    const totalInput = tr.querySelector('.item-total');
+    if (taxableInput) taxableInput.value = taxableAmount.toFixed(2);
+    if (taxInput) taxInput.value = taxAmount.toFixed(2);
+    if (totalInput) totalInput.value = money(taxableAmount + taxAmount).toFixed(2);
     totalQty += qty;
-    subtotal += lineAmt;
+    subtotal += taxableAmount;
+    cgst += lineCgst;
+    sgst += lineSgst;
+    igst += lineIgst;
   });
 
   const totalQtyEl = document.getElementById('totalQtyDisplay');
   const subtotalEl = document.getElementById('subtotalDisplay');
   const grandTotalEl = document.getElementById('grandTotalDisplay');
+  const totalGst = money(cgst + sgst + igst);
 
   if (totalQtyEl) totalQtyEl.textContent = totalQty.toFixed(2);
-  if (subtotalEl) subtotalEl.textContent = '₹' + subtotal.toFixed(2);
-  if (grandTotalEl) grandTotalEl.textContent = '₹' + subtotal.toFixed(2);
+  if (subtotalEl) subtotalEl.textContent = '₹' + money(subtotal).toFixed(2);
+  if (document.getElementById('cgstDisplay')) document.getElementById('cgstDisplay').textContent = '₹' + money(cgst).toFixed(2);
+  if (document.getElementById('sgstDisplay')) document.getElementById('sgstDisplay').textContent = '₹' + money(sgst).toFixed(2);
+  if (document.getElementById('igstDisplay')) document.getElementById('igstDisplay').textContent = '₹' + money(igst).toFixed(2);
+  if (document.getElementById('totalGstDisplay')) document.getElementById('totalGstDisplay').textContent = '₹' + totalGst.toFixed(2);
+  if (grandTotalEl) grandTotalEl.textContent = '₹' + money(subtotal + totalGst).toFixed(2);
+
+  const taxTreatment = document.getElementById('taxTreatmentDisplay');
+  if (taxTreatment) taxTreatment.textContent = isInterState ? 'Inter-state supply: IGST applies.' : 'Intra-state supply: CGST + SGST apply.';
 }
 
 function addItem() {
   const tr = document.createElement('tr');
   tr.innerHTML = `
-    <td><input type="text" class="form-control form-control-sm item-name" required placeholder="Item description / Raw material"></td>
+    <td><input type="text" class="form-control form-control-sm item-name" required placeholder="Search item master or enter description" autocomplete="off" aria-autocomplete="list" aria-expanded="false"></td>
     <td><input type="text" class="form-control form-control-sm item-hsn" placeholder="HSN/SAC"></td>
     <td><input type="number" step="0.01" class="form-control form-control-sm item-qty text-end font-monospace" value="1" required oninput="calcTotals()"></td>
     <td><input type="text" class="form-control form-control-sm item-unit text-center font-monospace" value="PCS"></td>
     <td><input type="number" step="0.01" class="form-control form-control-sm item-rate text-end font-monospace" value="0.00" required oninput="calcTotals()"></td>
-    <td><input type="text" class="form-control form-control-sm item-amt text-end font-monospace" readonly value="0.00"></td>
+    <td><input type="number" min="0" step="0.01" class="form-control form-control-sm item-discount text-end font-monospace" value="0.00" oninput="calcTotals()"></td>
+    <td><input type="text" class="form-control form-control-sm item-taxable text-end font-monospace" readonly value="0.00"></td>
+    <td><select class="form-select form-select-sm item-gst-rate" data-no-tomselect="true" onchange="calcTotals()"><option value="0">0%</option><option value="5">5%</option><option value="12">12%</option><option value="18">18%</option><option value="28">28%</option></select></td>
+    <td><input type="text" class="form-control form-control-sm item-tax text-end font-monospace" readonly value="0.00"></td>
+    <td><input type="text" class="form-control form-control-sm item-total text-end font-monospace" readonly value="0.00"></td>
     <td class="text-center"><button type="button" class="btn btn-sm text-danger p-1" title="Remove Item" onclick="removeItem(this)"><i class="bi bi-x-lg"></i></button></td>
   `;
   document.getElementById('itemsBody').appendChild(tr);
@@ -256,6 +546,8 @@ document.getElementById('poForm').addEventListener('submit', async (e) => {
     const rate = parseFloat(tr.querySelector('.item-rate')?.value);
     const unit = tr.querySelector('.item-unit')?.value?.trim() || 'PCS';
     const hsnSac = tr.querySelector('.item-hsn')?.value?.trim() || null;
+    const discountAmount = Number(tr.querySelector('.item-discount')?.value || 0);
+    const gstRate = Number(tr.querySelector('.item-gst-rate')?.value || 0);
 
     if (!name) {
       itemValidationError = `Item name is required for row ${idx + 1}.`;
@@ -263,9 +555,11 @@ document.getElementById('poForm').addEventListener('submit', async (e) => {
       itemValidationError = `Quantity must be greater than 0 for line ${idx + 1}.`;
     } else if (isNaN(rate) || rate < 0) {
       itemValidationError = `Rate must be non-negative for line ${idx + 1}.`;
+    } else if (!Number.isFinite(discountAmount) || discountAmount < 0) {
+      itemValidationError = `Discount must be non-negative for line ${idx + 1}.`;
     }
 
-    items.push({ name, hsnSac, quantity: qty, unit, rate });
+    items.push({ name, hsnSac, quantity: qty, unit, rate, discountAmount, gstRate });
   });
 
   if (itemValidationError) {
@@ -326,6 +620,8 @@ document.getElementById('poForm').addEventListener('submit', async (e) => {
     alertEl.classList.remove('d-none');
   }
 });
+
+document.getElementById('supplierSelect')?.addEventListener('change', calcTotals);
 
 async function voidCurrentOrder(id) {
   const reason = prompt('Please enter reason for voiding this purchase order:');

@@ -1,113 +1,175 @@
 'use strict';
 
-/**
- * Spark Admin — Safe, Non-Destructive Database Schema Upgrade
- * Applies committed, versioned migrations in order without data loss.
- * NEVER drops, resets, or truncates existing customer databases.
- */
-
-const { spawnSync } = require('node:child_process');
+const fs = require('node:fs');
 const path = require('node:path');
-require('dotenv').config();
+const { spawnSync } = require('node:child_process');
+const dotenv = require('dotenv');
+const { prepareDatabase, readMigrations, verifyMigrationSource, connectionOptions } = require('./lib/migration-preflight');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
+const PROTECTED_DATABASES = new Set([
+    'admin',
+    'spark_admin',
+    'spark_admin_test',
+    'spark_admin_prod',
+    'spark_admin_prod_test',
+    'mysql', 'information_schema', 'performance_schema', 'sys'
+]);
 
-function getSanitizedDbTarget() {
-    const dbUrl = process.env.DATABASE_URL || '';
+function parseDatabaseTarget(databaseUrl, databaseName) {
+    if (!databaseUrl) {
+        throw new Error('DATABASE_URL is required; no database fallback is permitted.');
+    }
+
+    let parsed;
     try {
-        const parsed = new URL(dbUrl);
-        return {
-            protocol: parsed.protocol.replace(':', ''),
-            host: parsed.hostname,
-            port: parsed.port || '3306',
-            database: parsed.pathname.replace('/', '')
-        };
+        parsed = new URL(databaseUrl);
     } catch (_) {
-        return {
-            protocol: 'mysql',
-            host: process.env.DATABASE_HOST || 'localhost',
-            port: process.env.DATABASE_PORT || '3306',
-            database: process.env.DATABASE_NAME || 'admin'
-        };
+        throw new Error('DATABASE_URL is invalid.');
     }
+
+    let database;
+    try {
+        database = decodeURIComponent(parsed.pathname.replace(/^\/+/, ''));
+    } catch (_) {
+        throw new Error('DATABASE_URL contains an invalid database name.');
+    }
+    if (parsed.protocol !== 'mysql:' || !parsed.hostname || !database) {
+        throw new Error('DATABASE_URL must specify a MySQL host and database.');
+    }
+    if (!/^[A-Za-z0-9_][A-Za-z0-9_-]{0,63}$/.test(database) || parsed.pathname.startsWith('//') || !parsed.username || parsed.hash || parsed.port === '0') {
+        throw new Error('DATABASE_URL requires a user, a nonzero port and a single simple database identifier of at most 64 characters, without a fragment.');
+    }
+    if (databaseName && databaseName !== database) {
+        throw new Error('DATABASE_NAME does not match the database in DATABASE_URL.');
+    }
+    if (PROTECTED_DATABASES.has(database.toLowerCase())) {
+        throw new Error(`Refusing to migrate protected database "${database}".`);
+    }
+
+    return {
+        protocol: parsed.protocol.slice(0, -1),
+        host: parsed.hostname,
+        port: parsed.port || '3306',
+        database
+    };
 }
 
-async function main() {
-    console.log('\n' + '='.repeat(64));
-    console.log('   SPARK ADMIN — SAFE DATABASE UPGRADE');
-    console.log('='.repeat(64));
-
-    const target = getSanitizedDbTarget();
-    console.log(`\n[TARGET] Database: ${target.database} on ${target.host}:${target.port} (${target.protocol})`);
-    console.log(`[POLICY] Non-destructive forward-only migration deploy. ZERO data drops permitted.\n`);
-
-    // Step 1: Validate Prisma schema
-    console.log('[1/4] Validating Prisma schema definition...');
-    const validateRes = spawnSync('npx', ['prisma', 'validate'], {
-        cwd: ROOT_DIR,
-        shell: true,
-        encoding: 'utf-8'
-    });
-
-    if (validateRes.status !== 0) {
-        console.error('[FAIL] Prisma schema validation failed:');
-        console.error(validateRes.stderr || validateRes.stdout);
-        process.exit(1);
+function parseArguments(argv) {
+    const options = {};
+    for (let index = 0; index < argv.length; index += 1) {
+        const arg = argv[index];
+        if (arg === '--backup-confirmed') {
+            options.backupConfirmed = true;
+        } else if (arg === '--create-database') {
+            options.createDatabase = true;
+        } else if (arg === '--confirm-db') {
+            options.confirmDatabase = argv[index + 1];
+            index += 1;
+        } else if (arg.startsWith('--confirm-db=')) {
+            options.confirmDatabase = arg.slice('--confirm-db='.length);
+        } else {
+            throw new Error(`Unknown option "${arg}".`);
+        }
     }
-    console.log('[PASS] Prisma schema is valid.');
-
-    // Step 2: Apply pending migrations (forward-only deploy)
-    console.log('\n[2/4] Applying pending database migrations (prisma migrate deploy)...');
-    const deployRes = spawnSync('npx', ['prisma', 'migrate', 'deploy'], {
-        cwd: ROOT_DIR,
-        shell: true,
-        encoding: 'utf-8'
-    });
-
-    if (deployRes.status !== 0) {
-        console.error('[FAIL] Migration deployment failed:');
-        console.error(deployRes.stderr || deployRes.stdout);
-        process.exit(1);
-    }
-    console.log(deployRes.stdout.trim());
-    console.log('[PASS] All versioned migrations successfully applied.');
-
-    // Step 3: Regenerate Prisma Client
-    console.log('\n[3/4] Generating Prisma Client bindings...');
-    const generateRes = spawnSync('npx', ['prisma', 'generate'], {
-        cwd: ROOT_DIR,
-        shell: true,
-        encoding: 'utf-8'
-    });
-
-    if (generateRes.status !== 0) {
-        console.error('[FAIL] Prisma client generation failed:');
-        console.error(generateRes.stderr || generateRes.stdout);
-        process.exit(1);
-    }
-    console.log('[PASS] Prisma Client bindings updated.');
-
-    // Step 4: Verify migration status
-    console.log('\n[4/4] Verifying database migration status...');
-    const statusRes = spawnSync('npx', ['prisma', 'migrate', 'status'], {
-        cwd: ROOT_DIR,
-        shell: true,
-        encoding: 'utf-8'
-    });
-
-    if (statusRes.status !== 0) {
-        console.error('[FAIL] Inconsistent migration status detected:');
-        console.error(statusRes.stderr || statusRes.stdout);
-        process.exit(1);
-    }
-    console.log('[PASS] Database schema is fully up to date and verified.');
-
-    console.log('\n' + '='.repeat(64));
-    console.log('   SUCCESS: Database upgrade completed with zero data loss.');
-    console.log('='.repeat(64) + '\n');
+    return options;
 }
 
-main().catch(err => {
-    console.error('[FATAL UPGRADE ERROR]:', err);
-    process.exit(1);
-});
+function sanitizeOutput(text, databaseUrl) {
+    let output = String(text || '');
+    if (databaseUrl) {
+        output = output.split(databaseUrl).join('mysql://[redacted]');
+        try {
+            const parsed = new URL(databaseUrl);
+            for (const secret of [parsed.username, parsed.password, decodeURIComponent(parsed.username), decodeURIComponent(parsed.password)]) {
+                if (secret) output = output.split(secret).join('[redacted]');
+            }
+        } catch (_) { /* Invalid URLs are rejected before any operation. */ }
+    }
+    return output.replace(/(mysql:\/\/)[^/\s@]+:[^/\s@]*@/gi, '$1[redacted]@');
+}
+
+function runPrisma(args, env = process.env, cwd = ROOT_DIR) {
+    const cliPath = path.join(cwd, 'node_modules', 'prisma', 'build', 'index.js');
+    if (!fs.existsSync(cliPath)) {
+        throw new Error('Prisma CLI is not installed. Run npm ci before applying migrations.');
+    }
+
+    const result = spawnSync(process.execPath, [
+        cliPath,
+        '--config',
+        path.join(cwd, 'prisma7.config.ts'),
+        ...args
+    ], {
+        cwd,
+        env,
+        encoding: 'utf8',
+        maxBuffer: 10 * 1024 * 1024,
+        shell: false
+    });
+
+    if (result.error) {
+        throw result.error;
+    }
+    if (result.status !== 0) {
+        const detail = sanitizeOutput(result.stderr || result.stdout, env.DATABASE_URL);
+        throw new Error(detail.trim() || `Prisma exited with status ${result.status}.`);
+    }
+    return sanitizeOutput(result.stdout, env.DATABASE_URL).trim();
+}
+
+async function main(argv = process.argv.slice(2), env, dependencies = {}) {
+    if (!env) {
+        dotenv.config({ path: path.join(ROOT_DIR, '.env'), override: false, quiet: true });
+        env = process.env;
+    }
+    const options = parseArguments(argv);
+    const target = parseDatabaseTarget(env.DATABASE_URL, env.DATABASE_NAME);
+
+    if (options.confirmDatabase !== target.database) {
+        throw new Error(`Target confirmation is required: pass --confirm-db=${target.database}.`);
+    }
+    if (!options.backupConfirmed) {
+        throw new Error('Confirm a verified pre-upgrade backup with --backup-confirmed before continuing.');
+    }
+    const cli = dependencies.runPrisma || runPrisma;
+    const log = dependencies.log || console.log;
+    connectionOptions(env, target);
+    (dependencies.verifyMigrationSource || verifyMigrationSource)(ROOT_DIR);
+    const migrations = readMigrations(dependencies.migrationsDirectory || path.join(ROOT_DIR, 'prisma', 'migrations'));
+
+    log(`Target: ${target.database} on ${target.host}:${target.port} (${target.protocol})`);
+    log('Policy: shipped forward migrations only; creation requires --create-database; no reset, seed, grants, or db push.');
+
+    cli(['validate'], env);
+    log('Prisma schema validation passed.');
+    const result = await prepareDatabase({ target, env, migrations, createDatabase: options.createDatabase, createConnection: dependencies.createConnection });
+    log(result.created ? 'Configured database created; empty schema verified.' : 'Existing database target and migration history verified.');
+
+    const deployOutput = cli(['migrate', 'deploy'], env);
+    if (deployOutput) log(deployOutput);
+    log('Forward migrations deployed.');
+
+    const statusOutput = cli(['migrate', 'status'], env);
+    if (statusOutput) log(statusOutput);
+    log('Migration status is up to date.');
+
+    cli(['generate'], env);
+    log('Prisma Client generated.');
+}
+
+if (require.main === module) {
+    main().catch((error) => {
+        console.error(`[MIGRATION ABORTED] ${sanitizeOutput(error.message, process.env.DATABASE_URL)}`);
+        process.exitCode = 1;
+    });
+}
+
+module.exports = {
+    PROTECTED_DATABASES,
+    main,
+    parseArguments,
+    parseDatabaseTarget,
+    runPrisma,
+    sanitizeOutput
+};

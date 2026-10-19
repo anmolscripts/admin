@@ -193,6 +193,12 @@ describe('Document & Invoice Template System & Business Isolation Test Suite', (
             const biz1 = 1;
             const biz99 = 99;
 
+            await prisma.business.upsert({
+                where: { id: biz99 },
+                update: {},
+                create: { id: biz99, name: 'Business 99 Enterprise', code: 'BIZ99' }
+            });
+
             // Ensure profile 1 exists
             await businessProfileService.updateProfile({
                 legalName: 'Business One Corp',

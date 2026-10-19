@@ -1,0 +1,13 @@
+{
+    "CodeGPT.apiKey": "CodeGPT Plus Beta",
+    "chat.tools.terminal.autoApprove": {
+        "/^node -e \"const fs=require\\('fs'\\); const ejs=require\\('ejs'\\); for \\(const file of \\['app/views/purchases/po-editor\\.ejs','app/views/projects/details\\.ejs','app/views/documents/view\\.ejs'\\]\\) \\{ ejs\\.compile\\(fs\\.readFileSync\\(file,'utf8'\\), \\{filename:file\\}\\); console\\.log\\(file \\+ ' compiles'\\); \\}\"$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^node --check app/services/chartOfAccounts\\.service\\.js; node --check app/services/accounting/posting\\.service\\.js; node --check app/services/payment\\.service\\.js; node --check app/controllers/item\\.controller\\.js; node --check app/controllers/project\\.controller\\.js; node --check assets/js/view\\.js$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}

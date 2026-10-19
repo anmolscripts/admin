@@ -90,29 +90,21 @@ const STANDARD_ACCOUNTS = [
  * @param {number|null} [adminUserId=null]
  * @returns {Promise<number>} Number of accounts ensured/created
  */
-async function ensureSystemAccounts(adminUserId = null, businessId = null) {
+async function ensureSystemAccounts(adminUserId = null, businessId = null, client = prisma) {
     const activeBusinessId = (businessId !== null && businessId !== undefined) ? parseInt(businessId, 10) : null;
     let createdCount = 0;
-    for (const item of STANDARD_ACCOUNTS) {
-        let parentId = null;
-        if (item.parentCode) {
-            const parentWhere = { code: item.parentCode };
-            if (activeBusinessId) parentWhere.businessId = activeBusinessId;
-            const parent = await prisma.chartOfAccount.findFirst({
-                where: parentWhere,
-                select: { id: true }
-            });
-            if (parent) parentId = parent.id;
-        }
+    const existingAccounts = await client.chartOfAccount.findMany({
+        where: { businessId: activeBusinessId },
+        select: { id: true, code: true, parentId: true }
+    });
+    const accountsByCode = new Map(existingAccounts.map(account => [account.code, account]));
 
-        const existingWhere = { code: item.code };
-        if (activeBusinessId) existingWhere.businessId = activeBusinessId;
-        const existing = await prisma.chartOfAccount.findFirst({
-            where: existingWhere
-        });
+    for (const item of STANDARD_ACCOUNTS) {
+        const parentId = item.parentCode ? accountsByCode.get(item.parentCode)?.id || null : null;
+        const existing = accountsByCode.get(item.code);
 
         if (!existing) {
-            await prisma.chartOfAccount.create({
+            const account = await client.chartOfAccount.create({
                 data: {
                     code: item.code,
                     name: item.name,
@@ -134,14 +126,16 @@ async function ensureSystemAccounts(adminUserId = null, businessId = null) {
                     createdById: adminUserId
                 }
             });
+            accountsByCode.set(item.code, account);
             createdCount++;
         } else {
             // Update parent relationship if was missing earlier
             if (parentId && existing.parentId !== parentId) {
-                await prisma.chartOfAccount.update({
+                const account = await client.chartOfAccount.update({
                     where: { id: existing.id },
                     data: { parentId }
                 });
+                accountsByCode.set(item.code, account);
             }
         }
     }
@@ -151,13 +145,13 @@ async function ensureSystemAccounts(adminUserId = null, businessId = null) {
 /**
  * Get account by unique system key (e.g. 'ACCOUNTS_RECEIVABLE', 'SALES_REVENUE')
  */
-async function getSystemAccount(systemAccountKey, businessId = null) {
+async function getSystemAccount(systemAccountKey, businessId = null, client = prisma) {
     if (!systemAccountKey) throw new ValidationError('systemAccountKey is required.');
     const targetBusinessId = (businessId !== null && businessId !== undefined && businessId !== '') ? parseInt(businessId, 10) : null;
     const where = { systemAccountKey, businessId: targetBusinessId };
-    let account = await prisma.chartOfAccount.findFirst({ where });
+    let account = await client.chartOfAccount.findFirst({ where });
     if (!account && targetBusinessId !== null) {
-        account = await prisma.chartOfAccount.findFirst({ where: { systemAccountKey, businessId: null } });
+        account = await client.chartOfAccount.findFirst({ where: { systemAccountKey, businessId: null } });
     }
     if (!account) {
         throw new NotFoundError(`System account '${systemAccountKey}' not found.`);

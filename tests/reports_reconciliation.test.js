@@ -512,6 +512,25 @@ describe('Milestone 7: Core Financial Reports & Accounting Reconciliation', () =
             assert.equal(stmt.transactions[2].credit, '1180.00');
             assert.equal(stmt.transactions[2].runningBalance, '5620.00');
         });
+
+        it('6.4 should include active invoices that have not yet been posted to the ledger', async () => {
+            const unpostedInvoice = await invoiceService.createInvoice({
+                clientName: testClientA.name,
+                clientId: testClientA.id,
+                invoiceDate: new Date('2026-06-25'),
+                gstEnabled: false,
+                items: [{ name: 'Unposted statement test', quantity: 1, rate: 900, unit: 'NOS' }]
+            }, testAdmin.id);
+
+            const stmt = await reportService.getCustomerStatement(testClientA.id);
+            const unpostedRow = stmt.transactions.find(transaction => transaction.sourceId === unpostedInvoice.id);
+
+            assert.ok(unpostedRow);
+            assert.equal(unpostedRow.status, 'UNPOSTED');
+            assert.equal(unpostedRow.journalId, null);
+            assert.equal(unpostedRow.debit, '900.00');
+            assert.equal(stmt.statement.closingBalance, '6520.00');
+        });
     });
 
     describe('7. RBAC Security & Authorization for Reports', () => {

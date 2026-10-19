@@ -116,6 +116,7 @@ async function createProject(data = {}, userId, authorizedBusinessId) {
     if (userId) {
         await activityService.log({
             actorUserId: userId,
+            businessId: project.businessId,
             action: 'CREATE',
             module: 'PROJECTS',
             targetType: 'PROJECT',
@@ -168,6 +169,50 @@ async function getProjectById(id, authorizedBusinessId) {
 
     if (!project) throw new NotFoundError(`Project with ID ${numId} not found in this organization.`);
     return project;
+}
+
+async function createProjectFromAcceptedQuotation(quotationId, data = {}, userId, authorizedBusinessId) {
+    const businessId = parseInt(authorizedBusinessId, 10);
+    const sourceId = parseInt(quotationId, 10);
+    if (!businessId || !sourceId || !userId) throw new ValidationError('Authorized business, quotation and user are required.');
+    return prisma.$transaction(async tx => {
+        const quotation = await tx.invoice.findFirst({
+            where: { id: sourceId, businessId, documentType: 'QUOTATION', status: 'ACTIVE' },
+            include: { items: { orderBy: { lineNumber: 'asc' } }, sourceProject: true }
+        });
+        if (!quotation) throw new NotFoundError('Quotation was not found in the active business.');
+        if (!quotation.acceptedAt) throw new ValidationError('A quotation must be accepted before creating a project.');
+        if (quotation.sourceProject) return quotation.sourceProject;
+        const startDate = data.startDate ? new Date(data.startDate) : new Date();
+        if (isNaN(startDate.getTime())) throw new ValidationError('Invalid project start date.');
+        const code = data.code ? String(data.code).trim().toUpperCase() : await numberingService.allocateNumber({ businessId, entityType: 'PROJECT', date: startDate, tx });
+        const snapshot = {
+            quotationId: quotation.id, quotationNumber: quotation.invoiceNumber, acceptedAt: quotation.acceptedAt,
+            clientName: quotation.clientName, clientId: quotation.clientId, subtotal: quotation.subtotal, grandTotal: quotation.grandTotal,
+            termsAndConditions: quotation.termsAndConditions, remarks: quotation.remarks,
+            items: quotation.items.map(item => ({ lineNumber: item.lineNumber, name: item.name, description: item.description, quantity: item.quantity, unit: item.unit, rate: item.rate, amount: item.amount }))
+        };
+        try {
+            const project = await tx.project.create({ data: {
+                businessId, code, name: data.name ? String(data.name).trim() : `${quotation.clientName} — ${quotation.invoiceNumber}`,
+                description: data.description ? String(data.description).trim() : (quotation.remarks || quotation.termsAndConditions || null),
+                siteLocation: data.siteLocation ? String(data.siteLocation).trim() : null, clientId: quotation.clientId,
+                startDate, endDate: data.endDate ? new Date(data.endDate) : null, contractValue: parseFloat(quotation.subtotal) || 0,
+                budgetAmount: Math.max(0, parseFloat(data.budgetAmount) || 0), billingType: data.billingType || 'FIXED_PRICE',
+                revenueRecognitionMethod: data.revenueRecognitionMethod || 'COMPLETED_CONTRACT', status: 'ACTIVE', createdById: userId,
+                sourceQuotationId: quotation.id, sourceQuotationNumber: quotation.invoiceNumber, sourceQuotationSnapshot: snapshot
+            }});
+            await tx.invoice.update({ where: { id: quotation.id }, data: { projectId: project.id, updatedById: userId, version: { increment: 1 } } });
+            await activityService.log({ actorUserId: userId, businessId, action: 'CREATE', module: 'PROJECTS', targetType: 'PROJECT', targetId: project.id, description: `Created project ${project.code} from accepted quotation ${quotation.invoiceNumber}` });
+            return project;
+        } catch (err) {
+            if (err.code === 'P2002') {
+                const existing = await tx.project.findFirst({ where: { businessId, sourceQuotationId: quotation.id } });
+                if (existing) return existing;
+            }
+            throw err;
+        }
+    });
 }
 
 async function updateProject(id, data = {}, userId, authorizedBusinessId) {
@@ -238,6 +283,7 @@ async function updateProject(id, data = {}, userId, authorizedBusinessId) {
     if (userId) {
         await activityService.log({
             actorUserId: userId,
+            businessId: project.businessId,
             action: 'EDIT',
             module: 'PROJECTS',
             targetType: 'PROJECT',
@@ -596,7 +642,10 @@ async function listDailyLabour(projectId, authorizedBusinessId) {
     const pId = parseInt(projectId, 10);
     return prisma.projectDailyLabour.findMany({
         where: { projectId: pId, businessId },
-        include: { worker: true },
+        include: {
+            worker: true,
+            supervisor: { select: { id: true, name: true } }
+        },
         orderBy: { workDate: 'desc' }
     });
 }
@@ -1004,12 +1053,49 @@ async function getPortfolioFinancialSummary(authorizedBusinessId) {
     };
 }
 
+async function getProjectClosurePreview(projectId, authorizedBusinessId) {
+    const project = await getProjectById(projectId, authorizedBusinessId);
+    const businessId = project.businessId;
+    const [openPos, draftCosts, supplierBills, invoices] = await Promise.all([
+        prisma.purchaseOrder.findMany({ where: { businessId, projectId: project.id, status: { in: ['ACTIVE', 'PARTIALLY_RECEIVED'] } }, include: { items: true, goodsReceipts: { where: { status: { not: 'CANCELLED' } }, include: { items: true } } } }),
+        prisma.projectCost.count({ where: { businessId, projectId: project.id, status: { not: 'POSTED' } } }),
+        prisma.supplierBill.findMany({ where: { businessId, projectId: project.id, status: 'ACTIVE' }, include: { supplierPayments: true } }),
+        prisma.invoice.findMany({ where: { businessId, projectId: project.id, documentType: 'INVOICE', status: 'ACTIVE' }, select: { invoiceNumber: true, outstandingAmount: true } })
+    ]);
+    const blockers = [];
+    for (const po of openPos) {
+        const ordered = po.items.reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
+        const received = po.goodsReceipts.reduce((sum, receipt) => sum + receipt.items.reduce((lineSum, item) => lineSum + (parseFloat(item.receivedQuantity) || 0), 0), 0);
+        if (received + 0.001 < ordered) blockers.push({ code: 'OPEN_PO_DELIVERY', message: `PO ${po.orderNumber} has ${Math.max(0, ordered - received).toFixed(2)} quantity still outstanding.` });
+    }
+    if (draftCosts) blockers.push({ code: 'UNPOSTED_COSTS', message: `${draftCosts} project cost record(s) are not posted.` });
+    for (const bill of supplierBills) {
+        const paid = bill.supplierPayments.reduce((sum, payment) => sum + (parseFloat(payment.amount) || 0), 0);
+        const outstanding = Math.max(0, (parseFloat(bill.totalAmount) || 0) - paid);
+        if (outstanding > 0.01) blockers.push({ code: 'SUPPLIER_BILL_OUTSTANDING', message: `Supplier bill ${bill.billNumber} has an outstanding payable of ${outstanding.toFixed(2)}.` });
+    }
+    const receivables = invoices.filter(invoice => (parseFloat(invoice.outstandingAmount) || 0) > 0.01).map(invoice => ({ invoiceNumber: invoice.invoiceNumber, outstanding: parseFloat(invoice.outstandingAmount) }));
+    return { project, blockers, receivables, canClose: blockers.length === 0, alreadyClosed: project.status === 'COMPLETED' };
+}
+
+async function closeProject(projectId, userId, authorizedBusinessId, { overrideReason } = {}) {
+    const preview = await getProjectClosurePreview(projectId, authorizedBusinessId);
+    if (preview.alreadyClosed) return preview.project;
+    if (preview.blockers.length && !String(overrideReason || '').trim()) throw new ValidationError(`Project cannot close: ${preview.blockers.map(blocker => blocker.message).join(' ')}`);
+    return prisma.$transaction(async tx => {
+        const updated = await tx.project.update({ where: { id: preview.project.id }, data: { status: 'COMPLETED', closedAt: new Date(), closedById: userId, closureOverrideReason: preview.blockers.length ? String(overrideReason).trim() : null } });
+        await activityService.log({ actorUserId: userId, businessId: preview.project.businessId, action: 'CLOSE', module: 'PROJECTS', targetType: 'PROJECT', targetId: updated.id, description: `Closed project ${updated.code}${preview.blockers.length ? ' with authorised override' : ''}` });
+        return updated;
+    });
+}
+
 module.exports = {
     VALID_PROJECT_STATUSES,
     VALID_BILLING_TYPES,
     VALID_TASK_STATUSES,
     VALID_REVENUE_METHODS,
     createProject,
+    createProjectFromAcceptedQuotation,
     getProjectById,
     getProject: getProjectById,
     updateProject,
@@ -1027,5 +1113,7 @@ module.exports = {
     createContractorWorkOrder,
     listContractorWorkOrders,
     getProjectFinancialSummary,
-    getPortfolioFinancialSummary
+    getPortfolioFinancialSummary,
+    getProjectClosurePreview,
+    closeProject
 };

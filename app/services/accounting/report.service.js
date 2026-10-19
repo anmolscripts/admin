@@ -1243,32 +1243,96 @@ async function getCustomerStatement(clientId, filters = {}) {
     const numClientId = parseInt(clientId, 10);
     if (isNaN(numClientId) || numClientId <= 0) throw new ValidationError('Invalid customer ID.');
 
-    const client = await prisma.client.findUnique({
-        where: { id: numClientId }
-    });
+    const scoping = resolveBusinessScoping(filters);
+    const clientWhere = { id: numClientId };
+    if (scoping.clientBusinessFilter === 'DEFAULT_COMPANY') {
+        clientWhere.OR = [{ businessId: 1 }, { businessId: null }];
+    } else if (scoping.clientBusinessFilter !== undefined) {
+        clientWhere.businessId = scoping.clientBusinessFilter;
+    }
+    const client = await prisma.client.findFirst({ where: clientWhere });
     if (!client) throw new NotFoundError(`Client ID ${numClientId} was not found.`);
 
-    const arAccount = await coaService.getSystemAccount('ACCOUNTS_RECEIVABLE');
+    const statementBusinessId = scoping.accountBusinessFilter;
+    const arAccount = await coaService.getSystemAccount('ACCOUNTS_RECEIVABLE', statementBusinessId);
     if (!arAccount) throw new Error('Accounts Receivable account (1121) not configured.');
+
+    const invoiceBusinessWhere = {};
+    if (scoping.clientBusinessFilter === 'DEFAULT_COMPANY') {
+        invoiceBusinessWhere.OR = [{ businessId: 1 }, { businessId: null }];
+    } else if (scoping.clientBusinessFilter !== undefined) {
+        invoiceBusinessWhere.businessId = scoping.clientBusinessFilter;
+    } else if (client.businessId) {
+        invoiceBusinessWhere.businessId = client.businessId;
+    }
+    const unpostedInvoices = await prisma.invoice.findMany({
+        where: {
+            clientId: numClientId,
+            documentType: 'INVOICE',
+            status: 'ACTIVE',
+            ...invoiceBusinessWhere
+        },
+        select: {
+            id: true,
+            invoiceNumber: true,
+            invoiceDate: true,
+            grandTotal: true
+        }
+    });
+    const invoiceJournalKeys = unpostedInvoices.map(invoice => `INVOICE:${invoice.id}`);
+    const postedInvoiceJournals = invoiceJournalKeys.length
+        ? await prisma.journalEntry.findMany({
+            where: { idempotencyKey: { in: invoiceJournalKeys } },
+            select: { idempotencyKey: true }
+        })
+        : [];
+    const postedInvoiceJournalKeys = new Set(postedInvoiceJournals.map(journal => journal.idempotencyKey));
+    const missingInvoiceDebits = unpostedInvoices
+        .filter(invoice => !postedInvoiceJournalKeys.has(`INVOICE:${invoice.id}`))
+        .filter(invoice => {
+            if (filters.fromDate && invoice.invoiceDate < parseStartOfDay(filters.fromDate)) return false;
+            if (filters.toDate && invoice.invoiceDate > parseEndOfDay(filters.toDate)) return false;
+            return true;
+        })
+        .map(invoice => ({
+            id: `unposted-invoice-${invoice.id}`,
+            journalId: null,
+            entryNumber: `INV/${invoice.invoiceNumber}`,
+            entryDate: invoice.invoiceDate,
+            sourceType: 'INVOICE',
+            sourceId: invoice.id,
+            narration: `Invoice ${invoice.invoiceNumber} — not posted to the general ledger`,
+            description: 'Unposted invoice debit; post this invoice to the ledger to include it in accounting reports.',
+            debit: fromCents(toCents(invoice.grandTotal)),
+            credit: '0.00',
+            status: 'UNPOSTED'
+        }));
 
     // 1. Calculate opening balance before fromDate
     let openingBalanceCents = 0n;
     if (filters.fromDate) {
         const fromDateObj = parseStartOfDay(filters.fromDate);
+        const priorJournalWhere = {
+            status: { in: ['POSTED', 'REVERSED'] },
+            entryDate: { lt: fromDateObj }
+        };
+        applyJournalBusinessScope(priorJournalWhere, scoping);
         const priorLines = await prisma.journalEntryLine.findMany({
             where: {
                 accountId: arAccount.id,
                 clientId: numClientId,
-                journalEntry: {
-                    status: { in: ['POSTED', 'REVERSED'] },
-                    entryDate: { lt: fromDateObj }
-                }
+                journalEntry: priorJournalWhere
             },
             select: { debit: true, credit: true }
         });
 
         for (const line of priorLines) {
             openingBalanceCents += (toCents(line.debit) - toCents(line.credit));
+        }
+        for (const invoice of unpostedInvoices) {
+            if (invoice.invoiceDate < fromDateObj && !postedInvoiceJournalKeys.has(`INVOICE:${invoice.id}`)) {
+                openingBalanceCents += toCents(invoice.grandTotal);
+            }
         }
     }
 
@@ -1280,6 +1344,7 @@ async function getCustomerStatement(clientId, filters = {}) {
             status: { in: ['POSTED', 'REVERSED'] }
         }
     };
+    applyJournalBusinessScope(lineWhere.journalEntry, scoping);
 
     if (filters.fromDate || filters.toDate) {
         lineWhere.journalEntry.entryDate = {};
@@ -1335,6 +1400,26 @@ async function getCustomerStatement(clientId, filters = {}) {
             status: line.journalEntry.status
         };
     });
+
+    transactions.push(...missingInvoiceDebits);
+    transactions.sort((a, b) => {
+        const dateDifference = new Date(a.entryDate).getTime() - new Date(b.entryDate).getTime();
+        if (dateDifference !== 0) return dateDifference;
+        if (a.status === 'UNPOSTED' && b.status !== 'UNPOSTED') return -1;
+        if (b.status === 'UNPOSTED' && a.status !== 'UNPOSTED') return 1;
+        return String(a.entryNumber).localeCompare(String(b.entryNumber));
+    });
+
+    runningBalanceCents = openingBalanceCents;
+    for (const transaction of transactions) {
+        const debitCents = toCents(transaction.debit);
+        const creditCents = toCents(transaction.credit);
+        runningBalanceCents += debitCents - creditCents;
+        transaction.runningBalance = fromCents(runningBalanceCents);
+        if (transaction.status === 'UNPOSTED') {
+            totalDebitCents += debitCents;
+        }
+    }
 
     return {
         client,

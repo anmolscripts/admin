@@ -318,26 +318,53 @@ async function queryWorkbench({ user, dataset = 'INVOICES', filters = {}, groupi
                 where,
                 include: {
                     business: { select: { id: true, name: true, currency: true } },
-                    supplier: { select: { id: true, name: true } }
+                    supplier: { select: { id: true, name: true } },
+                    items: {
+                        select: {
+                            amount: true,
+                            taxableAmount: true,
+                            discountAmount: true,
+                            gstRate: true,
+                            cgstAmount: true,
+                            sgstAmount: true,
+                            igstAmount: true,
+                            totalAmount: true
+                        }
+                    }
                 },
                 orderBy: [{ orderDate: 'desc' }, { id: 'desc' }]
             });
 
-            records = rows.map(r => ({
-                id: r.id,
-                businessId: r.businessId,
-                businessName: r.business?.name || 'Default Business',
-                currency: r.business?.currency || r.currency || 'INR',
-                referenceNumber: r.orderNumber,
-                date: r.orderDate ? r.orderDate.toISOString().slice(0, 10) : '',
-                partyName: r.supplier?.name || '-',
-                documentType: 'PURCHASE_ORDER',
-                status: r.status,
-                subtotal: Number(r.subtotal || 0),
-                taxAmount: Number(r.taxAmount || 0),
-                grandTotal: Number(r.grandTotal || 0),
-                balance: Number(r.grandTotal || 0)
-            }));
+            records = rows.map(r => {
+                const hasTaxSnapshots = r.items.some(item =>
+                    Number(item.taxableAmount) > 0 ||
+                    Number(item.discountAmount) > 0 ||
+                    Number(item.gstRate) > 0 ||
+                    Number(item.cgstAmount) > 0 ||
+                    Number(item.sgstAmount) > 0 ||
+                    Number(item.igstAmount) > 0 ||
+                    Number(item.totalAmount) > 0
+                );
+                const legacyTotal = r.items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+                const subtotal = hasTaxSnapshots ? Number(r.taxableSubtotal || 0) : legacyTotal;
+                const taxAmount = hasTaxSnapshots ? Number(r.totalTaxAmount || 0) : 0;
+                const grandTotal = hasTaxSnapshots ? Number(r.totalAmount || 0) : legacyTotal;
+                return {
+                    id: r.id,
+                    businessId: r.businessId,
+                    businessName: r.business?.name || 'Default Business',
+                    currency: r.business?.currency || r.currency || 'INR',
+                    referenceNumber: r.orderNumber,
+                    date: r.orderDate ? r.orderDate.toISOString().slice(0, 10) : '',
+                    partyName: r.supplier?.name || '-',
+                    documentType: 'PURCHASE_ORDER',
+                    status: r.status,
+                    subtotal,
+                    taxAmount,
+                    grandTotal,
+                    balance: grandTotal
+                };
+            });
             break;
         }
 

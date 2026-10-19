@@ -13,10 +13,19 @@ npm run dev
 ```
 
 ### Production
+For an already initialized database with an active OWNER, after approved migration
+review and a verified backup:
+
 ```bash
-npm run prod:install
-npm start
+npm run install:prod -- --confirm-db=YOUR_APPROVED_DATABASE --backup-confirmed
 ```
+
+This preserves `.env`, accounts, roles and business records. It uses the guarded
+migration workflow and does not seed or create databases. Uncommitted migrations
+remain blocked. Fresh database/admin provisioning requires a separately reviewed
+bootstrap; the old automatic production seed path is disabled. Install dependencies
+separately when needed. Application startup and business workflows need independent
+verification after the procedure succeeds.
 
 ---
 
@@ -35,8 +44,10 @@ Spark Admin is cross-platform and natively supported on **Windows**, **Linux**, 
 ## Architecture & Build Policy
 
 > [!NOTE]
-> **Spark Admin does not require a frontend compilation/build step.**
-> Production readiness is achieved through dependency installation, Prisma migration, Prisma client generation, production seed, configuration validation and smoke verification.
+> **Spark Admin has no frontend bundler or browser-asset compilation step.**
+> `npm run build` performs release checks, validates/generates Prisma Client without
+> connecting to a database, then installs production dependencies and smoke-tests a
+> clean staged candidate. It does not migrate or seed a database.
 
 All UI views are server-rendered via Express and EJS with direct static asset delivery. No webpack, vite, or compilation steps are needed.
 
@@ -44,7 +55,8 @@ All UI views are server-rendered via Express and EJS with direct static asset de
 
 ## What the Installer Does
 
-Both `npm run dev:install` and `npm run prod:install` execute in 8 structured, automated stages:
+`npm run dev:install` uses the following development stages. Production uses the
+separate guarded workflow described above:
 
 ```
 [1/8] Checking prerequisites    → Validates Node.js (>=24), npm (>=10), and MySQL TCP port reachability
@@ -61,7 +73,10 @@ Both `npm run dev:install` and `npm run prod:install` execute in 8 structured, a
 
 ## Environment Seed Policies
 
-| Data Category | Development Seed (`dev:install`) | Production Seed (`prod:install`) |
+The table below describes the legacy seed functions only. Production installation
+no longer invokes them, because they can change existing roles and accounts.
+
+| Data Category | Development Seed (`dev:install`) | Legacy Production Seed (not invoked by installer) |
 | :--- | :--- | :--- |
 | **System Roles & Permissions** | ✅ OWNER, ADMIN, STAFF + 56 permissions | ✅ OWNER, ADMIN, STAFF + 56 permissions |
 | **Unit Master (13 units)** | ✅ Standard predefined units | ✅ Standard predefined units |
@@ -90,17 +105,17 @@ If run in an interactive terminal, the installer prompts for:
 In non-interactive mode (e.g. CI or scripts), defaults or flags (`--db-host`, `--db-port`, `--db-user`, `--db-password`, `--db-name`, `--admin-email`, `--admin-password`) are consumed without prompting.
 
 ### In Production (`npm run prod:install`)
-1. **Existing `.env` file**: Confirmation to preserve or replace.
-2. **Database Host, Port, User, Password, Name**: Production requires dedicated user (warns if `root`).
-3. **Application Port & Host** *(Default: `127.0.0.1:3000` behind reverse proxy)*
-4. **Production Admin Email**: Required.
-5. **Production Admin Password**: Required, min 8 chars, with confirmation check.
+No configuration or password prompts are used. The existing `.env` is read without
+rewriting it. Supply only exact target confirmation and backup acknowledgement.
+Credential/overwrite options are refused without printing their values. An active
+OWNER must already exist; missing or disabled administrators require separate
+approved account recovery, not automatic promotion or password replacement.
 
 ---
 
 ## Where Credentials Appear
 
-- **Admin Password**: Printed **once** in the final summary box upon successful completion of the installer.
+- **Admin Password**: Not printed in the final summary. Password prompts suppress terminal echo.
 - **Never written to `.env` in production**: In production mode, `SEED_ADMIN_PASSWORD` is omitted from `.env` to protect security.
 - **Never logged as raw hashes**: Password hashes are stored securely in MySQL via bcrypt (`saltRounds=12`).
 
@@ -185,8 +200,29 @@ The Doctor command checks:
 
 | Command | Description |
 | :--- | :--- |
-| `npm run db:upgrade` | Non-destructive schema migration and Prisma client generation |
+| `npm run install:migrate -- --confirm-db=<database> --backup-confirmed` | Forward-only upgrade after target confirmation and verified backup |
+| `npm run build` | Build and smoke-test a clean release candidate without database writes |
+| `npm run db:upgrade -- --confirm-db=<database> --backup-confirmed` | Backward-compatible alias for the guarded migration command |
 | `npm run verify:all` | Comprehensive 10-point static, schema, doctor, and test verification |
 | `npm run package:release` | Verifies release exclusions and builds clean distribution archive |
 | `npm run doctor` | Performs 20-point production environment and database health check |
 | `npm test` | Runs the full test suite across all 143 test files |
+
+### Upgrading an Existing Installation
+
+Do not use `dev:install` or `db:reset` to upgrade an existing
+customer database. Stop application writes, create and verify a database backup,
+then run the guarded forward-only migration command with the exact database
+name:
+
+```bash
+npm run install:migrate -- --confirm-db=<exact-database-name> --backup-confirmed
+```
+
+The command refuses missing/mismatched targets and protected database names. It
+creates a missing database only with explicit `--create-database`; it never resets
+schemas, seeds data, or uses `db push`. The production installer wrapper additionally
+requires an initialized OWNER and does not allow database creation. MariaDB
+DDL can implicitly commit, so a failed migration is not guaranteed to roll back
+as a unit; follow the recovery plan in the upgrade guide if the resulting schema
+is uncertain.

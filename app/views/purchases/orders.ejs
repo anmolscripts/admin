@@ -56,6 +56,8 @@
               <th>Project</th>
               <th>Order Date</th>
               <th>Due Date</th>
+              <th class="text-end">PO Total (incl. GST)</th>
+              <th>Received</th>
               <th>Items</th>
               <th>Status</th>
               <th class="text-end pe-3">Actions</th>
@@ -80,6 +82,8 @@
                   </td>
                   <td><%= new Date(po.orderDate).toLocaleDateString() %></td>
                   <td><%= po.dueDate ? new Date(po.dueDate).toLocaleDateString() : '—' %></td>
+                  <td class="text-end">₹<%= (parseFloat(po.orderTotal || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></td>
+                  <td><%= parseFloat(po.receiptProgress?.receivedQuantity || 0).toFixed(2) %> / <%= parseFloat(po.receiptProgress?.orderedQuantity || 0).toFixed(2) %></td>
                   <td><%= po.items ? po.items.length : 0 %> items</td>
                   <td>
                     <span class="badge bg-<%= po.status === 'ACTIVE' ? 'success' : (po.status === 'VOID' ? 'danger' : 'secondary') %>">
@@ -99,7 +103,7 @@
               <% }); %>
             <% } else { %>
               <tr>
-                <td colspan="8" class="text-center py-4 text-muted">No purchase orders found.</td>
+                <td colspan="10" class="text-center py-4 text-muted">No purchase orders found.</td>
               </tr>
             <% } %>
           </tbody>

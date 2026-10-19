@@ -6,10 +6,10 @@ This guide explains how system administrators and self-hosting customers can upg
 
 ## 1. Principles of Safe Upgrades
 
-1. **Zero Destructive Resets**: Upgrades NEVER run `prisma migrate reset` or drop databases.
-2. **Forward-Only Versioned Migrations**: Schema alterations are strictly additive with safe defaults or nullable columns.
-3. **Pre-flight Health Inspection**: Upgrade scripts verify MySQL reachability, migration checksums, and schema consistency before applying changes.
-4. **Historical Snapshot Invariance**: Changing organization settings or software versions never alters historical issued invoices, posted journals, or ledger entries.
+1. **Forward-Only Versioned Migrations**: Existing customer databases are upgraded only with committed `prisma migrate deploy` migrations.
+2. **Explicit Target Confirmation**: The target database name must match `DATABASE_URL` and the operator's `--confirm-db` value.
+3. **Verified Backup First**: The operator confirms a verified pre-upgrade backup before migration begins.
+4. **No Upgrade Seeding or Reset**: An upgrade does not create databases, reset schemas, run seeds, or use `db push`.
 
 ---
 
@@ -18,15 +18,18 @@ This guide explains how system administrators and self-hosting customers can upg
 Spark Admin includes a dedicated, non-destructive upgrade command:
 
 ```bash
-npm run db:upgrade
+npm run install:migrate -- --confirm-db=<exact-database-name> --backup-confirmed
 ```
 
 ### What `npm run db:upgrade` Does:
-1. **Connectivity Check**: Connects to the database configured in `.env` without exposing credentials.
-2. **Pending Migration Detection**: Inspects the `_prisma_migrations` table for unapplied migrations.
-3. **Sequential Migration Execution**: Applies pending migrations in strict timestamp order using `prisma migrate deploy`.
-4. **Prisma Client Regeneration**: Recompiles the typesafe MariaDB/MySQL Prisma client matching the new schema.
-5. **System Health Verification**: Runs the 20-point `scripts/doctor.js` diagnostics suite.
+1. Requires a valid MySQL `DATABASE_URL`, an exact matching target confirmation,
+   and the `--backup-confirmed` acknowledgement.
+2. Refuses protected database names and validates the Prisma schema using the
+   checked-in `prisma7.config.ts`.
+3. Applies committed migrations with `prisma migrate deploy`, then verifies
+   `prisma migrate status`.
+4. Regenerates Prisma Client. The command never creates a database, resets a
+   schema, runs a seed, or invokes `db push`.
 
 ---
 
@@ -55,7 +58,7 @@ npm ci --omit=dev
 
 ### Step 4: Run Safe Database Upgrade
 ```bash
-npm run db:upgrade
+npm run install:migrate -- --confirm-db=<exact-database-name> --backup-confirmed
 ```
 
 ### Step 5: Verify System Health
@@ -77,10 +80,13 @@ sudo systemctl restart spark-admin
 ## 4. Troubleshooting & Rollback
 
 ### If a Migration Fails
-1. Check detailed logs in `.artifacts/product-readiness/` or console output.
-2. The migration engine halts immediately before partial corruption occurs.
-3. Verify database user privileges (`ALTER`, `CREATE`, `INDEX` are required).
-4. Restore from the pre-upgrade dump if schema state is indeterminate:
+1. Stop the deployment and preserve the complete sanitized command output.
+2. Do not assume the operation rolled back: MariaDB DDL statements may
+   implicitly commit and leave a partially applied migration.
+3. Verify the current migration status and schema using read-only diagnostics;
+   do not manually mark a migration as applied without reviewing the SQL and
+   database state.
+4. Restore from the verified pre-upgrade backup if schema state is indeterminate:
    ```bash
    mysql -u <db_user> -p <db_name> < spark_admin_backup_YYYYMMDD_HHMMSS.sql
    ```

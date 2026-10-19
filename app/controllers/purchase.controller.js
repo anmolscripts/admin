@@ -6,6 +6,7 @@ const goodsReceiptService = require('../services/goodsReceipt.service');
 const expenseService = require('../services/expense.service');
 const otherIncomeService = require('../services/otherIncome.service');
 const unitService = require('../services/unit.service');
+const businessProfileService = require('../services/businessProfile.service');
 
 function handleError(err, res, next) {
     if (err.statusCode === 400 || err.name === 'ValidationError') {
@@ -30,6 +31,7 @@ async function renderPurchaseOrders(req, res, next) {
     try {
         const { search, status, page, limit } = req.query;
         const result = await purchaseOrderService.listPurchaseOrders({
+            businessId: req.businessId || req.session?.activeBusinessId,
             search,
             status,
             page,
@@ -57,17 +59,19 @@ async function renderPurchaseOrders(req, res, next) {
 async function renderNewPurchaseOrder(req, res, next) {
     try {
         const businessId = req.businessId || req.session?.activeBusinessId;
-        const [suppliers, units, projects] = await Promise.all([
-            supplierService.searchSuppliers('', 100),
+        const [suppliers, units, projects, profile] = await Promise.all([
+            supplierService.searchSuppliers('', 100, businessId, { activeOnly: true }),
             unitService.getActiveUnits(),
             businessId ? prisma.project.findMany({
                 where: { businessId, status: 'ACTIVE' },
                 select: { id: true, code: true, name: true, clientId: true },
                 orderBy: { name: 'asc' }
-            }) : []
+            }) : [],
+            businessProfileService.getProfile(businessId)
         ]);
 
-        const preselectedProjectId = req.query.projectId ? parseInt(req.query.projectId, 10) : null;
+        const requestedProjectId = req.query.projectId ? parseInt(req.query.projectId, 10) : null;
+        const preselectedProjectId = requestedProjectId && projects.some(project => project.id === requestedProjectId) ? requestedProjectId : null;
 
         res.render('purchases/po-editor', {
             pageTitle: 'New Purchase Order',
@@ -75,6 +79,7 @@ async function renderNewPurchaseOrder(req, res, next) {
             suppliers,
             units,
             projects,
+            businessStateCode: profile?.stateCode || profile?.gstin?.slice(0, 2) || '',
             preselectedProjectId,
             csrfToken: req.session ? req.session.csrfToken : ''
         });
@@ -86,7 +91,7 @@ async function renderNewPurchaseOrder(req, res, next) {
 async function createPurchaseOrder(req, res, next) {
     try {
         const userId = req.user?.id || req.session?.user?.id || req.session?.userId || 1;
-        const businessId = req.businessId || req.session?.activeBusinessId || req.body.businessId;
+        const businessId = req.businessId || req.session?.activeBusinessId;
         const po = await purchaseOrderService.createPurchaseOrder({
             ...req.body,
             businessId
@@ -110,7 +115,8 @@ async function getPurchaseOrder(req, res, next) {
 async function updatePurchaseOrder(req, res, next) {
     try {
         const userId = req.user?.id || req.session?.user?.id || req.session?.userId || 1;
-        const po = await purchaseOrderService.updatePurchaseOrder(req.params.id, req.body, userId);
+        const businessId = req.businessId || req.session?.activeBusinessId;
+        const po = await purchaseOrderService.updatePurchaseOrder(req.params.id, req.body, userId, businessId);
         return res.status(200).json({ success: true, purchaseOrder: po });
     } catch (err) {
         return handleError(err, res, next);
@@ -120,15 +126,17 @@ async function updatePurchaseOrder(req, res, next) {
 async function renderPurchaseOrderDetail(req, res, next) {
     try {
         const businessId = req.businessId || req.session?.activeBusinessId;
-        const [po, suppliers, units, projects] = await Promise.all([
+        const [po, suppliers, units, projects, profile] = await Promise.all([
             purchaseOrderService.getPurchaseOrderById(req.params.id, businessId),
-            supplierService.searchSuppliers('', 100),
+            // Existing documents retain their supplier snapshot even when the master is inactive.
+            supplierService.searchSuppliers('', 100, businessId),
             unitService.getActiveUnits(),
             businessId ? prisma.project.findMany({
                 where: { businessId, status: 'ACTIVE' },
                 select: { id: true, code: true, name: true, clientId: true },
                 orderBy: { name: 'asc' }
-            }) : []
+            }) : [],
+            businessProfileService.getProfile(businessId)
         ]);
 
         res.render('purchases/po-editor', {
@@ -138,6 +146,7 @@ async function renderPurchaseOrderDetail(req, res, next) {
             suppliers,
             units,
             projects,
+            businessStateCode: profile?.stateCode || profile?.gstin?.slice(0, 2) || '',
             preselectedProjectId: po.projectId,
             csrfToken: req.session ? req.session.csrfToken : ''
         });
@@ -149,7 +158,8 @@ async function renderPurchaseOrderDetail(req, res, next) {
 async function voidPurchaseOrder(req, res, next) {
     try {
         const userId = req.user?.id || req.session?.user?.id || req.session?.userId || 1;
-        const po = await purchaseOrderService.voidPurchaseOrder(req.params.id, userId, req.body.reason);
+        const businessId = req.businessId || req.session?.activeBusinessId;
+        const po = await purchaseOrderService.voidPurchaseOrder(req.params.id, userId, req.body.reason, businessId);
         return res.status(200).json({ success: true, purchaseOrder: po });
     } catch (err) {
         return handleError(err, res, next);
@@ -188,7 +198,8 @@ async function renderSupplierBills(req, res, next) {
 
 async function renderNewSupplierBill(req, res, next) {
     try {
-        const suppliers = await supplierService.searchSuppliers('', 100);
+        const businessId = req.businessId || req.session?.activeBusinessId;
+        const suppliers = await supplierService.searchSuppliers('', 100, businessId, { activeOnly: true });
         const units = await unitService.getActiveUnits();
 
         res.render('purchases/bill-editor', {

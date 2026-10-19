@@ -167,7 +167,12 @@ describe('Phase 4: Purchases, Supplier Bills, Expenses & Financial Reporting Tes
         });
 
         it('2.3 allows voiding an active purchase order', async () => {
-            const voided = await purchaseOrderService.voidPurchaseOrder(createdPo.id, testUser.id, 'Supplier out of stock');
+            const voided = await purchaseOrderService.voidPurchaseOrder(
+                createdPo.id,
+                testUser.id,
+                'Supplier out of stock',
+                createdPo.businessId
+            );
             assert.equal(voided.status, 'VOID');
             assert.ok(voided.remarks.includes('Supplier out of stock'));
         });
