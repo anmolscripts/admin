@@ -31,6 +31,13 @@ const ALLOWED_DIRECTORIES = [
 ];
 
 const RELEASE_SCRIPT_FILES = new Set([
+    'scripts/install-prod.js',
+    'scripts/install-migrate.js',
+    'scripts/lib/production-install.js',
+    'scripts/lib/install-dependencies.js',
+    'scripts/lib/env-manager.js',
+    'scripts/lib/db-manager.js',
+    'scripts/lib/verifier.js',
     'scripts/db-upgrade.js',
     'scripts/doctor.js',
     'scripts/lib/env-file.js',
@@ -56,6 +63,7 @@ function isForbidden(relPath) {
     if (norm === 'assets/uploads/avatars/.gitkeep') return false;
     if (/(^|\/)\.env[^/]*(?:\/|$)/i.test(norm)) return true;
     if (/^docs\/DATABASE_OPERATIONS\.md$/i.test(norm)) return true;
+    if (norm === 'prisma/seed.js' || norm.startsWith('prisma/seed/development')) return true;
     if (norm.startsWith('scripts/') && !RELEASE_SCRIPT_FILES.has(norm) &&
         ![...RELEASE_SCRIPT_FILES].some(file => file.startsWith(`${norm}/`))) return true;
     if (/\.sql$/i.test(norm) && !/^prisma\/migrations\/[^/]+\/migration\.sql$/i.test(norm)) return true;
@@ -110,7 +118,8 @@ function sanitizePackageJson(packageJson) {
     result.scripts = {
         start: 'node app/server.js',
         doctor: 'node scripts/doctor.js',
-        'install:migrate': 'node scripts/db-upgrade.js'
+        'install:prod': 'node scripts/install-prod.js',
+        'install:migrate': 'node scripts/install-migrate.js'
     };
     return result;
 }

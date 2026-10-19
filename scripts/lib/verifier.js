@@ -65,8 +65,8 @@ async function verifyDatabaseState(prisma, mode) {
     const itemsCount = await prisma.item.count();
     checks.push({
         name: 'Item Master Data',
-        pass: isProduction ? (itemsCount === 21) : (itemsCount >= 21),
-        detail: `Found ${itemsCount} items (required: ${isProduction ? 'exact 21' : '>= 21'})`
+        pass: isProduction ? (itemsCount === 0) : (itemsCount >= 21),
+        detail: `Found ${itemsCount} items (required: ${isProduction ? '0 for fresh production' : '>= 21'})`
     });
 
     // 5. Initial Administrator (OWNER role)

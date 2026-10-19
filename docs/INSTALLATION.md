@@ -8,24 +8,39 @@ Zero-friction, cross-platform installation and setup guide for development and p
 
 ### Development
 ```bash
-npm run dev:install
+npm run install:dev
 npm run dev
 ```
 
 ### Production
-For an already initialized database with an active OWNER, after approved migration
-review and a verified backup:
+This is a destructive fresh installation, not an upgrade:
 
 ```bash
-npm run install:prod -- --confirm-db=YOUR_APPROVED_DATABASE --backup-confirmed
+npm run install:prod
 ```
 
-This preserves `.env`, accounts, roles and business records. It uses the guarded
-migration workflow and does not seed or create databases. Uncommitted migrations
-remain blocked. Fresh database/admin provisioning requires a separately reviewed
-bootstrap; the old automatic production seed path is disabled. Install dependencies
-separately when needed. Application startup and business workflows need independent
-verification after the procedure succeeds.
+The interactive installer collects configuration/admin credentials and asks you to
+type `RESET <database-name>`. It creates a missing database or clears an existing
+one, applies local migrations and creates an administrator plus system roles,
+permissions, units and accounts. It inserts no sample items, clients, invoices,
+payments or business profiles. Non-interactive runs require both
+`--confirm-db=<database-name>` and `--reset-confirmed`, plus explicit admin credentials.
+Protected databases are refused. Stop other application writers before resetting.
+
+| Command | Database behavior | Packages/data |
+| --- | --- | --- |
+| `npm run install:dev` | Create/reset the selected database | Development packages and sample data |
+| `npm run install:prod` | Create/reset the selected database | Production packages; administrator/system records only |
+| `npm run install:migrate` | Forward upgrade; preserve records | Production packages; no reset or seed |
+| `npm run build` | No database access | Isolated production artifact, with both production install commands |
+
+The migration command prompts interactively for the exact target and verified-backup
+acknowledgement. Its committed-provenance and trustworthy-history guards remain.
+Fresh installs use local migration SQL because the old schema/data are intentionally
+discarded; they do not use the upgrade baseline/provenance gate. Production artifacts
+exclude development setup, sample-data seeding and tests. Startup and business workflows
+still require environment-specific verification. Development installs do not touch a
+separate test database or run the full test suite by default.
 
 ---
 
@@ -73,14 +88,14 @@ separate guarded workflow described above:
 
 ## Environment Seed Policies
 
-The table below describes the legacy seed functions only. Production installation
-no longer invokes them, because they can change existing roles and accounts.
+The table below describes bootstrap data. These functions run after fresh resets,
+never during migration-only upgrades. Production excludes the priced item catalog.
 
-| Data Category | Development Seed (`dev:install`) | Legacy Production Seed (not invoked by installer) |
+| Data Category | Development Seed (`install:dev`) | Production Bootstrap (`install:prod`) |
 | :--- | :--- | :--- |
 | **System Roles & Permissions** | ✅ OWNER, ADMIN, STAFF + 56 permissions | ✅ OWNER, ADMIN, STAFF + 56 permissions |
 | **Unit Master (13 units)** | ✅ Standard predefined units | ✅ Standard predefined units |
-| **Item Master (21 items)** | ✅ Standard predefined items | ✅ Standard predefined items |
+| **Sample Items (21 items)** | ✅ Predefined items | ❌ No sample items |
 | **Initial Administrator** | ✅ OWNER admin (`admin@email.com` or custom) | ✅ Explicitly provisioned OWNER admin |
 | **Demo Invoices & Quotations** | ✅ Sample records for local testing | ❌ **STRICTLY EXCLUDED** (Hard-fail) |
 | **Demo Clients** | ✅ Sample clients (TCS, Infosys) | ❌ **STRICTLY EXCLUDED** |
@@ -105,11 +120,11 @@ If run in an interactive terminal, the installer prompts for:
 In non-interactive mode (e.g. CI or scripts), defaults or flags (`--db-host`, `--db-port`, `--db-user`, `--db-password`, `--db-name`, `--admin-email`, `--admin-password`) are consumed without prompting.
 
 ### In Production (`npm run prod:install`)
-No configuration or password prompts are used. The existing `.env` is read without
-rewriting it. Supply only exact target confirmation and backup acknowledgement.
-Credential/overwrite options are refused without printing their values. An active
-OWNER must already exist; missing or disabled administrators require separate
-approved account recovery, not automatic promotion or password replacement.
+Configuration and initial administrator credentials are collected. Passwords are
+not echoed. Database host, port and name appear in an explicit destructive-reset
+confirmation. Configuration is persisted only after confirmation; production mode
+is written and custom settings are retained. The fresh bootstrap refuses leftover
+users/business data instead of silently promoting or overwriting an account.
 
 ---
 
@@ -210,7 +225,7 @@ The Doctor command checks:
 
 ### Upgrading an Existing Installation
 
-Do not use `dev:install` or `db:reset` to upgrade an existing
+Do not use `install:dev`, `install:prod` or `db:reset` to upgrade an existing
 customer database. Stop application writes, create and verify a database backup,
 then run the guarded forward-only migration command with the exact database
 name:
@@ -221,8 +236,8 @@ npm run install:migrate -- --confirm-db=<exact-database-name> --backup-confirmed
 
 The command refuses missing/mismatched targets and protected database names. It
 creates a missing database only with explicit `--create-database`; it never resets
-schemas, seeds data, or uses `db push`. The production installer wrapper additionally
-requires an initialized OWNER and does not allow database creation. MariaDB
+schemas, seeds data, or uses `db push`. Production fresh installation is a separate,
+explicitly destructive command. MariaDB
 DDL can implicitly commit, so a failed migration is not guaranteed to roll back
 as a unit; follow the recovery plan in the upgrade guide if the resulting schema
 is uncertain.

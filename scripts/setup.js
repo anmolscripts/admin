@@ -61,10 +61,9 @@ async function main() {
     const mode = cliArgs.mode || (process.env.NODE_ENV === 'production' ? 'production' : 'development');
     const isProduction = mode === 'production';
     const isInteractive = !cliArgs['non-interactive'] && process.stdin.isTTY;
-    const skipTests = Boolean(cliArgs['skip-tests']);
+    const skipTests = !cliArgs['run-tests'] || Boolean(cliArgs['skip-tests']);
 
-    // Existing production installations must never enter the development/fresh
-    // seed flow below. In particular, business records are not demo indicators.
+    // Production uses the fresh installer shared with the release artifact.
     if (isProduction) {
         return require('./lib/production-install').installProduction(process.argv.slice(2));
     }
@@ -116,8 +115,8 @@ async function main() {
     const nodeModulesPath = path.join(ROOT_DIR, 'node_modules');
     const dependenciesInstalled = fs.existsSync(nodeModulesPath) && fs.existsSync(path.join(nodeModulesPath, '@prisma', 'client'));
 
-    if (dependenciesInstalled && !cliArgs.reinstall) {
-        logger.pass('Project dependencies already installed. (Pass --reinstall to force re-install).');
+    if (dependenciesInstalled && cliArgs['skip-dependencies']) {
+        logger.pass('Dependency installation explicitly skipped.');
     } else {
         const installCmd = hasLockfile ? 'ci' : 'install';
         logger.step(`Running ${npmCmd} ${installCmd} ...`);
@@ -161,7 +160,8 @@ async function main() {
             isInteractive,
             overwriteEnv: Boolean(cliArgs.force || cliArgs['overwrite-env']),
             cliArgs,
-            rootPath: ROOT_DIR
+            rootPath: ROOT_DIR,
+            deferWrite: true
         });
     } catch (err) {
         logger.fail(logger.formatError(err));
@@ -169,11 +169,7 @@ async function main() {
     }
 
     const { config: envConfig, adminCredentials, envWritten } = envResult;
-    if (envWritten) {
-        logger.pass('.env file created and configured.');
-    } else {
-        logger.pass('Using existing .env configuration.');
-    }
+    logger.pass('Configuration prepared; it will be saved after reset confirmation.');
 
     // Set process.env from config for subsequent child processes and drivers
     for (const [key, val] of Object.entries(envConfig)) {
@@ -188,7 +184,15 @@ async function main() {
             logger.fail(`Refusing to reset protected development database '${envConfig.DATABASE_NAME}'.`);
             process.exit(1);
         }
-        try {
+        const target = require('./db-upgrade').parseDatabaseTarget(envConfig.DATABASE_URL, envConfig.DATABASE_NAME);
+        require('./lib/migration-preflight').connectionOptions(envConfig, target);
+        if (cliArgs['confirm-db'] && cliArgs['confirm-db'] !== target.database) throw new Error('Reset confirmation does not match configured database.');
+        const confirmed = isInteractive
+            ? await require('./lib/production-install').confirmReset(target)
+            : cliArgs['confirm-db'] === target.database && cliArgs['reset-confirmed'] === true;
+        if (!confirmed) throw new Error('Development reset cancelled. Use --confirm-db=<exact-name> --reset-confirmed for non-interactive installation.');
+        envResult.persist();
+        if (cliArgs['with-test-database']) try {
             testDatabaseConfig = readTestDatabaseConfig(ROOT_DIR);
         } catch (err) {
             logger.fail(logger.formatError(err));
@@ -221,7 +225,7 @@ async function main() {
         process.exit(1);
     }
 
-    if (!isProduction) {
+    if (testDatabaseConfig) {
         logger.step(`Ensuring configured test database '${testDatabaseConfig.database}' exists on ${testDatabaseConfig.host}:${testDatabaseConfig.port}...`);
         try {
             const testDbResult = await ensureDatabaseExists({
@@ -261,8 +265,7 @@ async function main() {
         const migrateEnv = {
             ...process.env,
             DATABASE_URL: envConfig.DATABASE_URL,
-            SEED_ADMIN_PASSWORD: adminCredentials.password,
-            PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION: 'yes'
+            SEED_ADMIN_PASSWORD: adminCredentials.password
         };
         const migrateRes = runPrismaCommand(['migrate', 'reset', '--force'], migrateEnv);
         if (!migrateRes.ok) {
@@ -271,6 +274,7 @@ async function main() {
         }
         logger.pass('Database reset and migrations applied successfully.');
 
+        if (testDatabaseConfig) {
         logger.step(`Applying migrations to configured test database ${testDatabaseConfig.database}...`);
         const testMigrateRes = runPrismaCommand(['migrate', 'deploy'], {
             ...process.env,
@@ -280,14 +284,14 @@ async function main() {
             DATABASE_PORT: testDatabaseConfig.port,
             DATABASE_USER: testDatabaseConfig.user,
             DATABASE_PASSWORD: testDatabaseConfig.password,
-            NODE_ENV: 'test',
-            PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION: 'yes'
+            NODE_ENV: 'test'
         });
         if (!testMigrateRes.ok) {
             logger.fail(`Test database migration failed:\n${logger.formatError(testMigrateRes.error || testMigrateRes.stderr)}`);
             process.exit(1);
         }
         logger.pass('Test database migrations applied successfully.');
+        }
     } else {
         logger.step('Executing prisma migrate deploy...');
         const migrateRes = runPrismaCommand(['migrate', 'deploy'], { DATABASE_URL: envConfig.DATABASE_URL });

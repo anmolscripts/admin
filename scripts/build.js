@@ -184,7 +184,8 @@ function build() {
         if (!migrationSource.allCommitted) console.log('Review candidate only: uncommitted migrations block install:migrate. Commit reviewed migrations and rebuild before installation.');
         return candidatePath;
     } finally {
-        fs.rmSync(stageDirectory, { recursive: true, force: true });
+        // Retain this isolated stage for review; never clean unrelated temp paths.
+        console.log(`Isolated verification stage retained: ${stageDirectory}`);
     }
 }
 

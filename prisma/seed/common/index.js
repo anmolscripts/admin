@@ -136,7 +136,7 @@ const MASTER_ITEMS = [
  * @param {Object} [adminUser=null] - Optional admin user to associate createdBy
  * @returns {Promise<{ unitsCreated: number, itemsCreated: number }>}
  */
-async function seedCommon(prisma, adminUser = null) {
+async function seedCommon(prisma, adminUser = null, { includeItems = true } = {}) {
     // 1. RBAC Permissions and Default System Roles
     await rbacService.seedPermissionsAndRoles();
 
@@ -162,7 +162,7 @@ async function seedCommon(prisma, adminUser = null) {
 
     // 3. Item Master (21 predefined items)
     let itemsCreated = 0;
-    for (const item of MASTER_ITEMS) {
+    for (const item of includeItems ? MASTER_ITEMS : []) {
         const trimmedName = item.name.trim();
         const existingItem = await prisma.item.findFirst({
             where: { name: trimmedName }
@@ -184,7 +184,8 @@ async function seedCommon(prisma, adminUser = null) {
     }
 
     // 4. Standard Chart of Accounts Master
-    const accountsCreated = await ensureSystemAccounts(adminUser ? adminUser.id : null);
+    // Committed fresh-install migrations create the initial business with ID 1.
+    const accountsCreated = await ensureSystemAccounts(adminUser ? adminUser.id : null, 1, prisma);
 
     return { unitsCreated, itemsCreated, accountsCreated };
 }

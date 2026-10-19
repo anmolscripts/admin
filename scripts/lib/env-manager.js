@@ -75,6 +75,19 @@ async function collectConfiguration(opts) {
     const rootPath = opts.rootPath || process.cwd();
     const envPath = path.join(rootPath, '.env');
     const existingEnv = fs.existsSync(envPath) ? parseEnvFile(envPath) : {};
+    let existingUrl;
+    if (existingEnv.DATABASE_URL) {
+        try {
+            existingUrl = new URL(existingEnv.DATABASE_URL);
+            const derived = { DATABASE_HOST: existingUrl.hostname, DATABASE_PORT: existingUrl.port || '3306',
+                DATABASE_USER: decodeURIComponent(existingUrl.username), DATABASE_PASSWORD: decodeURIComponent(existingUrl.password),
+                DATABASE_NAME: decodeURIComponent(existingUrl.pathname.slice(1)) };
+            for (const [key, value] of Object.entries(derived)) {
+                if (existingEnv[key] !== undefined && String(existingEnv[key]) !== String(value)) throw new Error('Conflicting database configuration');
+                if (existingEnv[key] === undefined) existingEnv[key] = value;
+            }
+        } catch (_) { throw new Error('Existing DATABASE_URL is invalid; configuration was not changed.'); }
+    }
     const isProduction = opts.mode === 'production';
     const isInteractive = opts.isInteractive && process.stdin.isTTY;
 
@@ -137,7 +150,7 @@ async function collectConfiguration(opts) {
         }
 
         // Determine DB Name
-        const defaultDbName = isProduction ? 'spark_admin_prod' : 'admin';
+        const defaultDbName = isProduction ? 'spark_app' : 'spark_admin_dev';
         const dbName = cliArgs['db-name']
             || process.env.DATABASE_NAME
             || existingEnv.DATABASE_NAME
@@ -146,7 +159,7 @@ async function collectConfiguration(opts) {
         // Construct DATABASE_URL
         const encodedUser = encodeURIComponent(dbUser);
         const encodedPass = encodeURIComponent(dbPassword);
-        const databaseUrl = `mysql://${encodedUser}:${encodedPass}@${dbHost}:${dbPort}/${dbName}`;
+        const databaseUrl = `mysql://${encodedUser}:${encodedPass}@${dbHost}:${dbPort}/${dbName}${existingUrl?.search || ''}`;
 
         // Port & Host
         const appPort = cliArgs.port
@@ -222,6 +235,7 @@ async function collectConfiguration(opts) {
         }
 
         const config = {
+            ...existingEnv,
             NODE_ENV: opts.mode,
             PORT: appPort,
             HOST: appHost,
@@ -239,14 +253,15 @@ async function collectConfiguration(opts) {
             DATABASE_URL: `"${databaseUrl}"`,
             SEED_ADMIN_EMAIL: adminEmail
         };
+        if (isProduction) delete config.SEED_ADMIN_PASSWORD;
 
         // Write .env if required
-        if (shouldWriteEnv) {
+        if (shouldWriteEnv && !opts.deferWrite) {
             writeEnvFile(envPath, config);
         }
 
         // In development mode, ensure .env.test exists
-        if (!isProduction) {
+        if (!isProduction && !opts.deferWrite) {
             const envTestPath = path.join(rootPath, '.env.test');
             if (!fs.existsSync(envTestPath) || shouldWriteEnv) {
                 writeTestEnvFile(envTestPath, {
@@ -265,7 +280,8 @@ async function collectConfiguration(opts) {
                 email: adminEmail,
                 password: adminPassword
             },
-            envWritten: shouldWriteEnv
+            envWritten: shouldWriteEnv,
+            persist: () => writeEnvFile(envPath, config)
         };
     } finally {
         if (rl) {
@@ -373,6 +389,13 @@ function writeEnvFile(filePath, config) {
         lines.push(`SEED_ADMIN_PASSWORD=${config.SEED_ADMIN_PASSWORD}`);
     }
 
+    const writtenKeys = new Set(lines.map(line => line.match(/^([A-Z_][A-Z0-9_]*)=/)?.[1]).filter(Boolean));
+    for (const [key, value] of Object.entries(config)) {
+        if (!writtenKeys.has(key) && key !== 'SEED_ADMIN_PASSWORD' && /^[A-Z_][A-Z0-9_]*$/.test(key)) {
+            if (/[\r\n']/.test(String(value))) throw new Error('Complex environment values require manual configuration.');
+            lines.push(`${key}='${String(value)}'`);
+        }
+    }
     lines.push('');
 
     fs.writeFileSync(filePath, lines.join('\n'), { mode: 0o600 });

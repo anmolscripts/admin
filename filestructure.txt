@@ -1061,11 +1061,14 @@
     |-- inspect_financial_ground_truth.js
     |-- inspect_payment_journals.js
     |-- inspect_users_safe.js
+    |-- install-migrate.js
+    |-- install-prod.js
     |-- invalidate_test_session.js
     |-- lib
         |-- db-manager.js
         |-- env-file.js
         |-- env-manager.js
+        |-- install-dependencies.js
         |-- logger.js
         |-- migration-preflight.js
         |-- prerequisites.js

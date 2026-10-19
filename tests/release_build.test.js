@@ -77,7 +77,7 @@ describe('release build and migration safeguards', () => {
 
     it('publishes only safe runtime commands in the release manifest', () => {
         const release = sanitizePackageManifest(packageJson);
-        assert.deepEqual(Object.keys(release.scripts), ['start', 'doctor', 'install:migrate']);
+        assert.deepEqual(Object.keys(release.scripts), ['start', 'doctor', 'install:prod', 'install:migrate']);
         assert.equal(release.scripts['db:reset'], undefined);
         assert.deepEqual(release.dependencies, packageJson.dependencies);
     });
@@ -102,9 +102,13 @@ describe('release build and migration safeguards', () => {
         for (const required of [
             'scripts/db-upgrade.js', 'scripts/lib/migration-preflight.js',
             'scripts/lib/env-file.js', 'scripts/lib/logger.js',
-            'scripts/lib/prerequisites.js', 'scripts/lib/prisma-cli.js'
+            'scripts/lib/prerequisites.js', 'scripts/lib/prisma-cli.js',
+            'scripts/install-prod.js', 'scripts/install-migrate.js', 'scripts/lib/production-install.js',
+            'scripts/lib/install-dependencies.js', 'prisma/seed/production/index.js', 'prisma/seed/common/index.js'
         ]) assert.ok(buildFileList().includes(required), `${required} must be shipped`);
-        assert.equal(isForbidden('scripts/lib/db-manager.js'), true);
+        assert.equal(isForbidden('scripts/lib/db-manager.js'), false);
+        assert.equal(isForbidden('prisma/seed/development/index.js'), true);
+        assert.equal(isForbidden('scripts/setup.js'), true);
         assert.equal(verifyPackaging().ok, true);
     });
 });

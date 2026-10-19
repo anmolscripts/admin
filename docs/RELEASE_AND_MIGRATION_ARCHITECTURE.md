@@ -1,28 +1,44 @@
 # Release Build and Database Migration Architecture
 
-## Production installer correction
+## Current command contract (supersedes earlier installer checkpoints)
 
-`install:prod` now routes directly to `scripts/lib/production-install.js` before
-environment generation, database creation or seed code. It accepts existing business
-records, preserves the complete `.env`, requires production mode, target confirmation,
-backup acknowledgement, committed migration provenance, trustworthy history and an
-active OWNER. It then uses the existing guarded migration-only orchestrator. It never
-creates/promotes/reactivates users, reseeds permissions, or cleans business data.
-Fresh administrator provisioning is deliberately blocked pending a separately reviewed
-bootstrap. This supersedes the former automatic production bootstrap behavior.
+The user explicitly clarified that both fresh-install commands are destructive:
+`install:dev` creates/resets the selected database and seeds sample data;
+`install:prod` creates/resets it and bootstraps only an administrator/system records.
+Production has zero sample catalog items, clients, invoices, payments and profiles.
+Both require exact destructive confirmation and retain protected-database guards.
+Development no longer writes a separate test database or runs tests unless requested.
+
+`install:migrate` installs production packages and delegates to the existing guarded
+forward-only upgrade: no reset, cleanup, seed or administrator mutation. Target,
+verified-backup, provenance and baseline checks remain. Plain interactive invocation
+prompts for target and backup acknowledgement; non-interactive flags remain supported.
+Fresh resets intentionally use local migration SQL without the upgrade provenance gate;
+existing history/data are deliberately removed, not guessed or baselined.
+
+`build` produces an isolated candidate with both production installers and their helpers,
+Prisma configuration/client-generation requirements, migrations, views and assets. It
+excludes development setup, sample-data seed modules, tests, secrets and local uploads.
+Clean installation uses production dependencies only. No JavaScript minification or
+performance improvement is claimed without measurements. Verification stages are retained
+for inspection; existing release archives are not replaced.
 
 Password prompts now suppress readline echo using a single input consumer; summary
 output no longer prints passwords. Unknown production CLI options are rejected without
 echoing possible credential values.
 
-Verification: 44 focused tests passed, including the real production entrypoint routed
-through an injected handler, the new production orchestration with real migration
-preflight/orchestration and mocked SQL/CLI, repeated populated upgrades, configuration
-preservation, failure stopping, protected/wrong targets, legacy history and credential
-output. Syntax and diff checks passed. No real installer, migration, database write,
-seed, build or deployment ran during this correction. Actual Windows terminal behavior,
-live SQL upgrades, startup, restoration and application workflows remain unverified.
-Current uncommitted migration provenance remains a release blocker.
+Verification: 45 focused tests passed covering fresh create/reset/repeat and cancellation,
+failure stopping, wrong/protected targets, demo-vs-production bootstrap, URL-only and
+conflicting configuration, password masking, dependency-install ordering and preserved-data
+migration orchestration. SQL/CLI effects were mocked. The development entrypoint was tested
+with injected dependencies; actual seed policy was tested without a database.
+Build passed clean production npm installation, Prisma validate/generate, EJS compilation
+and production server/static-asset smoke checks with mocked Prisma and blocked outbound
+connections. No real reset, migration, seed or database write was run. Actual Windows
+terminal input, live reset/replay, data-preserving upgrades, restore and business workflows
+remain unverified. An approved disposable database/staging environment is still needed.
+The workspace's migration provenance now reports committed at HEAD 1009019; this agent
+did not commit or stage changes. Earlier uncommitted-provenance notes are historical.
 
 ## Scope and audit basis
 

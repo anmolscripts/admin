@@ -16,7 +16,7 @@ function getSaltRounds() {
  * Strictly provisions ONLY:
  * 1. System RBAC (Roles, Permissions, RolePermissions)
  * 2. Predefined Unit Master (13 units)
- * 3. Predefined Item Master (21 items)
+ * 3. Business-scoped chart of accounts (no sample items)
  * 4. Explicitly provisioned initial OWNER administrator
  *
  * NEVER seeds business profile, clients, quotations, invoices, payments, revisions, or activity logs.
@@ -34,14 +34,24 @@ async function seedProduction(prisma, options = {}) {
         throw new Error('[FATAL SEED POLICY VIOLATION] Demo data seeding is strictly prohibited in production mode!');
     }
 
+    const bootstrapEmail = options.adminEmail || process.env.SEED_ADMIN_EMAIL;
+    const bootstrapPassword = options.adminPassword || process.env.SEED_ADMIN_PASSWORD;
+    if (!bootstrapEmail || !bootstrapEmail.includes('@') || !bootstrapPassword || bootstrapPassword.length < 8) {
+        throw new Error('Fresh production bootstrap requires explicit administrator credentials.');
+    }
+    // This module must not become an upgrade or account-recovery mechanism.
+    for (const model of ['user', 'client', 'invoice', 'payment', 'businessProfile']) {
+        if (await prisma[model].count()) throw new Error('Production bootstrap requires a freshly reset database; existing records were preserved.');
+    }
+
     console.log('================================================================');
     console.log('[SEED POLICY] PRODUCTION SEED INITIATED');
-    console.log('[SEED POLICY] Permitted seeds: RBAC roles/permissions, OWNER admin, units, items');
+    console.log('[SEED POLICY] Permitted seeds: RBAC roles/permissions, OWNER admin, units, accounts; no sample items');
     console.log('[SEED POLICY] Strictly excluded: business profile, clients, invoices, quotations, payments, revisions, logs');
     console.log('================================================================');
 
-    // 1. Seed RBAC and Master Data (units + items)
-    await seedCommon(prisma, null);
+    // 1. Seed required system records, without the sample item catalog.
+    await seedCommon(prisma, null, { includeItems: false });
 
     const ownerRole = await prisma.role.findUnique({ where: { name: 'OWNER' } });
     if (!ownerRole) {
@@ -49,16 +59,12 @@ async function seedProduction(prisma, options = {}) {
     }
 
     // 2. Initial OWNER Administrator
-    const email = options.adminEmail !== undefined
-        ? options.adminEmail
-        : (process.env.SEED_ADMIN_EMAIL || 'admin@email.com');
+    const email = bootstrapEmail;
 
     let admin = email ? await prisma.user.findUnique({ where: { email } }) : null;
 
     if (!admin) {
-        const password = options.adminPassword !== undefined
-            ? options.adminPassword
-            : process.env.SEED_ADMIN_PASSWORD;
+        const password = bootstrapPassword;
 
         if (options.requireAdmin === true || (options.adminEmail && !password)) {
             if (!email) {
@@ -87,15 +93,7 @@ async function seedProduction(prisma, options = {}) {
             console.log('[SEED POLICY] No password provided for initial admin; skipping admin creation.');
         }
     } else {
-        if (admin.roleId !== ownerRole.id) {
-            admin = await prisma.user.update({
-                where: { id: admin.id },
-                data: { roleId: ownerRole.id, status: 'ACTIVE', active: true }
-            });
-            console.log(`[SEED POLICY] Updated existing user with OWNER role: ${email}`);
-        } else {
-            console.log(`[SEED POLICY] Production administrator already exists with OWNER role: ${email}`);
-        }
+        throw new Error('An administrator account appeared during bootstrap; refusing to overwrite or promote it.');
     }
 
     // Associate admin with unowned units and items if available
