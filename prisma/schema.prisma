@@ -1566,6 +1566,8 @@ model ProjectContractorWorkOrder {
 
 model GoodsReceipt {
   id                    Int                @id @default(autoincrement())
+  requestKey            String?            @db.VarChar(100)
+  requestHash           String?            @db.Char(64)
   receiptNumber         String             @db.VarChar(50)
   businessId            Int
   business              Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
@@ -1588,6 +1590,7 @@ model GoodsReceipt {
   items                 GoodsReceiptItem[]
 
   @@unique([businessId, receiptNumber])
+  @@unique([businessId, requestKey])
   @@index([businessId])
   @@index([purchaseOrderId])
   @@index([supplierId])
