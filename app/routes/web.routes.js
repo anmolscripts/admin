@@ -100,7 +100,7 @@ router.get('/documents/new', requireAuth, requirePermission('DOCUMENTS', 'CREATE
                 });
             }
             copyData = await invoiceService.copyDocument(copyFromId);
-            const sourceDoc = await invoiceService.getInvoiceById(copyFromId);
+            const sourceDoc = await invoiceService.getInvoiceById(copyFromId, req.businessId);
             copyOfNumber = sourceDoc.invoiceNumber;
             documentType = copyData.documentType;
         } else {
@@ -228,7 +228,7 @@ router.get('/documents/:id/edit', requireAuth, requirePermission('DOCUMENTS', 'E
             });
         }
 
-        const doc = await invoiceService.getInvoiceById(id);
+        const doc = await invoiceService.getInvoiceById(id, req.businessId);
 
         if (doc.status === 'VOID') {
             return res.status(400).render('errors/500', {
@@ -292,7 +292,7 @@ router.get('/documents/:id/print', requireAuth, requirePermission('DOCUMENTS', '
             });
         }
 
-        const doc = await invoiceService.getInvoiceById(id);
+        const doc = await invoiceService.getInvoiceById(id, req.businessId);
         const docBizId = doc.businessId || req.businessId;
         const profile = await businessProfileService.getProfile(docBizId);
         const activeTemplates = templateService.getActiveTemplates(docBizId);
@@ -344,7 +344,7 @@ router.get('/documents/:id', requireAuth, requirePermission('DOCUMENTS', 'VIEW')
             });
         }
 
-        const doc = await invoiceService.getInvoiceById(id);
+        const doc = await invoiceService.getInvoiceById(id, req.businessId);
         const isQuotation = doc.documentType === 'QUOTATION';
         let accounting = null;
         if (!isQuotation) {
@@ -661,7 +661,7 @@ router.get('/credit-debit-notes/new', requireAuth, requirePermission('CREDIT_NOT
         if (req.query.invoiceId) {
             const invId = parseInt(req.query.invoiceId, 10);
             if (!isNaN(invId) && invId > 0) {
-                invoice = await invoiceService.getInvoiceById(invId);
+                invoice = await invoiceService.getInvoiceById(invId, req.businessId);
             }
         }
 

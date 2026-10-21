@@ -229,12 +229,13 @@ async function changePassword(userId, { currentPassword, newPassword, confirmPas
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 12);
-    await prisma.user.update({
-        where: { id },
+    const updated = await prisma.user.updateMany({
+        where: { id, password: user.password },
         data: { password: hashedPassword }
     });
+    if (!updated.count) throw new ConflictError('Password changed concurrently. Sign in again before retrying.');
 
-    return { success: true, message: 'Password changed successfully.' };
+    return { success: true, message: 'Password changed successfully.', credentialVersion: require('./auth.service').getCredentialVersion({ id, password: hashedPassword }) };
 }
 
 module.exports = {

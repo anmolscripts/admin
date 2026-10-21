@@ -290,6 +290,27 @@ async function getUserAccessibleBusinesses(userId, userRole = null, options = {}
     }));
 }
 
+async function assertUserBusinessAccess(userId, businessId, selectedBusinessId = businessId, client = prisma) {
+    // Legacy records without a business ID belong to business 1, as in recordDesk.authorized.
+    const ownerBusinessId = Number(businessId || 1);
+    if (ownerBusinessId !== Number(selectedBusinessId || 1)) {
+        throw new BusinessError('Record not found in the authorized business.', 404);
+    }
+    const user = userId && await client.user.findUnique({
+        where: { id: Number(userId) }, select: { role: true, active: true, status: true }
+    });
+    if (!user || !user.active || user.status === 'INACTIVE') {
+        throw new BusinessError('An active authenticated user is required.', 403);
+    }
+    const accessible = await client.business.findFirst({ where: {
+        id: ownerBusinessId, status: 'ACTIVE',
+        ...(user.role === 'ADMIN' ? {} : { memberships: { some: { userId: Number(userId), status: 'ACTIVE' } } })
+    } });
+    if (!accessible) {
+        throw new BusinessError('Access to this business is denied.', 403);
+    }
+}
+
 /**
  * Add or update a user membership in a business.
  */
@@ -587,6 +608,7 @@ module.exports = {
     getBusinessById,
     listBusinesses,
     getUserAccessibleBusinesses,
+    assertUserBusinessAccess,
     getAccessibleBusinesses: getUserAccessibleBusinesses,
     setBusinessMembership,
     addOrUpdateMember: setBusinessMembership,

@@ -41,6 +41,13 @@ To prevent user enumeration via response latency differences between existing an
   - `sameSite: 'lax'`: Protects against cross-site request forgery during cross-origin navigations.
   - `secure: true`: Enforced automatically in `production` environments to ensure cookies travel exclusively over HTTPS.
 
+### Password changes and remembered access
+- Sessions carry an opaque HMAC credential fingerprint, checked against the current password hash on every request. Password hashes are never stored in session data.
+- Changing a password through the profile preserves that initiating session. Other sessions are rejected on their next request; password rotations outside that session invalidate it too.
+- Remembered cookies expire after 30 days, are bound to the credential fingerprint, and reference a revocable record in the configured session store. Production uses its persistent database store.
+- Logout destroys the current session and revokes the presented remembered cookie. Other independent sessions remain valid until expiry or a password change.
+- Older sessions and remembered cookies without these protections require a one-time sign-in when this change is deployed. No schema migration or historical data rewrite is required.
+
 ---
 
 ## 4. CSRF Defense Architecture

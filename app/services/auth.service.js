@@ -1,5 +1,52 @@
 const bcrypt = require('bcrypt');
 const prisma = require('../config/prisma');
+const crypto = require('node:crypto');
+
+function getCredentialVersion(user) {
+    const secret = process.env.SESSION_SECRET || 'spark-admin-dev-secret-key-change-in-prod-32chars';
+    return crypto.createHmac('sha256', secret).update(`credential:${user.id}:${user.password}`).digest('hex');
+}
+
+function rememberSignature(userId, expiresAt, selector, credentialVersion) {
+    const secret = process.env.SESSION_SECRET || 'spark-admin-dev-secret-key-change-in-prod-32chars';
+    return crypto.createHmac('sha256', secret).update(`${userId}:${expiresAt}:${selector}:${credentialVersion}`).digest('hex');
+}
+
+async function createRememberToken(userId, credentialVersion) {
+    const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
+    const selector = crypto.randomBytes(32).toString('hex');
+    const store = require('../config/session').sessionStore;
+    await new Promise((resolve, reject) => store.set(selector, { userId, credentialVersion, cookie: { expires: new Date(expiresAt) } }, error => error ? reject(error) : resolve()));
+    return `${userId}.${expiresAt}.${selector}.${rememberSignature(userId, expiresAt, selector, credentialVersion)}`;
+}
+
+async function verifyRememberToken(token) {
+    if (typeof token !== 'string') return null;
+    const parts = token.split('.');
+    if (parts.length !== 4) return null;
+    const [id, expires, selector, signature] = parts;
+    const userId = Number(id), expiresAt = Number(expires);
+    if (!/^\d+$/.test(id) || !Number.isSafeInteger(userId) || userId <= 0 ||
+        !/^\d+$/.test(expires) || !Number.isSafeInteger(expiresAt) || expiresAt <= Date.now() ||
+        !/^[a-f0-9]{64}$/.test(selector) || !/^[a-f0-9]{64}$/.test(signature)) return null;
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !user.active || user.status === 'INACTIVE') return null;
+    const credentialVersion = getCredentialVersion(user);
+    const expected = rememberSignature(userId, expiresAt, selector, credentialVersion);
+    if (!crypto.timingSafeEqual(Buffer.from(signature, 'hex'), Buffer.from(expected, 'hex'))) return null;
+    const store = require('../config/session').sessionStore;
+    const record = await new Promise((resolve, reject) => store.get(selector, (error, value) => error ? reject(error) : resolve(value)));
+    if (!record || record.userId !== userId || record.credentialVersion !== credentialVersion) return null;
+    return { user: { id: user.id, name: user.name, email: user.email, role: user.role }, credentialVersion, selector };
+}
+
+async function revokeRememberToken(token) {
+    const verified = await verifyRememberToken(token);
+    if (verified) {
+        const store = require('../config/session').sessionStore;
+        await new Promise((resolve, reject) => store.destroy(verified.selector, error => error ? reject(error) : resolve()));
+    }
+}
 
 const DEFAULT_SALT_ROUNDS = 12;
 // Pre-computed dummy bcrypt hash to ensure constant-time response for nonexistent users
@@ -83,6 +130,7 @@ async function authenticateUser(email, password) {
     // Return safe user object excluding password/hash
     return {
         success: true,
+        credentialVersion: getCredentialVersion(user),
         user: {
             id: user.id,
             name: user.name,
@@ -116,5 +164,9 @@ module.exports = {
     normalizeEmail,
     hashPassword,
     authenticateUser,
-    findUserById
+    findUserById,
+    getCredentialVersion,
+    createRememberToken,
+    verifyRememberToken,
+    revokeRememberToken
 };

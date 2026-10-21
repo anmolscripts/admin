@@ -64,9 +64,12 @@ async function createGoodsReceipt(data = {}, userId, authorizedBusinessId) {
     if(requestKey && !/^[A-Za-z0-9._:-]{8,100}$/.test(requestKey)) throw new ValidationError('Invalid receipt request key.');
     const fingerprint=Object.fromEntries(['purchaseOrderId','supplierId','supplierName','projectId','receiptNumber','receiptDate','storeLocation','deliveryChallanNumber','notes','items'].map(key=>[key,data[key]??null]));
     const requestHash=requestKey ? crypto.createHash('sha256').update(JSON.stringify(canonical(fingerprint))).digest('hex') : null;
-    return prisma.$transaction(async (tx) => {
+    const execute = async (tx) => {
         // Keep a consistent business -> PO lock order for keyed and legacy requests.
-        await tx.$queryRawUnsafe('SELECT id FROM businesses WHERE id = ? FOR UPDATE',activeBusinessId);
+        await tx.$queryRawUnsafe('SELECT id FROM businesses WHERE id = ? FOR UPDATE', activeBusinessId);
+        if (typeof businessService.assertUserBusinessAccess === 'function') {
+            await businessService.assertUserBusinessAccess(userId, activeBusinessId, activeBusinessId, tx);
+        }
         if(requestKey) {
             const replay=await tx.goodsReceipt.findFirst({where:{businessId:activeBusinessId,requestKey},include:receiptInclude});
             if(replay) {
@@ -346,7 +349,15 @@ async function createGoodsReceipt(data = {}, userId, authorizedBusinessId) {
                 receivedBy: { select: { id: true, name: true, email: true } }
             }
         });
-    });
+    };
+    for (let attempt = 0; attempt < 3; attempt++) {
+        try { return await prisma.$transaction(execute); }
+        catch (error) {
+            const transient = error.code === 'P2034' || error.code === 1213 || /deadlock|could not serialize access/i.test(error.message);
+            if (!transient || attempt === 2) throw error;
+            await new Promise(resolve => setTimeout(resolve, (attempt + 1) * 25));
+        }
+    }
 }
 
 /**

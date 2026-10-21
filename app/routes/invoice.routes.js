@@ -51,7 +51,11 @@ router.post('/invoices', requirePermission('DOCUMENTS', 'CREATE'), invoiceContro
 router.put('/invoices/:id', requirePermission('DOCUMENTS', 'EDIT'), invoiceController.updateInvoice);
 router.delete('/invoices/:id', requirePermission('DOCUMENTS', 'DELETE'), invoiceController.softDeleteInvoice);
 router.get('/invoices/:id/history', requirePermission('DOCUMENTS', 'VIEW'), invoiceController.getInvoiceHistory);
-router.patch('/invoices/:id/status', requirePermission('DOCUMENTS', 'EDIT'), invoiceController.updateInvoiceStatus);
+router.patch('/invoices/:id/status', (req, res, next) => {
+    const status = typeof req.body?.status === 'string' ? req.body.status.trim().toUpperCase() : '';
+    const action = status === 'DELETED' ? 'DELETE' : status === 'VOID' ? 'VOID' : 'EDIT';
+    return requirePermission('DOCUMENTS', action)(req, res, next);
+}, invoiceController.updateInvoiceStatus);
 router.post('/invoices/:id/restore', requirePermission('DOCUMENTS', 'RESTORE'), invoiceController.restoreInvoice);
 router.post('/invoices/:id/convert', requirePermission('DOCUMENTS', 'CONVERT'), invoiceController.convertQuotation);
 router.post('/invoices/:id/accept', requirePermission('DOCUMENTS', 'EDIT'), invoiceController.acceptQuotation);

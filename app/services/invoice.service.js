@@ -5,6 +5,14 @@ const activityService = require('./activity.service');
 const { ensureFinancialYear } = require('./financialYear.service');
 const numberingService = require('./numbering.service');
 const businessService = require('./business.service');
+const rbacService = require('./rbac.service');
+const { ForbiddenError } = require('./errorTypes');
+
+async function assertDocumentPermission(userId, action) {
+    if (!await rbacService.userHasPermission(userId, 'DOCUMENTS', action)) {
+        throw new ForbiddenError('Access denied: Insufficient document permissions.');
+    }
+}
 
 function stripSensitiveKeys(obj) {
     if (!obj || typeof obj !== 'object') return obj;
@@ -281,7 +289,10 @@ async function generateInvoiceNumber(tx, dateInput, businessId = 1) {
  * Create a new document (QUOTATION or INVOICE) with line items, server-calculated totals, and revision 1.
  */
 async function createDocument(data, userId, meta = {}) {
-    let rawBusinessId = data.businessId || (meta && meta.businessId);
+    let rawBusinessId = meta.businessId || data.businessId;
+    if (meta.businessId && data.businessId && Number(meta.businessId) !== Number(data.businessId)) {
+        throw new ForbiddenError('Document business does not match the authorized business.');
+    }
     let userRole = null;
     if (!rawBusinessId && userId) {
         try {
@@ -304,6 +315,7 @@ async function createDocument(data, userId, meta = {}) {
         throw new ValidationError('A valid businessId is required to create a document.');
     }
     const activeBusinessId = parseInt(rawBusinessId, 10);
+    await businessService.assertUserBusinessAccess(userId, activeBusinessId);
 
     if (data.documentType && !ALLOWED_DOCUMENT_TYPES.includes(data.documentType.toUpperCase())) {
         throw new ValidationError(
@@ -562,9 +574,10 @@ async function createDocument(data, userId, meta = {}) {
         let copySourceDoc = null;
         if (copySourceId && !isNaN(copySourceId)) {
             copySourceDoc = await tx.invoice.findUnique({
-                where: { id: copySourceId },
+                where: { id: copySourceId, businessId: activeBusinessId },
                 select: { id: true, invoiceNumber: true }
             });
+            if (!copySourceDoc) throw new NotFoundError('Copy source not found in the authorized business.');
         }
 
         // Record creation revision (revision 1)
@@ -633,7 +646,8 @@ async function getInvoiceById(id, businessId = null) {
     }
 
     const where = { id: numericId };
-    if (businessId) where.businessId = Number(businessId);
+    if (Number(businessId) === 1) where.OR = [{ businessId: 1 }, { businessId: null }];
+    else if (businessId) where.businessId = Number(businessId);
     const doc = await prisma.invoice.findFirst({
         where,
         include: {
@@ -730,11 +744,17 @@ async function updateInvoice(id, data, userId, meta = {}) {
             throw new NotFoundError(`Document with ID ${numericId} was not found.`);
         }
 
+        await businessService.assertUserBusinessAccess(userId, existing.businessId, meta.businessId || existing.businessId);
+
         if (existing.documentType === 'INVOICE' && existing.financialYear && existing.financialYear.status === 'CLOSED') {
             throw new ValidationError(`Cannot modify invoice in CLOSED Financial Year ${existing.financialYear.code}.`);
         }
 
         const clientId = data.clientId !== undefined ? (data.clientId ? parseInt(data.clientId, 10) : null) : existing.clientId;
+        const clientRecord = clientId && await tx.client.findUnique({ where: { id: clientId } });
+        if (clientId && (!clientRecord || (clientRecord.businessId || 1) !== (existing.businessId || 1))) {
+            throw new NotFoundError('Client not found in the authorized business.');
+        }
 
         let projectId = existing.projectId;
         if (data.projectId !== undefined) {
@@ -1050,6 +1070,8 @@ async function updateInvoiceStatus(id, newStatusInput, userIdOrReason, optionsOr
         return softDeleteDocument(numericId, options.deleteReason, userId, options, meta);
     }
 
+    await assertDocumentPermission(userId, newStatus === 'VOID' ? 'VOID' : 'EDIT');
+
     return prisma.$transaction(async (tx) => {
         const existing = await tx.invoice.findUnique({
             where: { id: numericId },
@@ -1059,6 +1081,8 @@ async function updateInvoiceStatus(id, newStatusInput, userIdOrReason, optionsOr
         if (!existing) {
             throw new NotFoundError(`Document with ID ${numericId} was not found.`);
         }
+
+        await businessService.assertUserBusinessAccess(userId, existing.businessId, meta.businessId || existing.businessId);
 
         if (existing.documentType === 'INVOICE' && existing.financialYear && existing.financialYear.status === 'CLOSED') {
             throw new ValidationError(`Cannot change status of invoice in CLOSED Financial Year ${existing.financialYear.code}.`);
@@ -1188,6 +1212,7 @@ async function softDeleteDocument(id, deleteReason, userId, options = {}, meta =
     }
 
     const effectiveMeta = options.meta || meta || {};
+    await assertDocumentPermission(userId, 'DELETE');
 
     return prisma.$transaction(async (tx) => {
         const existing = await tx.invoice.findUnique({
@@ -1198,6 +1223,8 @@ async function softDeleteDocument(id, deleteReason, userId, options = {}, meta =
         if (!existing) {
             throw new NotFoundError(`Document with ID ${numericId} was not found.`);
         }
+
+        await businessService.assertUserBusinessAccess(userId, existing.businessId, effectiveMeta.businessId || existing.businessId);
 
         if (existing.documentType === 'INVOICE' && existing.financialYear && existing.financialYear.status === 'CLOSED') {
             throw new ValidationError(`Cannot delete invoice in CLOSED Financial Year ${existing.financialYear.code}.`);
@@ -1313,6 +1340,7 @@ async function restoreDocument(id, userId, options = {}, meta = {}) {
     }
 
     const effectiveMeta = options.meta || meta || {};
+    await assertDocumentPermission(userId, 'RESTORE');
 
     return prisma.$transaction(async (tx) => {
         const existing = await tx.invoice.findUnique({
@@ -1323,6 +1351,8 @@ async function restoreDocument(id, userId, options = {}, meta = {}) {
         if (!existing) {
             throw new NotFoundError(`Document with ID ${numericId} was not found.`);
         }
+
+        await businessService.assertUserBusinessAccess(userId, existing.businessId, effectiveMeta.businessId || existing.businessId);
 
         if (existing.documentType === 'INVOICE' && existing.financialYear && existing.financialYear.status === 'CLOSED') {
             throw new ValidationError(`Cannot restore invoice in CLOSED Financial Year ${existing.financialYear.code}.`);
@@ -1448,6 +1478,8 @@ async function convertQuotationToInvoice(quotationId, userId, options = {}, meta
         if (!quotation) {
             throw new NotFoundError(`Quotation with ID ${numericId} was not found.`);
         }
+
+        await businessService.assertUserBusinessAccess(userId, quotation.businessId, effectiveMeta.businessId || options.businessId || quotation.businessId);
 
         if (quotation.documentType !== 'QUOTATION') {
             throw new ValidationError(`Document with ID ${numericId} is an INVOICE, not a QUOTATION.`);
@@ -1671,6 +1703,7 @@ async function acceptQuotation(quotationId, userId, { businessId, version, accep
     const id = parseInt(quotationId, 10);
     const scopedBusinessId = parseInt(businessId, 10);
     if (!id || !userId || !scopedBusinessId) throw new ValidationError('Quotation, authenticated user, and business context are required.');
+    await businessService.assertUserBusinessAccess(userId, scopedBusinessId);
     return prisma.$transaction(async tx => {
         const quotation = await tx.invoice.findFirst({ where: { id, businessId: scopedBusinessId } });
         if (!quotation) throw new NotFoundError('Quotation was not found in the active business.');
@@ -1711,6 +1744,7 @@ async function copyDocument(id, userId = null, meta = {}) {
     }
 
     if (userId) {
+        await businessService.assertUserBusinessAccess(userId, doc.businessId, meta.businessId || doc.businessId);
         const lastRev = await prisma.invoiceRevision.findFirst({
             where: { invoiceId: numericId },
             orderBy: { revisionNo: 'desc' }
@@ -1962,14 +1996,17 @@ async function getDashboardKPIs(businessId = null) {
 /**
  * Retrieve revision history for an invoice.
  */
-async function getInvoiceHistory(id) {
+async function getInvoiceHistory(id, businessId = null) {
     const numericId = parseInt(id, 10);
     if (isNaN(numericId) || numericId <= 0) {
         throw new ValidationError('Invalid document ID.');
     }
 
+    const where = { id: numericId };
+    if (Number(businessId) === 1) where.OR = [{ businessId: 1 }, { businessId: null }];
+    else if (businessId) where.businessId = Number(businessId);
     const existing = await prisma.invoice.findUnique({
-        where: { id: numericId },
+        where,
         select: { id: true, invoiceNumber: true, documentType: true }
     });
 

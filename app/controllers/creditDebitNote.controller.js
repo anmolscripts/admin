@@ -12,7 +12,7 @@ function getClientMeta(req) {
 
 async function listNotes(req, res) {
     try {
-        const result = await creditDebitNoteService.listCreditDebitNotes(req.query);
+        const result = await creditDebitNoteService.listCreditDebitNotes({ ...req.query, businessId: req.businessId });
         return res.json({
             success: true,
             ...result
@@ -42,10 +42,11 @@ async function getNote(req, res) {
 
 async function createNote(req, res) {
     try {
-        const invoiceId = req.params.invoiceId || req.body.invoiceId;
+        const invoiceId = req.params.id || req.body.invoiceId;
         const data = {
             ...req.body,
-            invoiceId
+            invoiceId,
+            businessId: req.businessId
         };
         const userId = req.session?.user?.id || req.user?.id || 1;
         const meta = getClientMeta(req);
@@ -87,7 +88,7 @@ async function voidNote(req, res) {
 async function getInvoiceNotes(req, res) {
     try {
         const invoiceId = parseInt(req.params.id, 10);
-        const result = await creditDebitNoteService.listCreditDebitNotes({ invoiceId });
+        const result = await creditDebitNoteService.listCreditDebitNotes({ invoiceId, businessId: req.businessId });
         return res.json({
             success: true,
             notes: result.notes

@@ -9,6 +9,9 @@ function getRequestMeta(req) {
 }
 
 function handleControllerError(err, res) {
+    if (err.statusCode === 403 || err.statusCode === 404) {
+        return res.status(err.statusCode).json({ success: false, error: err.message });
+    }
     if (err instanceof paymentService.ValidationError || err instanceof postingService.ValidationError) {
         return res.status(400).json({ success: false, error: err.message });
     }
@@ -30,7 +33,7 @@ function handleControllerError(err, res) {
  */
 async function getInvoicePayments(req, res) {
     try {
-        const payments = await paymentService.getInvoicePayments(req.params.id);
+        const payments = await paymentService.getInvoicePayments(req.params.id, req.businessId);
         return res.status(200).json({ success: true, data: payments });
     } catch (err) {
         return handleControllerError(err, res);
@@ -102,7 +105,7 @@ async function postPaymentAccounting(req, res) {
             return res.status(401).json({ success: false, error: 'Authentication required.' });
         }
         const { depositAccountId } = req.body || {};
-        const result = await postingService.postPayment(req.params.id, { userId, depositAccountId });
+        const result = await postingService.postPayment(req.params.id, { userId, depositAccountId, businessId: req.businessId });
         return res.status(200).json({ success: true, ...result });
     } catch (err) {
         return handleControllerError(err, res);

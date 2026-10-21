@@ -1,6 +1,8 @@
 'use strict';
 
 const prisma = require('../config/prisma');
+const crypto = require('node:crypto');
+const { withStockTransaction } = require('./stockTransaction.service');
 const activityService = require('./activity.service');
 const { ensureFinancialYear } = require('./financialYear.service');
 const journalService = require('./journal.service');
@@ -39,13 +41,13 @@ async function generateMovementNumber(tx, options = {}) {
 /**
  * Record a stock movement
  */
-async function recordStockMovement(data = {}, userId) {
+async function recordStockMovement(data = {}, userId, externalTx = null, projectOperation = null) {
     const itemId = parseInt(data.itemId, 10);
     if (isNaN(itemId) || itemId <= 0) {
         throw new ValidationError('Valid item ID is required.');
     }
 
-    const item = await prisma.item.findUnique({ where: { id: itemId } });
+    const item = await (externalTx || prisma).item.findUnique({ where: { id: itemId } });
     if (!item) {
         throw new NotFoundError(`Item with ID ${itemId} not found.`);
     }
@@ -56,7 +58,7 @@ async function recordStockMovement(data = {}, userId) {
     }
 
     const rawQty = parseFloat(data.quantity);
-    if (isNaN(rawQty) || (movementType !== 'ADJUSTMENT' && rawQty <= 0) || rawQty === 0) {
+    if (!Number.isFinite(rawQty) || (movementType !== 'ADJUSTMENT' && rawQty <= 0) || rawQty === 0) {
         throw new ValidationError('Quantity must be a non-zero number.');
     }
 
@@ -65,29 +67,9 @@ async function recordStockMovement(data = {}, userId) {
         throw new ValidationError('Invalid movement date.');
     }
 
-    // Calculate current stock to prevent negative stock on outward movements
-    const summary = await getItemStockSummary(itemId);
     const isOutward = OUTWARD_TYPES.includes(movementType) || (movementType === 'ADJUSTMENT' && rawQty < 0);
-    const netQtyDelta = isOutward ? -Math.abs(rawQty) : Math.abs(rawQty);
-
-    if (summary.currentStock + netQtyDelta < 0) {
-        throw new ValidationError(
-            `Insufficient stock for item "${item.name}". Current: ${summary.currentStock}, Requested reduction: ${Math.abs(netQtyDelta)}.`
-        );
-    }
-
-    // Determine unit cost
-    let unitCost = parseFloat(data.unitCost);
-    if (isNaN(unitCost) || unitCost < 0) {
-        if (isOutward) {
-            unitCost = summary.weightedAverageCost || parseFloat(item.rate) || 0;
-        } else {
-            unitCost = parseFloat(item.rate) || 0;
-        }
-    }
-    unitCost = Math.round(unitCost * 100) / 100;
-
     const absQty = Math.round(Math.abs(rawQty) * 100) / 100;
+    if (absQty === 0) throw new ValidationError('Quantity must be non-zero at two-decimal precision.');
     const signedQty = movementType === 'ADJUSTMENT' ? (rawQty < 0 ? -absQty : absQty) : (isOutward ? -absQty : absQty);
     let rawBizId = data.businessId || item.businessId;
     if (!rawBizId && userId) {
@@ -107,14 +89,58 @@ async function recordStockMovement(data = {}, userId) {
         throw new ValidationError(`Item ${itemId} does not belong to authorized business ${businessId}. Cross-business access denied.`);
     }
 
-    const totalCost = Math.round(Math.abs(signedQty) * unitCost * 100) / 100;
-    const movement = await prisma.$transaction(async (tx) => {
+    const requestKey = data.idempotencyKey ? String(data.idempotencyKey).trim() : null;
+    if (requestKey && !/^[A-Za-z0-9._:-]{8,100}$/.test(requestKey)) throw new ValidationError('Invalid stock request key.');
+    const requestHash = requestKey ? crypto.createHash('sha256').update(JSON.stringify({
+        userId, projectOperation, itemId, movementType, signedQty,
+        unitCost: data.unitCost == null ? null : String(data.unitCost),
+        movementDate: data.movementDate ? movementDate.toISOString().slice(0, 10) : null,
+        projectId: data.projectId ? Number(data.projectId) : null,
+        referenceType: data.referenceType || null, referenceId: data.referenceId ? Number(data.referenceId) : null,
+        storeLocation: data.storeLocation || null, notes: data.notes || null,
+        postToLedger: data.postToLedger === true,
+        debitAccountKey: data.debitAccountKey || 'COGS', creditAccountKey: data.creditAccountKey || 'INVENTORY_ASSET'
+    })).digest('hex') : null;
+    return withStockTransaction(businessId, async tx => {
+        await businessService.assertUserBusinessAccess(userId, businessId, businessId, tx);
+        const item = await tx.item.findUnique({ where: { id: itemId } });
+        if (!item || (item.businessId || 1) !== businessId) throw new NotFoundError('Item not found in the authorized business.');
+        if (data.projectId) {
+            const project = await tx.project.findFirst({ where: { id: Number(data.projectId), businessId } });
+            if (!project) throw new NotFoundError('Project not found in the authorized business.');
+        }
+        if (requestKey) {
+            const replay = await tx.stockMovement.findUnique({ where: { businessId_requestKey: { businessId, requestKey } }, include: { item: true, project: true, createdBy: { select: { id: true, name: true, email: true } } } });
+            if (replay) {
+                if (replay.requestHash !== requestHash) throw new ConflictError('This stock request key was already used with different details.');
+                if (data.postToLedger === true && parseFloat(replay.totalCost) > 0) {
+                    const journalEntry = await tx.journalEntry.findUnique({ where: { idempotencyKey: `STOCK_MOVEMENT:${replay.id}` }, include: { lines: true } });
+                    if (!journalEntry) throw new ConflictError('The original stock request is missing its required journal.');
+                    return { ...replay, journalEntry };
+                }
+                return replay;
+            }
+        }
+        const summary = await getItemStockSummary(itemId, null, tx);
+        if (summary.currentStock + signedQty < 0) {
+            throw new ValidationError(
+                `Insufficient stock for item "${item.name}". Current: ${summary.currentStock}, Requested reduction: ${absQty}.`
+            );
+        }
+        let unitCost = parseFloat(data.unitCost);
+        if (isNaN(unitCost) || unitCost < 0) {
+            unitCost = isOutward ? (summary.weightedAverageCost || parseFloat(item.rate) || 0) : (parseFloat(item.rate) || 0);
+        }
+        unitCost = Math.round(unitCost * 100) / 100;
+        const totalCost = Math.round(Math.abs(signedQty) * unitCost * 100) / 100;
         const movementNumber = await generateMovementNumber(tx, { businessId, date: movementDate });
 
         const movement = await tx.stockMovement.create({
             data: {
                 businessId,
                 movementNumber,
+                requestKey,
+                requestHash,
                 itemId,
                 movementType,
                 quantity: signedQty,
@@ -143,30 +169,39 @@ async function recordStockMovement(data = {}, userId) {
                 targetType: 'STOCK_MOVEMENT',
                 targetId: movement.id,
                 description: `Recorded stock movement ${movementNumber} (${movementType} ${signedQty} ${item.unit || 'units'} @ $${unitCost}) for ${item.name}`
-            });
+            }, tx);
         }
 
+        if (projectOperation && totalCost > 0) {
+            const returned = projectOperation === 'PROJECT_RETURN';
+            await projectCostLedgerService.recordCost({
+                businessId, projectId: Number(data.projectId), category: 'MATERIALS', costType: 'MATERIAL',
+                sourceType: 'STOCK_MOVEMENT', sourceId: movement.id, sourceLineId: 0,
+                sourceReference: `${returned ? 'STK_RETURN' : 'STK_ISSUE'}:${movement.movementNumber}`,
+                amount: returned ? -totalCost : totalCost, quantity: returned ? -absQty : absQty,
+                unit: item.unit || 'PCS', unitCost, costDate: movementDate,
+                description: `${returned ? 'Material Returned from Project' : 'Project Material Issue'}: ${item.name} (${absQty} ${item.unit || 'units'} ${returned ? 'to' : 'from'} ${data.storeLocation || 'Main Warehouse'})`,
+                createdById: userId
+            }, tx);
+        }
+        if (data.postToLedger === true && totalCost > 0) {
+            const postResult = await postStockMovementToLedger({
+                movementId: movement.id,
+                debitAccountKey: data.debitAccountKey || 'COGS',
+                creditAccountKey: data.creditAccountKey || 'INVENTORY_ASSET',
+                notes: data.notes
+            }, userId, tx);
+            return { ...movement, journalEntry: postResult.journalEntry };
+        }
         return movement;
-    });
-
-    if (data.postToLedger === true && parseFloat(movement.totalCost) > 0) {
-        const postResult = await postStockMovementToLedger({
-            movementId: movement.id,
-            debitAccountKey: data.debitAccountKey || 'COGS',
-            creditAccountKey: data.creditAccountKey || 'INVENTORY_ASSET',
-            notes: data.notes
-        }, userId);
-        return { ...movement, journalEntry: postResult.journalEntry };
-    }
-
-    return movement;
+    }, externalTx);
 }
 
 
 /**
  * Calculate stock summary and weighted-average cost for an item
  */
-async function getItemStockSummary(itemId, asOfDate = null) {
+async function getItemStockSummary(itemId, asOfDate = null, db = prisma) {
     const numId = parseInt(itemId, 10);
     if (isNaN(numId) || numId <= 0) throw new ValidationError('Invalid item ID.');
 
@@ -176,7 +211,11 @@ async function getItemStockSummary(itemId, asOfDate = null) {
         if (!isNaN(d.getTime())) where.movementDate = { lte: d };
     }
 
-    const movements = await prisma.stockMovement.findMany({
+    // A caller's existing transaction may already have an older consistent-read snapshot.
+    const movements = db !== prisma ? await db.$queryRawUnsafe(
+        `SELECT quantity, unitCost FROM stock_movements WHERE itemId = ?${where.movementDate ? ' AND movementDate <= ?' : ''} ORDER BY movementDate, id FOR UPDATE`,
+        numId, ...(where.movementDate ? [where.movementDate.lte] : [])
+    ) : await db.stockMovement.findMany({
         where,
         orderBy: { movementDate: 'asc' }
     });
@@ -302,36 +341,38 @@ async function listStockMovements({ businessId, itemId, movementType, referenceT
  *   Cr Inventory Asset (Account 1141)
  * Reconciles inventory balance on balance sheet with physical stock valuation.
  */
-async function postStockMovementToLedger({ movementId, debitAccountKey = 'COGS', creditAccountKey = 'INVENTORY_ASSET', notes = null }, userId) {
+async function postStockMovementToLedger({ movementId, debitAccountKey = 'COGS', creditAccountKey = 'INVENTORY_ASSET', notes = null }, userId, externalTx = null) {
     const numId = parseInt(movementId, 10);
     if (isNaN(numId) || numId <= 0) throw new ValidationError('Invalid stock movement ID.');
 
-    const movement = await prisma.stockMovement.findUnique({
+    const movement = await (externalTx || prisma).stockMovement.findUnique({
         where: { id: numId },
         include: { item: true }
     });
     if (!movement) throw new NotFoundError(`Stock movement with ID ${numId} not found.`);
 
-    const idempotencyKey = `STOCK_MOVEMENT:${movement.id}`;
-    const existing = await prisma.journalEntry.findUnique({ where: { idempotencyKey } });
-    if (existing) {
-        throw new ConflictError(`Stock movement ${movement.movementNumber} has already been posted to the general ledger (Journal #${existing.entryNumber}).`);
-    }
+    const businessId = movement.businessId || movement.item?.businessId || 1;
+    if ((movement.item.businessId || 1) !== businessId) throw new NotFoundError('Item not found in the movement business.');
+    return withStockTransaction(businessId, async tx => {
+        await businessService.assertUserBusinessAccess(userId, businessId, businessId, tx);
+        const idempotencyKey = `STOCK_MOVEMENT:${movement.id}`;
+        const existing = await tx.journalEntry.findUnique({ where: { idempotencyKey } });
+        if (existing) {
+            throw new ConflictError(`Stock movement ${movement.movementNumber} has already been posted to the general ledger (Journal #${existing.entryNumber}).`);
+        }
 
-    const businessId = movement.businessId || movement.item?.businessId;
-    const fy = await ensureFinancialYear(movement.movementDate, businessId);
-    if (fy.status === 'CLOSED') {
-        throw new ValidationError(`Cannot post stock movement into closed Financial Year ${fy.code}.`);
-    }
+        const fy = await ensureFinancialYear(movement.movementDate, businessId, tx);
+        if (fy.status === 'CLOSED') {
+            throw new ValidationError(`Cannot post stock movement into closed Financial Year ${fy.code}.`);
+        }
 
-    await ensureSystemAccounts(userId, businessId);
+        await ensureSystemAccounts(userId, businessId, tx);
 
-    const costAmount = Math.round(parseFloat(movement.totalCost) * 100) / 100;
-    if (costAmount <= 0) {
-        throw new ValidationError('Cannot post stock movement with zero total cost.');
-    }
+        const costAmount = Math.round(parseFloat(movement.totalCost) * 100) / 100;
+        if (costAmount <= 0) {
+            throw new ValidationError('Cannot post stock movement with zero total cost.');
+        }
 
-    return prisma.$transaction(async (tx) => {
         const isOutward = OUTWARD_TYPES.includes(movement.movementType) || 
                           (movement.movementType === 'ADJUSTMENT' && parseFloat(movement.quantity) < 0);
 
@@ -380,11 +421,11 @@ async function postStockMovementToLedger({ movementId, debitAccountKey = 'COGS',
                 targetType: 'STOCK_MOVEMENT',
                 targetId: movement.id,
                 description: `Posted stock movement ${movement.movementNumber} to GL Journal #${journal.entryNumber} (Cost: ₹${costAmount})`
-            });
+            }, tx);
         }
 
         return { movement, journalEntry: journal };
-    });
+    }, externalTx);
 }
 
 /**
@@ -392,7 +433,7 @@ async function postStockMovementToLedger({ movementId, debitAccountKey = 'COGS',
  * Decreases store stock, validates tenant ownership, calculates cost at weighted average,
  * and posts to the Project Cost Subledger exactly once.
  */
-async function issueMaterialToProject({ businessId, projectId, itemId, quantity, storeLocation = 'Main Warehouse', unitCost = null, notes = null, date = new Date() }, userId) {
+async function issueMaterialToProject({ businessId, projectId, itemId, quantity, storeLocation = 'Main Warehouse', unitCost = null, notes = null, date = null, idempotencyKey = null }, userId) {
     const bId = parseInt(businessId, 10);
     const pId = parseInt(projectId, 10);
     if (!bId || isNaN(bId)) throw new ValidationError('Valid businessId is required.');
@@ -405,7 +446,7 @@ async function issueMaterialToProject({ businessId, projectId, itemId, quantity,
     if (isNaN(numQty) || numQty <= 0) throw new ValidationError('Quantity issued must be greater than 0.');
 
     // Record outward stock movement
-    const movement = await recordStockMovement({
+    return recordStockMovement({
         businessId: bId,
         projectId: pId,
         itemId,
@@ -415,40 +456,17 @@ async function issueMaterialToProject({ businessId, projectId, itemId, quantity,
         storeLocation,
         notes: notes || `Material issued to project ${project.code} (${project.name})`,
         movementDate: date,
+        idempotencyKey,
         referenceType: 'PROJECT_ISSUE',
         referenceId: pId
-    }, userId);
-
-    // Record in Project Cost Subledger (idempotent)
-    const costAmount = parseFloat(movement.totalCost);
-    if (costAmount > 0) {
-        await projectCostLedgerService.recordCost({
-            businessId: bId,
-            projectId: pId,
-            category: 'MATERIALS',
-            costType: 'MATERIAL',
-            sourceType: 'STOCK_MOVEMENT',
-            sourceId: movement.id,
-            sourceLineId: 0,
-            sourceReference: `STK_ISSUE:${movement.movementNumber}`,
-            amount: costAmount,
-            quantity: numQty,
-            unit: movement.item ? movement.item.unit : 'PCS',
-            unitCost: parseFloat(movement.unitCost),
-            costDate: movement.movementDate,
-            description: `Project Material Issue: ${movement.item ? movement.item.name : 'Stock Item'} (${numQty} ${movement.item ? movement.item.unit : 'units'} from ${storeLocation})`,
-            createdById: userId
-        });
-    }
-
-    return movement;
+    }, userId, null, 'PROJECT_ISSUE');
 }
 
 /**
  * Return unused material from a project back to store inventory.
  * Increases store stock, records RETURN_IN movement, and adjusts/voids project cost.
  */
-async function returnMaterialFromProject({ businessId, projectId, itemId, quantity, storeLocation = 'Main Warehouse', unitCost = null, notes = null, date = new Date() }, userId) {
+async function returnMaterialFromProject({ businessId, projectId, itemId, quantity, storeLocation = 'Main Warehouse', unitCost = null, notes = null, date = null, idempotencyKey = null }, userId) {
     const bId = parseInt(businessId, 10);
     const pId = parseInt(projectId, 10);
     if (!bId || isNaN(bId)) throw new ValidationError('Valid businessId is required.');
@@ -460,7 +478,7 @@ async function returnMaterialFromProject({ businessId, projectId, itemId, quanti
     const numQty = parseFloat(quantity);
     if (isNaN(numQty) || numQty <= 0) throw new ValidationError('Quantity returned must be greater than 0.');
 
-    const movement = await recordStockMovement({
+    return recordStockMovement({
         businessId: bId,
         projectId: pId,
         itemId,
@@ -470,33 +488,10 @@ async function returnMaterialFromProject({ businessId, projectId, itemId, quanti
         storeLocation,
         notes: notes || `Material returned from project ${project.code} (${project.name})`,
         movementDate: date,
+        idempotencyKey,
         referenceType: 'PROJECT_RETURN',
         referenceId: pId
-    }, userId);
-
-    // Record material credit adjustment in Project Cost Subledger
-    const costAmount = parseFloat(movement.totalCost);
-    if (costAmount > 0) {
-        await projectCostLedgerService.recordCost({
-            businessId: bId,
-            projectId: pId,
-            category: 'MATERIALS',
-            costType: 'MATERIAL',
-            sourceType: 'STOCK_MOVEMENT',
-            sourceId: movement.id,
-            sourceLineId: 0,
-            sourceReference: `STK_RETURN:${movement.movementNumber}`,
-            amount: -costAmount,
-            quantity: -numQty,
-            unit: movement.item ? movement.item.unit : 'PCS',
-            unitCost: parseFloat(movement.unitCost),
-            costDate: movement.movementDate,
-            description: `Material Returned from Project: ${movement.item ? movement.item.name : 'Stock Item'} (${numQty} ${movement.item ? movement.item.unit : 'units'} to ${storeLocation})`,
-            createdById: userId
-        });
-    }
-
-    return movement;
+    }, userId, null, 'PROJECT_RETURN');
 }
 
 module.exports = {

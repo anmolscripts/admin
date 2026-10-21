@@ -21,8 +21,9 @@ async function recordSupplierPayment(req, res, next) {
     try {
         const payment = await supplierPaymentService.recordSupplierPayment({
             ...req.body,
-            businessId: req.businessId || req.body.businessId
-        }, req.user?.id);
+            businessId: req.businessId || req.session?.activeBusinessId,
+            idempotencyKey: req.get('Idempotency-Key') || req.body.idempotencyKey
+        }, req.user?.id || req.session?.user?.id);
         res.status(201).json({ success: true, payment });
     } catch (err) {
         if (err.name === 'ValidationError') return res.status(400).json({ success: false, error: err.message });

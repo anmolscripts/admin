@@ -399,7 +399,7 @@ async function allocateNumber({ businessId, entityType, date, tx = null, overrid
                 const isDeadlock = (err.code === 1213 || err.code === 'P2034' ||
                     (err.message && (err.message.includes('Deadlock') || err.message.includes('deadlock') || err.message.includes('could not serialize access'))));
 
-                if (isDeadlock && attempts < maxAttempts) {
+                if (isDeadlock && !tx && attempts < maxAttempts) {
                     await new Promise(res => setTimeout(res, attempts * 25));
                     continue;
                 }

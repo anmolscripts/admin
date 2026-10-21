@@ -36,11 +36,13 @@ function toCents(amount) {
     if (amount === undefined || amount === null) return 0n;
     const str = String(amount).trim();
     if (!str) return 0n;
-    const parts = str.split('.');
+    const isNegative = str.startsWith('-');
+    const parts = (isNegative ? str.slice(1) : str).split('.');
     const whole = BigInt(parts[0] || '0');
     const fracStr = (parts[1] || '').padEnd(2, '0').slice(0, 2);
     const frac = BigInt(fracStr);
-    return (whole >= 0n ? whole * 100n + frac : whole * 100n - frac);
+    const total = whole * 100n + frac;
+    return isNegative ? -total : total;
 }
 
 function fromCents(cents) {
@@ -210,7 +212,7 @@ async function postJournalEntry(params, externalTx = null) {
     // Determine & validate Financial Year
     let fy = null;
     if (explicitFyId) {
-        fy = await prisma.financialYear.findUnique({ where: { id: parseInt(explicitFyId, 10) } });
+        fy = await (externalTx || prisma).financialYear.findUnique({ where: { id: parseInt(explicitFyId, 10) } });
         if (!fy) throw new NotFoundError(`Financial year with ID ${explicitFyId} not found.`);
         if (fy.businessId && fy.businessId !== businessId) {
             throw new ValidationError(`Financial year ${fy.code} does not belong to authorized business ${businessId}. Cross-business access denied.`);
@@ -220,7 +222,7 @@ async function postJournalEntry(params, externalTx = null) {
             throw new ValidationError(`Journal entry date ${entryDate.toISOString().slice(0, 10)} does not fall within Financial Year ${fy.code}.`);
         }
     } else {
-        fy = await ensureFinancialYear(entryDate, businessId);
+        fy = await ensureFinancialYear(entryDate, businessId, externalTx);
     }
 
     if (fy.status === 'CLOSED') {
@@ -388,15 +390,7 @@ async function postJournalEntry(params, externalTx = null) {
     };
 
     if (externalTx) {
-        try {
-            return await runInTransaction(externalTx);
-        } catch (err) {
-            if (cleanIdempotencyKey && (err.code === 'P2002' || err.message?.includes('idempotencyKey'))) {
-                const existing = await fetchExistingByIdempotency();
-                if (existing) return existing;
-            }
-            throw err;
-        }
+        return await runInTransaction(externalTx);
     } else {
         try {
             return await prisma.$transaction(runInTransaction);

@@ -4,6 +4,7 @@ const { ensureFinancialYear } = require('./financialYear.service');
 const postingService = require('./accounting/posting.service');
 const journalService = require('./journal.service');
 const numberingService = require('./numbering.service');
+const businessService = require('./business.service');
 
 class ValidationError extends Error {
     constructor(message) {
@@ -60,14 +61,18 @@ function getPaymentStatus(invoice) {
 /**
  * Get all payments for a given invoice
  */
-async function getInvoicePayments(invoiceIdInput) {
+async function getInvoicePayments(invoiceIdInput, businessId = null) {
     const invoiceId = parseInt(invoiceIdInput, 10);
     if (isNaN(invoiceId) || invoiceId <= 0) {
         throw new ValidationError('Invalid invoice ID.');
     }
 
+    const where = { invoiceId };
+    if (businessId) where.invoice = Number(businessId) === 1
+        ? { OR: [{ businessId: 1 }, { businessId: null }] }
+        : { businessId: Number(businessId) };
     const payments = await prisma.payment.findMany({
-        where: { invoiceId },
+        where,
         orderBy: [{ paymentDate: 'desc' }, { createdAt: 'desc' }],
         include: {
             createdBy: { select: { id: true, name: true, email: true } }
@@ -129,6 +134,8 @@ async function recordPayment(invoiceIdInput, paymentData, userId, meta = {}) {
         if (!invoice) {
             throw new NotFoundError(`Invoice with ID ${invoiceId} not found.`);
         }
+
+        await businessService.assertUserBusinessAccess(userId, invoice.businessId, meta.businessId || invoice.businessId);
 
         if (invoice.documentType !== 'INVOICE') {
             throw new ValidationError('Payments can only be recorded for invoices, not quotations.');
@@ -350,6 +357,10 @@ async function clearPayment(paymentIdInput, userId, clearedAtInput, meta = {}) {
         if (!payment) {
             throw new NotFoundError(`Payment with ID ${paymentId} not found.`);
         }
+        await businessService.assertUserBusinessAccess(userId, payment.invoice.businessId, meta.businessId || payment.invoice.businessId);
+        if (payment.businessId && payment.businessId !== (payment.invoice.businessId || 1)) {
+            throw new ValidationError('Payment business does not match its invoice business.');
+        }
         if (payment.method !== 'CHEQUE' || payment.status !== 'PENDING_CLEARANCE') {
             throw new ValidationError('Only pending cheque payments can be marked cleared.');
         }
@@ -513,6 +524,24 @@ async function voidPayment(paymentIdInput, userId, reason = '', meta = {}) {
             throw new NotFoundError(`Payment with ID ${paymentId} not found.`);
         }
 
+        const invoiceBusinessId = payment.invoice.businessId || 1;
+        await businessService.assertUserBusinessAccess(userId, invoiceBusinessId, meta.businessId || invoiceBusinessId);
+        if ((payment.businessId && payment.businessId !== invoiceBusinessId) ||
+            (payment.financialYear?.businessId && payment.financialYear.businessId !== invoiceBusinessId)) {
+            throw new ValidationError('Payment and financial year must belong to the invoice business.');
+        }
+        const journalKey = postingService.getPaymentIdempotencyKey(payment.id);
+        const existingJournal = await tx.journalEntry.findUnique({
+            where: { idempotencyKey: journalKey },
+            include: { financialYear: true, lines: { include: { account: true, client: true } } }
+        });
+        if (existingJournal && ((existingJournal.businessId || 1) !== invoiceBusinessId ||
+            (existingJournal.financialYear?.businessId || 1) !== invoiceBusinessId ||
+            existingJournal.lines.some(line => (line.account.businessId || 1) !== invoiceBusinessId ||
+                (line.client && (line.client.businessId || 1) !== invoiceBusinessId)))) {
+            throw new ValidationError('Payment journal does not belong to the invoice business.');
+        }
+
         if (payment.status === 'POSTED' && payment.financialYear && payment.financialYear.status === 'CLOSED') {
             throw new ValidationError(`Cannot void payment in CLOSED Financial Year ${payment.financialYear.code}.`);
         }
@@ -601,11 +630,6 @@ async function voidPayment(paymentIdInput, userId, reason = '', meta = {}) {
         }
 
         // If payment has a posted ledger journal, atomically reverse it
-        const journalKey = postingService.getPaymentIdempotencyKey(payment.id);
-        const existingJournal = await tx.journalEntry.findUnique({
-            where: { idempotencyKey: journalKey }
-        });
-
         let reversalJournal = null;
         if (existingJournal && existingJournal.status !== 'REVERSED') {
             reversalJournal = await journalService.reverseJournalEntry(

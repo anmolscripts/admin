@@ -49,7 +49,25 @@ test('Windows dependency retry preserves npm arguments and leaves terminal input
     ]);
 });
 
-async function configure(answer) {
+test('development dependency installation includes dev dependencies', () => {
+    const calls = [];
+    const sandbox = {
+        module: { exports: {} }, __dirname: '/mock/scripts/lib', console,
+        process: { platform: 'win32', env: {}, execPath: 'node' },
+        require: id => id === 'node:fs'
+            ? { existsSync: file => file.endsWith('package-lock.json') } : require(id)
+    };
+    vm.runInNewContext(fs.readFileSync(require.resolve('../scripts/lib/install-dependencies'), 'utf8'), sandbox);
+    sandbox.module.exports.installDependencies({ root: '/mock', production: false, run: (command, args, options) => {
+        calls.push({ command, args: Array.from(args), stdin: options.stdio[0] });
+        return { status: 0 };
+    } });
+    assert.deepEqual(calls, [
+        { command: 'npm.cmd', args: ['ci', '--no-audit', '--no-fund'], stdin: 'ignore' }
+    ]);
+});
+
+async function configure(answer, existingOverrides = {}) {
     const input = new PassThrough();
     input.isTTY = true;
     const output = new PassThrough();
@@ -57,8 +75,12 @@ async function configure(answer) {
     const existing = {
         DATABASE_HOST: 'localhost', DATABASE_PORT: '3306', DATABASE_USER: 'root',
         DATABASE_PASSWORD: '', DATABASE_NAME: 'disposable_prompts', PORT: '3000',
-        SESSION_SECRET: 'x'.repeat(64), SEED_ADMIN_PASSWORD: 'synthetic-only-password'
+        SESSION_SECRET: 'x'.repeat(64), SEED_ADMIN_PASSWORD: 'synthetic-only-password',
+        ...existingOverrides
     };
+    if (existingOverrides && 'SEED_ADMIN_PASSWORD' in existingOverrides && existingOverrides.SEED_ADMIN_PASSWORD === undefined) {
+        delete existing.SEED_ADMIN_PASSWORD;
+    }
     output.on('data', data => {
         const prompt = data.toString();
         prompts.push(prompt);
@@ -91,6 +113,15 @@ test('keeping existing configuration advances without asking for stored values',
     assert.equal(result.config.DATABASE_NAME, 'disposable_prompts');
     assert.equal(result.config.DATABASE_PASSWORD, '');
     assert.equal(result.config.SEED_ADMIN_PASSWORD, 'synthetic-only-password');
+});
+
+test('keeping existing configuration advances without asking for stored values even when SEED_ADMIN_PASSWORD was missing in .env', async () => {
+    const { result, prompts } = await configure('Y', { SEED_ADMIN_PASSWORD: undefined });
+    assert.equal(prompts.length, 1);
+    assert.equal(result.config.DATABASE_NAME, 'disposable_prompts');
+    assert.ok(result.config.SEED_ADMIN_PASSWORD);
+    assert.equal(typeof result.config.SEED_ADMIN_PASSWORD, 'string');
+    assert.equal(result.config.SEED_ADMIN_PASSWORD.length, 16);
 });
 
 test('declining existing configuration allows editing with current values as defaults', async () => {

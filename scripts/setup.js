@@ -121,20 +121,20 @@ async function main() {
         const installCmd = hasLockfile ? 'ci' : 'install';
         logger.step(`Running ${npmCmd} ${installCmd} ...`);
 
-        const npmInstall = spawnSync(`${npmCmd} ${installCmd}`, {
+        const npmInstall = spawnSync(npmCmd, [installCmd, '--no-audit', '--no-fund'], {
             cwd: ROOT_DIR,
             stdio: ['ignore', 'inherit', 'inherit'],
-            shell: true
+            shell: isWin
         });
 
         if (npmInstall.status !== 0) {
             // Fallback to npm install if npm ci encountered a lockfile version mismatch
             if (installCmd === 'ci') {
                 logger.warn('npm ci failed, falling back to npm install...');
-                const fallback = spawnSync(`${npmCmd} install`, {
+                const fallback = spawnSync(npmCmd, ['install', '--no-audit', '--no-fund'], {
                     cwd: ROOT_DIR,
                     stdio: ['ignore', 'inherit', 'inherit'],
-                    shell: true
+                    shell: isWin
                 });
                 if (fallback.status !== 0) {
                     logger.fail('Dependency installation failed.');

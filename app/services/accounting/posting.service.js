@@ -32,6 +32,7 @@ const coaService = require('../chartOfAccounts.service');
 const journalService = require('../journal.service');
 const { ensureFinancialYear, computeFinancialYear } = require('../financialYear.service');
 const activityService = require('../activity.service');
+const businessService = require('../business.service');
 
 class ValidationError extends Error {
     constructor(message) {
@@ -121,6 +122,7 @@ async function postInvoice(invoiceId, options = {}, clientOrTxArg = null) {
     if (!invoice) {
         throw new NotFoundError(`Invoice with ID ${numericId} not found.`);
     }
+    if (userId) await businessService.assertUserBusinessAccess(userId, invoice.businessId, options.businessId || invoice.businessId);
 
     // 2. Lifecycle and document type rules
     if (invoice.documentType !== 'INVOICE') {
@@ -179,6 +181,9 @@ async function postInvoice(invoiceId, options = {}, clientOrTxArg = null) {
         }
     });
 
+    if (existingJournal && (existingJournal.businessId || 1) !== (invoice.businessId || 1)) {
+        throw new ValidationError('Invoice journal does not belong to the invoice business.');
+    }
     if (existingJournal) {
         return {
             success: true,
@@ -409,6 +414,9 @@ async function resolvePaymentAssetAccount(method, customDepositAccountId = null,
         if (!customAccount) {
             throw new ValidationError(`Deposit account with ID ${depositAccId} not found.`);
         }
+        if (customAccount.businessId !== Number(businessId || 1)) {
+            throw new ValidationError('Deposit account does not belong to the invoice business.');
+        }
         if (!customAccount.active) {
             throw new ValidationError(`Deposit account ${customAccount.code} is inactive.`);
         }
@@ -476,6 +484,11 @@ async function postPayment(paymentId, options = {}, clientOrTxArg = null) {
 
     if (!payment) {
         throw new NotFoundError(`Payment with ID ${numericId} not found.`);
+    }
+    if (userId) await businessService.assertUserBusinessAccess(userId, payment.invoice?.businessId, options.businessId || payment.invoice?.businessId);
+    if ((payment.businessId && payment.businessId !== (payment.invoice?.businessId || 1)) ||
+        (payment.financialYear?.businessId && payment.financialYear.businessId !== (payment.invoice?.businessId || 1))) {
+        throw new ValidationError('Payment and financial year must belong to the invoice business.');
     }
 
     // 2. Validate Payment Lifecycle & Invoice Status
@@ -547,6 +560,9 @@ async function postPayment(paymentId, options = {}, clientOrTxArg = null) {
         }
     });
 
+    if (existingJournal && (existingJournal.businessId || 1) !== (payment.invoice.businessId || 1)) {
+        throw new ValidationError('Payment journal does not belong to the invoice business.');
+    }
     if (existingJournal) {
         return {
             success: true,

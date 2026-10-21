@@ -92,6 +92,11 @@
     |-- extensions.json
 |-- .artifacts
     |-- accounting-verification.log
+    |-- atomic-stock-baseline.log
+    |-- atomic-stock-existing-after.log
+    |-- atomic-stock-regressions.log
+    |-- atomic-stock-targeted-final.log
+    |-- atomic-stock-verify-all.log
     |-- autonomous-run
         |-- run-20261010-01
             |-- DATABASE_SAFETY.md
@@ -185,8 +190,28 @@
             |-- TASK_BOARD.md
             |-- TEST_SUMMARY.md
     |-- backup-and-upgrade.js
+    |-- batch2-auth-after.log
+    |-- batch2-baseline.log
+    |-- batch2-db-sessions.cjs
+    |-- batch2-money-stock-after.log
+    |-- batch2-persistent-sessions-final.log
+    |-- batch2-persistent-sessions.log
+    |-- batch2-regressions-before.log
+    |-- batch2-start-smoke.cjs
+    |-- batch2-targeted-final.log
+    |-- batch2-valuation-evidence.json
+    |-- batch2-verify-all-final.log
+    |-- batch2-verify-all.log
     |-- command-smoke.js
     |-- current-environment-doctor.log
+    |-- cutover-empty-plan.json
+    |-- cutover-foundation-baseline.log
+    |-- cutover-foundation-business1.json
+    |-- cutover-foundation-preflight.json
+    |-- cutover-foundation-targeted-final.log
+    |-- cutover-foundation-tests.log
+    |-- cutover-foundation-verify-all.log
+    |-- cutover-plan-command.json
     |-- focused-verification.log
     |-- milestone-8
         |-- full-test-suite-20261009.log
@@ -220,6 +245,18 @@
         |-- check_syntax_scripts_verify_all_js.log
         |-- check_syntax_search_service.log
         |-- check_syntax_server.log
+    |-- security-baseline-loader.cjs
+    |-- security-baseline.log
+    |-- security-callers.txt
+    |-- security-compatibility.log
+    |-- security-regressions-after.log
+    |-- security-regressions-before-focused.log
+    |-- security-regressions-before.log
+    |-- security-regressions-final.log
+    |-- security-targeted-final.log
+    |-- security-targeted.log
+    |-- security-verify-all-final.log
+    |-- security-verify-all.log
     |-- verification-console.log
 |-- .claude
     |-- skills
@@ -441,6 +478,7 @@
         |-- invitation.controller.js
         |-- invoice.controller.js
         |-- item.controller.js
+        |-- letter.controller.js
         |-- payment.controller.js
         |-- productGuide.controller.js
         |-- profile.controller.js
@@ -467,6 +505,7 @@
         |-- admin.routes.js
         |-- auth.routes.js
         |-- invoice.routes.js
+        |-- letter.routes.js
         |-- recordDesk.routes.js
         |-- search.routes.js
         |-- team.routes.js
@@ -492,10 +531,14 @@
         |-- financialYear.service.js
         |-- financialYearClosing.service.js
         |-- goodsReceipt.service.js
+        |-- inventoryCutoverPreflight.service.js
         |-- invitation.service.js
         |-- invoice.service.js
         |-- item.service.js
         |-- journal.service.js
+        |-- letter.service.js
+        |-- letterContent.service.js
+        |-- letterPresentation.service.js
         |-- navigation.service.js
         |-- numbering.service.js
         |-- otherIncome.service.js
@@ -514,6 +557,7 @@
         |-- reportingWorkbench.service.js
         |-- search.service.js
         |-- stockMovement.service.js
+        |-- stockTransaction.service.js
         |-- supplier.service.js
         |-- supplierBill.service.js
         |-- supplierPayment.service.js
@@ -539,7 +583,10 @@
             |-- index.ejs
             |-- print.ejs
             |-- templates
+                |-- brand.ejs
                 |-- document.ejs
+                |-- footer.ejs
+                |-- letter-body.ejs
                 |-- rajesh-letterhead.ejs
             |-- view.ejs
         |-- errors
@@ -559,6 +606,10 @@
         |-- layouts
             |-- footer.ejs
             |-- header.ejs
+        |-- letters
+            |-- editor.ejs
+            |-- index.ejs
+            |-- view.ejs
         |-- notes
             |-- editor.ejs
             |-- index.ejs
@@ -618,6 +669,7 @@
         |-- components.css
         |-- documents.css
         |-- editor.css
+        |-- letters.css
         |-- main.css
         |-- premium-refresh.css
         |-- product-guide.css
@@ -647,6 +699,11 @@
         |-- documents.js
         |-- editor.js
         |-- global-search.js
+        |-- letter-code-tools.js
+        |-- letter-code-tools.LICENSE.txt
+        |-- letter-code-tools.source.js
+        |-- letter-source-editor.js
+        |-- letters.js
         |-- organization-logo.js
         |-- product-guide.js
         |-- profile.js
@@ -677,6 +734,175 @@
         |-- flatpickr
             |-- flatpickr.min.css
             |-- flatpickr.min.js
+        |-- monaco
+            |-- LICENSE
+            |-- ThirdPartyNotices.txt
+            |-- vs
+                |-- abap-D-t0cyap.js
+                |-- apex-CcIm7xu6.js
+                |-- assets
+                    |-- css.worker-BpD9FCKP.js
+                    |-- editor.worker-_vAIFJDs.js
+                    |-- editorWebWorkerMain-DEgFqX2K.js
+                    |-- html.worker-CLuInTTy.js
+                    |-- json.worker-Csf_TLih.js
+                    |-- ts.worker-g3pjEjl4.js
+                |-- azcli-BA0tQDCg.js
+                |-- basic-languages
+                    |-- monaco.contribution.js
+                |-- bat-C397hTD6.js
+                |-- bicep-DF5aW17k.js
+                |-- cameligo-plsz8qhj.js
+                |-- clojure-Y2auQMzK.js
+                |-- coffee-Bu45yuWE.js
+                |-- cpp-CkKPQIni.js
+                |-- csharp-CX28MZyh.js
+                |-- csp-D8uWnyxW.js
+                |-- css-CaeNmE3S.js
+                |-- css.worker-BInK4lsP.js
+                |-- cssMode-eIUIN_ru.js
+                |-- cypher-DVThT8BS.js
+                |-- dart-CmGfCvrO.js
+                |-- dockerfile-CZqqYdch.js
+                |-- ecl-30fUercY.js
+                |-- editor
+                    |-- editor.main.css
+                    |-- editor.main.js
+                    |-- editor.worker.js
+                |-- editor-BdtEMBbM.js
+                |-- editor.js
+                |-- editorWorkerHost-B_VpI68A.js
+                |-- elixir-xjPaIfzF.js
+                |-- flow9-DqtmStfK.js
+                |-- freemarker2-B-FhRNBn.js
+                |-- fsharp-BOMdg4U1.js
+                |-- go-D_hbi-Jt.js
+                |-- graphql-CKUU4kLG.js
+                |-- handlebars-BJBfNnbX.js
+                |-- hcl-DTaboeZW.js
+                |-- html-BTio3wpy.js
+                |-- html.worker-C1TNvQ72.js
+                |-- htmlMode-aw5QYZo7.js
+                |-- index-049xrXrp.js
+                |-- index-DZH_zysX.js
+                |-- index.js
+                |-- ini-CsNwO04R.js
+                |-- initialize-CAIC7-3s.js
+                |-- java-CI4ZMsH9.js
+                |-- javascript-B_IYblwB.js
+                |-- json.worker-Bp7U0-9w.js
+                |-- jsonMode-w7Q_ZLTt.js
+                |-- julia-BwzEvaQw.js
+                |-- kotlin-IUYPiTV8.js
+                |-- language
+                    |-- css
+                        |-- css.worker.js
+                        |-- monaco.contribution.js
+                    |-- html
+                        |-- html.worker.js
+                        |-- monaco.contribution.js
+                    |-- json
+                        |-- json.worker.js
+                        |-- monaco.contribution.js
+                    |-- typescript
+                        |-- monaco.contribution.js
+                        |-- ts.worker.js
+                |-- less-C0eDYdqa.js
+                |-- lexon-iON-Kj97.js
+                |-- liquid-CXh4HpyA.js
+                |-- loader.js
+                |-- lspLanguageFeatures-Cog3rVVE.js
+                |-- lua-DtygF91M.js
+                |-- m3-CsR4AuFi.js
+                |-- main-BEx-Fmlo.js
+                |-- main-DsK8pnKg.js
+                |-- markdown-C_rD0bIw.js
+                |-- mdx-BcFcCtz9.js
+                |-- mips-CiYP61RB.js
+                |-- monaco.contribution-BuX2NvO2.js
+                |-- monaco.contribution-C7tY_xnl.js
+                |-- monaco.contribution-CY2lwFI8.js
+                |-- monaco.contribution-D1-wBxcq.js
+                |-- msdax-C38-sJlp.js
+                |-- mysql-CdtbpvbG.js
+                |-- nls
+                    |-- lang
+                        |-- cs.d.ts
+                        |-- cs.js
+                        |-- de.d.ts
+                        |-- de.js
+                        |-- es.d.ts
+                        |-- es.js
+                        |-- fr.d.ts
+                        |-- fr.js
+                        |-- it.d.ts
+                        |-- it.js
+                        |-- ja.d.ts
+                        |-- ja.js
+                        |-- ko.d.ts
+                        |-- ko.js
+                        |-- pl.d.ts
+                        |-- pl.js
+                        |-- pt-br.d.ts
+                        |-- pt-br.js
+                        |-- ru.d.ts
+                        |-- ru.js
+                        |-- tr.d.ts
+                        |-- tr.js
+                        |-- zh-cn.d.ts
+                        |-- zh-cn.js
+                        |-- zh-tw.d.ts
+                        |-- zh-tw.js
+                |-- nls.messages-loader.js
+                |-- objective-c-CntZFaHX.js
+                |-- pascal-r6kuqfl_.js
+                |-- pascaligo-BiXoTmXh.js
+                |-- perl-DABw_TcH.js
+                |-- pgsql-me_jFXeX.js
+                |-- php-D_kh-9LK.js
+                |-- pla-VfZjczW0.js
+                |-- postiats-BBSzz8Pk.js
+                |-- powerquery-Dt-g_2cc.js
+                |-- powershell-B-7ap1zc.js
+                |-- protobuf-BmtuEB1A.js
+                |-- pug-BRpRNeEb.js
+                |-- python-CasA8BlK.js
+                |-- qsharp-BzsFaUU9.js
+                |-- r-f8dDdrp4.js
+                |-- razor-IGOwKAHu.js
+                |-- redis-fvZQY4PI.js
+                |-- redshift-45Et0LQi.js
+                |-- restructuredtext-C7UUFKFD.js
+                |-- ruby-CZO8zYTz.js
+                |-- rust-Bfetafyc.js
+                |-- sb-3GYllVck.js
+                |-- scala-foMgrKo1.js
+                |-- scheme-CHdMtr7p.js
+                |-- scss-C1cmLt9V.js
+                |-- shell-ClXCKCEW.js
+                |-- solidity-MZ6ExpPy.js
+                |-- sophia-DWkuSsPQ.js
+                |-- sparql-AUGFYSyk.js
+                |-- sql-32GpJSV2.js
+                |-- st-CuDFIVZ_.js
+                |-- swift-t-PfMj7W.js
+                |-- systemverilog-Ch4vA8Yt.js
+                |-- tcl-D74tq1nH.js
+                |-- toggleHighContrast-DuqAmExZ.js
+                |-- ts.worker-BLYAhMkX.js
+                |-- tsMode-DB1GiNun.js
+                |-- twig-C6taOxMV.js
+                |-- typescript-BTLNeq8B.js
+                |-- typespec-8OfoLt6R.js
+                |-- vb-Dyb2648j.js
+                |-- wgsl-BhLXMOR0.js
+                |-- workers-BeMslOxK.js
+                |-- xml-DHCggo_L.js
+                |-- yaml-C-RIivnc.js
+        |-- quill
+            |-- LICENSE
+            |-- quill.js
+            |-- quill.snow.css
         |-- sweetalert2
             |-- sweetalert2.all.min.js
             |-- sweetalert2.min.css
@@ -688,18 +914,62 @@
     |-- uploads
         |-- avatars
             |-- .gitkeep
+            |-- 26288d56-e5ff-4095-801b-5db4abbcdc9b.png
+            |-- 298e59e1-d48a-4dfc-a202-080e6cc1796b.png
+            |-- 30698185-5fdb-4b4d-bed9-8724a678d70d.png
+            |-- 43ab39cb-3b3f-4d1f-be92-5c89016b1fc7.png
+            |-- 4ec1811b-c48a-416a-812c-dd9c077c5f0e.png
             |-- 594dd443-3dc9-44ed-8dc6-678434bf331d.png
             |-- 77c76a28-b051-4d04-af14-2ba522c12f3e.png
+            |-- 7aafb248-6607-4859-a8c3-da540641c6df.png
+            |-- 7c3050b5-77be-4996-9c49-8e1d32b03b5a.png
+            |-- 887b234d-e571-44e9-9168-c0f0d4c018eb.png
+            |-- 8b187886-e7c2-4e16-ba4f-24183c5734ed.png
             |-- bcb4a124-2378-47f4-8d52-48ac13e5110c.png
+            |-- bd90deec-1839-429a-be91-f231fbfbe88f.png
+            |-- d6c849cf-752a-4c7d-8778-95b194216783.png
             |-- retained-1792556154522.png
             |-- retained-1792556320871.png
             |-- retained-1792556573600.png
+            |-- retained-1792559325581.png
+            |-- retained-1792559595561.png
+            |-- retained-1792575957286.png
+            |-- retained-1792576543918.png
+            |-- retained-1792578310139.png
+            |-- retained-1792578580536.png
+            |-- retained-1792582453161.png
+            |-- retained-1792583745765.png
+            |-- retained-1792583980808.png
+            |-- retained-1792584328450.png
+            |-- retained-1792584553671.png
         |-- logos
+            |-- 1528b677-5bb5-47e8-99cd-335258e90810.png
+            |-- 158d255f-8a37-430b-8d50-4453f929eba5.png
             |-- 1954915b-ccaa-40f7-a6c4-160cfdf5f396.png
+            |-- 1f957c66-f08f-4bc9-b83c-84f2b9df62da.png
+            |-- 24556099-cddb-4a91-8520-46bba9e1e156.png
+            |-- 2d143854-7495-4eda-946a-e1bbec4c1c2a.png
+            |-- 2f3c1e9e-f3ea-4728-aa5e-5a90602525e3.png
             |-- 3b48e159-eb1d-496e-8e6f-8bb89e16bb3d.png
+            |-- 404939bf-ef5a-4386-8964-d034cafb84ba.png
+            |-- 54b8cca9-e0c0-4b08-8690-e835e00180ba.png
+            |-- 557965be-7fe7-468f-8fb8-18d9a6c63118.png
+            |-- 6153abc9-902f-442d-96cc-5c3a20d11188.png
+            |-- 6fb47e9b-14ac-4045-9658-9fd01767d313.png
+            |-- 773c2cb2-4a6b-427f-a10a-253d06461872.png
+            |-- 7a64b62b-e3ac-4385-ad75-d95bdc6b4f7a.png
+            |-- 8626dab1-9c5a-40e4-b084-f44b2b87087f.png
+            |-- 8d79490b-6afc-4854-8d88-347ad6bd5923.png
+            |-- b57dcffc-6756-4d4b-b932-0f39ef22ee2f.png
+            |-- b708d44b-62aa-4af3-8bb6-1c510617f59a.png
+            |-- bc96e3a1-a820-4f88-ab00-4d7d3d857b72.png
             |-- cb4957ab-84a6-4a0e-b9d4-ca8202169b75.png
+            |-- d75d8d07-ff66-4a5f-88ac-8acd3446aed9.png
             |-- d9282745-ceb3-4620-b5ee-673b0ac7213b.png
+            |-- d9c91c7b-d032-4e69-8ca5-02dd796407db.png
             |-- e366be06-b2c3-4154-a8e1-adcde0ecbf8c.png
+            |-- f029d439-1eb6-44d1-9b88-c1cc53f2d925.png
+            |-- f771619a-099c-452f-865b-18b25a1d3a73.png
             |-- fd33350f-4409-482d-903f-ef6570fbb886.png
 |-- data
     |-- attachments
@@ -756,9 +1026,58 @@
         |-- 1792556541396_f8bbbbe20781ce5c6849592860f666c8.pdf
         |-- 1792556625942_893306190ec87f6eb9ff45fa979cab3a.pdf
         |-- 1792556625961_4530b08bd17fd93632661b54f6840951.png
+        |-- 1792559293303_07882978eb5ff01c0e416685233b6078.pdf
+        |-- 1792559386564_2a3f0ebba5bf6f6d044e871dfa8ec153.pdf
+        |-- 1792559386584_2d5556d1ba674f268491617232fc164d.png
+        |-- 1792559564105_f81a8b0a8f9f1a07eefad7769f4c89bc.pdf
+        |-- 1792559655349_e6766ef5dcbd61e8fc3daa2a19e855fd.pdf
+        |-- 1792559655370_0b5f205188abc6e787e98df5c95c8aa5.png
+        |-- 1792575917473_47e20f30f0e92068e1b52dabed9a3f2a.pdf
+        |-- 1792576019654_40db828acc5461f3c0cdc420e3fc4502.pdf
+        |-- 1792576019688_830ec7fe540bfc607fed3894b5e85a21.png
+        |-- 1792576506847_03d4e023d7b14cbccb54d6d248efbfca.pdf
+        |-- 1792576607514_d0186810aaeaff3381f56f5ff6204f6a.pdf
+        |-- 1792576607534_852b9b8056d517aa9359ed541539b126.png
+        |-- 1792578273499_f90f64ea7f02ab8ec7c01d06eda11b95.pdf
+        |-- 1792578378117_684183dd2a7954fb3c0db2bf11e5e0ba.pdf
+        |-- 1792578378140_012978c96628635fdc492761499a94ac.png
+        |-- 1792578543520_55109c75de78b9faefb9dfcee9a97ade.pdf
+        |-- 1792578655563_c8396c314a8dbadb3b5be4599533055b.pdf
+        |-- 1792578655587_d1993660b6db02c008430e3c57f52ba4.png
+        |-- 1792581621507_75928faa4a91b7d2168610cb9416ee9c.pdf
+        |-- 1792581621533_e31cb6ee198ec06a26a8f64d13652b48.png
+        |-- 1792582149149_17d8d7aa052351b96709e646950a8968.pdf
+        |-- 1792582149171_7d62c33f0369418aeacee2832db673aa.png
+        |-- 1792582414839_d8536be9632fb19522806381dba7784f.pdf
+        |-- 1792582522868_a5078ba6ca7948b1134923e111f560e8.pdf
+        |-- 1792582522893_a7a05ae27f1fbf574a1586177d7bec9e.png
+        |-- 1792582611053_c8633334f5468eab24227e62d2b29b2c.pdf
+        |-- 1792582611078_a194708667b6b80a8700603420dbae95.png
+        |-- 1792582964777_20018dca8c1f1b556fe8daa56a850d2c.pdf
+        |-- 1792582964799_3ec5f1814a6ad7e57930ddc1793a3af7.png
+        |-- 1792583179550_d0865667fe6129c490c64e1af815d806.pdf
+        |-- 1792583187218_145e17d867f5735653e47ee0add4cb7e.pdf
+        |-- 1792583187239_4b22e81770edd5e1cd62d67d6ab3f2a6.png
+        |-- 1792583628513_68fc083dd4f2920254284999fa446f37.pdf
+        |-- 1792583635928_114a08fd14169bb9e0c5db2336034396.pdf
+        |-- 1792583635947_d92c8d4e26f19f01a286fb3129177c0d.png
+        |-- 1792583709907_a0e932196574680a8186cc1580559535.pdf
+        |-- 1792583814599_1093313af9b611d69a29d7a7917f8726.pdf
+        |-- 1792583814620_e82e06e4fc2a4f7a53f996bd335756f1.png
+        |-- 1792583944915_b57505a9837b1091bdf5f663d679b541.pdf
+        |-- 1792584045609_934b61b306079092052b21bf1a1c62a4.pdf
+        |-- 1792584045628_33595d1c81cff621e5ad97e0daf9cf9a.png
+        |-- 1792584285048_b9fb1e876d298208121e9ff8b9b6b33c.pdf
+        |-- 1792584399509_207bbbd4d1e06303ec6a5685ac34e863.pdf
+        |-- 1792584399530_1c58b2442ad7cd46e2d7d3bb757d77a0.png
+        |-- 1792584516839_5291bdf1d059c834d5290dab6e36ffac.pdf
+        |-- 1792584624251_96e10010b0abea22cd5544edc56c995c.pdf
+        |-- 1792584624280_3cb3f02572c83ddda2764cc6bf4b5d2d.png
     |-- backups
         |-- spark_admin_dev-before-command-fix-1792556438558.sql
         |-- spark_admin_dev-before-command-fix-1792556438558.sql.verification.json
+    |-- letter-test-evidence
+        |-- multi-page-letter.pdf
     |-- templates
         |-- business_1.json
         |-- business_8881.json
@@ -776,6 +1095,7 @@
         |-- README.md
     |-- API.md
     |-- ARCHITECTURE.md
+    |-- ATOMIC_STOCK_POSTING.md
     |-- CHANGELOG.md
     |-- CODING_STANDARDS.md
     |-- CONTROLLED_STAGING_CHECKLIST.md
@@ -792,6 +1112,8 @@
     |-- FORM_UI_AUDIT.md
     |-- GLOBAL_SEARCH.md
     |-- INSTALLATION.md
+    |-- INVENTORY_CUTOVER_RUNBOOK.md
+    |-- LETTERS.md
     |-- LOCAL_LIVE_DEPLOYMENT.md
     |-- MILESTONE_8_FINAL_REPORT.md
     |-- MILESTONE_8_REMEDIATION_LOG.md
@@ -1045,6 +1367,25 @@
             |-- 13_invoice_desktop_1280.png
             |-- 14_invoice_mobile_375.png
     |-- F00_health_check.json
+    |-- letter-code
+        |-- browser-checks.json
+        |-- editor-live-proof.png
+        |-- editor-stage.png
+        |-- pdf-page-02.png
+        |-- pdf-page-2.png
+        |-- verification.json
+    |-- letters
+        |-- browser-checks.json
+        |-- editor-proof.png
+        |-- final-letter-1.png
+        |-- final-letter-2.png
+        |-- fixed-2.png
+        |-- fixed-last-6.png
+        |-- last-8.png
+        |-- modern-1.png
+        |-- modern-2.png
+        |-- rajesh-2.png
+        |-- rajesh-fixed-2.png
     |-- modern-ui
         |-- profile-light.png
         |-- verification.json
@@ -1159,6 +1500,12 @@
             |-- migration.sql
         |-- 20261019190000_goods_receipt_request_identity
             |-- migration.sql
+        |-- 20261021000100_letters
+            |-- migration.sql
+        |-- 20261021000200_letter_code_editor
+            |-- migration.sql
+        |-- 20261021000300_stock_request_identity
+            |-- migration.sql
         |-- migration_lock.toml
     |-- schema.prisma
     |-- seed
@@ -1178,6 +1525,7 @@
     |-- audit_rc4_package.js
     |-- backfill-payment-accounting.js
     |-- backup_admin.js
+    |-- build-letter-editor.js
     |-- build-runtime-smoke.js
     |-- build.js
     |-- cdp_crawler_audit.js
@@ -1211,6 +1559,7 @@
     |-- install-migrate.js
     |-- install-prod.js
     |-- invalidate_test_session.js
+    |-- inventory-cutover-preflight.js
     |-- lib
         |-- db-manager.js
         |-- env-file.js
@@ -1263,8 +1612,10 @@
 |-- tests
     |-- accounting.test.js
     |-- accounting_report_isolation.test.js
+    |-- atomic-stock.test.js
     |-- attachment_storage_readiness.test.js
     |-- auth.test.js
+    |-- batch2-money-stock.test.js
     |-- business_retention_archiving.test.js
     |-- complete_project_integration_flows.test.js
     |-- contracts.test.js
@@ -1272,6 +1623,7 @@
     |-- default-avatar.test.js
     |-- deploy.test.js
     |-- doctor.test.js
+    |-- document-security.test.js
     |-- documents.test.js
     |-- e2e_security_payment_audit.test.js
     |-- editor.test.js
@@ -1285,11 +1637,14 @@
     |-- hardening.test.js
     |-- installer-prompts.test.js
     |-- installer.test.js
+    |-- inventory-cutover-preflight.test.js
     |-- inventory_accounting_integration.test.js
     |-- invoice-numeric-validation.test.js
     |-- invoice.test.js
     |-- invoice_posting.test.js
     |-- item_import_inventory.test.js
+    |-- letter-code.test.js
+    |-- letters.test.js
     |-- migration_provenance.test.js
     |-- migration_upgrade.test.js
     |-- modern-components.test.js
@@ -1317,6 +1672,8 @@
     |-- record-desk.test.js
     |-- release_build.test.js
     |-- release_migration_compatibility.test.js
+    |-- remember-revocation.test.js
+    |-- report-drilldown-security.test.js
     |-- reporting_format_parity.test.js
     |-- reports_reconciliation.test.js
     |-- rotate_password_guard.test.js

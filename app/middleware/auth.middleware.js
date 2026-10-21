@@ -1,6 +1,6 @@
-const crypto = require('node:crypto');
 const prisma = require('../config/prisma');
 const businessService = require('../services/business.service');
+const authService = require('../services/auth.service');
 
 /**
  * Validate that a redirect URL is safe (internal, relative, and not auth loop)
@@ -55,34 +55,10 @@ async function tryAutoLogin(req) {
     const rememberToken = cookies['spark_remember'];
     if (!rememberToken) return false;
 
-    const parts = rememberToken.split('.');
-    if (parts.length !== 3) return false;
-
-    const [userIdStr, expiresAtStr, signature] = parts;
-    const userId = parseInt(userIdStr, 10);
-    const expiresAt = parseInt(expiresAtStr, 10);
-
-    if (isNaN(userId) || isNaN(expiresAt) || expiresAt < Date.now()) {
-        return false;
-    }
-
-    const secret = process.env.SESSION_SECRET || 'spark-admin-dev-secret-key-change-in-prod-32chars';
-    const expectedSignature = crypto.createHmac('sha256', secret).update(`${userId}:${expiresAt}`).digest('hex');
-
-    const sigBuf = Buffer.from(signature, 'utf8');
-    const expBuf = Buffer.from(expectedSignature, 'utf8');
-    if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
-        return false;
-    }
-
     try {
-        const user = await prisma.user.findUnique({
-            where: { id: userId }
-        });
-
-        if (!user || !user.active) {
-            return false;
-        }
+        const verified = await authService.verifyRememberToken(rememberToken);
+        if (!verified) return false;
+        const { user, credentialVersion } = verified;
 
         if (!req.session) {
             req.session = {};
@@ -94,6 +70,7 @@ async function tryAutoLogin(req) {
             email: user.email,
             role: user.role
         };
+        req.session.credentialVersion = credentialVersion;
 
         if (req.session.cookie) {
             req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000;
@@ -114,6 +91,19 @@ async function tryAutoLogin(req) {
         console.warn('[AUTH] Error during auto-login from remember cookie:', err.message);
         return false;
     }
+}
+
+async function validateSessionCredentials(req, res, next) {
+    if (!req.session?.user?.id) return next();
+    try {
+        const user = await prisma.user.findUnique({ where: { id: req.session.user.id } });
+        if (user?.active && user.status !== 'INACTIVE' &&
+            req.session.credentialVersion === authService.getCredentialVersion(user)) return next();
+        await new Promise((resolve, reject) => req.session.destroy(error => error ? reject(error) : resolve()));
+        const { SESSION_COOKIE_NAME, cookieOptions } = require('../config/session');
+        res.clearCookie(SESSION_COOKIE_NAME, cookieOptions);
+        return handleUnauthenticated(req, res);
+    } catch (error) { next(error); }
 }
 
 /**
@@ -223,3 +213,4 @@ module.exports.redirectIfAuthenticated = redirectIfAuthenticated;
 module.exports.requireRole = requireRole;
 module.exports.isValidRedirectUrl = isValidRedirectUrl;
 module.exports.parseCookies = parseCookies;
+module.exports.validateSessionCredentials = validateSessionCredentials;

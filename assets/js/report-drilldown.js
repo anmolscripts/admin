@@ -11,6 +11,12 @@
   let bsModal = null;
   let currentModalData = null;
 
+  function escapeHtml(value) {
+    const text = document.createElement('span');
+    text.textContent = value == null ? '' : String(value);
+    return text.innerHTML;
+  }
+
   function formatMoney(amount) {
     const num = Number(amount);
     if (isNaN(num)) return '₹0.00';
@@ -168,13 +174,13 @@
     // 1. Invoices & Quotations
     if ((sourceType === 'INVOICE' || sourceType === 'QUOTATION' || sourceType === 'INVOICES') && sourceId) {
       try {
-        const res = await fetch(`/api/invoices/${sourceId}`);
+        const res = await fetch(`/api/invoices/${encodeURIComponent(sourceId)}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
         const doc = json.data || json;
 
         renderInvoiceDetail(doc);
-        fullBtn.href = `/documents/${doc.id}`;
+        fullBtn.href = `/documents/${encodeURIComponent(doc.id)}`;
         fullBtn.classList.remove('d-none');
         return;
       } catch (err) {
@@ -185,13 +191,13 @@
     // 2. Credit & Debit Notes
     if ((sourceType === 'CREDIT_NOTE' || sourceType === 'DEBIT_NOTE' || sourceType === 'CREDIT' || sourceType === 'DEBIT' || sourceType === 'NOTE') && sourceId) {
       try {
-        const res = await fetch(`/api/credit-debit-notes/${sourceId}`);
+        const res = await fetch(`/api/credit-debit-notes/${encodeURIComponent(sourceId)}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
         const note = json.data || json;
 
         renderNoteDetail(note);
-        fullBtn.href = `/credit-debit-notes/${note.id}`;
+        fullBtn.href = `/credit-debit-notes/${encodeURIComponent(note.id)}`;
         fullBtn.classList.remove('d-none');
         return;
       } catch (err) {
@@ -203,13 +209,13 @@
     if (journalId || sourceType === 'JOURNAL' || sourceType === 'MANUAL') {
       const targetJId = journalId || sourceId;
       try {
-        const res = await fetch(`/api/journals/${targetJId}`);
+        const res = await fetch(`/api/journals/${encodeURIComponent(targetJId)}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
         const journal = json.data || json;
 
         renderJournalDetail(journal);
-        fullBtn.href = `/reports/journals/${journal.id}`;
+        fullBtn.href = `/reports/journals/${encodeURIComponent(journal.id)}`;
         fullBtn.classList.remove('d-none');
         return;
       } catch (err) {
@@ -220,7 +226,7 @@
     // 4. Supplier Bill
     if ((sourceType === 'BILL' || sourceType === 'SUPPLIER_BILL') && sourceId) {
       try {
-        const res = await fetch(`/api/supplier-bills/${sourceId}`);
+        const res = await fetch(`/api/supplier-bills/${encodeURIComponent(sourceId)}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
         const bill = json.data || json;
@@ -237,7 +243,7 @@
     // 5. Purchase Order
     if ((sourceType === 'PURCHASE_ORDER' || sourceType === 'ORDER') && sourceId) {
       try {
-        const res = await fetch(`/api/purchase-orders/${sourceId}`);
+        const res = await fetch(`/api/purchase-orders/${encodeURIComponent(sourceId)}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
         const po = json.data || json;
@@ -285,11 +291,11 @@
     items.forEach((item, idx) => {
       itemsRows += `
         <tr>
-          <td class="text-muted font-monospace small">${item.lineNumber || (idx + 1)}</td>
-          <td class="fw-medium report-drilldown-val">${item.name}</td>
-          <td class="font-monospace small text-muted">${item.hsnSac || '—'}</td>
+          <td class="text-muted font-monospace small">${escapeHtml(item.lineNumber || (idx + 1))}</td>
+          <td class="fw-medium report-drilldown-val">${escapeHtml(item.name)}</td>
+          <td class="font-monospace small text-muted">${escapeHtml(item.hsnSac || '—')}</td>
           <td class="text-end font-monospace">${Number(item.quantity).toFixed(2)}</td>
-          <td><span class="badge bg-light border">${item.unit || 'PCS'}</span></td>
+          <td><span class="badge bg-light border">${escapeHtml(item.unit || 'PCS')}</span></td>
           <td class="text-end font-monospace">${formatMoney(item.rate)}</td>
           <td class="text-end font-monospace fw-semibold">${formatMoney(item.amount)}</td>
         </tr>
@@ -309,8 +315,8 @@
       <div class="row g-3 mb-4">
         <div class="col-sm-6 col-md-3">
           <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">Customer / Client</div>
-          <div class="fw-bold report-drilldown-val fs-6">${doc.clientName}</div>
-          ${doc.clientGSTIN ? `<div class="small font-monospace text-muted">GSTIN: ${doc.clientGSTIN}</div>` : ''}
+          <div class="fw-bold report-drilldown-val fs-6">${escapeHtml(doc.clientName)}</div>
+          ${doc.clientGSTIN ? `<div class="small font-monospace text-muted">GSTIN: ${escapeHtml(doc.clientGSTIN)}</div>` : ''}
         </div>
         <div class="col-sm-6 col-md-3">
           <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">Invoice Date</div>
@@ -421,8 +427,8 @@
       itemsRows += `
         <tr>
           <td class="text-muted font-monospace small">${idx + 1}</td>
-          <td class="fw-medium report-drilldown-val">${item.name}</td>
-          <td class="font-monospace small text-muted">${item.hsnSac || '—'}</td>
+          <td class="fw-medium report-drilldown-val">${escapeHtml(item.name)}</td>
+          <td class="font-monospace small text-muted">${escapeHtml(item.hsnSac || '—')}</td>
           <td class="text-end font-monospace">${Number(item.quantity).toFixed(2)}</td>
           <td class="text-end font-monospace">${formatMoney(item.rate)}</td>
           <td class="text-end font-monospace fw-semibold">${formatMoney(item.amount)}</td>
@@ -442,11 +448,11 @@
       <div class="row g-3 mb-4">
         <div class="col-sm-6 col-md-4">
           <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">Customer / Client</div>
-          <div class="fw-bold report-drilldown-val fs-6">${note.client ? note.client.name : 'Client'}</div>
+          <div class="fw-bold report-drilldown-val fs-6">${escapeHtml(note.client ? note.client.name : 'Client')}</div>
         </div>
         <div class="col-sm-6 col-md-4">
           <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">Referenced Sales Invoice</div>
-          <div class="fw-bold font-monospace text-primary">${note.originalInvoiceNumber || '—'}</div>
+          <div class="fw-bold font-monospace text-primary">${escapeHtml(note.originalInvoiceNumber || '—')}</div>
         </div>
         <div class="col-sm-6 col-md-4">
           <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">Issue Date</div>
@@ -456,7 +462,7 @@
 
       <div class="alert report-drilldown-callout border mb-4">
         <span class="fw-semibold text-muted small text-uppercase me-2">Reason for Adjustment:</span>
-        <span class="report-drilldown-val">${note.reason || 'Not specified'}</span>
+        <span class="report-drilldown-val">${escapeHtml(note.reason || 'Not specified')}</span>
       </div>
 
       <div class="card border-0 shadow-sm mb-4 report-drilldown-surface">
@@ -545,11 +551,11 @@
 
       linesRows += `
         <tr>
-          <td class="font-monospace text-primary fw-bold small">${accCode}</td>
+          <td class="font-monospace text-primary fw-bold small">${escapeHtml(accCode)}</td>
           <td>
-            <div class="fw-semibold report-drilldown-val">${accName}</div>
-            ${clientName ? `<div class="small text-muted"><i class="bi bi-person me-1"></i>${clientName}</div>` : ''}
-            ${line.description ? `<div class="small text-muted fst-italic">${line.description}</div>` : ''}
+            <div class="fw-semibold report-drilldown-val">${escapeHtml(accName)}</div>
+            ${clientName ? `<div class="small text-muted"><i class="bi bi-person me-1"></i>${escapeHtml(clientName)}</div>` : ''}
+            ${line.description ? `<div class="small text-muted fst-italic">${escapeHtml(line.description)}</div>` : ''}
           </td>
           <td class="text-end font-monospace ${dr > 0 ? 'text-primary fw-bold' : 'text-muted'}">${dr > 0 ? formatMoney(dr) : '—'}</td>
           <td class="text-end font-monospace ${cr > 0 ? 'text-success fw-bold' : 'text-muted'}">${cr > 0 ? formatMoney(cr) : '—'}</td>
@@ -574,17 +580,17 @@
         </div>
         <div class="col-sm-6 col-md-4">
           <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">Source System</div>
-          <div class="fw-semibold font-monospace">${journal.sourceType || 'MANUAL'} ${journal.sourceId ? '#' + journal.sourceId : ''}</div>
+          <div class="fw-semibold font-monospace">${escapeHtml(journal.sourceType || 'MANUAL')} ${journal.sourceId ? '#' + escapeHtml(journal.sourceId) : ''}</div>
         </div>
         <div class="col-sm-6 col-md-4">
           <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">Financial Year</div>
-          <div class="fw-semibold font-monospace">${journal.financialYear ? journal.financialYear.code : '—'}</div>
+          <div class="fw-semibold font-monospace">${escapeHtml(journal.financialYear ? journal.financialYear.code : '—')}</div>
         </div>
       </div>
 
       <div class="alert report-drilldown-callout border mb-4">
         <span class="fw-semibold text-muted small text-uppercase me-2">Narration:</span>
-        <span class="report-drilldown-val">${journal.narration || 'No narration provided.'}</span>
+        <span class="report-drilldown-val">${escapeHtml(journal.narration || 'No narration provided.')}</span>
       </div>
 
       <div class="card border-0 shadow-sm mb-4 report-drilldown-surface">
@@ -643,7 +649,7 @@
       <div class="row g-3 mb-4">
         <div class="col-sm-6 col-md-4">
           <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">Supplier</div>
-          <div class="fw-bold report-drilldown-val fs-6">${bill.supplier ? bill.supplier.name : 'Supplier'}</div>
+          <div class="fw-bold report-drilldown-val fs-6">${escapeHtml(bill.supplier ? bill.supplier.name : 'Supplier')}</div>
         </div>
         <div class="col-sm-6 col-md-4">
           <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">Bill Date</div>
@@ -681,7 +687,7 @@
       <div class="row g-3 mb-4">
         <div class="col-sm-6 col-md-4">
           <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">Supplier</div>
-          <div class="fw-bold report-drilldown-val fs-6">${po.supplier ? po.supplier.name : 'Supplier'}</div>
+          <div class="fw-bold report-drilldown-val fs-6">${escapeHtml(po.supplier ? po.supplier.name : 'Supplier')}</div>
         </div>
         <div class="col-sm-6 col-md-4">
           <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">Order Date</div>
@@ -716,9 +722,9 @@
     bodyEl.innerHTML = `
       <div class="p-4 rounded-3 text-center report-drilldown-surface">
         <i class="bi bi-file-earmark-text fs-1 text-primary d-block mb-2"></i>
-        <h6 class="fw-bold mb-1 report-drilldown-val">${info.sourceRef || 'Transaction Reference'}</h6>
-        <div class="text-muted small mb-3">Type: ${info.sourceType || 'Standard Transaction'} ${info.sourceId ? '• Record ID: ' + info.sourceId : ''}</div>
-        ${info.journalId ? `<a href="/reports/journals/${info.journalId}" class="btn btn-sm btn-outline-primary rounded-pill">Open Journal Entry #${info.journalId}</a>` : ''}
+        <h6 class="fw-bold mb-1 report-drilldown-val">${escapeHtml(info.sourceRef || 'Transaction Reference')}</h6>
+        <div class="text-muted small mb-3">Type: ${escapeHtml(info.sourceType || 'Standard Transaction')} ${info.sourceId ? '• Record ID: ' + escapeHtml(info.sourceId) : ''}</div>
+        ${info.journalId ? `<a href="/reports/journals/${encodeURIComponent(info.journalId)}" class="btn btn-sm btn-outline-primary rounded-pill">Open Journal Entry #${escapeHtml(info.journalId)}</a>` : ''}
       </div>
     `;
 

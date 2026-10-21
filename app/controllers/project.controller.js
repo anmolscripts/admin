@@ -877,7 +877,7 @@ async function apiUpdateAttachment(req, res, next) {
 async function apiIssueMaterial(req, res, next) {
     try {
         const businessId = req.businessId || req.session?.activeBusinessId;
-        const userId = req.user?.id || req.session?.user?.id || req.session?.userId || 1;
+        const userId = req.user?.id || req.session?.user?.id;
         const projectId = parseInt(req.params.id, 10);
 
         const movement = await stockMovementService.issueMaterialToProject({
@@ -888,7 +888,8 @@ async function apiIssueMaterial(req, res, next) {
             storeLocation: req.body.storeLocation,
             unitCost: req.body.unitCost ? parseFloat(req.body.unitCost) : null,
             notes: req.body.notes,
-            date: req.body.date ? new Date(req.body.date) : new Date()
+            date: req.body.date ? new Date(req.body.date) : null,
+            idempotencyKey: req.get('Idempotency-Key') || req.body.idempotencyKey
         }, userId);
 
         res.status(201).json({ success: true, stockMovement: movement });
@@ -900,7 +901,7 @@ async function apiIssueMaterial(req, res, next) {
 async function apiReturnMaterial(req, res, next) {
     try {
         const businessId = req.businessId || req.session?.activeBusinessId;
-        const userId = req.user?.id || req.session?.user?.id || req.session?.userId || 1;
+        const userId = req.user?.id || req.session?.user?.id;
         const projectId = parseInt(req.params.id, 10);
 
         const movement = await stockMovementService.returnMaterialFromProject({
@@ -911,7 +912,8 @@ async function apiReturnMaterial(req, res, next) {
             storeLocation: req.body.storeLocation,
             unitCost: req.body.unitCost ? parseFloat(req.body.unitCost) : null,
             notes: req.body.notes,
-            date: req.body.date ? new Date(req.body.date) : new Date()
+            date: req.body.date ? new Date(req.body.date) : null,
+            idempotencyKey: req.get('Idempotency-Key') || req.body.idempotencyKey
         }, userId);
 
         res.status(201).json({ success: true, stockMovement: movement });

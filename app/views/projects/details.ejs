@@ -1986,6 +1986,14 @@ document.getElementById('form-register-bill').addEventListener('submit', async f
 });
 
 // 2. Issue Stock from Inventory Handler
+function stockRequestKey(form, payload) {
+  const fingerprint = JSON.stringify(payload);
+  if (form.dataset.requestPayload !== fingerprint) {
+    form.dataset.requestPayload = fingerprint;
+    form.dataset.requestKey = crypto.randomUUID();
+  }
+  return form.dataset.requestKey;
+}
 document.getElementById('form-issue-stock').addEventListener('submit', async function(e) {
   e.preventDefault();
   const btn = document.getElementById('btn-submit-stock');
@@ -1994,21 +2002,18 @@ document.getElementById('form-issue-stock').addEventListener('submit', async fun
   const itemSelect = document.getElementById('stock-item');
   const payload = {
     itemId: parseInt(itemSelect.value, 10),
-    movementType: 'ISSUE',
     quantity: parseFloat(document.getElementById('stock-qty').value),
-    movementDate: document.getElementById('stock-date').value,
-    projectId: parseInt(projectId, 10),
-    referenceType: 'PROJECT',
-    referenceId: parseInt(projectId, 10),
+    date: document.getElementById('stock-date').value,
     notes: document.getElementById('stock-notes').value.trim()
   };
 
   try {
-    const res = await fetch('/api/inventory/movements', {
+    const res = await fetch(`/api/projects/${projectId}/issue-material`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'CSRF-Token': csrfToken
+        'CSRF-Token': csrfToken,
+        'Idempotency-Key': stockRequestKey(this, payload)
       },
       body: JSON.stringify(payload)
     });
@@ -2047,7 +2052,8 @@ if (returnStockForm) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'CSRF-Token': csrfToken
+          'CSRF-Token': csrfToken,
+          'Idempotency-Key': stockRequestKey(this, payload)
         },
         body: JSON.stringify(payload)
       });

@@ -132,7 +132,7 @@ async function collectConfiguration(opts) {
             const explicit = cliArgs[option] ?? process.env[key];
             if (explicit !== undefined) return explicit;
             const stored = existingEnv[key];
-            if (isInteractive && (editExisting || stored === undefined)) {
+            if (isInteractive && (editExisting || (shouldWriteEnv && stored === undefined))) {
                 return askQuestion(rl, label, stored ?? fallback, masked);
             }
             return stored ?? fallback;
@@ -211,7 +211,7 @@ async function collectConfiguration(opts) {
                 || existingEnv.SEED_ADMIN_PASSWORD;
 
             if (!adminPassword) {
-                if (isInteractive) {
+                if (isInteractive && (editExisting || shouldWriteEnv)) {
                     const supplied = await askQuestion(rl, 'Development Admin Password (leave blank to auto-generate)', '', true);
                     adminPassword = supplied || generateRandomPassword(16);
                 } else {

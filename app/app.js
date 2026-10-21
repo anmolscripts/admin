@@ -71,6 +71,7 @@ const { attachUserPermissions } = require('./middleware/permission.middleware');
 
 // Session management
 app.use(sessionMiddleware);
+app.use(require('./middleware/auth.middleware').validateSessionCredentials);
 
 // CSRF protection for all state-changing requests
 app.use(csrfProtection);

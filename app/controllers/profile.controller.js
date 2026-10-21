@@ -58,7 +58,9 @@ async function updateProfile(req, res) {
 async function changePassword(req, res) {
     try {
         const userId = req.session.user.id;
-        await profileService.changePassword(userId, req.body);
+        const result = await profileService.changePassword(userId, req.body);
+        req.session.credentialVersion = result.credentialVersion;
+        await new Promise((resolve, reject) => req.session.save(error => error ? reject(error) : resolve()));
 
         if (req.xhr || req.headers.accept?.includes('application/json')) {
             return res.json({ success: true, message: 'Password updated successfully.' });

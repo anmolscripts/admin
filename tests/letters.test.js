@@ -40,7 +40,7 @@ test('actual rich text editor retains formatting and round-trips page breaks thr
  }finally{dom.window.close();}
 });
 test('letters are tenant scoped, versioned, soft deleted and never post accounting entries',async()=>{
- assert.match(process.env.DATABASE_NAME,/^ui_audit_/);
+ assert.match(process.env.DATABASE_NAME,/^(?:ui_audit_|spark_disp_)/);
  const actor=await prisma.user.findFirst({where:{role:'ADMIN'}});assert.ok(actor);
  const business=await prisma.business.create({data:{code:'LETTERS_'+Date.now(),name:'Letter test organization'}});
  const foreign=await prisma.business.create({data:{code:'LETTERS_FOREIGN_'+Date.now(),name:'Foreign organization'}});
@@ -77,7 +77,7 @@ test('letters reuse every invoice template, repeat letterhead for print, and omi
  assert.ok(fs.readFileSync(path.join(__dirname,'../app/views/documents/index.ejs'),'utf8').includes('/documents/letters'));
 });
 test('letter HTTP workflow enforces CSRF and permissions and exports multi-page correspondence',async()=>{
- assert.match(process.env.DATABASE_NAME,/^ui_audit_/);
+ assert.match(process.env.DATABASE_NAME,/^(?:ui_audit_|spark_disp_)/);
  const server=http.createServer(require('../app/app'));await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const origin=`http://127.0.0.1:${server.address().port}`;
  try{
   const loginPage=await fetch(origin+'/login');const initialCookie=loginPage.headers.get('set-cookie').match(/spark\.sid=[^;]+/)[0];const token0=(await loginPage.text()).match(/name="_csrf"\s+value="([^"]+)"/)[1];

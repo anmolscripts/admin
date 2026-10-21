@@ -1163,6 +1163,8 @@ model SupplierPayment {
 model StockMovement {
   id             Int       @id @default(autoincrement())
   movementNumber String    @db.VarChar(50)
+  requestKey     String?   @db.VarChar(100)
+  requestHash    String?   @db.VarChar(64)
   businessId     Int?
   business       Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
   itemId         Int
@@ -1184,6 +1186,7 @@ model StockMovement {
   goodsReceiptItems GoodsReceiptItem[]
 
   @@unique([businessId, movementNumber])
+  @@unique([businessId, requestKey])
   @@index([businessId])
   @@index([itemId])
   @@index([movementDate])

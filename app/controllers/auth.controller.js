@@ -1,21 +1,13 @@
-const crypto = require('node:crypto');
 const authService = require('../services/auth.service');
 const { refreshCsrfToken } = require('../middleware/csrf.middleware');
 const { recordFailedLogin, resetLoginAttempts } = require('../middleware/rateLimit.middleware');
 const { SESSION_COOKIE_NAME, cookieOptions } = require('../config/session');
-const { isValidRedirectUrl } = require('../middleware/auth.middleware');
+const { isValidRedirectUrl, parseCookies } = require('../middleware/auth.middleware');
 const prisma = require('../config/prisma');
 const activityService = require('../services/activity.service');
 const businessService = require('../services/business.service');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-function generateRememberToken(userId) {
-    const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
-    const secret = process.env.SESSION_SECRET || 'spark-admin-dev-secret-key-change-in-prod-32chars';
-    const signature = crypto.createHmac('sha256', secret).update(`${userId}:${expiresAt}`).digest('hex');
-    return `${userId}.${expiresAt}.${signature}`;
-}
 
 /**
  * Render Login Page
@@ -131,13 +123,14 @@ async function login(req, res, next) {
             email: result.user.email,
             role: result.user.role
         };
+        req.session.credentialVersion = result.credentialVersion;
 
         // If rememberMe was requested, extend session lifetime and issue persistent remember cookie
         if (rememberMe) {
             if (req.session.cookie) {
                 req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
             }
-            const rememberToken = generateRememberToken(result.user.id);
+            const rememberToken = await authService.createRememberToken(result.user.id, result.credentialVersion);
             res.cookie('spark_remember', rememberToken, {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production' ? 'auto' : false,
@@ -196,6 +189,7 @@ async function login(req, res, next) {
  * Handle Logout
  */
 async function logout(req, res, next) {
+    await authService.revokeRememberToken(parseCookies(req.headers?.cookie).spark_remember);
     res.clearCookie('spark_remember', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production' ? 'auto' : false,

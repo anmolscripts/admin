@@ -14,6 +14,9 @@ function getRequestMeta(req) {
 }
 
 function handleControllerError(err, res, next) {
+    if (err.statusCode === 403 || err.statusCode === 404) {
+        return res.status(err.statusCode).json({ success: false, error: err.message });
+    }
     if (err instanceof invoiceService.ValidationError || err instanceof postingService.ValidationError) {
         return res.status(400).json({
             success: false,
@@ -49,7 +52,7 @@ function handleControllerError(err, res, next) {
 async function listInvoices(req, res, next) {
     try {
         const { search, status, paymentStatus, type, documentType, projectId, dateFrom, dateTo, page, limit, sortBy, sortDirection } = req.query;
-        const activeBizId = req.businessId || (req.session && req.session.activeBusinessId) || (req.query.businessId ? parseInt(req.query.businessId, 10) : null);
+        const activeBizId = req.businessId;
         const result = await invoiceService.listInvoices({
             businessId: activeBizId,
             projectId: projectId ? parseInt(projectId, 10) : undefined,
@@ -80,7 +83,7 @@ async function listInvoices(req, res, next) {
  */
 async function getInvoice(req, res, next) {
     try {
-        const invoice = await invoiceService.getInvoiceById(req.params.id);
+        const invoice = await invoiceService.getInvoiceById(req.params.id, req.businessId);
         return res.status(200).json({
             success: true,
             data: invoice
@@ -144,7 +147,7 @@ async function updateInvoice(req, res, next) {
  */
 async function getInvoiceHistory(req, res, next) {
     try {
-        const history = await invoiceService.getInvoiceHistory(req.params.id);
+        const history = await invoiceService.getInvoiceHistory(req.params.id, req.businessId);
         return res.status(200).json({
             success: true,
             data: history
@@ -264,7 +267,7 @@ async function convertQuotation(req, res, next) {
 async function acceptQuotation(req, res, next) {
     try {
         const userId = req.session?.user?.id;
-        const businessId = req.businessId || req.session?.activeBusinessId;
+        const businessId = req.businessId;
         const quotation = await invoiceService.acceptQuotation(req.params.id, userId, { ...req.body, businessId });
         return res.status(200).json({ success: true, data: quotation });
     } catch (err) { return handleControllerError(err, res, next); }
@@ -301,7 +304,7 @@ async function exportPdf(req, res, next) {
             });
         }
 
-        const invoice = await invoiceService.getInvoiceById(id);
+        const invoice = await invoiceService.getInvoiceById(id, req.businessId);
         const docBizId = invoice.businessId || req.businessId;
         const profile = await businessProfileService.getProfile(docBizId);
         const activeTemplates = templateService.getActiveTemplates(docBizId);
@@ -339,7 +342,7 @@ async function exportPdf(req, res, next) {
 async function exportExcel(req, res, next) {
     try {
         const { search, status, type, documentType, dateFrom, dateTo, limit } = req.query;
-        const activeBizId = req.businessId || (req.session && req.session.activeBusinessId) || (req.query.businessId ? parseInt(req.query.businessId, 10) : null);
+        const activeBizId = req.businessId;
         const excelBuffer = await excelService.generateInvoicesExcel({
             businessId: activeBizId,
             documentType: type || documentType,
@@ -378,7 +381,7 @@ async function exportExcel(req, res, next) {
  */
 async function getDashboardKPIs(req, res, next) {
     try {
-        const businessId = req.businessId || (req.session && req.session.activeBusinessId) || null;
+        const businessId = req.businessId;
         const kpis = await invoiceService.getDashboardKPIs(businessId);
         return res.status(200).json({ success: true, data: kpis, ...kpis });
     } catch (err) {
@@ -389,7 +392,7 @@ async function getDashboardKPIs(req, res, next) {
 async function postInvoiceAccounting(req, res, next) {
     try {
         const userId = req.session && req.session.user ? req.session.user.id : null;
-        const result = await postingService.postInvoice(req.params.id, { userId });
+        const result = await postingService.postInvoice(req.params.id, { userId, businessId: req.businessId });
         return res.status(200).json({
             success: true,
             ...result
