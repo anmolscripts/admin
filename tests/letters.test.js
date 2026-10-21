@@ -101,5 +101,9 @@ test('letter HTTP workflow enforces CSRF and permissions and exports multi-page 
   const readonly=await fetch(origin+'/documents/letters',{headers:{Cookie:viewerCookie}});assert.equal(readonly.status,200);const readonlyHtml=await readonly.text();assert.ok(!readonlyHtml.includes('href="/documents/letters/new"'));
   const viewerCsrf=readonlyHtml.match(/name="csrf-token" content="([^"]+)"/)[1];
   const denied=await fetch(origin+'/api/letters',{method:'POST',headers:{...headers,Cookie:viewerCookie,'X-CSRF-Token':viewerCsrf},body:JSON.stringify(base)});assert.equal(denied.status,403);assert.match(await denied.text(),/permission|access/i);
+  await prisma.userPermission.deleteMany({where:{userId:viewer.id}});
+  const createPermission=await prisma.permission.findUnique({where:{module_action:{module:'DOCUMENTS',action:'CREATE'}}});
+  await prisma.userPermission.create({data:{userId:viewer.id,permissionId:createPermission.id}});
+  const forbiddenCopy=await fetch(origin+`/documents/letters/new?copyFrom=${letter.id}`,{headers:{Cookie:viewerCookie}});assert.equal(forbiddenCopy.status,403);
  }finally{server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}
 });

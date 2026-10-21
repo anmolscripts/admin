@@ -5,7 +5,7 @@ const templates=require('../services/template.service');
 const profiles=require('../services/businessProfile.service');
 const pdf=require('../services/pdf.service');
 const ExcelJS=require('exceljs');
-const {ValidationError}=require('../services/errorTypes');
+const {ValidationError,ForbiddenError}=require('../services/errorTypes');
 const wrap=fn=>async(req,res,next)=>{try{await fn(req,res);}catch(error){next(error);}};
 const id=req=>{const value=Number(req.params.id);if(!Number.isSafeInteger(value)||value<1)throw new ValidationError('Invalid letter ID.');return value;};
 const actor=req=>req.session.user.id;
@@ -14,7 +14,10 @@ exports.index=wrap(async(req,res)=>res.render('letters/index',{pageTitle:'Letter
 exports.editor=wrap(async(req,res)=>{
     let letter=null;
     if(req.params.id){letter=await letters.get(id(req),req.businessId);if(letter.status!=='ACTIVE')throw new ValidationError('Copy this letter to create an editable version.');}
-    else if(req.query.copyFrom){letter={...await letters.get(Number(req.query.copyFrom),req.businessId),id:null,version:null,letterNumber:null,status:'ACTIVE'};}
+    else if(req.query.copyFrom){
+        if(!req.hasPermission('DOCUMENTS','VIEW'))throw new ForbiddenError('Viewing the source letter is required to copy it.');
+        letter={...await letters.get(Number(req.query.copyFrom),req.businessId),id:null,version:null,letterNumber:null,status:'ACTIVE'};
+    }
     res.render('letters/editor',{pageTitle:letter?.id?'Edit Letter':'New Letter',pageSubtitle:'Compose a letter with your invoice and quotation branding.',letter,templates:templates.listTemplates(req.businessId),defaultTemplate:templates.getActiveTemplates(req.businessId).invoiceTemplate});
 });
 exports.view=wrap(async(req,res)=>{

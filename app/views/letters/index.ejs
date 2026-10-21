@@ -12,11 +12,11 @@
  <div class="col-md-3"><select class="form-select" name="status" aria-label="Letter status"><% for(const state of ['ACTIVE','VOID','DELETED','ALL']){ %><option value="<%= state %>" <%= (filters.status||'ACTIVE')===state?'selected':'' %>><%= state %></option><% } %></select></div>
  <div class="col-md-2"><button class="btn btn-primary w-100">Filter</button></div>
 </form>
-<div class="card card-glass"><div class="card-body p-0"><div class="table-responsive">
+<div class="card card-glass"><div class="card-body p-0"><% if(letters.length){ %><div class="table-responsive">
  <table class="table table-hover align-middle mb-0" data-spark-datatable="true" data-title="Letters">
  <thead><tr><th scope="col">Reference</th><th scope="col">Subject</th><th scope="col">Recipient</th><th scope="col">Date</th><th scope="col">Status</th><th scope="col">Version</th></tr></thead>
  <tbody><% for(const letter of letters){ %><tr>
  <td><a href="/documents/letters/<%= letter.id %>"><%= letter.letterNumber %></a></td><td><a href="/documents/letters/<%= letter.id %>"><%= letter.subject %></a></td><td><%= letter.recipientName %></td><td><%= letter.letterDate.toISOString().slice(0,10) %></td><td><span class="badge <%= letter.status==='ACTIVE'?'text-bg-success':letter.status==='VOID'?'text-bg-warning':'text-bg-secondary' %>"><%= letter.status %></span></td><td><%= letter.version %></td>
  </tr><% } %></tbody></table>
-</div><% if(!letters.length){ %><div class="text-center p-4"><p class="text-muted">No letters to show. Create a letter to start your correspondence.</p><% if(hasPermission('DOCUMENTS','CREATE')){ %><a href="/documents/letters/new" class="btn btn-primary">Write your first letter</a><% } %></div><% } %></div></div>
+</div><% } else { %><div class="text-center p-4"><p class="text-muted">No letters to show. Create a letter to start your correspondence.</p><% if(hasPermission('DOCUMENTS','CREATE')){ %><a href="/documents/letters/new" class="btn btn-primary">Write your first letter</a><% } %></div><% } %></div></div>
 <%- include('../layouts/footer') %>
