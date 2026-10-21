@@ -318,12 +318,13 @@ async function postStockMovementToLedger({ movementId, debitAccountKey = 'COGS',
         throw new ConflictError(`Stock movement ${movement.movementNumber} has already been posted to the general ledger (Journal #${existing.entryNumber}).`);
     }
 
-    const fy = await ensureFinancialYear(movement.movementDate, movement.businessId || movement.item?.businessId);
+    const businessId = movement.businessId || movement.item?.businessId;
+    const fy = await ensureFinancialYear(movement.movementDate, businessId);
     if (fy.status === 'CLOSED') {
         throw new ValidationError(`Cannot post stock movement into closed Financial Year ${fy.code}.`);
     }
 
-    await ensureSystemAccounts(userId);
+    await ensureSystemAccounts(userId, businessId);
 
     const costAmount = Math.round(parseFloat(movement.totalCost) * 100) / 100;
     if (costAmount <= 0) {
@@ -337,8 +338,8 @@ async function postStockMovementToLedger({ movementId, debitAccountKey = 'COGS',
         const drKey = isOutward ? debitAccountKey : creditAccountKey;
         const crKey = isOutward ? creditAccountKey : debitAccountKey;
 
-        const drAccount = await tx.chartOfAccount.findFirst({ where: { systemAccountKey: drKey } });
-        const crAccount = await tx.chartOfAccount.findFirst({ where: { systemAccountKey: crKey } });
+        const drAccount = await tx.chartOfAccount.findFirst({ where: { systemAccountKey: drKey, businessId } });
+        const crAccount = await tx.chartOfAccount.findFirst({ where: { systemAccountKey: crKey, businessId } });
 
         if (!drAccount || !crAccount) {
             throw new Error(`Required ledger accounts (${drKey}, ${crKey}) not found in Chart of Accounts.`);
@@ -360,7 +361,7 @@ async function postStockMovementToLedger({ movementId, debitAccountKey = 'COGS',
         ];
 
         const journal = await journalService.postJournalEntry({
-            businessId: movement.businessId || movement.item?.businessId,
+            businessId,
             entryDate: movement.movementDate,
             financialYearId: fy.id,
             sourceType: 'STOCK_MOVEMENT',

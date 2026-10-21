@@ -25,7 +25,7 @@ test('TASK 3 — Inventory and Supplier-Bill Accounting Integration Suite', asyn
     // Helper to get GL balance for an account key
     async function getGlBalance(systemAccountKey) {
         const account = await prisma.chartOfAccount.findFirst({
-            where: { systemAccountKey }
+            where: { systemAccountKey, businessId: 1 }
         });
         if (!account) return 0;
         const rep = await reportService.getGeneralLedgerReport({
@@ -37,7 +37,7 @@ test('TASK 3 — Inventory and Supplier-Bill Accounting Integration Suite', asyn
 
     await t.test('Setup dependencies: System Accounts, Financial Year, User, Supplier, Item', async () => {
         // Ensure standard system accounts including 1141 INVENTORY_ASSET
-        await coaService.ensureSystemAccounts();
+        await coaService.ensureSystemAccounts(null, 1);
 
         testUser = await prisma.user.findFirst({ where: { role: 'ADMIN' } });
         if (!testUser) {
@@ -296,6 +296,8 @@ test('TASK 3 — Inventory and Supplier-Bill Accounting Integration Suite', asyn
             include: { lines: { include: { account: true } } }
         });
         assert.ok(moveJournal);
+        assert.ok(moveJournal.lines.every(line => line.account.businessId === 1),
+            'Stock journals must use accounts belonging to the movement business');
         const cogsLine = moveJournal.lines.find(l => l.account.systemAccountKey === 'COGS');
         const invLine = moveJournal.lines.find(l => l.account.systemAccountKey === 'INVENTORY_ASSET');
         assert.equal(Number(cogsLine.debit), 20000.0);

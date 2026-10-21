@@ -18,7 +18,7 @@ test('logo picker previews, undoes and rejects oversized selections without writ
  await choose(new w.File(['svg'],'logo.svg',{type:'image/svg+xml'}));assert.equal(d.getElementById('organization-logo-reset').hidden,true);dom.window.close();
 });
 test('multipart settings saves a logo, preserves old files, rejects invalid uploads and requires CSRF',async()=>{
- assert.match(process.env.DATABASE_NAME,/^ui_audit_/);
+ require('../scripts/lib/test-database-config').assertDisposableTestDatabase();
  const business=await prisma.business.create({data:{name:'Logo synthetic workspace',code:'LOGO'+Date.now()}});
  await profile.updateProfile({legalName:'Logo Test Company',logoUrl:'/images/default-avatar.png',email:'keep@example.test',stateCode:'27'},business.id);
  const server=http.createServer(require('../app/app'));await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port;

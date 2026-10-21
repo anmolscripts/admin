@@ -69,7 +69,7 @@ test('account menu places Product Guide immediately after My Profile',()=>{
 
 const prisma=require('../app/config/prisma');after(()=>prisma.$disconnect());
 test('authenticated HTTP guide omits restricted content and denies guessed chapters and images',async()=>{
- assert.match(process.env.DATABASE_NAME,/^ui_audit_/);
+ require('../scripts/lib/test-database-config').assertDisposableTestDatabase();
  const http=require('node:http'),bcrypt=require('bcrypt');
  const stamp=Date.now();const role=await prisma.role.create({data:{name:'Guide viewer '+stamp}});
  const permission=await prisma.permission.findUniqueOrThrow({where:{module_action:{module:'DOCUMENTS',action:'VIEW'}}});

@@ -6,7 +6,7 @@ const prisma=require('../app/config/prisma');
 const service=require('../app/services/goodsReceipt.service');
 after(()=>prisma.$disconnect());
 test('receipt retries are durable and concurrent receipts cannot over-receive a purchase order',async()=>{
-    assert.match(process.env.DATABASE_NAME,/^ui_audit_/,'Run only in the disposable audit database');
+    require('../scripts/lib/test-database-config').assertDisposableTestDatabase();
     const business=await prisma.business.findFirst(),user=await prisma.user.findFirst();
     const supplier=await prisma.supplier.create({data:{businessId:business.id,name:`Receipt supplier ${Date.now()}`,createdById:user.id}});
     const direct={idempotencyKey:crypto.randomUUID(),supplierId:supplier.id,receiptDate:'2026-10-19',items:[{name:'Rejected delivery',receivedQuantity:1,acceptedQuantity:0,rejectedQuantity:1,unitCost:5}]};

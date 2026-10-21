@@ -91,6 +91,7 @@
 |-- .antigravity
     |-- extensions.json
 |-- .artifacts
+    |-- accounting-verification.log
     |-- autonomous-run
         |-- run-20261010-01
             |-- DATABASE_SAFETY.md
@@ -183,15 +184,25 @@
                 |-- TASK-FINAL-007.md
             |-- TASK_BOARD.md
             |-- TEST_SUMMARY.md
+    |-- backup-and-upgrade.js
+    |-- command-smoke.js
+    |-- current-environment-doctor.log
+    |-- focused-verification.log
     |-- milestone-8
         |-- full-test-suite-20261009.log
     |-- product-readiness
         |-- check_complete_test_suite.log
+        |-- check_doctor_configured_environment.log
         |-- check_doctor_health_check.log
         |-- check_migration_16_upgrade_proof.log
+        |-- check_prisma_client_generation.log
         |-- check_prisma_migration_status.log
         |-- check_prisma_schema_validation.log
+        |-- check_prisma_test_migrations.log
+        |-- check_release_build.log
         |-- check_syntax_app.log
+        |-- check_syntax_app_services_accounting_report_service_js.log
+        |-- check_syntax_app_services_stockmovement_service_js.log
         |-- check_syntax_business_profile.log
         |-- check_syntax_business_service.log
         |-- check_syntax_navigation_service.log
@@ -200,8 +211,16 @@
         |-- check_syntax_profile_service.log
         |-- check_syntax_reporting_workbench.log
         |-- check_syntax_schema_readiness.log
+        |-- check_syntax_scripts_doctor_js.log
+        |-- check_syntax_scripts_lib_env_manager_js.log
+        |-- check_syntax_scripts_lib_install_dependencies_js.log
+        |-- check_syntax_scripts_lib_test_database_config_js.log
+        |-- check_syntax_scripts_prisma_test_js.log
+        |-- check_syntax_scripts_setup_js.log
+        |-- check_syntax_scripts_verify_all_js.log
         |-- check_syntax_search_service.log
         |-- check_syntax_server.log
+    |-- verification-console.log
 |-- .claude
     |-- skills
         |-- prisma-cli
@@ -390,6 +409,7 @@
                 |-- removed-features.md
                 |-- schema-changes.md
             |-- SKILL.md
+|-- AGENTS.md
 |-- app
     |-- app.js
     |-- config
@@ -398,6 +418,17 @@
         |-- schemaReadiness.js
         |-- session.js
         |-- sessionStore.js
+    |-- content
+        |-- product-guide-screens
+            |-- clients.png
+            |-- documents.png
+            |-- editor.png
+            |-- history.png
+            |-- profile.png
+            |-- reports.png
+            |-- templates.png
+            |-- workspace.png
+        |-- product-guide.js
     |-- controllers
         |-- auth.controller.js
         |-- business.controller.js
@@ -411,6 +442,7 @@
         |-- invoice.controller.js
         |-- item.controller.js
         |-- payment.controller.js
+        |-- productGuide.controller.js
         |-- profile.controller.js
         |-- project.controller.js
         |-- purchase.controller.js
@@ -427,11 +459,15 @@
         |-- error.middleware.js
         |-- permission.middleware.js
         |-- rateLimit.middleware.js
+        |-- recordBoundary.middleware.js
+        |-- reportingPeriod.middleware.js
+        |-- requestLog.middleware.js
         |-- upload.middleware.js
     |-- routes
         |-- admin.routes.js
         |-- auth.routes.js
         |-- invoice.routes.js
+        |-- recordDesk.routes.js
         |-- search.routes.js
         |-- team.routes.js
         |-- web.routes.js
@@ -466,11 +502,15 @@
         |-- payment.service.js
         |-- payroll.service.js
         |-- pdf.service.js
+        |-- productGuide.service.js
         |-- profile.service.js
         |-- project.service.js
         |-- projectCostLedger.service.js
         |-- purchaseOrder.service.js
         |-- rbac.service.js
+        |-- recordDesk.service.js
+        |-- recordHistory.service.js
+        |-- recordRegistry.js
         |-- reportingWorkbench.service.js
         |-- search.service.js
         |-- stockMovement.service.js
@@ -500,6 +540,7 @@
             |-- print.ejs
             |-- templates
                 |-- document.ejs
+                |-- rajesh-letterhead.ejs
             |-- view.ejs
         |-- errors
             |-- 403.ejs
@@ -523,6 +564,11 @@
             |-- index.ejs
             |-- print.ejs
             |-- view.ejs
+        |-- partials
+            |-- reporting-period.ejs
+        |-- product-guide
+            |-- index.ejs
+            |-- screen.ejs
         |-- profile
             |-- index.ejs
         |-- projects
@@ -569,16 +615,22 @@
             |-- _header.css
             |-- _sidebar.css
             |-- _tables.css
+        |-- components.css
         |-- documents.css
         |-- editor.css
         |-- main.css
         |-- premium-refresh.css
+        |-- product-guide.css
         |-- projects.css
+        |-- responsive.css
         |-- spark-datatable.css
         |-- theme.css
         |-- view.css
     |-- images
         |-- avatar.png
+        |-- default-avatar.png
+        |-- document-templates
+            |-- rajesh-international-logo.png
         |-- favicon.ico
         |-- spark-admin-free.png
         |-- user_1.jpg
@@ -595,10 +647,16 @@
         |-- documents.js
         |-- editor.js
         |-- global-search.js
+        |-- organization-logo.js
+        |-- product-guide.js
+        |-- profile.js
+        |-- record-desk.js
         |-- report-drilldown.js
+        |-- reporting-period.js
         |-- spark-ajax-loader.js
         |-- spark-datatable.js
         |-- spark-daterange.js
+        |-- spark-feedback.js
         |-- spark-modals.js
         |-- spark-tom-select.js
         |-- view.js
@@ -619,6 +677,9 @@
         |-- flatpickr
             |-- flatpickr.min.css
             |-- flatpickr.min.js
+        |-- sweetalert2
+            |-- sweetalert2.all.min.js
+            |-- sweetalert2.min.css
         |-- tom-select
             |-- css
                 |-- tom-select.bootstrap5.min.css
@@ -627,6 +688,19 @@
     |-- uploads
         |-- avatars
             |-- .gitkeep
+            |-- 594dd443-3dc9-44ed-8dc6-678434bf331d.png
+            |-- 77c76a28-b051-4d04-af14-2ba522c12f3e.png
+            |-- bcb4a124-2378-47f4-8d52-48ac13e5110c.png
+            |-- retained-1792556154522.png
+            |-- retained-1792556320871.png
+            |-- retained-1792556573600.png
+        |-- logos
+            |-- 1954915b-ccaa-40f7-a6c4-160cfdf5f396.png
+            |-- 3b48e159-eb1d-496e-8e6f-8bb89e16bb3d.png
+            |-- cb4957ab-84a6-4a0e-b9d4-ca8202169b75.png
+            |-- d9282745-ceb3-4620-b5ee-673b0ac7213b.png
+            |-- e366be06-b2c3-4154-a8e1-adcde0ecbf8c.png
+            |-- fd33350f-4409-482d-903f-ef6570fbb886.png
 |-- data
     |-- attachments
         |-- 1792387074458_738331f9adef9553341152bf0f591c7d.pdf
@@ -673,6 +747,18 @@
         |-- 1792405848050_10e89ee4da7e842de71771c60c471af5.pdf
         |-- 1792405931326_a5a85c35b2a56e47258e788c12326f36.pdf
         |-- 1792405931354_b8678821c53d7a2024e91f2222b5aa2c.png
+        |-- 1792555962934_44953e429c342cb882777d130b8a2c34.pdf
+        |-- 1792556048000_27e9d05b264333d10353957d8cec0770.pdf
+        |-- 1792556048023_05188357a2d44fca2bc9af8a155a5002.png
+        |-- 1792556284354_a4ba4b3b9c4c6f77ebe9774e2efb42ce.pdf
+        |-- 1792556373602_19d8251a397a102ce9a3e8ac6f74754d.pdf
+        |-- 1792556373625_090a86ba6323739bd0573f854c94ee3f.png
+        |-- 1792556541396_f8bbbbe20781ce5c6849592860f666c8.pdf
+        |-- 1792556625942_893306190ec87f6eb9ff45fa979cab3a.pdf
+        |-- 1792556625961_4530b08bd17fd93632661b54f6840951.png
+    |-- backups
+        |-- spark_admin_dev-before-command-fix-1792556438558.sql
+        |-- spark_admin_dev-before-command-fix-1792556438558.sql.verification.json
     |-- templates
         |-- business_1.json
         |-- business_8881.json
@@ -701,16 +787,21 @@
     |-- DEVELOPER_HANDBOOK.md
     |-- DEVELOPMENT_WORKFLOW.md
     |-- DOCUMENT_LIFECYCLE.md
+    |-- ENTERPRISE_READINESS.md
     |-- FINAL_ACCEPTANCE_REPORT.md
+    |-- FORM_UI_AUDIT.md
     |-- GLOBAL_SEARCH.md
     |-- INSTALLATION.md
+    |-- LOCAL_LIVE_DEPLOYMENT.md
     |-- MILESTONE_8_FINAL_REPORT.md
     |-- MILESTONE_8_REMEDIATION_LOG.md
+    |-- MODERN_COMPONENTS.md
     |-- product
         |-- ACCOUNTING_AND_DATA_INTEGRITY_MATRIX.md
         |-- ERP_PRODUCT_SPEC.md
     |-- PRODUCTION_ACCEPTANCE_FLOWS.md
     |-- PRODUCTION_ACCEPTANCE_TRACKER.md
+    |-- PRODUCT_GUIDE.md
     |-- PRODUCT_READINESS_FINAL_REPORT.md
     |-- PRODUCT_READINESS_REMEDIATION_LOG.md
     |-- PROJECT_COMPLETION_ROADMAP.md
@@ -729,6 +820,8 @@
     |-- RELEASE_MIGRATION_REVIEW_2026-10-19.md
     |-- SECURITY.md
     |-- TESTING.md
+    |-- THEME_COMPONENTS.md
+    |-- UI_PRODUCTION_AUDIT.md
     |-- UPGRADE_GUIDE.md
     |-- USER_ACTIVITY.md
     |-- USER_MANUAL.md
@@ -952,6 +1045,56 @@
             |-- 13_invoice_desktop_1280.png
             |-- 14_invoice_mobile_375.png
     |-- F00_health_check.json
+    |-- modern-ui
+        |-- profile-light.png
+        |-- verification.json
+    |-- organization-logo
+        |-- logo-preview.png
+        |-- preview-raw.png
+        |-- verification.json
+    |-- product-docs
+        |-- documentation-dark-raw.png
+        |-- documentation-dark.png
+        |-- documentation-light-raw.png
+        |-- documentation-light.png
+        |-- verification.json
+    |-- product-guide
+        |-- capture-rects.json
+        |-- menu-light-raw.png
+        |-- overview-dark-raw.png
+        |-- overview-dark.png
+        |-- overview-light-raw.png
+        |-- overview-light.png
+        |-- raw-clients.png
+        |-- raw-documents.png
+        |-- raw-editor.png
+        |-- raw-history.png
+        |-- raw-profile.png
+        |-- raw-reports.png
+        |-- raw-templates.png
+        |-- raw-workspace.png
+        |-- training-contact-sheet.png
+        |-- verification.json
+        |-- zoom-dark-raw.png
+    |-- rajesh-template
+        |-- invoice-page2.png
+        |-- invoice.html
+        |-- invoice.pdf
+        |-- invoice.png
+        |-- long-last.png
+        |-- long-page2.png
+        |-- long-quotation.html
+        |-- long-quotation.pdf
+        |-- quotation.html
+        |-- quotation.pdf
+        |-- quotation.png
+    |-- responsive-audit
+        |-- alert-dark.png
+        |-- continued-matrix.json
+        |-- invalid-image.txt
+        |-- modals.json
+        |-- progress.json
+        |-- template-modal-light.png
 |-- index.html
 |-- package-lock.json
 |-- package.json
@@ -1014,6 +1157,8 @@
             |-- migration.sql
         |-- 20261019150000_add_payment_cheque_clearance
             |-- migration.sql
+        |-- 20261019190000_goods_receipt_request_identity
+            |-- migration.sql
         |-- migration_lock.toml
     |-- schema.prisma
     |-- seed
@@ -1040,11 +1185,13 @@
     |-- cdp_inspect_login.js
     |-- check-db-connection.js
     |-- check-test-db-exists.js
+    |-- cleanup-native-locks.js
     |-- create-test-db.js
     |-- create_shadow_db.js
     |-- db-reset.js
     |-- db-target.js
     |-- db-upgrade.js
+    |-- deploy.js
     |-- diagnostic-env.js
     |-- disposable-release-verification.js
     |-- doctor.js
@@ -1081,6 +1228,8 @@
     |-- postmigration_verify.js
     |-- preflight-db-check.js
     |-- premigration_compat_check.js
+    |-- prepare-ui-audit.js
+    |-- preview-rajesh-template.js
     |-- prisma-test.js
     |-- qa_browser_e2e.js
     |-- qa_search_browser_e2e.js
@@ -1093,6 +1242,7 @@
     |-- seed_dev_admin.js
     |-- setup.js
     |-- setup_dev_database.js
+    |-- start_acceptance_server.js
     |-- start_test_server.js
     |-- sweep_six_businesses_accounting.js
     |-- test-fixtures.js
@@ -1119,6 +1269,9 @@
     |-- complete_project_integration_flows.test.js
     |-- contracts.test.js
     |-- credit_debit_notes.test.js
+    |-- default-avatar.test.js
+    |-- deploy.test.js
+    |-- doctor.test.js
     |-- documents.test.js
     |-- e2e_security_payment_audit.test.js
     |-- editor.test.js
@@ -1126,22 +1279,30 @@
     |-- erp_workflow_integration.test.js
     |-- export.test.js
     |-- financial_year_closing.test.js
+    |-- form-ui-regressions.test.js
     |-- gate8_packaging_protection.test.js
+    |-- goods-receipt-requests.test.js
     |-- hardening.test.js
+    |-- installer-prompts.test.js
     |-- installer.test.js
     |-- inventory_accounting_integration.test.js
+    |-- invoice-numeric-validation.test.js
     |-- invoice.test.js
     |-- invoice_posting.test.js
     |-- item_import_inventory.test.js
     |-- migration_provenance.test.js
     |-- migration_upgrade.test.js
+    |-- modern-components.test.js
     |-- numbering.test.js
     |-- numbering_recovery.test.js
+    |-- organization-edit.test.js
+    |-- organization-logo.test.js
     |-- packaging_and_safety.test.js
     |-- payment_posting.test.js
     |-- payroll.test.js
     |-- phase6.test.js
     |-- phase8.test.js
+    |-- product-guide.test.js
     |-- production_install.test.js
     |-- profile.test.js
     |-- project_costing.test.js
@@ -1150,15 +1311,21 @@
     |-- purchases_and_financials.test.js
     |-- purchase_order_gst.test.js
     |-- quotation_long_item_regression.test.js
+    |-- rajesh-template.test.js
     |-- rbac_team_activity.test.js
+    |-- record-desk-ui.test.js
+    |-- record-desk.test.js
     |-- release_build.test.js
     |-- release_migration_compatibility.test.js
     |-- reporting_format_parity.test.js
     |-- reports_reconciliation.test.js
     |-- rotate_password_guard.test.js
     |-- search.test.js
+    |-- select-editor-ui.test.js
+    |-- settings-navigation.test.js
     |-- stock_movements.test.js
     |-- supplier_payments.test.js
+    |-- template-settings-csrf.test.js
     |-- templates.test.js
     |-- test_database_config.test.js
     |-- unit.test.js

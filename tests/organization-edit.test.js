@@ -7,7 +7,7 @@ const prisma=require('../app/config/prisma');
 const service=require('../app/services/business.service');
 after(()=>prisma.$disconnect());
 test('organization rename synchronizes branding, preserves profile details and records atomic history',async()=>{
-    assert.match(process.env.DATABASE_NAME,/^ui_audit_/);
+    require('../scripts/lib/test-database-config').assertDisposableTestDatabase();
     const org=await prisma.business.create({data:{code:`RENAME_${Date.now()}`,name:'Original organization',legalName:'Original legal entity'}});
     await prisma.businessProfile.create({data:{businessId:org.id,legalName:'Original legal entity',displayName:org.name,workspaceName:org.name,email:'keep@example.test',address:'Retain this address',bankName:'Preserved bank',accountNumber:'TEST-ACCOUNT',gstin:'27AABCS1429B1ZB'}});
     const updated=await service.updateBusiness(org.id,{name:'Renamed organization',legalName:'Renamed legal entity',_version:org.updatedAt.toISOString()});

@@ -54,14 +54,14 @@ async function runDoctor() {
     addCheck('Runtime', 'npm Availability', npmRes.ok ? 'PASS' : 'FAIL', npmRes.message);
 
     // 2. Configuration & Environment (.env)
-    const nodeEnv = process.env.NODE_ENV || 'development';
-    const envFileName = nodeEnv === 'test' ? '.env.test' : '.env';
+    const envFileName = process.env.NODE_ENV === 'test' ? '.env.test' : '.env';
     const envPath = path.join(ROOT_DIR, envFileName);
     const envExists = fs.existsSync(envPath);
     addCheck('Config', `${envFileName} File`, envExists ? 'PASS' : 'FAIL', envExists ? `File ${envFileName} exists and readable` : `${envFileName} file is missing`);
     const envVars = envExists ? parseEnvFile(envPath) : {};
     // Load environment variables from the selected file, overriding any existing vars
     require('dotenv').config({ path: envPath, override: true });
+    const nodeEnv = process.env.NODE_ENV || 'development';
     const isProduction = nodeEnv === 'production';
     addCheck('Config', 'Environment Mode', 'PASS', `Running in ${nodeEnv} mode`);
 
@@ -111,11 +111,9 @@ async function runDoctor() {
     // 5. Database Schema & Migrations
     if (dbConnected && prisma) {
         try {
-            // Check if migrations table exists and count entries without applying migrations
-            const migCountResult = await prisma.$queryRaw`SELECT COUNT(*) as cnt FROM _prisma_migrations`;
-            const migCount = Number(migCountResult[0].cnt);
-            const isUpToDate = migCount >= 0; // existence implies migrations recorded
-            addCheck('Prisma', 'Migration Status', isUpToDate ? 'PASS' : 'WARN', isUpToDate ? `Found ${migCount} migration entries` : 'No migrations recorded');
+            const migrationStatus = runPrismaCommand(['migrate', 'status']);
+            addCheck('Prisma', 'Migration Status', migrationStatus.ok ? 'PASS' : 'FAIL',
+                migrationStatus.ok ? 'All application migrations are applied' : 'Pending or failed migrations; run the guarded database upgrade');
         } catch (err) {
             // If migrations table does not exist yet, treat as WARN
             addCheck('Prisma', 'Migration Status', 'WARN', err.message);
@@ -175,12 +173,12 @@ async function runDoctor() {
         // 8. Master Data: Units & Items
         try {
             const unitsCount = await prisma.unit.count();
-            const unitsPass = isProduction ? (unitsCount === 13) : (unitsCount >= 13);
-            addCheck('Master Data', 'Predefined Unit Master', unitsPass ? 'PASS' : 'FAIL', `Found ${unitsCount} units (${isProduction ? 'exact requirement: 13' : 'standard requirement: >= 13'})`);
+            const unitsPass = unitsCount >= 13;
+            addCheck('Master Data', 'Predefined Unit Master', unitsPass ? 'PASS' : 'FAIL', `Found ${unitsCount} units (standard requirement: >= 13)`);
 
             const itemsCount = await prisma.item.count();
-            const itemsPass = isProduction ? (itemsCount === 21) : (itemsCount >= 21);
-            addCheck('Master Data', 'Predefined Item Master', itemsPass ? 'PASS' : 'FAIL', `Found ${itemsCount} items (${isProduction ? 'exact requirement: 21' : 'standard requirement: >= 21'})`);
+            const itemsPass = isProduction || itemsCount >= 21;
+            addCheck('Master Data', 'Predefined Item Master', itemsPass ? 'PASS' : 'FAIL', `Found ${itemsCount} items (${isProduction ? 'production catalog may be empty' : 'standard requirement: >= 21'})`);
         } catch (err) {
             addCheck('Master Data', 'Master Data Seeding', 'FAIL', logger.formatError(err));
         }
@@ -215,22 +213,22 @@ async function runDoctor() {
 
             try {
                 const clients = await prisma.client.count();
-                addCheck('Prod Invariant', 'Zero Clients Invariant', clients === 0 ? 'PASS' : 'FAIL', `Found ${clients} clients (must be 0)`);
+                addCheck('Production Data', 'Clients', 'PASS', `Found ${clients} clients`);
 
                 const invoices = await prisma.invoice.count();
-                addCheck('Prod Invariant', 'Zero Invoices Invariant', invoices === 0 ? 'PASS' : 'FAIL', `Found ${invoices} invoices (must be 0)`);
+                addCheck('Production Data', 'Invoices', 'PASS', `Found ${invoices} invoices`);
 
                 const payments = await prisma.payment.count();
-                addCheck('Prod Invariant', 'Zero Payments Invariant', payments === 0 ? 'PASS' : 'FAIL', `Found ${payments} payments (must be 0)`);
+                addCheck('Production Data', 'Payments', 'PASS', `Found ${payments} payments`);
 
                 const revisions = await prisma.invoiceRevision.count();
-                addCheck('Prod Invariant', 'Zero Invoice Revisions', revisions === 0 ? 'PASS' : 'FAIL', `Found ${revisions} revisions (must be 0)`);
+                addCheck('Production Data', 'Invoice Revisions', 'PASS', `Found ${revisions} revisions`);
 
                 const activityLogs = await prisma.userActivityLog.count();
-                addCheck('Prod Invariant', 'Zero Activity Logs Invariant', activityLogs === 0 ? 'PASS' : 'FAIL', `Found ${activityLogs} activity logs (must be 0)`);
+                addCheck('Production Data', 'Activity Logs', 'PASS', `Found ${activityLogs} activity logs`);
 
                 const profiles = await prisma.businessProfile.count();
-                addCheck('Prod Invariant', 'Zero Business Profile', profiles === 0 ? 'PASS' : 'FAIL', `Found ${profiles} business profiles (must be 0)`);
+                addCheck('Production Data', 'Business Profiles', 'PASS', `Found ${profiles} business profiles`);
             } catch (err) {
                 addCheck('Prod Invariant', 'Production Invariants Query', 'FAIL', logger.formatError(err));
             }

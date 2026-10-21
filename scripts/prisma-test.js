@@ -3,9 +3,10 @@
 // Usage: node scripts/prisma-test.js <prisma subcommand> [args...]
 // Example: node scripts/prisma-test.js migrate status
 
-const { spawnSync } = require('node:child_process');
 const path = require('node:path');
 const dotenv = require('dotenv');
+const { resolveTestDatabaseConfig } = require('./lib/test-database-config');
+const { runPrismaCommand } = require('./lib/prisma-cli');
 
 // Load test env variables and override any existing ones, unless DATABASE_URL is explicitly set.
 dotenv.config({ path: path.resolve(process.cwd(), '.env.test'), override: !process.env.DATABASE_URL });
@@ -15,7 +16,7 @@ if (!process.env.DATABASE_NAME) {
   console.error('ERROR: DATABASE_NAME is not set in .env.test');
   process.exit(1);
 }
-const protectedDbs = ['admin', 'spark_admin', 'spark_admin_prod'];
+const protectedDbs = ['admin', 'spark_admin', 'spark_admin_prod', 'spark_admin_test', 'spark_admin_prod_test'];
 if (protectedDbs.includes(process.env.DATABASE_NAME.toLowerCase())) {
   console.error(`ERROR: Test configuration must not target protected database "${process.env.DATABASE_NAME}".`);
   process.exit(1);
@@ -27,20 +28,10 @@ if (args.length === 0) {
   process.exit(1);
 }
 
-// Build the full Prisma CLI command.
-const cmd = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-// Explicitly point to the custom Prisma config file
-const prismaArgs = ['prisma', '--config', './prisma7.config.ts', ...args];
-
-const result = spawnSync('npx', prismaArgs, {
-  cwd: process.cwd(),
-  stdio: 'inherit',
-  env: { ...process.env, NODE_ENV: 'test', PRISMA_DISABLE_ENV_VAR_LOADING: 'true' },
-  shell: true,
-});
-
-if (result.error) {
-  console.error('Failed to execute Prisma CLI:', result.error);
-  process.exit(1);
-}
-process.exit(result.status !== null ? result.status : 1);
+// Use the local CLI and validate URL/name agreement before any database command.
+resolveTestDatabaseConfig(process.env);
+const result = runPrismaCommand(args, { NODE_ENV: 'test', PRISMA_DISABLE_ENV_VAR_LOADING: 'true' });
+if (result.stdout) process.stdout.write(result.stdout);
+if (result.stderr) process.stderr.write(result.stderr);
+if (!result.ok && !result.stderr) console.error(result.error);
+process.exit(result.ok ? 0 : 1);

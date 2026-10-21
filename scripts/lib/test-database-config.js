@@ -65,8 +65,17 @@ function readTestDatabaseConfig(rootPath = process.cwd()) {
     return resolveTestDatabaseConfig(parseEnvFile(envPath));
 }
 
+function assertDisposableTestDatabase(values = process.env) {
+    const config = resolveTestDatabaseConfig(values);
+    if (values.NODE_ENV !== 'test' || !/^(?:ui_audit_|spark_disp_)[A-Za-z0-9_]+$/.test(config.database)) {
+        throw new Error('Write-enabled regression tests require test mode and an explicitly disposable ui_audit_ or spark_disp_ database.');
+    }
+    return config;
+}
+
 module.exports = {
     PROTECTED_DATABASES,
     readTestDatabaseConfig,
+    assertDisposableTestDatabase,
     resolveTestDatabaseConfig
 };

@@ -8,7 +8,7 @@ const clients=require('../app/services/client.service');
 const context=(businessId,edit=true)=>({businessId,userId:null,permissions:{hasPermission:(_module,action)=>action==='VIEW'||edit}});
 after(()=>prisma.$disconnect());
 test('record editing preserves atomic history, rejects stale saves and enforces tenant and role boundaries',async()=>{
-    assert.match(process.env.DATABASE_NAME,/^ui_audit_/,'Run only in the disposable audit database');
+    require('../scripts/lib/test-database-config').assertDisposableTestDatabase();
     const business=await prisma.business.findFirst();assert.ok(business);
     const client=await prisma.client.create({data:{businessId:business.id,clientCode:`HIST-${Date.now()}`,name:'History original',active:true}});
     const original=await desk.inspect('client',client.id,context(business.id));

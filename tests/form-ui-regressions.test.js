@@ -15,7 +15,7 @@ async function login(base,email,password){
  const result=await fetch(base+'/login',{method:'POST',redirect:'manual',headers:{Cookie:cookie,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({_csrf:token,email,password})});assert.equal(result.status,302);return result.headers.get('set-cookie').match(/spark\.sid=[^;]+/)[0];
 }
 test('native multipart profile saves validate CSRF, enforce upload limits and retain data on failure',async()=>{
- assert.match(process.env.DATABASE_NAME,/^ui_audit_/);
+ require('../scripts/lib/test-database-config').assertDisposableTestDatabase();
  const password='Audit-Upload-Only-2026!';const user=await prisma.user.create({data:{name:'Upload audit user',email:`upload_${Date.now()}@example.test`,password:await bcrypt.hash(password,10),role:'STAFF',active:true}});
  const business=await prisma.business.findFirst();await prisma.businessMembership.create({data:{businessId:business.id,userId:user.id,role:'MEMBER',isDefault:true}});
  const server=http.createServer(app);await new Promise(r=>server.listen(0,'127.0.0.1',r));const base=`http://127.0.0.1:${server.address().port}`;
@@ -52,7 +52,7 @@ test('profile AJAX failures retain inputs, send CSRF and re-enable save',async()
  assert.equal(form.elements.name.value,'Keep this name');assert.equal(form.querySelector('button').disabled,false);assert.equal(request.headers['X-CSRF-Token'],'test-token');assert.match(form.querySelector('[role="alert"]').textContent,/Invalid image/);dom.window.close();
 });
 test('failed avatar persistence keeps the old image and removes only the newly staged image',async()=>{
- assert.match(process.env.DATABASE_NAME,/^ui_audit_/);
+ require('../scripts/lib/test-database-config').assertDisposableTestDatabase();
  const directory=path.join(__dirname,'../assets/uploads/avatars');fs.mkdirSync(directory,{recursive:true});const name=`retained-${Date.now()}.png`;const original=path.join(directory,name);fs.writeFileSync(original,png);
  const user=await prisma.user.create({data:{name:'Retained avatar',email:`retained_${Date.now()}@example.test`,password:'synthetic-test-only',role:'STAFF',avatarUrl:'/uploads/avatars/'+name}});
  const count=fs.readdirSync(directory).length;const update=prisma.user.update;

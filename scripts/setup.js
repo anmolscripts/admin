@@ -21,7 +21,7 @@ const { spawnSync } = require('node:child_process');
 
 const logger = require('./lib/logger');
 const { checkNodeVersion, checkNpmVersion, checkMySqlTcpConnectivity } = require('./lib/prerequisites');
-const { collectConfiguration, parseEnvFile } = require('./lib/env-manager');
+const { collectConfiguration } = require('./lib/env-manager');
 const { ensureDatabaseExists, runPrismaCommand } = require('./lib/db-manager');
 const { verifyDatabaseState } = require('./lib/verifier');
 const { PROTECTED_DATABASES, readTestDatabaseConfig } = require('./lib/test-database-config');
@@ -123,7 +123,7 @@ async function main() {
 
         const npmInstall = spawnSync(`${npmCmd} ${installCmd}`, {
             cwd: ROOT_DIR,
-            stdio: 'inherit',
+            stdio: ['ignore', 'inherit', 'inherit'],
             shell: true
         });
 
@@ -133,7 +133,7 @@ async function main() {
                 logger.warn('npm ci failed, falling back to npm install...');
                 const fallback = spawnSync(`${npmCmd} install`, {
                     cwd: ROOT_DIR,
-                    stdio: 'inherit',
+                    stdio: ['ignore', 'inherit', 'inherit'],
                     shell: true
                 });
                 if (fallback.status !== 0) {
@@ -168,7 +168,7 @@ async function main() {
         process.exit(1);
     }
 
-    const { config: envConfig, adminCredentials, envWritten } = envResult;
+    const { config: envConfig, adminCredentials } = envResult;
     logger.pass('Configuration prepared; it will be saved after reset confirmation.');
 
     // Set process.env from config for subsequent child processes and drivers
@@ -358,9 +358,9 @@ async function main() {
     }
 
     // -------------------------------------------------------------------------
-    // [8/9] Seeding data
+    // [7/8] Seeding data
     // -------------------------------------------------------------------------
-    logger.section(8, 9, 'Seeding data');
+    logger.section(7, 8, 'Seeding data');
 
     // Dynamically load prisma and seed router now that dependencies exist
     const seedModule = require('../prisma/seed');
@@ -381,7 +381,7 @@ async function main() {
     // -------------------------------------------------------------------------
     // [9/9] Verifying installation
     // -------------------------------------------------------------------------
-    logger.section(9, 9, 'Verifying installation');
+    logger.section(8, 8, 'Verifying installation');
 
     const prismaInstance = require('../app/config/prisma');
     let verifyResult;
@@ -426,7 +426,7 @@ async function main() {
             }
             logger.pass('Full regression test suite passed (npm test).');
         } else {
-            logger.info('Skipping test suite (--skip-tests flag passed).');
+            logger.info('Regression tests are opt-in during setup; run npm run verify:all after changes.');
         }
     } else {
         // Production mode: read-only smoke verification

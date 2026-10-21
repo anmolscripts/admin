@@ -28,14 +28,15 @@ function installDependencies({ root = path.resolve(__dirname, '../..'), producti
     const args = ['ci', ...(production ? ['--omit=dev'] : []), '--no-audit', '--no-fund'];
     const npmCli = process.env.npm_execpath;
     const result = npmCli && fs.existsSync(npmCli)
-        ? run(process.execPath, [npmCli, ...args], { cwd: root, stdio: 'inherit', shell: false })
-        : run(process.platform === 'win32' ? 'npm.cmd' : 'npm', args, { cwd: root, stdio: 'inherit', shell: process.platform === 'win32' });
+        ? run(process.execPath, [npmCli, ...args], { cwd: root, stdio: ['ignore', 'inherit', 'inherit'], shell: false })
+        : run(process.platform === 'win32' ? 'npm.cmd' : 'npm', args, { cwd: root, stdio: ['ignore', 'inherit', 'inherit'], shell: process.platform === 'win32' });
 
     if (result.error || result.status !== 0) {
         cleanupNativeLocks(root);
+        const retryArgs = ['install', ...(production ? ['--omit=dev'] : []), '--no-audit', '--no-fund'];
         const retry = npmCli && fs.existsSync(npmCli)
-            ? run(process.execPath, [npmCli, 'install', '--no-audit', '--no-fund'], { cwd: root, stdio: 'inherit', shell: false })
-            : run(process.platform === 'win32' ? 'npm.cmd' : 'npm', 'install --no-audit --no-fund', { cwd: root, stdio: 'inherit', shell: process.platform === 'win32' });
+            ? run(process.execPath, [npmCli, ...retryArgs], { cwd: root, stdio: ['ignore', 'inherit', 'inherit'], shell: false })
+            : run(process.platform === 'win32' ? 'npm.cmd' : 'npm', retryArgs, { cwd: root, stdio: ['ignore', 'inherit', 'inherit'], shell: process.platform === 'win32' });
         if (retry.error || retry.status !== 0) throw new Error('Dependency installation failed; no database operation was started.');
     }
 }

@@ -42,6 +42,25 @@ exclude development setup, sample-data seeding and tests. Startup and business w
 still require environment-specific verification. Development installs do not touch a
 separate test database or run the full test suite by default.
 
+When the existing-configuration prompt appears, `Y` reuses stored values and `n`
+lets you edit them with the current values as defaults. Password entry is hidden;
+press Enter to submit it. Closing input or pressing Ctrl+C aborts with an error.
+Development admin passwords are saved locally in the ignored `.env` file;
+production admin passwords are never saved there.
+
+After changing code or dependencies, run:
+
+```bash
+npm run verify:all
+```
+
+This generates Prisma Client, applies pending forward migrations to the guarded
+database in `.env.test`, checks migration status and doctor, runs the complete test
+suite and upgrade proof, and builds a release candidate using `build:only`. The
+suite modifies test data; `.env.test` must point to a disposable test database.
+Each check streams output and writes a log under `.artifacts/product-readiness`.
+`npm run build` performs live deployment; use `npm run build:only` for build checks.
+
 ---
 
 ## System Prerequisites
@@ -218,7 +237,7 @@ The Doctor command checks:
 | `npm run install:migrate -- --confirm-db=<database> --backup-confirmed` | Forward-only upgrade after target confirmation and verified backup |
 | `npm run build` | Build and smoke-test a clean release candidate without database writes |
 | `npm run db:upgrade -- --confirm-db=<database> --backup-confirmed` | Backward-compatible alias for the guarded migration command |
-| `npm run verify:all` | Comprehensive 10-point static, schema, doctor, and test verification |
+| `npm run verify:all` | Syntax, client generation, test migrations, doctor, full tests, upgrade proof, and release build |
 | `npm run package:release` | Verifies release exclusions and builds clean distribution archive |
 | `npm run doctor` | Performs 20-point production environment and database health check |
 | `npm test` | Runs the full test suite across all 143 test files |

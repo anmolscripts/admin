@@ -9,7 +9,7 @@ const fy=require('../app/services/financialYear.service');
 const app=require('../app/app');
 after(()=>prisma.$disconnect());
 test('financial years create once, roll forward by date and preserve closed historical years per business',async()=>{
- assert.match(process.env.DATABASE_NAME,/^ui_audit_/);
+ require('../scripts/lib/test-database-config').assertDisposableTestDatabase();
  const business=await prisma.business.create({data:{name:'FY rollover audit '+Date.now(),legalName:'Synthetic audit',code:'FYA'+Date.now()}});
  const march=new Date(2031,2,31,23,59,59),april=new Date(2031,3,1);
  assert.equal(fy.computeFinancialYear(march).code,'2030-31');assert.equal(fy.computeFinancialYear(april).code,'2031-32');
@@ -45,7 +45,7 @@ test('theme follows device defaults and retains explicit choices across reloads'
  changed({matches:true});assert.equal(dom.window.document.documentElement.dataset.theme,'light');dom.window.eval(init);assert.equal(dom.window.document.documentElement.dataset.theme,'light');dom.window.close();
 });
 test('template editor opens and saves the selected layout and colors through the real authenticated API',async()=>{
- assert.match(process.env.DATABASE_NAME,/^ui_audit_/);
+ require('../scripts/lib/test-database-config').assertDisposableTestDatabase();
  const server=http.createServer(app);await new Promise(r=>server.listen(0,'127.0.0.1',r));const base=`http://127.0.0.1:${server.address().port}`;let dom;
  try{
   const first=await fetch(base+'/login');let cookie=first.headers.get('set-cookie').match(/spark\.sid=[^;]+/)[0];const token=(await first.text()).match(/name="_csrf"\s+value="([^"]+)"/)[1];

@@ -34,29 +34,39 @@ function generateRandomPassword(length = 16) {
  * @returns {Promise<string>}
  */
 function askQuestion(rl, promptText, defaultValue = '', isMasked = false) {
-    return new Promise((resolve) => {
-        const displayPrompt = defaultValue ? `${promptText} [${defaultValue}]: ` : `${promptText}: `;
-
-        if (isMasked && process.stdin.isTTY) {
-            // Keep one input consumer. A second raw-data listener allowed the
-            // existing readline interface to echo the actual password as well.
-            process.stdout.write(`${promptText}: `);
-            const originalWrite = rl._writeToOutput;
-            const restore = () => { rl._writeToOutput = originalWrite; };
-            rl._writeToOutput = () => {};
-            rl.once('close', restore);
-            rl.question('', answer => {
-                restore();
-                rl.removeListener('close', restore);
-                process.stdout.write('\n');
-                resolve(answer || defaultValue);
-            });
-        } else {
-            rl.question(displayPrompt, (answer) => {
-                const trimmed = answer.trim();
-                resolve(trimmed || defaultValue);
-            });
+    return new Promise((resolve, reject) => {
+        if (rl.closed) {
+            reject(new Error('Installer input closed. Run again in an interactive terminal or use --non-interactive with explicit options.'));
+            return;
         }
+        const displayPrompt = defaultValue ? `${promptText} [${defaultValue}]: ` : `${promptText}: `;
+        const masked = isMasked && process.stdin.isTTY;
+        const originalWrite = rl._writeToOutput;
+        const cleanup = () => {
+            if (masked) rl._writeToOutput = originalWrite;
+            rl.removeListener('close', onClose);
+            rl.removeListener('SIGINT', onCancel);
+            rl.removeListener('error', onError);
+        };
+        const fail = error => { cleanup(); reject(error); };
+        const onClose = () => fail(new Error('Installer input closed. Run again in an interactive terminal or use --non-interactive with explicit options.'));
+        const onCancel = () => fail(new Error('Installation cancelled. No pending confirmation was accepted.'));
+        const onError = () => fail(new Error('Installer could not read terminal input. Run again in an interactive terminal.'));
+        rl.once('close', onClose);
+        rl.once('SIGINT', onCancel);
+        rl.once('error', onError);
+        try {
+            if (masked) {
+                // Keep one input consumer and explain why typing has no echo.
+                process.stdout.write(`${promptText} (input hidden; press Enter to continue): `);
+                rl._writeToOutput = () => {};
+            }
+            rl.question(masked ? '' : displayPrompt, answer => {
+                cleanup();
+                if (masked) process.stdout.write('\n');
+                resolve((masked ? answer : answer.trim()) || defaultValue);
+            });
+        } catch (error) { fail(error); }
     });
 }
 
@@ -93,6 +103,7 @@ async function collectConfiguration(opts) {
 
     const cliArgs = opts.cliArgs || {};
     let shouldWriteEnv = true;
+    let editExisting = Boolean(opts.overwriteEnv);
 
     let rl = null;
     if (isInteractive) {
@@ -110,51 +121,29 @@ async function collectConfiguration(opts) {
                 const answer = await askQuestion(rl, 'Existing .env file detected. Keep existing configuration? (Y/n)', 'Y');
                 if (answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes') {
                     shouldWriteEnv = false;
-                }
+                } else editExisting = true;
             } else {
                 // Non-interactive: keep existing .env by default
                 shouldWriteEnv = false;
             }
         }
 
-        // Determine DB Host
-        const dbHost = cliArgs['db-host']
-            || process.env.DATABASE_HOST
-            || existingEnv.DATABASE_HOST
-            || (isInteractive ? await askQuestion(rl, 'Database Host', 'localhost') : 'localhost');
-
-        // Determine DB Port
-        const dbPort = cliArgs['db-port']
-            || process.env.DATABASE_PORT
-            || existingEnv.DATABASE_PORT
-            || (isInteractive ? await askQuestion(rl, 'Database Port', '3306') : '3306');
-
-        // Determine DB User
-        const defaultUser = isProduction ? 'spark_app_user' : 'root';
-        const dbUser = cliArgs['db-user']
-            || process.env.DATABASE_USER
-            || existingEnv.DATABASE_USER
-            || (isInteractive ? await askQuestion(rl, 'Database User', defaultUser) : defaultUser);
-
-        // Determine DB Password
-        let dbPassword = cliArgs['db-password']
-            || (process.env.DATABASE_PASSWORD !== undefined ? process.env.DATABASE_PASSWORD : undefined)
-            || (existingEnv.DATABASE_PASSWORD !== undefined ? existingEnv.DATABASE_PASSWORD : undefined);
-
-        if (dbPassword === undefined) {
-            if (isInteractive) {
-                dbPassword = await askQuestion(rl, 'Database Password', '', true);
-            } else {
-                dbPassword = '';
+        const field = async (option, key, label, fallback, masked = false) => {
+            const explicit = cliArgs[option] ?? process.env[key];
+            if (explicit !== undefined) return explicit;
+            const stored = existingEnv[key];
+            if (isInteractive && (editExisting || stored === undefined)) {
+                return askQuestion(rl, label, stored ?? fallback, masked);
             }
-        }
-
-        // Determine DB Name
+            return stored ?? fallback;
+        };
+        const dbHost = await field('db-host', 'DATABASE_HOST', 'Database Host', 'localhost');
+        const dbPort = await field('db-port', 'DATABASE_PORT', 'Database Port', '3306');
+        const defaultUser = isProduction ? 'spark_app_user' : 'root';
+        const dbUser = await field('db-user', 'DATABASE_USER', 'Database User', defaultUser);
+        const dbPassword = await field('db-password', 'DATABASE_PASSWORD', 'Database Password (Enter keeps current value)', '', true);
         const defaultDbName = isProduction ? 'spark_app' : 'spark_admin_dev';
-        const dbName = cliArgs['db-name']
-            || process.env.DATABASE_NAME
-            || existingEnv.DATABASE_NAME
-            || (isInteractive ? await askQuestion(rl, 'Database Name', defaultDbName) : defaultDbName);
+        const dbName = await field('db-name', 'DATABASE_NAME', 'Database Name', defaultDbName);
 
         // Construct DATABASE_URL
         const encodedUser = encodeURIComponent(dbUser);
@@ -162,10 +151,7 @@ async function collectConfiguration(opts) {
         const databaseUrl = `mysql://${encodedUser}:${encodedPass}@${dbHost}:${dbPort}/${dbName}${existingUrl?.search || ''}`;
 
         // Port & Host
-        const appPort = cliArgs.port
-            || process.env.PORT
-            || existingEnv.PORT
-            || (isInteractive ? await askQuestion(rl, 'Application Port', '3000') : '3000');
+        const appPort = await field('port', 'PORT', 'Application Port', '3000');
 
         const appHost = isProduction ? '127.0.0.1' : '0.0.0.0';
         const trustProxy = isProduction ? 'true' : 'false';
@@ -254,6 +240,7 @@ async function collectConfiguration(opts) {
             SEED_ADMIN_EMAIL: adminEmail
         };
         if (isProduction) delete config.SEED_ADMIN_PASSWORD;
+        else config.SEED_ADMIN_PASSWORD = adminPassword;
 
         // Write .env if required
         if (shouldWriteEnv && !opts.deferWrite) {

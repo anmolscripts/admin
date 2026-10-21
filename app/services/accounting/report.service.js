@@ -304,9 +304,10 @@ async function getGeneralLedgerReport(filters = {}) {
 
         let fromDateObj = null;
         let toDateObj = null;
+        let fy = null;
 
         if (filters.financialYearId) {
-            const fy = await prisma.financialYear.findUnique({
+            fy = await prisma.financialYear.findUnique({
                 where: { id: parseInt(filters.financialYearId, 10) }
             });
             if (fy) {
@@ -318,6 +319,7 @@ async function getGeneralLedgerReport(filters = {}) {
 
         if (filters.fromDate) fromDateObj = parseStartOfDay(filters.fromDate);
         if (filters.toDate) toDateObj = parseEndOfDay(filters.toDate);
+        const scoping = resolveBusinessScoping(filters, fy || { businessId: account.businessId });
 
         // 1. Calculate opening balance before fromDateObj (including all prior posted journals)
         let openingBalanceCents = toCents(account.openingBalance);
@@ -328,14 +330,16 @@ async function getGeneralLedgerReport(filters = {}) {
         }
 
         if (fromDateObj) {
+            const priorWhere = {
+                accountId,
+                journalEntry: {
+                    status: { in: ['POSTED', 'REVERSED'] },
+                    entryDate: { lt: fromDateObj }
+                }
+            };
+            applyJournalBusinessScope(priorWhere.journalEntry, scoping);
             const priorLines = await prisma.journalEntryLine.findMany({
-                where: {
-                    accountId,
-                    journalEntry: {
-                        status: { in: ['POSTED', 'REVERSED'] },
-                        entryDate: { lt: fromDateObj }
-                    }
-                },
+                where: priorWhere,
                 select: { debit: true, credit: true }
             });
 
@@ -357,6 +361,7 @@ async function getGeneralLedgerReport(filters = {}) {
                 status: { in: ['POSTED', 'REVERSED'] }
             }
         };
+        applyJournalBusinessScope(lineWhere.journalEntry, scoping);
 
         if (fromDateObj || toDateObj) {
             lineWhere.journalEntry.entryDate = {};
