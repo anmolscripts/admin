@@ -18,7 +18,7 @@ class ReportController {
      */
     async renderReportsOverview(req, res, next) {
         try {
-            const financialYears = await financialYearService.listFinancialYears();
+            const financialYears = await financialYearService.listFinancialYears(req.businessId);
             res.render('reports/index', {
                 pageTitle: 'Financial Reports & Accounting',
                 pageSubtitle: 'Authoritative double-entry reporting, ledgers, statements, and reconciliation.',
@@ -39,7 +39,7 @@ class ReportController {
         try {
             const [report, financialYears, accounts] = await Promise.all([
                 reportService.getJournalRegister(req.query),
-                financialYearService.listFinancialYears(),
+                financialYearService.listFinancialYears(req.businessId),
                 coaService.listAccounts()
             ]);
 
@@ -98,7 +98,7 @@ class ReportController {
         try {
             const [report, financialYears, accounts] = await Promise.all([
                 reportService.getGeneralLedgerReport(req.query),
-                financialYearService.listFinancialYears(),
+                financialYearService.listFinancialYears(req.businessId),
                 coaService.listAccounts()
             ]);
 
@@ -128,7 +128,7 @@ class ReportController {
         try {
             const [report, financialYears] = await Promise.all([
                 reportService.getTrialBalance(req.query),
-                financialYearService.listFinancialYears()
+                financialYearService.listFinancialYears(req.businessId)
             ]);
 
             res.render('reports/trial-balance', {
@@ -153,7 +153,7 @@ class ReportController {
         try {
             const [report, financialYears] = await Promise.all([
                 reportService.getProfitAndLoss(req.query),
-                financialYearService.listFinancialYears()
+                financialYearService.listFinancialYears(req.businessId)
             ]);
 
             res.render('reports/profit-and-loss', {
@@ -178,7 +178,7 @@ class ReportController {
         try {
             const [report, financialYears] = await Promise.all([
                 reportService.getBalanceSheet(req.query),
-                financialYearService.listFinancialYears()
+                financialYearService.listFinancialYears(req.businessId)
             ]);
 
             res.render('reports/balance-sheet', {

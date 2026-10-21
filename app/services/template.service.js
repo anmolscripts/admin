@@ -14,6 +14,23 @@ if (!fs.existsSync(TEMPLATES_DIR)) {
 
 const BUILT_IN_TEMPLATES = [
     {
+        id: 'rajesh-signature',
+        name: 'Rajesh International · Navy & Gold',
+        category: 'Signature Letterhead',
+        description: 'Reference-inspired navy and metallic gold letterhead, supplied Rajesh International logo, infinity watermark, curved borders and dynamic contact details. For invoices and quotations.',
+        accentColor: '#091e49',
+        accentSubtle: '#fcf7ec',
+        fontFamily: 'Arial, Helvetica, sans-serif',
+        themeClass: 'theme-rajesh-signature',
+        showHsn: true,
+        showUpiQr: false,
+        showDiscount: true,
+        showUnit: true,
+        isBuiltIn: true,
+        customCss: '',
+        brandLogo: 'data:image/png;base64,' + fs.readFileSync(path.join(__dirname, '../../assets/images/document-templates/rajesh-international-logo.png')).toString('base64')
+    },
+    {
         id: 'modern-minimal',
         name: 'Modern Minimalist',
         category: 'Modern',
@@ -154,8 +171,13 @@ function setActiveTemplates(businessId, { invoiceTemplate, quotationTemplate }) 
 function getTemplate(templateId, businessId) {
     const all = listTemplates(businessId);
     const found = all.find(t => t.id === templateId);
-    if (found) return found;
-    return BUILT_IN_TEMPLATES[0]; // Fallback to modern-minimal
+    if (found) {
+        if (found.themeClass === 'theme-rajesh-signature' && !found.brandLogo) {
+            return { ...found, brandLogo: BUILT_IN_TEMPLATES.find(t => t.id === 'rajesh-signature').brandLogo };
+        }
+        return found;
+    }
+    return BUILT_IN_TEMPLATES.find(t => t.id === 'modern-minimal');
 }
 
 /**
@@ -171,8 +193,11 @@ function saveCustomTemplate(businessId, data) {
     }
 
     const config = loadBusinessConfig(businessId);
-    const baseLayout = data.baseLayout || 'modern-minimal';
+    const baseLayout = data.baseLayout || data.baseTemplate || 'modern-minimal';
+    if (!BUILT_IN_TEMPLATES.some(t=>t.id===baseLayout)) throw new Error('Choose a valid base layout.');
     const accentColor = data.accentColor || '#2563eb';
+    if (!/^#[0-9a-f]{6}$/i.test(accentColor)) throw new Error('Accent color must be a six-digit hex color.');
+    if (data.accentSubtle && !/^#[0-9a-f]{6}$/i.test(data.accentSubtle)) throw new Error('Subtle color must be a six-digit hex color.');
     const fontFamily = data.fontFamily || 'Inter, -apple-system, sans-serif';
     const customCss = data.customCss ? String(data.customCss).trim() : '';
     const showHsn = data.showHsn !== undefined ? Boolean(data.showHsn) : true;
@@ -190,11 +215,11 @@ function saveCustomTemplate(businessId, data) {
     const customTemplate = {
         id: targetId,
         name,
-        category: 'Custom',
+        category: String(data.category || 'Custom').trim().slice(0,80),
         description: data.description ? String(data.description).trim() : `Custom business template based on ${baseLayout}.`,
         baseLayout,
         accentColor,
-        accentSubtle: `${accentColor}15`,
+        accentSubtle: data.accentSubtle || `${accentColor}15`,
         fontFamily,
         themeClass: `theme-${baseLayout}`,
         showHsn,
@@ -311,6 +336,7 @@ function buildSampleViewModel(templateId, documentType = 'INVOICE', profile = {}
             address: profile.address || 'Plot 42, Tech Park Central, Bandra Kurla Complex, Mumbai 400051',
             email: profile.email || 'billing@sparktech.io',
             phone: profile.phone || '+91 98765 43210',
+            website: profile.website || '',
             stateCode: profile.stateCode || '27',
             bankName: profile.bankName || 'HDFC Bank Ltd',
             accountNumber: profile.accountNumber || '50200012345678',
@@ -328,7 +354,11 @@ function buildSampleViewModel(templateId, documentType = 'INVOICE', profile = {}
             shippingAddress: 'Plant 2, Plot 89, TTC Industrial Zone, Rabale, Navi Mumbai 400701',
             placeOfSupply: 'State Code 27 (Maharashtra)'
         },
-        items,
+        items: items.map((item, index) => ({
+            ...item, lineNumber: index + 1, name: item.itemName, hsnSac: item.hsnCode,
+            unit: item.unitSymbol, formattedRate: '₹' + item.unitRate,
+            formattedAmount: '₹' + item.totalAmount
+        })),
         financials: {
             subtotal: subtotalNum.toFixed(2),
             formattedSubtotal: '₹1,35,000.00',
@@ -345,7 +375,13 @@ function buildSampleViewModel(templateId, documentType = 'INVOICE', profile = {}
             roundOff: '0.00',
             formattedRoundOff: '₹0.00',
             grandTotal: grandTotalNum.toFixed(2),
-            formattedGrandTotal: '₹1,59,300.00'
+            formattedGrandTotal: '₹1,59,300.00',
+            isInterState: false,
+            formattedCgstAmount: '₹12,150.00',
+            formattedSgstAmount: '₹12,150.00',
+            formattedIgstAmount: '₹0.00',
+            formattedPaidAmount: '₹0.00',
+            formattedOutstandingAmount: '₹1,59,300.00'
         },
         terms: profile.defaultTerms || '1. Goods once sold will not be taken back without prior written RMA authorization.\n2. Payment is due strictly within the agreed credit term.\n3. Delayed payments are subject to commercial interest @ 18% per annum.',
         notes: profile.defaultRemarks || 'Thank you for your business. For any technical or delivery inquiries, please reference the document number.',

@@ -33,6 +33,7 @@
                                 this.tomselect.addOption({ value: stringVal, text: text });
                             }
                             this.tomselect.setValue(stringVal, true);
+                            this.tomselect.wrapper.classList.toggle('has-real-value', stringVal !== '');
                         } catch (err) {
                             // Non-fatal fallback
                         } finally {
@@ -61,6 +62,7 @@
         }
         if (selectEl.tomselect) {
             selectEl.tomselect.setValue(selectEl.value, true);
+            selectEl.tomselect.wrapper.classList.toggle('has-real-value', selectEl.value !== '');
         }
     };
 
@@ -69,6 +71,7 @@
     // -------------------------------------------------------------------------
     function initTomSelect(el) {
         if (!el || typeof TomSelect === 'undefined') return null;
+        if (el.closest('.swal2-container') || el.classList.contains('swal2-select')) return null;
         if (el.tomselect || el.classList.contains('tomselected') || el.dataset.noTomselect === 'true') {
             return el.tomselect || null;
         }
@@ -80,7 +83,7 @@
 
         const optionCount = el.options ? el.options.length : 0;
         const isSearchable = (optionCount > 7 && el.dataset.searchable !== 'false') || el.dataset.searchable === 'true';
-        const isSmall = (el.classList.contains('form-select-sm') && el.closest('table')) || 
+        const isSmall = el.classList.contains('form-select-sm') ||
                         el.classList.contains('pagination-size-select') ||
                         el.classList.contains('spark-dt-size-select');
 
@@ -99,14 +102,20 @@
         const modalContainer = el.closest('.modal-content') || el.closest('.modal-body') || el.closest('.modal');
         const dropdownParent = modalContainer ? modalContainer : 'body';
 
-        const plugins = [];
+        const plugins = {};
         if (isSearchable) {
-            plugins.push('dropdown_input');
+            plugins.dropdown_input = {};
         }
 
         // Add clear button if not multiple and allows empty option
-        if (!el.multiple && el.querySelector('option[value=""]')) {
-            plugins.push('clear_button');
+        const clearGroup = el.closest('.input-group');
+        const externalClear = clearGroup && clearGroup.querySelector('[id^="btn-clear-"], [data-select-clear]');
+        if (!el.multiple && !el.required && !externalClear && el.querySelector('option[value=""]')) {
+            plugins.clear_button = {
+                html: function () {
+                    return '<button type="button" class="clear-button" title="Clear selection" aria-label="Clear selection">&times;</button>';
+                }
+            };
         }
 
         let tsInstance = null;
@@ -126,6 +135,9 @@
                     }
                 },
                 onInitialize: function () {
+                    // Tom Select copies native classes; styling both shells doubles borders/padding.
+                    this.wrapper.classList.remove('form-select', 'form-select-custom', 'form-control', 'form-control-custom', 'form-select-sm', 'form-select-lg');
+                    this.dropdown.classList.toggle('ts-dropdown-modal', !!modalContainer);
                     if (isSmall && this.wrapper) {
                         this.wrapper.classList.add('ts-sm');
                     }
@@ -141,24 +153,21 @@
                     if (this.wrapper) {
                         this.wrapper.classList.toggle('has-real-value', !!(val && val !== ''));
                     }
-                    if (el._tsSettingValue) return;
-
-                    el._tsSettingValue = true;
-                    try {
-                        el.value = val;
-                    } finally {
-                        el._tsSettingValue = false;
-                    }
-
-                    // Dispatch bubbling change event so AJAX / Vanilla / React handlers trigger
-                    const event = new Event('change', { bubbles: true });
-                    el.dispatchEvent(event);
-
-                    // If inline onchange attribute is present, invoke it
-                    if (typeof el.onchange === 'function') {
-                        el.onchange.call(el, event);
-                    }
+                    // Tom Select already updates the native select and dispatches change once.
                 }
+            });
+
+            // Detached menus must not float over the header after the page scrolls.
+            // Keep scrolling/searching inside the menu working normally.
+            const closeOnViewportChange = function (event) {
+                if (!tsInstance.isOpen || tsInstance.dropdown.contains(event.target)) return;
+                tsInstance.close();
+            };
+            window.addEventListener('scroll', closeOnViewportChange, true);
+            window.addEventListener('resize', closeOnViewportChange);
+            tsInstance.on('destroy', function () {
+                window.removeEventListener('scroll', closeOnViewportChange, true);
+                window.removeEventListener('resize', closeOnViewportChange);
             });
 
             el.tomselect = tsInstance;
@@ -203,6 +212,15 @@
     // Handle dynamically appended elements (modals, ajax tables, line item additions)
     const observer = new MutationObserver((mutations) => {
         let shouldInit = false;
+        mutations.forEach(mutation => {
+            mutation.removedNodes.forEach(node => {
+                if (node.nodeType !== 1 || node.isConnected) return;
+                const removedSelects = node.matches('select') ? [node] : node.querySelectorAll('select.tomselected');
+                removedSelects.forEach(select => {
+                    if (select.tomselect) select.tomselect.destroy();
+                });
+            });
+        });
         for (let i = 0; i < mutations.length; i++) {
             const added = mutations[i].addedNodes;
             for (let j = 0; j < added.length; j++) {

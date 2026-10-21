@@ -12,7 +12,7 @@
         <li class="breadcrumb-item active" aria-current="page">Goods Receipt (GRN)</li>
       </ol>
     </nav>
-    <a href="/purchases/orders/<%= order.id %>" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+    <a href="/purchases/orders/<%= order.id %>" class="btn btn-sm btn-outline-secondary px-3">
       <i class="bi bi-arrow-left me-1"></i> Back to Purchase Order
     </a>
   </div>
@@ -118,8 +118,8 @@
             Accepted goods automatically update warehouse stock on hand. Rejected items are logged for vendor return/credit.
           </div>
           <div class="d-flex gap-2">
-            <a href="/purchases/orders/<%= order.id %>" class="btn btn-outline-secondary rounded-pill px-4">Cancel</a>
-            <button type="button" id="btn-submit-grn" class="btn btn-primary rounded-pill px-4 fw-semibold shadow-sm">
+            <a href="/purchases/orders/<%= order.id %>" class="btn btn-outline-secondary px-4">Cancel</a>
+            <button type="button" id="btn-submit-grn" class="btn btn-primary px-4 fw-semibold shadow-sm">
               <i class="bi bi-check2-circle me-1"></i> Post Goods Receipt (GRN)
             </button>
           </div>
@@ -131,6 +131,7 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+  const requestKey=crypto.randomUUID();
   const table = document.getElementById('grn-lines-table');
   const submitBtn = document.getElementById('btn-submit-grn');
   const csrfToken = document.getElementById('csrf-token')?.value || '';
@@ -194,6 +195,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     const payload = {
+      idempotencyKey:requestKey,
       purchaseOrderId: parseInt(document.querySelector('input[name="purchaseOrderId"]').value, 10),
       supplierId: parseInt(document.querySelector('input[name="supplierId"]').value, 10),
       supplierName: document.querySelector('input[name="supplierName"]').value,

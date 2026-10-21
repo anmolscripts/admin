@@ -145,6 +145,13 @@ function applyJournalBusinessScope(targetObj, scoping) {
     }
 }
 
+function accountBusinessWhere(scoping) {
+    // Default-company journals include both legacy NULL and explicit business 1.
+    // Their accounts must use the same scope or balanced journals disappear in part.
+    if (scoping.accountBusinessFilter === null) return { OR: [{ businessId: 1 }, { businessId: null }] };
+    return scoping.accountBusinessFilter === undefined ? {} : { businessId: scoping.accountBusinessFilter };
+}
+
 /**
  * 1. JOURNAL REGISTER
  * Searchable register of journal entries with debit/credit balance verification.
@@ -449,7 +456,7 @@ async function getGeneralLedgerReport(filters = {}) {
         where: {
             allowPosting: true,
             active: true,
-            ...(scoping.accountBusinessFilter !== undefined ? { businessId: scoping.accountBusinessFilter } : {})
+            ...accountBusinessWhere(scoping)
         },
         orderBy: [{ code: 'asc' }, { id: 'asc' }],
         include: { parent: { select: { id: true, code: true, name: true } } }
@@ -585,7 +592,7 @@ async function getTrialBalance(filters = {}) {
             where: {
                 allowPosting: true,
                 active: true,
-                ...(scoping.accountBusinessFilter !== undefined ? { businessId: scoping.accountBusinessFilter } : {})
+                ...accountBusinessWhere(scoping)
             },
             orderBy: [{ code: 'asc' }, { id: 'asc' }],
             include: { parent: { select: { id: true, code: true, name: true } } }
@@ -737,7 +744,7 @@ async function getProfitAndLoss(filters = {}) {
                 type: 'INCOME',
                 allowPosting: true,
                 active: true,
-                ...(scoping.accountBusinessFilter !== undefined ? { businessId: scoping.accountBusinessFilter } : {})
+                ...accountBusinessWhere(scoping)
             },
             orderBy: [{ code: 'asc' }, { id: 'asc' }]
         }),
@@ -746,7 +753,7 @@ async function getProfitAndLoss(filters = {}) {
                 type: 'EXPENSE',
                 allowPosting: true,
                 active: true,
-                ...(scoping.accountBusinessFilter !== undefined ? { businessId: scoping.accountBusinessFilter } : {})
+                ...accountBusinessWhere(scoping)
             },
             orderBy: [{ code: 'asc' }, { id: 'asc' }]
         }),
@@ -893,7 +900,7 @@ async function getBalanceSheet(filters = {}) {
             where: {
                 allowPosting: true,
                 active: true,
-                ...(scoping.accountBusinessFilter !== undefined ? { businessId: scoping.accountBusinessFilter } : {})
+                ...accountBusinessWhere(scoping)
             },
             orderBy: [{ code: 'asc' }, { id: 'asc' }],
             include: { parent: { select: { id: true, code: true, name: true } } }
@@ -1011,8 +1018,9 @@ async function getCustomerReceivablesReport(filters = {}) {
     const scoping = resolveBusinessScoping(filters);
 
     // 1. Fetch Accounts Receivable control account (1121)
-    const arAccount = await coaService.getSystemAccount('ACCOUNTS_RECEIVABLE', scoping.accountBusinessFilter);
-    if (!arAccount) throw new Error('Accounts Receivable (1121) control account not found.');
+    const arAccounts = await prisma.chartOfAccount.findMany({ where: { systemAccountKey: 'ACCOUNTS_RECEIVABLE', ...accountBusinessWhere(scoping) }, select: { id: true } });
+    if (!arAccounts.length) throw new Error('Accounts Receivable (1121) control account not found.');
+    const arAccountIds = arAccounts.map(account => account.id);
 
     // 2. Fetch all clients
     const clientWhere = { active: true };
@@ -1062,7 +1070,7 @@ async function getCustomerReceivablesReport(filters = {}) {
 
     // 3. Query all journal entry lines on Account 1121 for subledger verification
     const arLineWhere = {
-        accountId: arAccount.id,
+        accountId: { in: arAccountIds },
         journalEntry: {
             status: { in: ['POSTED', 'REVERSED'] },
             entryDate: { lte: asOfDate }
@@ -1253,9 +1261,9 @@ async function getCustomerStatement(clientId, filters = {}) {
     const client = await prisma.client.findFirst({ where: clientWhere });
     if (!client) throw new NotFoundError(`Client ID ${numClientId} was not found.`);
 
-    const statementBusinessId = scoping.accountBusinessFilter;
-    const arAccount = await coaService.getSystemAccount('ACCOUNTS_RECEIVABLE', statementBusinessId);
-    if (!arAccount) throw new Error('Accounts Receivable account (1121) not configured.');
+    const arAccounts = await prisma.chartOfAccount.findMany({ where: { systemAccountKey: 'ACCOUNTS_RECEIVABLE', ...accountBusinessWhere(scoping) }, select: { id: true } });
+    if (!arAccounts.length) throw new Error('Accounts Receivable account (1121) not configured.');
+    const arAccountIds = arAccounts.map(account => account.id);
 
     const invoiceBusinessWhere = {};
     if (scoping.clientBusinessFilter === 'DEFAULT_COMPANY') {
@@ -1319,7 +1327,7 @@ async function getCustomerStatement(clientId, filters = {}) {
         applyJournalBusinessScope(priorJournalWhere, scoping);
         const priorLines = await prisma.journalEntryLine.findMany({
             where: {
-                accountId: arAccount.id,
+                accountId: { in: arAccountIds },
                 clientId: numClientId,
                 journalEntry: priorJournalWhere
             },
@@ -1338,7 +1346,7 @@ async function getCustomerStatement(clientId, filters = {}) {
 
     // 2. Query period lines
     const lineWhere = {
-        accountId: arAccount.id,
+        accountId: { in: arAccountIds },
         clientId: numClientId,
         journalEntry: {
             status: { in: ['POSTED', 'REVERSED'] }

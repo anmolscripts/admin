@@ -310,7 +310,7 @@ describe('Milestone 8: Financial Year Closing, Opening Balances & Period Locking
         let initialRetainedEarnings = null;
 
         before(async () => {
-            const reAcc = await prisma.chartOfAccount.findFirst({ where: { code: '3120' } });
+            const reAcc = await prisma.chartOfAccount.findUnique({ where: { id: retainedEarningsAccount.id } });
             initialRetainedEarnings = Number(reAcc.currentBalance);
 
             closingResult = await closingService.closeFinancialYear(fy2024.id, testAdmin.id, {
@@ -347,7 +347,7 @@ describe('Milestone 8: Financial Year Closing, Opening Balances & Period Locking
         });
 
         it('should update Retained Earnings (3120) by exactly the net profit', async () => {
-            const reAcc = await prisma.chartOfAccount.findFirst({ where: { code: '3120' } });
+            const reAcc = await prisma.chartOfAccount.findUnique({ where: { id: retainedEarningsAccount.id } });
             const expectedBalance = initialRetainedEarnings + 45000;
             assert.strictEqual(Number(reAcc.currentBalance), expectedBalance);
         });

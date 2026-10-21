@@ -142,7 +142,10 @@ async function switchBusiness(req, res, next) {
  */
 async function renderBusinessList(req, res, next) {
     try {
+        const actor=await prisma.user.findUnique({where:{id:req.session.user.id},select:{role:true}});
+        const accessible=await businessService.getUserAccessibleBusinesses(req.session.user.id,actor.role,{includeInactive:true});
         const businesses = await businessService.listBusinesses({
+            businessIds:actor.role==='ADMIN'?undefined:accessible.map(b=>b.id),
             status: req.query.status || undefined,
             search: req.query.q || undefined
         });
@@ -150,6 +153,7 @@ async function renderBusinessList(req, res, next) {
         res.render('admin/businesses', {
             pageTitle: 'Organizations & Businesses',
             businesses,
+              editableBusinessIds:accessible.filter(b=>actor.role==='ADMIN'||['OWNER','ADMIN'].includes(b.membershipRole)).map(b=>b.id),
             statusFilter: req.query.status || '',
             searchQuery: req.query.q || ''
         });
@@ -216,6 +220,10 @@ async function createBusiness(req, res, next) {
 async function updateBusiness(req, res, next) {
     try {
         const businessId = req.params.id;
+        if(!Number.isSafeInteger(Number(businessId)) || Number(businessId)<1) return res.status(400).json({success:false,error:'Invalid organization ID.'});
+        const actor=await prisma.user.findUnique({where:{id:req.session.user.id},select:{role:true,active:true}});
+        const membership=actor?.role==='ADMIN'?null:await prisma.businessMembership.findUnique({where:{userId_businessId:{userId:req.session.user.id,businessId:Number(businessId)}}});
+        if(!actor?.active || (actor.role!=='ADMIN' && (!membership || membership.status!=='ACTIVE' || !['OWNER','ADMIN'].includes(membership.role)))) return res.status(403).json({success:false,error:'Only organization owners and administrators can edit organization details.'});
         const updated = await businessService.updateBusiness(businessId, req.body, req.session.user.id);
         if (wantsJson(req)) {
             return res.json({ success: true, business: updated });

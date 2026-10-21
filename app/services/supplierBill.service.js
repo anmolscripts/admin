@@ -316,33 +316,34 @@ async function createSupplierBill(data = {}, userId, authorizedBusinessId) {
             include: { items: true, supplier: true }
         });
 
-        // 2. Fetch chart of accounts
+        // 2. Fetch chart of accounts within the posting business.
+        await require('./chartOfAccounts.service').ensureSystemAccounts(userId, activeBusinessId, tx);
         const apAccount = await tx.chartOfAccount.findFirst({
-            where: { systemAccountKey: 'ACCOUNTS_PAYABLE' }
+            where: { businessId: activeBusinessId, systemAccountKey: 'ACCOUNTS_PAYABLE' }
         });
         const cogsAccount = await tx.chartOfAccount.findFirst({
-            where: { systemAccountKey: 'COGS' }
+            where: { businessId: activeBusinessId, systemAccountKey: 'COGS' }
         });
         const inventoryAssetAccount = await tx.chartOfAccount.findFirst({
-            where: { systemAccountKey: 'INVENTORY_ASSET' }
+            where: { businessId: activeBusinessId, systemAccountKey: 'INVENTORY_ASSET' }
         });
         const inputCgstAccount = await tx.chartOfAccount.findFirst({
-            where: { systemAccountKey: 'INPUT_CGST' }
+            where: { businessId: activeBusinessId, systemAccountKey: 'INPUT_CGST' }
         });
         const inputSgstAccount = await tx.chartOfAccount.findFirst({
-            where: { systemAccountKey: 'INPUT_SGST' }
+            where: { businessId: activeBusinessId, systemAccountKey: 'INPUT_SGST' }
         });
         const inputIgstAccount = await tx.chartOfAccount.findFirst({
-            where: { systemAccountKey: 'INPUT_IGST' }
+            where: { businessId: activeBusinessId, systemAccountKey: 'INPUT_IGST' }
         });
         const roundOffAccount = await tx.chartOfAccount.findFirst({
-            where: { systemAccountKey: 'ROUND_OFF' }
+            where: { businessId: activeBusinessId, systemAccountKey: 'ROUND_OFF' }
         }) || cogsAccount;
 
         // Check inventory vs expense
         const lineItemNames = sanitizedItems.map(it => it.name.trim());
         const matchingInventoryItems = await tx.item.findMany({
-            where: { name: { in: lineItemNames } }
+            where: { businessId: activeBusinessId, name: { in: lineItemNames } }
         });
         const containsTrackedInventoryItems = matchingInventoryItems.length > 0;
 
@@ -365,13 +366,14 @@ async function createSupplierBill(data = {}, userId, authorizedBusinessId) {
             debitAccountDesc = `Inventory Asset Acquisition - Bill #${billNumber}`;
         } else if (data.debitAccountKey) {
             debitAccount = await tx.chartOfAccount.findFirst({
-                where: { systemAccountKey: data.debitAccountKey }
+                where: { businessId: activeBusinessId, systemAccountKey: data.debitAccountKey }
             }) || cogsAccount;
             debitAccountDesc = `Purchase Subtotal - Bill #${billNumber}`;
         } else if (data.debitAccountId) {
-            debitAccount = await tx.chartOfAccount.findUnique({
-                where: { id: parseInt(data.debitAccountId, 10) }
-            }) || cogsAccount;
+            debitAccount = await tx.chartOfAccount.findFirst({
+                where: { businessId: activeBusinessId, id: parseInt(data.debitAccountId, 10) }
+            });
+            if(!debitAccount) throw new ValidationError('The debit account does not belong to the current business.');
             debitAccountDesc = `Purchase Subtotal - Bill #${billNumber}`;
         } else {
             debitAccount = cogsAccount;
@@ -589,8 +591,8 @@ async function listSupplierBills({ businessId, projectId, supplierId, status, da
     if (status) where.status = status;
     if (dateFrom || dateTo) {
         where.billDate = {};
-        if (dateFrom) where.billDate.gte = new Date(dateFrom);
-        if (dateTo) where.billDate.lte = new Date(dateTo);
+        if (dateFrom) where.billDate.gte = new Date(/^\d{4}-\d{2}-\d{2}$/.test(dateFrom) ? dateFrom + 'T00:00:00' : dateFrom);
+        if (dateTo) where.billDate.lte = new Date(/^\d{4}-\d{2}-\d{2}$/.test(dateTo) ? dateTo + 'T23:59:59.999' : dateTo);
     }
     if (search) {
         where.OR = [

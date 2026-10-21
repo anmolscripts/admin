@@ -60,8 +60,8 @@
         state.status = params.get('status') || '';
         state.paymentStatus = params.get('paymentStatus') || '';
         state.search = params.get('search') || '';
-        state.dateFrom = params.get('dateFrom') || '';
-        state.dateTo = params.get('dateTo') || '';
+        state.dateFrom = params.has('dateFrom') ? params.get('dateFrom') : (document.getElementById('period-from')?.value || '');
+        state.dateTo = params.has('dateTo') ? params.get('dateTo') : (document.getElementById('period-to')?.value || '');
         state.page = Math.max(1, parseInt(params.get('page'), 10) || 1);
 
         const savedLimit = localStorage.getItem('spark_dt_page_size');
@@ -446,6 +446,7 @@
 
         documents.forEach((doc) => {
             const tr = document.createElement('tr');
+            tr.dataset.recordType='invoice'; tr.dataset.recordId=doc.id; tr.tabIndex=0;
 
             // 1. Document No
             const tdDocNo = document.createElement('td');

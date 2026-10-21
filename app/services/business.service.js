@@ -146,10 +146,12 @@ async function updateBusiness(businessIdInput, data = {}, actorUserId = null) {
 
     const updateData = {};
     if (data.name !== undefined) {
+        if(typeof data.name!=='string') throw new BusinessError('Business name must be text.');
         const n = String(data.name).trim();
         if (!n) throw new BusinessError('Business name cannot be empty.');
         updateData.name = n;
     }
+    if(data.legalName!==undefined && data.legalName!==null && typeof data.legalName!=='string') throw new BusinessError('Legal name must be text.');
     if (data.legalName !== undefined) updateData.legalName = data.legalName ? String(data.legalName).trim() : null;
     if (data.gstin !== undefined) updateData.gstin = data.gstin ? String(data.gstin).trim().toUpperCase() : null;
     if (data.stateCode !== undefined) updateData.stateCode = data.stateCode ? String(data.stateCode).trim() : null;
@@ -165,41 +167,26 @@ async function updateBusiness(businessIdInput, data = {}, actorUserId = null) {
         updateData.status = data.status;
     }
 
-    const updated = await prisma.business.update({
-        where: { id: businessId },
-        data: updateData
-    });
-
-    // Sync business profile displayName and legalName
-    try {
-        await prisma.businessProfile.updateMany({
-            where: { businessId },
-            data: {
-                displayName: updated.name,
-                legalName: updated.legalName || updated.name,
-                gstin: updated.gstin,
-                stateCode: updated.stateCode,
-                currency: updated.currency,
-                timeZone: updated.timeZone,
-                email: updated.email,
-                phone: updated.phone,
-                address: updated.address,
-                website: updated.website,
-                logoUrl: updated.logoUrl
-            }
-        });
-    } catch (_) {}
-
-    if (actorUserId) {
-        await activityService.log({
-            actorUserId,
-            businessId,
-            action: 'BUSINESS_UPDATED',
-            module: 'ADMINISTRATION',
-            targetReference: updated.code,
-            metadata: updateData
-        });
+    for(const [field,value] of Object.entries(updateData)) {
+        const max=field==='address'?65535:field==='stateCode'?5:field==='currency'?10:field==='timeZone'||field==='phone'?50:field==='gstin'?20:255;
+        if(typeof value==='string' && value.length>max) throw new BusinessError(field+' exceeds '+max+' characters.');
     }
+    const updated=await prisma.$transaction(async tx=>{
+        await tx.$queryRawUnsafe('SELECT id FROM businesses WHERE id = ? FOR UPDATE',businessId);
+        const before=await tx.business.findUnique({where:{id:businessId}});
+        if(!before) throw new BusinessError('Business not found.',404);
+        if(data._version && String(data._version)!==before.updatedAt.toISOString()) throw new BusinessError('This organization changed. Refresh it before saving.',409);
+        const result=await tx.business.update({where:{id:businessId},data:updateData});
+        const profileData={};
+        for(const key of ['legalName','gstin','stateCode','currency','timeZone','email','phone','address','website','logoUrl']) if(Object.hasOwn(updateData,key)) profileData[key]=result[key];
+        if(Object.hasOwn(updateData,'name')) {profileData.displayName=result.name;profileData.workspaceName=result.name;}
+        if(Object.hasOwn(profileData,'legalName') && !profileData.legalName) profileData.legalName=result.name;
+        if(Object.keys(profileData).length) await tx.businessProfile.updateMany({where:{businessId},data:profileData});
+        const changes=Object.keys(updateData).filter(key=>before[key]!==result[key]).map(field=>({field,before:before[field]??null,after:result[field]??null}));
+        if(changes.length) await tx.userActivityLog.create({data:{actorUserId:actorUserId||null,businessId,action:'BUSINESS_UPDATED',module:'ADMINISTRATION',targetType:'BUSINESS',targetId:String(businessId),targetReference:result.code,metadata:{changes}}});
+        return result;
+    });
+    require('./businessProfile.service').invalidateBrandingCache();
 
     return updated;
 }
@@ -232,6 +219,7 @@ async function getBusinessById(businessIdInput) {
  */
 async function listBusinesses(filters = {}) {
     const where = {};
+    if (Array.isArray(filters.businessIds)) where.id={in:filters.businessIds.map(Number)};
     if (filters.status) {
         where.status = filters.status;
     }

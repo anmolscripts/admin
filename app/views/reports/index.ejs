@@ -1,15 +1,15 @@
 <%
   const reportsHeaderAction = `
     <div class="d-flex gap-2 flex-wrap align-items-center">
-      <a href="/reports/workbench" class="btn btn-primary d-inline-flex align-items-center gap-2 rounded-pill px-3 shadow-xs">
+      <a href="/reports/workbench" class="btn btn-primary d-inline-flex align-items-center gap-2 px-3 shadow-xs">
         <i class="bi bi-clipboard-data-fill"></i>
         <span>Analytics Workbench</span>
       </a>
-      <a href="/reports/trial-balance" class="btn btn-outline-primary d-inline-flex align-items-center gap-2 rounded-pill px-3">
+      <a href="/reports/trial-balance" class="btn btn-outline-primary d-inline-flex align-items-center gap-2 px-3">
         <i class="bi bi-scale"></i>
         <span>Trial Balance</span>
       </a>
-      <a href="/financial-years" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2 rounded-pill px-3">
+      <a href="/financial-years" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2 px-3">
         <i class="bi bi-calendar2-range"></i>
         <span>Financial Years</span>
       </a>
@@ -53,7 +53,7 @@
             Summary of operating revenues, cost of goods sold, gross margin, operating expenses, and net profit or loss for any selected period.
           </p>
           <div class="pt-3 border-top mt-auto" style="border-color: var(--sa-border) !important;">
-            <a href="/reports/profit-and-loss" class="btn btn-sm btn-outline-primary w-100 d-inline-flex justify-content-center align-items-center gap-2 rounded-pill py-2">
+            <a href="/reports/profit-and-loss" class="btn btn-sm btn-outline-primary w-100 d-inline-flex justify-content-center align-items-center gap-2 py-2">
               <span>Open Profit & Loss</span>
               <i class="bi bi-arrow-right"></i>
             </a>
@@ -77,7 +77,7 @@
             Statement of financial position showing Total Assets, Total Liabilities, and Equity including retained earnings, verifying Assets = Liabilities + Equity.
           </p>
           <div class="pt-3 border-top mt-auto" style="border-color: var(--sa-border) !important;">
-            <a href="/reports/balance-sheet" class="btn btn-sm btn-outline-primary w-100 d-inline-flex justify-content-center align-items-center gap-2 rounded-pill py-2">
+            <a href="/reports/balance-sheet" class="btn btn-sm btn-outline-primary w-100 d-inline-flex justify-content-center align-items-center gap-2 py-2">
               <span>Open Balance Sheet</span>
               <i class="bi bi-arrow-right"></i>
             </a>
@@ -116,7 +116,7 @@
             Account-wise chronological transaction movements, opening balances, running balances, and complete double-entry debit/credit activity across the chart of accounts.
           </p>
           <div class="pt-3 border-top mt-auto" style="border-color: var(--sa-border) !important;">
-            <a href="/reports/general-ledger" class="btn btn-sm btn-outline-primary w-100 d-inline-flex justify-content-center align-items-center gap-2 rounded-pill py-2">
+            <a href="/reports/general-ledger" class="btn btn-sm btn-outline-primary w-100 d-inline-flex justify-content-center align-items-center gap-2 py-2">
               <span>Open General Ledger</span>
               <i class="bi bi-arrow-right"></i>
             </a>
@@ -140,7 +140,7 @@
             As-of date account balances verifying the fundamental double-entry invariant: Total Debits must equal Total Credits down to the exact cent across all 5 account classes.
           </p>
           <div class="pt-3 border-top mt-auto" style="border-color: var(--sa-border) !important;">
-            <a href="/reports/trial-balance" class="btn btn-sm btn-outline-primary w-100 d-inline-flex justify-content-center align-items-center gap-2 rounded-pill py-2">
+            <a href="/reports/trial-balance" class="btn btn-sm btn-outline-primary w-100 d-inline-flex justify-content-center align-items-center gap-2 py-2">
               <span>Open Trial Balance</span>
               <i class="bi bi-arrow-right"></i>
             </a>
@@ -164,7 +164,7 @@
             Complete chronological record of all posted and reversed double-entry transactions with entry lines, debit/credit balance verification, and source links.
           </p>
           <div class="pt-3 border-top mt-auto" style="border-color: var(--sa-border) !important;">
-            <a href="/reports/journals" class="btn btn-sm btn-outline-primary w-100 d-inline-flex justify-content-center align-items-center gap-2 rounded-pill py-2">
+            <a href="/reports/journals" class="btn btn-sm btn-outline-primary w-100 d-inline-flex justify-content-center align-items-center gap-2 py-2">
               <span>Open Journal Register</span>
               <i class="bi bi-arrow-right"></i>
             </a>
@@ -203,7 +203,7 @@
             Accounts receivable ageing breakdown (0-30, 31-60, 61-90, 90+ days) and cross-reconciliation with General Ledger control account 1121.
           </p>
           <div class="pt-3 border-top mt-auto" style="border-color: var(--sa-border) !important;">
-            <a href="/reports/customer-receivables" class="btn btn-sm btn-outline-danger w-100 d-inline-flex justify-content-center align-items-center gap-2 rounded-pill py-2">
+            <a href="/reports/customer-receivables" class="btn btn-sm btn-outline-danger w-100 d-inline-flex justify-content-center align-items-center gap-2 py-2">
               <span>Open Receivables</span>
               <i class="bi bi-arrow-right"></i>
             </a>
@@ -227,7 +227,7 @@
             Chronological customer sub-ledger statements with partial search, date range filtering, opening balances, payment settlements, and CSV export.
           </p>
           <div class="pt-3 border-top mt-auto" style="border-color: var(--sa-border) !important;">
-            <a href="/reports/customer-statement" class="btn btn-sm btn-outline-primary w-100 d-inline-flex justify-content-center align-items-center gap-2 rounded-pill py-2">
+            <a href="/reports/customer-statement" class="btn btn-sm btn-outline-primary w-100 d-inline-flex justify-content-center align-items-center gap-2 py-2">
               <span>Open Sub-Ledger</span>
               <i class="bi bi-arrow-right"></i>
             </a>
@@ -251,7 +251,7 @@
             Interactive multi-dimensional financial explorer with revenue trends, document breakdown charts, quotation conversion metrics, and comparative filters.
           </p>
           <div class="pt-3 border-top mt-auto" style="border-color: var(--sa-border) !important;">
-            <a href="/reports/workbench" class="btn btn-sm btn-outline-info w-100 d-inline-flex justify-content-center align-items-center gap-2 rounded-pill py-2">
+            <a href="/reports/workbench" class="btn btn-sm btn-outline-info w-100 d-inline-flex justify-content-center align-items-center gap-2 py-2">
               <span>Open Analytics Workbench</span>
               <i class="bi bi-arrow-right"></i>
             </a>
@@ -274,7 +274,7 @@
             <span class="small" style="color: var(--sa-text-secondary);">Posting windows, period locking, and opening balance status</span>
           </div>
         </div>
-        <a href="/financial-years" class="btn btn-sm btn-outline-primary rounded-pill px-3 d-inline-flex align-items-center gap-2">
+        <a href="/financial-years" class="btn btn-sm btn-outline-primary px-3 d-inline-flex align-items-center gap-2">
           <span>Manage Financial Years</span>
           <i class="bi bi-arrow-right"></i>
         </a>

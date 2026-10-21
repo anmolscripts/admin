@@ -181,6 +181,14 @@ async function main() {
     let testDatabaseConfig = null;
     if (!isProduction) {
         if (PROTECTED_DATABASES.has(String(envConfig.DATABASE_NAME).toLowerCase())) {
+            logger.warn(`Protected database '${envConfig.DATABASE_NAME}' is already configured. Keeping the existing configuration and stopping before reset.`);
+            logger.info('Use a disposable test database for write-enabled validation.');
+            process.exit(0);
+        }
+
+        // Guard the development installer from deleting the live admin database if the user chooses to overwrite an existing env file.
+        const configuredDb = String(envConfig.DATABASE_NAME || '').toLowerCase();
+        if (!isProduction && PROTECTED_DATABASES.has(configuredDb)) {
             logger.fail(`Refusing to reset protected development database '${envConfig.DATABASE_NAME}'.`);
             process.exit(1);
         }

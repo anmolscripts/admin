@@ -74,7 +74,7 @@
           </tr>
         <% } else { %>
           <% units.forEach(function(unit, idx) { %>
-            <tr id="unit-row-<%= unit.id %>">
+            <tr id="unit-row-<%= unit.id %>" data-record-type="unit" data-record-id="<%= unit.id %>" tabindex="0">
               <td class="ps-4 text-center font-monospace text-muted">
                 <%= idx + 1 %>
               </td>
@@ -97,31 +97,30 @@
                     data-unit-id="<%= unit.id %>"
                     <%= unit.active ? 'checked' : '' %>
                     onchange="toggleUnitStatus(<%= unit.id %>, this)"
-                    title="Toggle active status"
+                    <%= locals.hasPermission && locals.hasPermission('UNITS','EDIT') ? '' : 'disabled' %>
+title="Toggle active status"
                   />
                   <label class="visually-hidden" for="switch-unit-<%= unit.id %>">Toggle status for <%= unit.symbol %></label>
                 </div>
               </td>
               <td class="text-end pe-4">
                 <div class="btn-group btn-group-sm">
-                  <button
+                  <% if (locals.hasPermission && locals.hasPermission('UNITS','EDIT')) { %><button
                     type="button"
                     class="btn btn-outline-secondary"
                     title="Edit Unit"
-                    onclick='openEditUnitModal(<%= JSON.stringify(unit) %>)'
-                    data-bs-toggle="modal"
-                    data-bs-target="#modal-unit-form"
+                    onclick="SparkRecordDesk.open('unit', <%= unit.id %>, true)"
                   >
                     <i class="bi bi-pencil"></i>
-                  </button>
-                  <button
+                  </button><% } %>
+                  <% if (locals.hasPermission && locals.hasPermission('UNITS','DELETE')) { %><button
                     type="button"
                     class="btn btn-outline-danger"
-                    title="Delete Unit"
+                    title="Archive Unit"
                     onclick="confirmDeleteUnit(<%= unit.id %>, '<%= unit.symbol.replace(/'/g, "\\'") %>')"
                   >
                     <i class="bi bi-trash3"></i>
-                  </button>
+                  </button><% } %>
                 </div>
               </td>
             </tr>
@@ -317,7 +316,7 @@
   }
 
   async function confirmDeleteUnit(unitId, symbol) {
-    if (!confirm(`Are you sure you want to delete unit "${symbol}"? This action cannot be undone.`)) {
+    if (!confirm(`Archive unit "${symbol}"? Its data and edit history will be preserved. You can reactivate it later.`)) {
       return;
     }
 

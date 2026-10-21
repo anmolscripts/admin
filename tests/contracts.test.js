@@ -350,22 +350,17 @@ describe('Frozen Core Architecture Contracts Test Suite', () => {
             });
         });
 
-        it('5.2. Production seed policy strictly forbids seeding business profile and demo data', async () => {
-            const result = await seedModule.main({ isProduction: true, seedDemoData: false });
-            assert.strictEqual(result.isProduction, true);
-            assert.strictEqual(result.seedDemoData, false);
-            assert.strictEqual(result.unitsCount >= 13, true);
-            assert.strictEqual(result.itemsCount >= 21, true);
-            assert.strictEqual(result.rolesCount >= 4, true);
-            assert.strictEqual(result.permissionsCount >= 40, true);
+        it('5.2. Production bootstrap rejects demo data and populated databases', async () => {
+            await assert.rejects(seedModule.main({isProduction:true,seedDemoData:true}), /strictly prohibited/i);
+            await assert.rejects(seedModule.main({isProduction:true,seedDemoData:false,adminEmail:'bootstrap-guard@example.test',adminPassword:'Test-Only-Guard-2026!'}), /freshly reset database/);
         });
 
-        it('5.3. Idempotent seed execution produces zero duplicate records and zero errors', async () => {
+        it('5.3. Repeated bootstrap attempts preserve existing rows without duplication', async () => {
             const countBeforeUnits = await prisma.unit.count();
             const countBeforeItems = await prisma.item.count();
             const countBeforeRoles = await prisma.role.count();
 
-            await seedModule.main({ isProduction: true, seedDemoData: false });
+            for(let attempt=0;attempt<2;attempt++) await assert.rejects(seedModule.main({isProduction:true,seedDemoData:false,adminEmail:'bootstrap-guard@example.test',adminPassword:'Test-Only-Guard-2026!'}), /freshly reset database/);
 
             const countAfterUnits = await prisma.unit.count();
             const countAfterItems = await prisma.item.count();

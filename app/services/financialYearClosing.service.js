@@ -138,6 +138,7 @@ async function previewCloseFinancialYear(financialYearId) {
     // 2. Chronological sequence check
     const earlierOpenFys = await prisma.financialYear.findMany({
         where: {
+            businessId: fy.businessId,
             startDate: { lt: fy.startDate },
             status: 'OPEN'
         },
@@ -445,7 +446,8 @@ async function closeFinancialYear(financialYearId, userId = null, meta = {}) {
         // 2. Validate chronological sequence: Earlier FYs with accounting activity must be closed
         const earlierOpenFys = await tx.financialYear.findMany({
             where: {
-                startDate: { lt: fy.startDate },
+                businessId: fy.businessId,
+            startDate: { lt: fy.startDate },
                 status: 'OPEN'
             },
             orderBy: { startDate: 'asc' }
@@ -781,6 +783,7 @@ async function reopenFinancialYear(financialYearId, userId = null, reason = '', 
         // 2. Chronological constraint: No later Financial Year can be CLOSED
         const laterClosedFy = await tx.financialYear.findFirst({
             where: {
+                businessId: fy.businessId,
                 startDate: { gt: fy.startDate },
                 status: 'CLOSED'
             },

@@ -183,12 +183,12 @@ function calculateInvoiceTotals({ items, gstEnabled, gstRate, sellerStateCode, p
         }
 
         const quantity = Number(item.quantity);
-        if (isNaN(quantity) || quantity <= 0) {
+        if (!Number.isFinite(quantity) || quantity <= 0) {
             throw new ValidationError(`Item ${idx + 1} (${name}): Quantity must be greater than zero.`);
         }
 
         const rate = Number(item.rate);
-        if (isNaN(rate) || rate < 0) {
+        if (!Number.isFinite(rate) || rate < 0) {
             throw new ValidationError(`Item ${idx + 1} (${name}): Rate must be greater than or equal to zero.`);
         }
 

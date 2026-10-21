@@ -3,6 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
+  <meta name="csrf-token" content="<%= locals.csrfToken || '' %>" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <title>
@@ -12,7 +13,8 @@
   <script>
     (function () {
       try {
-        var theme = localStorage.getItem('spark-theme') || 'light';
+        var savedTheme = localStorage.getItem('spark-theme');
+        var theme = savedTheme === 'dark' || savedTheme === 'light' ? savedTheme : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
         document.documentElement.setAttribute('data-theme', theme);
         var isMinimized = localStorage.getItem('spark-sidebar-minimized');
         if (isMinimized === 'true') {
@@ -32,6 +34,7 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="/images/favicon.ico" />
 
+  <link rel="stylesheet" href="/libs/sweetalert2/sweetalert2.min.css" />
   <!-- Bootstrap -->
   <link rel="stylesheet" href="/libs/bootstrap/css/bootstrap.min.css" />
 
@@ -55,6 +58,8 @@
   <% } %>
   <!-- Loaded last so semantic colors remain consistent across every screen. -->
   <link rel="stylesheet" href="/css/premium-refresh.css" />
+  <link rel="stylesheet" href="/css/components.css" />
+  <link rel="stylesheet" href="/css/responsive.css" />
 </head>
 
 <%
@@ -68,7 +73,9 @@
   const isUnits = currentNavPath.startsWith('/units') || currentNavTitle.includes('unit');
   const isTeam = currentNavPath.startsWith('/team') || currentNavTitle.includes('team');
   const isReports = currentNavPath.startsWith('/reports') || Boolean(locals.isReports) || currentNavTitle.includes('report') || currentNavTitle.includes('ledger') || currentNavTitle.includes('trial balance') || currentNavTitle.includes('balance sheet') || currentNavTitle.includes('profit & loss') || currentNavTitle.includes('receivables') || currentNavTitle.includes('journal');
-  const isSettings = currentNavPath.startsWith('/settings') || currentNavTitle.includes('setting') || currentNavTitle.includes('organization');
+  const isSettings = currentNavPath
+    ? /^\/settings(?:\/|$)/.test(currentNavPath)
+    : currentNavTitle.includes('setting') || currentNavTitle.includes('organization');
   const isProjects = currentNavPath.startsWith('/projects') || currentNavTitle.includes('project');
   const isSuppliers = currentNavPath.startsWith('/suppliers') || currentNavTitle.includes('supplier');
   const isPurchases = Boolean(locals.isPurchaseNavigationActive);
@@ -90,7 +97,7 @@
       <% } else { %>
         <i class="bi bi-asterisk"></i>
       <% } %>
-      <span class="sidebar-brand-text"><%= (locals.branding && locals.branding.workspaceName) || 'Spark Admin' %></span>
+      <span class="sidebar-brand-text" title="<%= (locals.branding && locals.branding.workspaceName) || 'Spark Admin' %>"><%= (locals.branding && locals.branding.workspaceName) || 'Spark Admin' %></span>
     </a>
 
     <!-- Authoritative Navigation Menu -->
@@ -217,13 +224,7 @@
 
     <!-- Sidebar Profile Card (Dynamic Footer) -->
     <a href="/profile" class="sidebar-profile text-decoration-none">
-      <% if (locals.user && locals.user.avatarUrl) { %>
-        <img src="<%= locals.user.avatarUrl %>" alt="<%= locals.user.name || 'Administrator' %>" class="sidebar-profile-img" />
-      <% } else { %>
-        <div class="sidebar-profile-avatar-fallback rounded-circle text-white d-flex align-items-center justify-content-center fw-bold me-2" style="width: 40px; height: 40px; min-width: 40px; font-size: 1rem; background: linear-gradient(135deg, #635BFF 0%, #8B5CF6 100%);">
-          <%= (locals.user && locals.user.name) ? locals.user.name.charAt(0).toUpperCase() : 'A' %>
-        </div>
-      <% } %>
+      <img src="<%= (locals.user && locals.user.avatarUrl) || '/images/default-avatar.png' %>" alt="<%= (locals.user && locals.user.name) || 'User' %>" class="sidebar-profile-img" />
       <div class="sidebar-profile-info text-truncate">
         <div class="sidebar-profile-name text-white fw-semibold"><%= locals.user ? locals.user.name : 'Administrator' %></div>
         <div class="sidebar-profile-email text-muted small"><%= locals.user ? locals.user.email : 'admin@email.com' %></div>
@@ -406,13 +407,7 @@
         <div class="dropdown ms-2">
           <button class="navbar-profile-btn dropdown-toggle d-flex align-items-center" type="button" data-bs-toggle="dropdown"
             aria-expanded="false" id="profile-dropdown">
-            <% if (locals.user && locals.user.avatarUrl) { %>
-              <img src="<%= locals.user.avatarUrl %>" alt="<%= locals.user.name %>" class="navbar-profile-img me-2" />
-            <% } else { %>
-              <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold me-2" style="width: 32px; height: 32px; font-size: 0.85rem;">
-                <%= (locals.user && locals.user.name) ? locals.user.name.charAt(0).toUpperCase() : 'U' %>
-              </div>
-            <% } %>
+            <img src="<%= (locals.user && locals.user.avatarUrl) || '/images/default-avatar.png' %>" alt="<%= (locals.user && locals.user.name) || 'User' %>" class="navbar-profile-img me-2" />
 
             <span class="navbar-profile-name d-none d-md-inline">
               <span class="profile-name">
@@ -433,6 +428,13 @@
               <a class="dropdown-item py-2" href="/profile" id="user-profile-link">
                 <i class="bi bi-person me-2 text-primary"></i>
                 My Profile
+              </a>
+            </li>
+
+            <li>
+              <a class="dropdown-item py-2" href="/product-guide" id="user-product-guide-link">
+                <i class="bi bi-journal-bookmark me-2 text-primary"></i>
+                Product Guide
               </a>
             </li>
 
@@ -464,6 +466,7 @@
 
     <!-- START: Page Header -->
 
+    <% if (locals.showPageHeader !== false) { %>
     <div class="page-header">
       <div>
         <h1 class="page-title">
@@ -477,17 +480,10 @@
 
       <% if (locals.headerAction) { %>
         <%- locals.headerAction %>
-      <% } else { %>
-        <button class="btn-date-picker" type="button" id="date-picker-trigger">
-          <i class="bi bi-calendar4-event"></i>
-
-          <span id="selected-date-range">
-            <%= new Date().toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }) %>
-          </span>
-
-          <i class="bi bi-chevron-down ms-1"></i>
-        </button>
       <% } %>
     </div>
 
     <!-- END: Page Header -->
+    <% } %>
+
+<% if (locals.reportingPeriod && (reportingPeriod.applies || ['/reports','/financial-years'].includes(locals.currentPath))) { %><%- include('../partials/reporting-period') %><% } %>

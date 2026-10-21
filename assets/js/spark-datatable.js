@@ -36,6 +36,10 @@
         placeholder: 'Search table...',
         columns: null // Array of { index, sortable, type: 'string'|'number'|'date' }
       }, options);
+      if(this.table.dataset.serverPaginated==='true') {
+        this.options.paginated=false;
+        this.options.placeholder='Search this page…';
+      }
 
       // Restore saved page size if available
       const savedPageSize = this.options.persistPageSize ? localStorage.getItem('spark_dt_page_size') : null;
@@ -236,6 +240,14 @@
         </button>
       `;
       this.emptyClearBtn = this.emptyStateEl.querySelector('.btn-clear-dt-search');
+      const creationRoutes={'/suppliers':'/suppliers/new','/purchases/orders':'/purchases/orders/new','/purchases/bills':'/purchases/bills/new','/projects':'/projects/new','/clients':'/clients/new','/items':'/items/new','/units':'/units/new'};
+      const modalRoutes={'/financials/expenses':'#newExpenseModal','/financials/other-income':'#newIncomeModal','/admin/businesses':'#createBusinessModal'};
+      const createLink=creationRoutes[location.pathname];
+      const createControl=createLink?document.querySelector(`a[href="${createLink}"]`):modalRoutes[location.pathname]?document.querySelector(`[data-bs-target="${modalRoutes[location.pathname]}"]`):null;
+      if(createControl){
+        this.emptyAddBtn=document.createElement('button');this.emptyAddBtn.type='button';this.emptyAddBtn.className='btn btn-primary mt-3';this.emptyAddBtn.textContent=createControl.textContent.trim();
+        this.emptyAddBtn.addEventListener('click',()=>createControl.click());this.emptyStateEl.append(this.emptyAddBtn);
+      }
       this.emptyClearBtn.addEventListener('click', () => {
         if (this.searchInput) {
           this.searchInput.value = '';
@@ -419,8 +431,8 @@
       this.emptyStateEl.classList.add('d-none');
 
       // Slice rows for current page
-      const startIndex = (this.currentPage - 1) * this.pageSize;
-      const endIndex = Math.min(startIndex + this.pageSize, total);
+      const startIndex = this.options.paginated ? (this.currentPage - 1) * this.pageSize : 0;
+      const endIndex = this.options.paginated ? Math.min(startIndex + this.pageSize, total) : total;
       const pageRows = this.filteredRows.slice(startIndex, endIndex);
 
       // Re-append page rows in order into tbody
@@ -432,7 +444,7 @@
       this.tbody.appendChild(fragment);
 
       // Update info text
-      this.infoEl.textContent = `Showing ${startIndex + 1}–${endIndex} of ${total} entries`;
+      this.infoEl.textContent = `Showing ${startIndex + 1}–${endIndex} of ${total} ${this.table.dataset.serverPaginated==='true'?'loaded records':'entries'}`;
 
       // Build Pagination Controls
       this.buildPagination(totalPages);
@@ -440,7 +452,7 @@
 
     buildPagination(totalPages) {
       this.paginationList.innerHTML = '';
-      if (totalPages <= 1) return;
+      if (!this.options.paginated || totalPages <= 1) return;
 
       const createBtn = (html, page, isDisabled = false, isActive = false, ariaLabel = '') => {
         const li = document.createElement('li');

@@ -50,6 +50,19 @@ const uploadAvatar = multer({
         fileSize: 2 * 1024 * 1024 // 2MB max
     }
 });
+const profileMemoryUpload=multer({storage:multer.memoryStorage(),fileFilter,limits:{fileSize:2*1024*1024,files:1,fields:8,fieldSize:65536,parts:10}}).single('avatar');
+const logoMemoryUpload=multer({storage:multer.memoryStorage(),fileFilter,limits:{fileSize:2*1024*1024,files:1,fields:80,fieldSize:65536,parts:82}}).single('logo');
+function parseLogoUpload(req,res,next){
+    if(!req.is('multipart/form-data'))return next();
+    logoMemoryUpload(req,res,error=>{if(error){error.statusCode=error.code==='LIMIT_FILE_SIZE'?413:400;req.logoUploadError=error;}next();});
+}
+function parseProfileUpload(req,res,next) {
+    if(!req.is('multipart/form-data')) return next();
+    profileMemoryUpload(req,res,error=>{
+        if(error){error.statusCode=error.code==='LIMIT_FILE_SIZE'?413:400;req.profileUploadError=error;}
+        next();
+    });
+}
 
 const attachmentStorage = multer.memoryStorage();
 
@@ -133,6 +146,8 @@ function handleAttachmentUpload(fieldName = 'file') {
 }
 
 module.exports = {
+    parseLogoUpload,
+    parseProfileUpload,
     uploadAvatar,
     uploadAttachmentFile,
     handleAttachmentUpload,

@@ -21,6 +21,15 @@ document.addEventListener('DOMContentLoaded', function () {
         window.__sparkChartsHooked = true;
         const origRender = window.ApexCharts.prototype.render;
         window.ApexCharts.prototype.render = function () {
+            const numericValues=value=>Array.isArray(value)?value.flatMap(numericValues):value&&typeof value==='object'?numericValues(value.data ?? value.y ?? []):[Number(value)||0];
+            if(this.el && !numericValues(this.w?.config?.series||[]).some(value=>value!==0)){
+                const empty=document.createElement('div');empty.className='spark-empty-state';empty.setAttribute('role','status');
+                const title=document.createElement('strong');title.textContent='No data to show';
+                const hint=document.createElement('p');hint.textContent='Add activity or choose a different reporting period.';
+                const action=document.createElement('a');action.className='btn btn-outline-primary';action.href='/documents/new?type=INVOICE';action.textContent='Add data';
+                empty.append(title,hint,action);this.el.replaceChildren(empty);
+                return Promise.resolve(this);
+            }
             if (!window.__sparkCharts.includes(this)) {
                 window.__sparkCharts.push(this);
             }
@@ -239,6 +248,11 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Sync button state on initial load
+    const deviceTheme=window.matchMedia('(prefers-color-scheme: dark)');
+    deviceTheme.addEventListener?.('change',event=>{
+        let selected; try {selected=localStorage.getItem('spark-theme');} catch(_){}
+        if(selected!=='light'&&selected!=='dark')applyTheme(event.matches?'dark':'light',false);
+    });
     const currentActiveTheme = document.documentElement.getAttribute('data-theme') || 'light';
     applyTheme(currentActiveTheme, false);
 
@@ -544,40 +558,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // -----------------------------------------------------------------
     // 5. Flatpickr Date Range Picker Initialization
     // -----------------------------------------------------------------
-    const datePickerTrigger = document.querySelector('#date-picker-trigger');
-    const selectedRangeText = document.querySelector('#selected-date-range');
-    
-    if (datePickerTrigger && selectedRangeText) {
-        flatpickr(datePickerTrigger, {
-            mode: 'range',
-            dateFormat: 'Y-m-d',
-            defaultDate: ['2026-01-12', '2026-01-23'],
-            onValueUpdate: function (selectedDates, dateStr, instance) {
-                if (selectedDates.length === 2) {
-                    const startStr = instance.formatDate(selectedDates[0], 'F j, Y');
-                    const endStr = instance.formatDate(selectedDates[1], 'F j, Y');
-                    selectedRangeText.textContent = `${startStr} - ${endStr}`;
-                } else if (selectedDates.length === 1) {
-                    const startStr = instance.formatDate(selectedDates[0], 'F j, Y');
-                    selectedRangeText.textContent = startStr;
-                }
-            },
-            onClose: function (selectedDates, dateStr, instance) {
-                if (selectedDates.length === 2) {
-                    const fromStr = instance.formatDate(selectedDates[0], 'Y-m-d');
-                    const toStr = instance.formatDate(selectedDates[1], 'Y-m-d');
-                    const customFrom = document.getElementById('custom-date-from');
-                    const customTo = document.getElementById('custom-date-to');
-                    if (customFrom) customFrom.value = fromStr;
-                    if (customTo) customTo.value = toStr;
-                    if (typeof window.fetchDashboardMetrics === 'function') {
-                        window.fetchDashboardMetrics({ range: 'custom', from: fromStr, to: toStr });
-                    }
-                }
-            }
-        });
-    }
-
     // -----------------------------------------------------------------
     // 6. Desktop Sidebar Minimize Interaction
     // -----------------------------------------------------------------

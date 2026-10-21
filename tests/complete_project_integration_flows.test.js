@@ -17,6 +17,7 @@ const purchaseOrderService = require('../app/services/purchaseOrder.service');
 const goodsReceiptService = require('../app/services/goodsReceipt.service');
 const stockMovementService = require('../app/services/stockMovement.service');
 const expenseService = require('../app/services/expense.service');
+const otherIncomeService = require('../app/services/otherIncome.service');
 const attachmentService = require('../app/services/attachment.service');
 const projectService = require('../app/services/project.service');
 const projectCostLedgerService = require('../app/services/projectCostLedger.service');
@@ -151,6 +152,7 @@ describe('Complete Project Integration & Lifecycle Test Suite', async () => {
             }
             if (supplierA) await prisma.supplier.delete({ where: { id: supplierA.id } });
             if (supplierB) await prisma.supplier.delete({ where: { id: supplierB.id } });
+            if (businessB) await prisma.otherIncome.deleteMany({ where: { businessId: businessB.id, description: 'Audit service income' } });
             if (userA) await prisma.user.delete({ where: { id: userA.id } });
             if (userB) await prisma.user.delete({ where: { id: userB.id } });
         } catch (e) {
@@ -351,6 +353,17 @@ describe('Complete Project Integration & Lifecycle Test Suite', async () => {
         assert.equal(expCosts.length, 1);
         assert.equal(parseFloat(expCosts[0].amount), 3500.00);
         assert.equal(expCosts[0].sourceType, 'EXPENSE');
+    });
+
+    test('6b. Expense and other-income journal accounts belong to their own business', async () => {
+        const expense = await prisma.expense.findFirst({ where: { businessId: businessA.id, projectId: projectA.id } });
+        const income = await otherIncomeService.createOtherIncome({ businessId: businessB.id, amount: 500, description: 'Audit service income', source: 'Service', receiptMethod: 'BANK' }, userB.id);
+        for (const [sourceType, sourceId, businessId] of [['EXPENSE', expense.id, businessA.id], ['OTHER_INCOME', income.id, businessB.id]]) {
+            const journal = await prisma.journalEntry.findFirst({ where: { sourceType, sourceId }, include: { lines: { include: { account: true } } } });
+            assert.equal(journal.businessId, businessId);
+            assert.ok(journal.lines.every(line => line.account.businessId === businessId));
+            assert.equal(journal.lines.reduce((sum,line) => sum + Number(line.debit) - Number(line.credit), 0), 0);
+        }
     });
 
     test('7. Enhanced Attachment Metadata with XSS Sanitization & Category filtering', async () => {

@@ -1,5 +1,9 @@
 const prisma = require('../config/prisma');
 const templateService = require('./template.service');
+const fs=require('node:fs');
+const path=require('node:path');
+const crypto=require('node:crypto');
+const {validateRasterMagicBytes}=require('./profile.service');
 
 class ValidationError extends Error {
     constructor(message) {
@@ -134,7 +138,8 @@ async function getBranding(businessId = null) {
 /**
  * Update business profile with validation
  */
-async function updateProfile(data = {}, businessId = null) {
+async function updateProfile(data = {}, businessId = null, logoFile = null) {
+    if(logoFile&&(!Buffer.isBuffer(logoFile.buffer)||logoFile.buffer.length>2*1024*1024||!validateRasterMagicBytes(logoFile.buffer)))throw new ValidationError('Choose a valid PNG, JPEG or WebP logo under 2 MB.');
     if (!data || typeof data !== 'object') {
         throw new ValidationError('Profile data is required.');
     }
@@ -167,7 +172,7 @@ async function updateProfile(data = {}, businessId = null) {
     const address = data.address ? data.address.trim() : null;
     const displayName = data.displayName ? data.displayName.trim() : legalName;
     const workspaceName = data.workspaceName ? data.workspaceName.trim() : displayName;
-    const logoUrl = data.logoUrl ? data.logoUrl.trim() : null;
+    let logoUrl = data.logoUrl ? data.logoUrl.trim() : null;
 
     // Banking
     const bankName = data.bankName ? data.bankName.trim() : null;
@@ -197,6 +202,14 @@ async function updateProfile(data = {}, businessId = null) {
         orderBy: { id: 'asc' }
     });
 
+    let newLogoPath;
+    if(logoFile){
+        const ext=logoFile.buffer[0]===0x89?'png':logoFile.buffer[0]===0xff?'jpg':'webp';
+        const filename=crypto.randomUUID()+'.'+ext;
+        const directory=path.join(__dirname,'../../assets/uploads/logos');
+        fs.mkdirSync(directory,{recursive:true});newLogoPath=path.join(directory,filename);
+        fs.writeFileSync(newLogoPath,logoFile.buffer,{flag:'wx'});logoUrl='/uploads/logos/'+filename;
+    }
     const updateData = {
         legalName,
         displayName,
@@ -223,7 +236,7 @@ async function updateProfile(data = {}, businessId = null) {
     if (invoiceFooter !== undefined) updateData.invoiceFooter = invoiceFooter;
     if (paymentInstructions !== undefined) updateData.paymentInstructions = paymentInstructions;
 
-    if (profile) {
+    try { if (profile) {
         profile = await prisma.businessProfile.update({
             where: { id: profile.id },
             data: updateData
@@ -239,6 +252,7 @@ async function updateProfile(data = {}, businessId = null) {
         });
     }
 
+    }catch(error){if(newLogoPath){try{fs.unlinkSync(newLogoPath);}catch(cleanupError){console.warn('[LOGO CLEANUP] '+cleanupError.message);}}throw error;}
     invalidateBrandingCache();
 
     const companyName = profile.displayName || profile.legalName;

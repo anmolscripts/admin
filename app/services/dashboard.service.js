@@ -5,14 +5,17 @@ const prisma = require('../config/prisma');
 /**
  * Calculates start and end Date objects for standard ranges
  */
-function getDateRangeFilter(rangeKey = 'this_month', customFrom = null, customTo = null, referenceDate = new Date()) {
+function getDateRangeFilter(rangeKey = 'current_fy', customFrom = null, customTo = null, referenceDate = new Date()) {
     const now = new Date(referenceDate);
-    const key = (rangeKey || 'this_month').toLowerCase();
+    const key = typeof rangeKey==='string' ? (rangeKey || 'current_fy').toLowerCase() : '';
+    if(!['today','this_week','this_month','this_quarter','this_year','current_fy','custom','all','all_time'].includes(key))throw Object.assign(new Error('Choose a supported reporting period.'),{statusCode:400});
 
     let startDate = null;
     let endDate = null;
 
-    if (key === 'today') {
+    if (key === 'current_fy') {
+        ({startDate,endDate}=require('./financialYear.service').computeFinancialYear(now));
+    } else if (key === 'today') {
         startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
         endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
     } else if (key === 'this_week') {
@@ -45,6 +48,7 @@ function getDateRangeFilter(rangeKey = 'this_month', customFrom = null, customTo
         }
     }
 
+    if(key==='custom'&&((customFrom&&!startDate)||(customTo&&!endDate)||(startDate&&endDate&&startDate>endDate)))throw Object.assign(new Error('Choose a valid date range with the start on or before the end.'),{statusCode:400});
     return { key, startDate, endDate };
 }
 
@@ -52,7 +56,7 @@ function getDateRangeFilter(rangeKey = 'this_month', customFrom = null, customTo
  * Server-side KPI and Analytics aggregation
  * Efficient SQL queries strictly scoped to authorized businessId and date filter.
  */
-async function getDashboardMetrics({ range = 'this_month', from = null, to = null, businessId = null } = {}, referenceDate = new Date()) {
+async function getDashboardMetrics({ range = 'current_fy', from = null, to = null, businessId = null } = {}, referenceDate = new Date()) {
     const dateFilter = getDateRangeFilter(range, from, to, referenceDate);
     const now = new Date(referenceDate);
 

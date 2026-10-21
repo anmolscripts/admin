@@ -97,8 +97,13 @@ describe('UX Polish, Unit Master & Master Data Tests', () => {
             assert.ok(found, 'Reactivated unit should appear in activeUnits');
         });
 
-        it('should delete unit', async () => {
+        it('should archive a unit while preserving its record and history', async () => {
             await unitService.deleteUnit(createdUnitId);
+            const retained=await prisma.unit.findUnique({where:{id:createdUnitId}});
+            assert.ok(retained);
+            assert.equal(retained.active,false);
+            const audit=await prisma.userActivityLog.findFirst({where:{targetType:'UNIT',targetId:String(createdUnitId),action:'RECORD_UPDATED'},orderBy:{id:'desc'}});
+            assert.ok(audit.metadata.changes.some(change=>change.field==='active' && change.after===false));
             const activeUnits = await unitService.getActiveUnits();
             const found = activeUnits.find(u => u.id === createdUnitId);
             assert.strictEqual(found, undefined);
@@ -367,7 +372,7 @@ describe('UX Polish, Unit Master & Master Data Tests', () => {
 
             assert.ok(content.includes('#item-autocomplete-portal'));
             assert.ok(content.includes('item-autocomplete-item'));
-            assert.ok(content.includes('z-index: 10050'));
+            assert.ok(content.includes('z-index: 1022'), 'Autocomplete stays below the sticky header');
         });
 
         it('should ensure main.css contains unified button design system', () => {

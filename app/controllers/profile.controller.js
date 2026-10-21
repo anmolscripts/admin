@@ -21,6 +21,7 @@ async function renderProfile(req, res, next) {
 async function updateProfile(req, res) {
     try {
         const userId = req.session.user.id;
+        if(req.profileUploadError) throw req.profileUploadError;
         const updated = await profileService.updateUserProfile(userId, req.body, req.file);
 
         // Synchronize active session user object
@@ -37,7 +38,7 @@ async function updateProfile(req, res) {
         return res.redirect('/profile?success=true');
     } catch (err) {
         const profile = await profileService.getUserProfile(req.session.user.id).catch(() => req.session.user);
-        const statusCode = err instanceof profileService.ValidationError ? 400 : (err instanceof profileService.ConflictError ? 409 : 500);
+        const statusCode = err.statusCode || (err instanceof profileService.ValidationError ? 400 : (err instanceof profileService.ConflictError ? 409 : 500));
 
         if (req.xhr || req.headers.accept?.includes('application/json')) {
             return res.status(statusCode).json({ success: false, error: err.message });
@@ -46,7 +47,7 @@ async function updateProfile(req, res) {
         return res.status(statusCode).render('profile/index', {
             pageTitle: 'My Profile',
             pageSubtitle: 'Manage your personal account information, security credentials, and avatar.',
-            profile: { ...profile, ...req.body },
+            profile: { ...profile, ...Object.fromEntries(['name','email','phone'].filter(key=>typeof req.body?.[key]==='string').map(key=>[key,req.body[key]])) },
             user: profile,
             error: err.message,
             csrfToken: req.session ? req.session.csrfToken : ''

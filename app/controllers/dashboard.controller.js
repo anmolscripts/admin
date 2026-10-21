@@ -32,9 +32,9 @@ async function getMetrics(req, res) {
         });
     } catch (err) {
         console.error('[DASHBOARD CONTROLLER ERROR]:', err);
-        return res.status(500).json({
+        return res.status(err.statusCode || 500).json({
             success: false,
-            error: 'Failed to retrieve dashboard metrics.'
+            error: err.statusCode===400?err.message:'Failed to retrieve dashboard metrics.'
         });
     }
 }
@@ -45,7 +45,7 @@ async function getMetrics(req, res) {
  */
 async function renderDashboard(req, res, next) {
     try {
-        const range = req.query.range || 'this_month';
+        const range = req.query.range || 'current_fy';
         const from = req.query.from || null;
         const to = req.query.to || null;
         const businessId = resolveTargetBusinessId(req);

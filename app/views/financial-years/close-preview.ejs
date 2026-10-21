@@ -1,4 +1,4 @@
-<%- include('../layouts/header') %>
+<%- include('../layouts/header', { showPageHeader: false }) %>
 
 <div class="content-wrapper p-4">
   <!-- Page Header -->
@@ -8,7 +8,7 @@
         <a href="/financial-years/<%= preview.financialYear.id %>" class="btn btn-sm btn-light border" title="Back">
           <i class="bi bi-arrow-left"></i>
         </a>
-        <h1 class="h3 fw-bold mb-0">Year-End Close Preview — FY <%= preview.financialYear.code %></h1>
+        <h1 class="page-title fw-bold mb-0">Year-End Close Preview — FY <%= preview.financialYear.code %></h1>
       </div>
       <p class="text-muted small mt-1 mb-0">
         Review nominal account balances, calculated net profit/loss, and proposed closing journal before final execution.

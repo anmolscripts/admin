@@ -55,21 +55,21 @@
               <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
             <% } %>
 
-            <!-- Avatar Preview & Upload -->
-            <div class="d-flex align-items-center mb-4 p-3 bg-light rounded-3">
-              <div class="position-relative me-3">
-                <% if (profile && profile.avatarUrl) { %>
-                  <img src="<%= profile.avatarUrl %>" alt="Avatar" class="rounded-circle border" style="width: 72px; height: 72px; object-fit: cover;" id="avatar-preview" />
-                <% } else { %>
-                  <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fs-2 fw-bold" style="width: 72px; height: 72px;" id="avatar-placeholder">
-                    <%= (profile && profile.name) ? profile.name.charAt(0).toUpperCase() : 'U' %>
-                  </div>
-                <% } %>
+            <div class="avatar-upload mb-4" id="avatar-upload">
+              <div class="avatar-upload-preview">
+                <img src="<%= (profile && profile.avatarUrl) || '/images/default-avatar.png' %>" alt="Profile photo preview" id="avatar-preview" />
+                <span id="avatar-placeholder" hidden></span>
               </div>
-              <div>
-                <label for="avatar" class="form-label fw-semibold mb-1">Profile Photo</label>
-                <input class="form-control form-control-sm" type="file" id="avatar" name="avatar" accept="image/png, image/jpeg, image/webp" />
-                <div class="form-text">Supported: PNG, JPEG, or WebP (max 2MB).</div>
+              <div class="flex-grow-1">
+                <strong class="d-block mb-1">Profile photo</strong>
+                <p class="small text-muted mb-3">A clear photo helps your team recognize you.</p>
+                <div class="d-flex flex-wrap gap-2">
+                  <label for="avatar" class="btn btn-outline-primary mb-0"><i class="bi bi-cloud-arrow-up me-2"></i>Choose image</label>
+                  <input class="visually-hidden" type="file" id="avatar" name="avatar" accept="image/png,image/jpeg,image/webp" aria-describedby="avatar-help avatar-file-name" />
+                  <button type="button" class="btn btn-outline-secondary" id="avatar-reset" hidden>Undo selection</button>
+                </div>
+                <div class="small mt-2" id="avatar-file-name" aria-live="polite">Your current photo is shown. Changes save with your profile.</div>
+                <div class="form-text" id="avatar-help">PNG, JPEG or WebP · maximum 2 MB</div>
               </div>
             </div>
 
@@ -169,4 +169,4 @@
   </div>
 </div>
 
-<%- include('../layouts/footer') %>
+<%- include('../layouts/footer', {extraJs:'<script src="/js/profile.js"></script>'}) %>

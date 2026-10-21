@@ -33,7 +33,7 @@
   </div>
 
   <% if (canManage) { %>
-  <div class="d-flex gap-2">
+  <div class="d-flex flex-wrap gap-2">
     <% if (member.status === 'INVITED') { %>
       <button type="button" class="btn btn-primary btn-sm" onclick="resendInvitation(<%= member.id %>)">
         <i class="bi bi-send me-1"></i> Resend Invitation
@@ -62,9 +62,7 @@
   <div class="col-12 col-lg-4">
     <div class="card border-0 shadow-sm rounded-3 p-4 bg-white mb-4">
       <div class="text-center mb-3">
-        <div class="rounded-circle bg-light border d-inline-flex align-items-center justify-content-center text-primary fw-bold display-6 mb-2" style="width: 80px; height: 80px;">
-          <%= member.name ? member.name.charAt(0).toUpperCase() : 'U' %>
-        </div>
+        <img src="<%= member.avatarUrl || '/images/default-avatar.png' %>" alt="<%= member.name || 'User' %>" class="rounded-circle object-fit-cover mb-2" width="80" height="80" />
         <h5 class="fw-bold text-dark mb-0"><%= member.name %></h5>
         <span class="text-muted small"><%= member.email %></span>
       </div>

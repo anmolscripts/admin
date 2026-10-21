@@ -7,6 +7,7 @@ const prisma = require('../config/prisma');
  */
 function computeFinancialYear(date) {
   const d = new Date(date);
+  if (Number.isNaN(d.getTime())) throw new Error('A valid financial year date is required.');
   const year = d.getMonth() >= 3 ? d.getFullYear() : d.getFullYear() - 1; // month index 0-11, April is 3
   const nextYear = year + 1;
   const code = `${year}-${String(nextYear).slice(-2)}`;
@@ -87,8 +88,14 @@ async function ensureFinancialYear(date, businessId = null, tx = null) {
   if (existing) {
     return existing;
   }
-  await validateNoOverlap(startDate, endDate, null, activeBusinessId, client);
-  const fy = await client.financialYear.create({
+  try { await validateNoOverlap(startDate, endDate, null, activeBusinessId, client); }
+  catch(error) {
+    const raced=await client.financialYear.findFirst({where});
+    if(raced)return raced;
+    throw error;
+  }
+  let fy;
+  try { fy = await client.financialYear.create({
     data: {
       code,
       startDate,
@@ -97,8 +104,23 @@ async function ensureFinancialYear(date, businessId = null, tx = null) {
       isCurrent: false,
       businessId: activeBusinessId,
     },
-  });
+  }); } catch (error) {
+    if (error.code !== 'P2002') throw error;
+    fy = await client.financialYear.findFirst({ where });
+    if (!fy) throw error;
+  }
   return fy;
+}
+
+// Roll the current marker forward without closing or rewriting historical periods.
+async function ensureCurrentFinancialYear(businessId, date = new Date()) {
+  if (!Number.isInteger(Number(businessId)) || Number(businessId) <= 0) throw new Error('Business is required.');
+  const fy = await ensureFinancialYear(date, Number(businessId));
+  await prisma.$transaction(async tx => {
+    await tx.financialYear.updateMany({ where: { businessId:Number(businessId), isCurrent:true, id:{not:fy.id} }, data:{isCurrent:false} });
+    if (!fy.isCurrent) await tx.financialYear.update({where:{id:fy.id},data:{isCurrent:true}});
+  });
+  return {...fy,isCurrent:true};
 }
 
 /**
@@ -147,8 +169,9 @@ async function setCurrentFinancialYear(id) {
  * List all Financial Years ordered by start date descending.
  * @returns {Promise<Array<Object>>}
  */
-async function listFinancialYears() {
+async function listFinancialYears(businessId = null) {
   return await prisma.financialYear.findMany({
+    where: businessId ? {businessId:Number(businessId)} : {},
     orderBy: { startDate: 'desc' },
     include: {
       closedBy: { select: { id: true, name: true, email: true } },
@@ -196,6 +219,7 @@ module.exports = {
   getFinancialYearById,
   createFinancialYear,
   ensureFinancialYear,
+  ensureCurrentFinancialYear,
   setCurrentFinancialYear,
   listFinancialYears,
 };

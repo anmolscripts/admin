@@ -18,6 +18,8 @@ function notFound(req, res) {
 }
 
 function errorHandler(err, req, res, next) {
+    res.statusCode=err.statusCode||err.status||500;
+    require('./requestLog.middleware').logFailure(req,res,res.statusCode<500?err.message:'Internal server error',err);
     console.error(`[SERVER ERROR] ${req.method} ${req.originalUrl || req.url}:`, err.message || err);
 
     if (err.name === 'MulterError' || err.code === 'INVALID_FILE_TYPE') {
@@ -29,13 +31,15 @@ function errorHandler(err, req, res, next) {
     }
 
     if (req.path.startsWith('/api') || req.xhr || (req.headers.accept && req.headers.accept.includes('application/json'))) {
-        return res.status(err.status || 500).json({
+        return res.status(err.statusCode || err.status || 500).json({
             success: false,
-            error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error.'
+            error: (err.statusCode >= 400 && err.statusCode < 500) || process.env.NODE_ENV === 'development' ? err.message : 'Internal server error.'
         });
     }
 
-    res.status(err.status || 500).render('errors/500', {
+    res.status(err.statusCode || err.status || 500).render('errors/500', {
+        statusCode:err.statusCode || err.status || 500,
+        errorMessage:(err.statusCode || err.status)<500?err.message:null,
         pageTitle: 'Server Error',
         error: process.env.NODE_ENV === 'development'
             ? err

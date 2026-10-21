@@ -18,6 +18,7 @@ const {
 } = require('./middleware/error.middleware');
 
 const app = express();
+app.use(require('./middleware/requestLog.middleware'));
 
 // Trust reverse proxy (Nginx) in production or when explicitly configured
 if (process.env.NODE_ENV === 'production' || process.env.TRUST_PROXY === 'true' || process.env.TRUST_PROXY === '1') {
@@ -77,6 +78,7 @@ app.use(csrfProtection);
 // Business Context Resolver & Multi-Business Tenancy Enforcement
 const businessContextMiddleware = require('./middleware/businessContext.middleware');
 app.use(businessContextMiddleware);
+app.use(require('./middleware/reportingPeriod.middleware'));
 
 // Global EJS variables & RBAC permission resolution
 const businessProfileService = require('./services/businessProfile.service');
@@ -100,6 +102,8 @@ app.use(async (req, res, next) => {
 app.use(attachUserPermissions);
 
 // Routes
+app.use(require('./middleware/recordBoundary.middleware'));
+app.use('/api/records', require('./routes/recordDesk.routes'));
 app.use('/', authRoutes);
 app.use('/', webRoutes);
 app.use('/', adminRoutes);

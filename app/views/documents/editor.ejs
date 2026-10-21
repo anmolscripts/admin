@@ -238,7 +238,7 @@
                   <% }); %>
                 <% } %>
               </select>
-              <button class="btn btn-outline-secondary btn-clear-client <%= (document && document.clientId) ? '' : 'd-none' %>" type="button" id="btn-clear-client" title="Clear selected client">
+              <button class="btn btn-outline-danger btn-clear-client <%= (document && document.clientId) ? '' : 'd-none' %>" type="button" id="btn-clear-client" title="Clear selected client" aria-label="Clear selected client">
                 <i class="bi bi-x-lg"></i>
               </button>
             </div>
@@ -267,7 +267,7 @@
                   <% }); %>
                 <% } %>
               </select>
-              <button class="btn btn-outline-secondary btn-clear-project <%= (document && document.projectId) ? '' : 'd-none' %>" type="button" id="btn-clear-project" title="Clear selected project">
+              <button class="btn btn-outline-danger btn-clear-project <%= (document && document.projectId) ? '' : 'd-none' %>" type="button" id="btn-clear-project" title="Clear selected project" aria-label="Clear selected project">
                 <i class="bi bi-x-lg"></i>
               </button>
             </div>
@@ -667,6 +667,7 @@
         window.__INITIAL_DOCUMENT__ = ${JSON.stringify(clientDocumentData)};
         window.__EDITOR_MODE__ = "${mode}";
         window.__DOCUMENT_TYPE__ = "${documentType}";
+        window.__SELLER_STATE_CODE__ = ${JSON.stringify(locals.sellerStateCode || '')};
         window.__AVAILABLE_UNITS__ = ${JSON.stringify(locals.unitList || [])};
       </script>
       <script src="/js/editor.js"></script>

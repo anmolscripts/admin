@@ -1,7 +1,7 @@
-<%- include('../layouts/header') %>
+<%- include('../layouts/header', { showPageHeader: false }) %>
 <% const isEdit = Boolean(supplier && supplier.id); %>
 <div class="content-wrapper p-4">
-  <div class="d-flex justify-content-between align-items-center mb-4"><div><h1 class="h3 fw-bold mb-1"><%= pageTitle %></h1><p class="text-muted small mb-0"><%= pageSubtitle %></p></div><a href="/suppliers" class="btn btn-outline-secondary">Back to Suppliers</a></div>
+  <div class="d-flex justify-content-between align-items-center mb-4"><div><h1 class="page-title fw-bold mb-1"><%= pageTitle %></h1><p class="text-muted small mb-0"><%= pageSubtitle %></p></div><a href="/suppliers" class="btn btn-outline-secondary">Back to Suppliers</a></div>
   <div class="card border-0 shadow-sm"><div class="card-body p-4"><form method="POST" action="<%= isEdit ? '/suppliers/' + supplier.id : '/suppliers' %>">
     <input type="hidden" name="_csrf" value="<%= csrfToken %>"><% if (!isEdit && typeof returnTo !== 'undefined' && returnTo) { %><input type="hidden" name="returnTo" value="<%= returnTo %>"><% } %>
     <% if (typeof error !== 'undefined' && error) { %><div class="alert alert-danger" role="alert"><%= error %></div><% } %>

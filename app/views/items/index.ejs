@@ -73,7 +73,7 @@
           </tr>
         <% } else { %>
           <% items.forEach(function(item) { %>
-            <tr>
+            <tr data-record-type="item" data-record-id="<%= item.id %>" tabindex="0" aria-label="Open record details">
               <td class="ps-4" data-sort="<%= item.name %>">
                 <div class="fw-bold text-dark text-truncate" style="max-width: 280px;" title="<%= item.name %>"><%= item.name %></div>
                 <% if (item.description) { %>
@@ -97,7 +97,8 @@
                     role="switch"
                     <%= item.active ? 'checked' : '' %>
                     onchange="toggleItemStatus('<%= item.id %>', this.checked)"
-                    title="<%= item.active ? 'Click to deactivate' : 'Click to activate' %>"
+                    <%= locals.hasPermission && locals.hasPermission('ITEMS','EDIT') ? '' : 'disabled' %>
+title="<%= item.active ? 'Click to deactivate' : 'Click to activate' %>"
                     id="switch-item-<%= item.id %>"
                   />
                   <label class="form-check-label visually-hidden" for="switch-item-<%= item.id %>">

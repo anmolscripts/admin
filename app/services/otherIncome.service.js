@@ -6,6 +6,7 @@ const { ensureFinancialYear } = require('./financialYear.service');
 const journalService = require('./journal.service');
 const numberingService = require('./numbering.service');
 const businessService = require('./business.service');
+const coaService = require('./chartOfAccounts.service');
 const { ValidationError, NotFoundError, ConflictError } = require('./errorTypes');
 
 /**
@@ -13,7 +14,7 @@ const { ValidationError, NotFoundError, ConflictError } = require('./errorTypes'
  */
 async function createOtherIncome(data = {}, userId) {
     const amount = parseFloat(data.amount);
-    if (isNaN(amount) || amount <= 0) {
+    if (!Number.isFinite(amount) || amount <= 0) {
         throw new ValidationError('Income amount must be a positive number.');
     }
 
@@ -54,6 +55,7 @@ async function createOtherIncome(data = {}, userId) {
     const roundAmount = Math.round(amount * 100) / 100;
 
     return prisma.$transaction(async (tx) => {
+        await coaService.ensureSystemAccounts(userId, businessId, tx);
         const incomeNumber = data.incomeNumber || await numberingService.allocateNumber({
             businessId,
             entityType: 'OTHER_INCOME',
@@ -81,21 +83,21 @@ async function createOtherIncome(data = {}, userId) {
         // Debit: Bank (1112) or Cash (1111)
         const debitAccountKey = receiptMethod === 'CASH' ? 'CASH_ON_HAND' : 'BANK_ACCOUNT';
         let cashBankAccount = await tx.chartOfAccount.findFirst({
-            where: { systemAccountKey: debitAccountKey }
+            where: { businessId, systemAccountKey: debitAccountKey, active: true, allowPosting: true }
         });
         if (!cashBankAccount) {
             cashBankAccount = await tx.chartOfAccount.findFirst({
-                where: { type: 'ASSET', subtype: 'CASH_BANK', allowPosting: true }
+                where: { businessId, type: 'ASSET', subtype: 'CASH_BANK', active: true, allowPosting: true }
             });
         }
 
         // Credit: Service Income (4120) or Other Income
         let incomeAccount = await tx.chartOfAccount.findFirst({
-            where: { systemAccountKey: 'SERVICE_INCOME' }
+            where: { businessId, systemAccountKey: 'SERVICE_INCOME', active: true, allowPosting: true }
         });
         if (!incomeAccount) {
             incomeAccount = await tx.chartOfAccount.findFirst({
-                where: { type: 'INCOME', allowPosting: true }
+                where: { businessId, type: 'INCOME', active: true, allowPosting: true }
             });
         }
 
@@ -105,6 +107,7 @@ async function createOtherIncome(data = {}, userId) {
 
         // 3. Post double-entry journal
         await journalService.postJournalEntry({
+            businessId,
             entryDate: incomeDate,
             financialYearId: fy.id,
             sourceType: 'OTHER_INCOME',
@@ -160,8 +163,8 @@ async function listOtherIncomes({ businessId, source, dateFrom, dateTo, search, 
     if (source) where.source = source;
     if (dateFrom || dateTo) {
         where.incomeDate = {};
-        if (dateFrom) where.incomeDate.gte = new Date(dateFrom);
-        if (dateTo) where.incomeDate.lte = new Date(dateTo);
+        if (dateFrom) where.incomeDate.gte = new Date(/^\d{4}-\d{2}-\d{2}$/.test(dateFrom) ? dateFrom + 'T00:00:00' : dateFrom);
+        if (dateTo) where.incomeDate.lte = new Date(/^\d{4}-\d{2}-\d{2}$/.test(dateTo) ? dateTo + 'T23:59:59.999' : dateTo);
     }
     if (search) {
         where.description = { contains: search };

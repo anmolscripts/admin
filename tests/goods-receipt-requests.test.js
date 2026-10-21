@@ -1,0 +1,25 @@
+'use strict';
+const {test,after}=require('node:test');
+const assert=require('node:assert/strict');
+const crypto=require('node:crypto');
+const prisma=require('../app/config/prisma');
+const service=require('../app/services/goodsReceipt.service');
+after(()=>prisma.$disconnect());
+test('receipt retries are durable and concurrent receipts cannot over-receive a purchase order',async()=>{
+    assert.match(process.env.DATABASE_NAME,/^ui_audit_/,'Run only in the disposable audit database');
+    const business=await prisma.business.findFirst(),user=await prisma.user.findFirst();
+    const supplier=await prisma.supplier.create({data:{businessId:business.id,name:`Receipt supplier ${Date.now()}`,createdById:user.id}});
+    const direct={idempotencyKey:crypto.randomUUID(),supplierId:supplier.id,receiptDate:'2026-10-19',items:[{name:'Rejected delivery',receivedQuantity:1,acceptedQuantity:0,rejectedQuantity:1,unitCost:5}]};
+    const pair=await Promise.all([service.createGoodsReceipt(direct,user.id,business.id),service.createGoodsReceipt(direct,user.id,business.id)]);
+    assert.equal(pair[0].id,pair[1].id);assert.equal(await prisma.goodsReceipt.count({where:{businessId:business.id,requestKey:direct.idempotencyKey}}),1);
+    assert.equal((await service.createGoodsReceipt(direct,user.id,business.id)).id,pair[0].id);
+    await assert.rejects(service.createGoodsReceipt({...direct,notes:'Changed request'},user.id,business.id),{statusCode:409});
+    const po=await prisma.purchaseOrder.create({data:{businessId:business.id,orderNumber:`LOCK-${Date.now()}`,supplierId:supplier.id,supplierName:supplier.name,orderDate:new Date('2026-10-19'),createdById:user.id,updatedById:user.id,items:{create:{lineNumber:1,name:'Locked delivery',quantity:10,rate:5,amount:50}}},include:{items:true}});
+    const receipt={purchaseOrderId:po.id,receiptDate:'2026-10-19',items:[{purchaseOrderItemId:po.items[0].id,name:'Locked delivery',receivedQuantity:7,acceptedQuantity:0,rejectedQuantity:7,unitCost:5}]};
+    const outcomes=await Promise.allSettled([service.createGoodsReceipt(receipt,user.id,business.id),service.createGoodsReceipt(receipt,user.id,business.id)]);
+    assert.equal(outcomes.filter(result=>result.status==='fulfilled').length,1);
+    assert.match(outcomes.find(result=>result.status==='rejected').reason.message,/remaining allowed/);
+    const sum=await prisma.goodsReceiptItem.aggregate({where:{purchaseOrderItemId:po.items[0].id},_sum:{receivedQuantity:true}});assert.equal(Number(sum._sum.receivedQuantity),7);
+    await assert.rejects(service.createGoodsReceipt({...receipt,items:[{...receipt.items[0],receivedQuantity:1,rejectedQuantity:1},{...receipt.items[0],receivedQuantity:1,rejectedQuantity:1}]},user.id,business.id),/only once/);
+    await assert.rejects(service.createGoodsReceipt({...direct,idempotencyKey:crypto.randomUUID(),items:[{...direct.items[0],unitCost:Infinity}]},user.id,business.id),/Invalid unit cost/);
+});

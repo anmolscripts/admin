@@ -10,7 +10,7 @@ const prisma = require('../config/prisma');
  */
 async function renderFinancialYearsList(req, res, next) {
     try {
-        const financialYears = await financialYearService.listFinancialYears();
+        const financialYears = await financialYearService.listFinancialYears(req.businessId);
 
         res.render('financial-years/index', {
             pageTitle: 'Financial Years',

@@ -43,7 +43,7 @@
       <div class="tab-pane fade show active" id="tab-profile" role="tabpanel" aria-labelledby="tab-profile-btn">
         <div class="card border-0 shadow-sm rounded-3 p-4 bg-white mb-4">
           <div class="visually-hidden">Organization Profile & Defaults</div>
-          <form method="POST" action="/settings" id="settings-form">
+          <form method="POST" action="/settings" id="settings-form" enctype="multipart/form-data">
             <% if (locals.csrfToken) { %>
               <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
             <% } %>
@@ -102,18 +102,14 @@
                   <div class="form-text">Displayed in sidebar, browser tabs, header, and system navigation.</div>
                 </div>
 
-                <!-- Logo URL -->
                 <div class="col-12 col-md-6">
-                  <label for="profile-logoUrl" class="form-label fw-semibold">Organization Logo URL</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="profile-logoUrl"
-                    name="logoUrl"
-                    value="<%= (profile && profile.logoUrl) || '' %>"
-                    placeholder="e.g. /images/logo.png or https://example.com/logo.png"
-                  />
-                  <div class="form-text">Brand logo rendered in sidebar, invoices, and print headers.</div>
+                  <label for="organization-logo" class="form-label fw-semibold">Organization Logo</label>
+                  <input type="hidden" name="logoUrl" value="<%= (profile && profile.logoUrl) || '' %>">
+                  <div class="avatar-upload organization-logo-upload">
+                    <div class="avatar-upload-preview organization-logo-preview"><img id="organization-logo-preview" src="<%= (profile && profile.logoUrl) || '' %>" alt="Organization logo preview" <%= profile && profile.logoUrl?'':'hidden' %>><span id="organization-logo-placeholder" <%= profile && profile.logoUrl?'hidden':'' %> aria-label="No logo selected"><i class="bi bi-image"></i></span></div>
+                    <div class="flex-grow-1"><div class="d-flex flex-wrap gap-2"><label for="organization-logo" class="btn btn-sm btn-outline-primary mb-0"><i class="bi bi-cloud-arrow-up me-2"></i>Choose image</label><input type="file" class="visually-hidden" id="organization-logo" name="logo" accept="image/png,image/jpeg,image/webp" aria-describedby="organization-logo-help organization-logo-caption"><button type="button" class="btn btn-sm btn-outline-secondary" id="organization-logo-reset" hidden>Undo selection</button></div><div id="organization-logo-help" class="form-text mt-2">PNG, JPEG or WebP · maximum 2 MB.</div><small id="organization-logo-caption" class="text-muted d-block mt-1" role="status">Preview first. Save changes to apply your logo.</small></div>
+                  </div>
+                  <div class="form-text">Used in your workspace, invoices and print headers. Your saved logo stays unchanged until a successful save.</div>
                 </div>
 
                 <!-- Billing Email -->
@@ -617,7 +613,7 @@
         </div>
       </div>
 
-      <div class="modal-body p-0 bg-secondary-subtle position-relative" style="min-height: 680px;">
+      <div class="modal-body p-0 bg-secondary-subtle position-relative">
         <div id="previewLoader" class="position-absolute top-50 start-50 translate-middle text-center" style="display: none;">
           <div class="spinner-border text-primary" role="status"></div>
           <p class="mt-2 text-muted fw-semibold small">Rendering preview...</p>
@@ -681,6 +677,7 @@
                 <option value="classic-corporate">Classic Corporate (Auditor / CA Double Border)</option>
                 <option value="industrial-bold">Industrial Bold (Manufacturing / High Contrast)</option>
                 <option value="executive-emerald">Executive Emerald (Luxury / Studio)</option>
+                <option value="rajesh-signature">Rajesh International (Navy & Gold)</option>
               </select>
             </div>
 
@@ -692,6 +689,7 @@
                 <option value='Roboto, Arial, sans-serif'>Roboto (Corporate Sans)</option>
                 <option value='Helvetica Neue, Arial, sans-serif'>Helvetica Neue (Modern Swiss)</option>
                 <option value='Georgia, serif'>Georgia (Classic Serif)</option>
+                <option value='Arial, Helvetica, sans-serif'>Arial (Signature Letterhead)</option>
                 <option value='-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'>System Native</option>
               </select>
             </div>
@@ -777,6 +775,26 @@
 
   let currentPreviewTemplateId = 'modern-minimal';
   let currentPreviewDocType = 'INVOICE';
+
+  async function templateRequest(url, options) {
+    const token = document.querySelector('input[name="_csrf"]');
+    if (!token || !token.value) throw new Error('Please refresh this page and try again.');
+    const res = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'x-csrf-token': token.value,
+        ...(options.headers || {})
+      }
+    });
+    if (res.redirected || !(res.headers.get('content-type') || '').includes('application/json')) {
+      throw new Error('Your session may have expired. Refresh the page and sign in again.');
+    }
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.error || data.message || 'Request failed (HTTP ' + res.status + ').');
+    return data;
+  }
 
   // 1. Sync color picker and text inputs
   function setupColorSync(pickerId, textId) {
@@ -869,12 +887,11 @@
       const quotationTemplate = document.getElementById('active-quotation-template-select').value;
 
       try {
-        const res = await fetch('/api/settings/templates/active', {
+        const data = await templateRequest('/api/settings/templates/active', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ invoiceTemplate, quotationTemplate })
         });
-        const data = await res.json();
         if (data.success) {
           if (window.SparkLoader && window.SparkLoader.toast) {
             window.SparkLoader.toast('Active invoice and quotation templates updated!', 'success');
@@ -886,7 +903,7 @@
           alert('Failed to update templates: ' + (data.error || 'Unknown error'));
         }
       } catch (err) {
-        alert('Network error while updating active templates.');
+        alert('Failed to update templates: ' + err.message);
       }
     });
   }
@@ -897,19 +914,18 @@
       const templateId = this.getAttribute('data-template-id');
       const quotationTemplate = document.getElementById('active-quotation-template-select').value;
       try {
-        const res = await fetch('/api/settings/templates/active', {
+        const data = await templateRequest('/api/settings/templates/active', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ invoiceTemplate: templateId, quotationTemplate })
         });
-        const data = await res.json();
         if (data.success) {
           if (window.SparkLoader && window.SparkLoader.toast) {
             window.SparkLoader.toast('Default Invoice template set to ' + templateId, 'success');
           }
           setTimeout(function() { window.location.reload(); }, 600);
         }
-      } catch (_) {}
+      } catch (err) { alert('Failed to update templates: ' + err.message); }
     });
   });
 
@@ -918,19 +934,18 @@
       const templateId = this.getAttribute('data-template-id');
       const invoiceTemplate = document.getElementById('active-invoice-template-select').value;
       try {
-        const res = await fetch('/api/settings/templates/active', {
+        const data = await templateRequest('/api/settings/templates/active', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ invoiceTemplate, quotationTemplate: templateId })
         });
-        const data = await res.json();
         if (data.success) {
           if (window.SparkLoader && window.SparkLoader.toast) {
             window.SparkLoader.toast('Default Quotation template set to ' + templateId, 'success');
           }
           setTimeout(function() { window.location.reload(); }, 600);
         }
-      } catch (_) {}
+      } catch (err) { alert('Failed to update templates: ' + err.message); }
     });
   });
 
@@ -938,7 +953,11 @@
   const btnOpenCreate = document.getElementById('btn-open-create-template');
   if (btnOpenCreate) {
     btnOpenCreate.addEventListener('click', function() {
-      document.getElementById('editorModalTitle').textContent = 'Create Custom Template';
+      document.getElementById('templateEditorModalTitle').textContent = 'Create Custom Template';
+      document.getElementById('editor-base-template').value = 'modern-minimal';
+      const fontSelect=document.getElementById('editor-font-family');
+      fontSelect.value='Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      fontSelect.tomselect?.setValue(fontSelect.value);
       document.getElementById('editor-template-id').value = '';
       document.getElementById('editor-name').value = '';
       document.getElementById('editor-category').value = 'Custom';
@@ -968,7 +987,12 @@
       try {
         const tpl = JSON.parse(raw);
         const isBuiltIn = tpl.isBuiltIn;
-        document.getElementById('editorModalTitle').textContent = isBuiltIn ? ('Duplicate & Customize: ' + tpl.name) : ('Edit Template: ' + tpl.name);
+        document.getElementById('templateEditorModalTitle').textContent = isBuiltIn ? ('Duplicate & Customize: ' + tpl.name) : ('Edit Template: ' + tpl.name);
+        const layoutSelect=document.getElementById('editor-base-template');
+        layoutSelect.value=tpl.baseLayout || tpl.id;
+        if(!layoutSelect.value)layoutSelect.value='modern-minimal';
+        layoutSelect.tomselect?.setValue(layoutSelect.value);
+        document.getElementById('editor-font-family').value=tpl.fontFamily;
         document.getElementById('editor-template-id').value = isBuiltIn ? '' : tpl.id;
         document.getElementById('editor-name').value = isBuiltIn ? (tpl.name + ' (Custom)') : tpl.name;
         document.getElementById('editor-category').value = tpl.category || 'Custom';
@@ -1009,7 +1033,7 @@
         name: name,
         category: document.getElementById('editor-category').value.trim() || 'Custom',
         description: document.getElementById('editor-description').value.trim(),
-        baseTemplate: document.getElementById('editor-base-template').value,
+        baseLayout: document.getElementById('editor-base-template').value,
         fontFamily: document.getElementById('editor-font-family').value,
         accentColor: document.getElementById('editor-accent-color').value.trim() || '#2563eb',
         accentSubtle: document.getElementById('editor-subtle-color').value.trim() || '#eff6ff',
@@ -1020,13 +1044,13 @@
         customCss: document.getElementById('editor-custom-css').value
       };
 
+      if(this.disabled)return;this.disabled=true;
       try {
-        const res = await fetch('/api/settings/templates/save', {
+        const data = await templateRequest('/api/settings/templates/save', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        const data = await res.json();
         if (data.success) {
           if (window.SparkLoader && window.SparkLoader.toast) {
             window.SparkLoader.toast('Custom template "' + data.template.name + '" saved!', 'success');
@@ -1036,8 +1060,8 @@
           alert('Failed to save template: ' + (data.error || 'Unknown error'));
         }
       } catch (err) {
-        alert('Error saving custom template.');
-      }
+        alert('Failed to save template: ' + err.message);
+      } finally {this.disabled=false;}
     });
   }
 
@@ -1048,10 +1072,9 @@
       if (!confirm('Are you sure you want to delete this custom template?')) return;
 
       try {
-        const res = await fetch('/api/settings/templates/' + encodeURIComponent(templateId), {
+        const data = await templateRequest('/api/settings/templates/' + encodeURIComponent(templateId), {
           method: 'DELETE'
         });
-        const data = await res.json();
         if (data.success) {
           if (window.SparkLoader && window.SparkLoader.toast) {
             window.SparkLoader.toast('Template deleted successfully.', 'success');
@@ -1060,8 +1083,8 @@
         } else {
           alert('Delete failed: ' + (data.error || 'Unknown error'));
         }
-      } catch (_) {
-        alert('Error deleting template.');
+      } catch (err) {
+        alert('Failed to delete template: ' + err.message);
       }
     });
   });
@@ -1069,4 +1092,4 @@
 })();
 </script>
 
-<%- include('../layouts/footer') %>
+<%- include('../layouts/footer',{extraJs:'<script src="/js/organization-logo.js"></script>'}) %>

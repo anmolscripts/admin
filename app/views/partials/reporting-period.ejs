@@ -1,0 +1,13 @@
+<section class="reporting-period card-glass mb-4" aria-label="Reporting period" data-current-fy="<%= currentFinancialYear.code %>">
+  <form method="GET" action="<%= reportingPeriod.action %>" id="reporting-period-form" class="d-flex flex-wrap align-items-end gap-3">
+    <div class="me-auto"><span class="period-eyebrow">Reporting period</span><strong class="d-block">FY <%= currentFinancialYear.code %> <span class="badge bg-success-subtle text-success ms-1">Current</span></strong><small class="text-muted"><%= reportingPeriod.applies ? 'Choose one year, multiple years or custom dates.' : 'Choose dates to explore the reporting workbench.' %></small></div>
+    <% const fyStart=Number(currentFinancialYear.code.slice(0,4)); %>
+    <div><label class="form-label small" for="period-from-fy">From FY</label><select id="period-from-fy" class="form-select" data-no-tomselect="true"><option value="">Custom</option><% for(let year=fyStart;year>=fyStart-15;year--){ %><option value="<%= year %>" <%= reportingPeriod.from===`${year}-04-01`?'selected':'' %>><%= year %>–<%= String(year+1).slice(-2) %></option><% } %></select></div>
+    <div><label class="form-label small" for="period-through-fy">Through FY</label><select id="period-through-fy" class="form-select" data-no-tomselect="true"><option value="">Custom</option><% for(let year=fyStart;year>=fyStart-15;year--){ %><option value="<%= year %>" <%= reportingPeriod.to===`${year+1}-03-31`?'selected':'' %>><%= year %>–<%= String(year+1).slice(-2) %></option><% } %></select></div>
+    <div><label class="form-label small" for="period-from">From</label><input id="period-from" type="date" name="<%= reportingPeriod.applies?reportingPeriod.fromName:'dateFrom' %>" class="form-control" value="<%= reportingPeriod.from %>" required></div>
+    <div><label class="form-label small" for="period-to">To</label><input id="period-to" type="date" name="<%= reportingPeriod.applies?reportingPeriod.toName:'dateTo' %>" class="form-control" value="<%= reportingPeriod.to %>" required></div>
+    <% for(const [key,value] of Object.entries(reportingPeriod.query)){ if(!['page','dateFrom','dateTo','fromDate','toDate','from','to','range','financialYearId'].includes(key)&&typeof value==='string'){ %><input type="hidden" name="<%= key %>" value="<%= value %>"><% }} %>
+    <% if(reportingPeriod.fromName==='from'){ %><input type="hidden" name="range" value="custom"><% } %>
+    <button type="submit" class="btn btn-primary"><i class="bi bi-calendar-check me-2"></i>Apply</button>
+  </form>
+</section>

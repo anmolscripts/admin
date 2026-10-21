@@ -1,4 +1,4 @@
-<%- include('../layouts/header') %>
+<%- include('../layouts/header', { showPageHeader: false }) %>
 
 <div class="content-wrapper p-4">
   <!-- Top Navigation Bar & Actions -->
@@ -9,7 +9,7 @@
       </a>
       <div>
         <div class="d-flex align-items-center gap-2">
-          <h1 class="h3 fw-bold mb-0 font-monospace"><%= note.noteNumber %></h1>
+          <h1 class="page-title fw-bold mb-0 font-monospace"><%= note.noteNumber %></h1>
           <% if (note.noteType === 'CREDIT') { %>
             <span class="badge border" style="background-color: #faf5ff; color: #7c3aed; border-color: #e9d5ff !important;">
               CREDIT NOTE

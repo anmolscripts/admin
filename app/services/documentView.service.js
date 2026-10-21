@@ -52,6 +52,7 @@ function buildDocumentViewModel(doc, businessProfile = {}) {
         address: doc.sellerAddress || businessProfile.address || '',
         email: doc.sellerEmail || businessProfile.email || '',
         phone: doc.sellerPhone || businessProfile.phone || '',
+        website: businessProfile.website || '',
         stateCode: doc.sellerStateCode || businessProfile.stateCode || '',
         bankName: businessProfile.bankName || '',
         accountNumber: businessProfile.accountNumber || '',
@@ -110,6 +111,7 @@ function buildDocumentViewModel(doc, businessProfile = {}) {
         return {
             lineNumber: item.lineNumber || (index + 1),
             name: item.name || 'Unnamed Item',
+            description: item.description || '',
             hsnSac: item.hsnSac || '—',
             quantity: qty.toFixed(2),
             unit: item.unit || 'units',

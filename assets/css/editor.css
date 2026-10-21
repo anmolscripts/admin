@@ -649,7 +649,7 @@
 #item-autocomplete-portal,
 .item-autocomplete-portal {
     position: fixed;
-    z-index: 10050;
+    z-index: 1022;
     background: var(--card-background, #FFFFFF);
     border: 1px solid var(--sa-border, #CBD5E1);
     border-radius: 12px;

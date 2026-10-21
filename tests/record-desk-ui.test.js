@@ -1,0 +1,34 @@
+'use strict';
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const {JSDOM}=require('jsdom');
+const tick=()=>new Promise(resolve=>setTimeout(resolve,10));
+test('record row modal safely renders data, respects view-only roles and saves edits with CSRF and version',async()=>{
+ const dom=new JSDOM('<input name="_csrf" value="test-token"><table><tbody><tr data-record-type="client" data-record-id="5" tabindex="0"><td>Client</td><td><button>Existing action</button></td></tr></tbody></table>',{url:'http://audit.invalid/',runScripts:'outside-only'});
+ const w=dom.window;w.bootstrap={Modal:{getOrCreateInstance:()=>({show(){}})}};w.confirm=()=>true;
+ let editable=false,calls=[];const record={id:5,type:'client',title:'Client',data:{name:'<img src=x onerror=alert(1)>'},fields:['name'],editableFields:['name'],version:'version-one',canEdit:false};
+ w.fetch=async(url,options)=>{calls.push({url,options});return {ok:true,json:async()=>({success:true,data:url.endsWith('/history?page=1')?{entries:[],totalPages:1}: {...record,canEdit:editable}})};};
+ w.eval(fs.readFileSync('assets/js/record-desk.js','utf8'));
+ w.document.querySelector('td button').click();await tick();assert.equal(calls.length,0);
+ w.document.querySelector('td').click();await tick();assert.equal(calls.length,1);assert.equal(w.document.querySelector('#record-desk img'),null);assert.ok(w.document.querySelector('#record-desk').textContent.includes('<img'));
+ assert.equal([...w.document.querySelectorAll('#record-desk button')].some(b=>b.textContent==='Edit'),false);
+ editable=true;await w.SparkRecordDesk.open('client',5);await tick();[...w.document.querySelectorAll('#record-desk button')].find(b=>b.textContent==='Edit').click();
+ const form=w.document.querySelector('#record-desk form');form.elements.name.value='Updated client';form.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));await tick();
+ const save=calls.find(call=>call.options.method==='PUT');assert.ok(save);assert.equal(save.options.headers['X-CSRF-Token'],'test-token');assert.deepEqual(JSON.parse(save.options.body),{version:'version-one',changes:{name:'Updated client'}});
+ dom.window.close();
+});
+test('record status uses a readable badge and an accessible Bootstrap switch that saves false correctly',async()=>{
+ const dom=new JSDOM('<meta name="csrf-token" content="theme-token">',{url:'http://audit.invalid/',runScripts:'outside-only'});
+ const w=dom.window;w.bootstrap={Modal:{getOrCreateInstance:()=>({show(){}})}};w.confirm=()=>true;
+ const record={id:7,type:'unit',title:'Unit',data:{active:true},fields:['active'],editableFields:['active'],version:'abc',canEdit:true};let saved;
+ w.fetch=async(_url,options)=>{if(options.method==='PUT')saved=JSON.parse(options.body);return {ok:true,json:async()=>({success:true,data:record})};};
+ w.eval(fs.readFileSync('assets/js/record-desk.js','utf8'));await w.SparkRecordDesk.open('unit',7);
+ assert.equal(w.document.querySelector('.record-details .badge').textContent,'Active');
+ assert.ok(w.document.querySelector('.modal-dialog-centered'));
+ [...w.document.querySelectorAll('#record-desk button')].find(b=>b.textContent==='Edit').click();
+ const input=w.document.querySelector('input[role="switch"]');assert.ok(input.closest('.form-switch'));assert.equal(input.checked,true);
+ assert.equal(w.document.querySelector(`label[for="${input.id}"]`).textContent,'Active');
+ input.checked=false;input.dispatchEvent(new w.Event('input',{bubbles:true}));w.document.querySelector('form').dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));await tick();
+ assert.equal(saved.changes.active,false);dom.window.close();
+});

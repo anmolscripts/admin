@@ -1,4 +1,4 @@
-<%- include('../layouts/header') %>
+<%- include('../layouts/header', { showPageHeader: false }) %>
 
 <%
   let totalBilled = 0;
@@ -24,15 +24,15 @@
 <div class="content-wrapper p-4">
   <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
     <div>
-      <h1 class="h3 fw-bold mb-1"><%= pageTitle %></h1>
+      <h1 class="page-title fw-bold mb-1"><%= pageTitle %></h1>
       <p class="text-muted small mb-0"><%= pageSubtitle %></p>
     </div>
-    <div class="d-flex gap-2">
-      <a href="/purchases/bills/new" class="btn btn-primary d-inline-flex align-items-center gap-2 rounded-pill px-3 shadow-sm">
+    <div class="d-flex flex-wrap gap-2">
+      <a href="/purchases/bills/new" class="btn btn-primary d-inline-flex align-items-center gap-2 px-3 shadow-sm">
         <i class="bi bi-plus-circle"></i>
         <span>Record Supplier Bill</span>
       </a>
-      <a href="/purchases/orders" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2 rounded-pill px-3">
+      <a href="/purchases/orders" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2 px-3">
         <i class="bi bi-cart"></i>
         <span>Purchase Orders</span>
       </a>
@@ -53,8 +53,8 @@
         </select>
       </div>
       <div class="col-md-4 d-flex gap-2">
-        <button type="submit" class="btn btn-sm btn-primary flex-grow-1 rounded-pill">Filter</button>
-        <a href="/purchases/bills" class="btn btn-sm btn-outline-secondary rounded-pill px-3">Reset</a>
+        <button type="submit" class="btn btn-sm btn-primary flex-grow-1">Filter</button>
+        <a href="/purchases/bills" class="btn btn-sm btn-outline-secondary px-3">Reset</a>
       </div>
     </form>
   </div>
@@ -131,7 +131,7 @@
       <span class="badge bg-light text-dark border">Showing <%= records.length %> record<%= records.length === 1 ? '' : 's' %></span>
     </div>
     <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0">
+      <table data-spark-datatable="true" data-server-paginated="true" class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
             <th class="ps-4">Bill #</th>
@@ -146,7 +146,7 @@
         <tbody>
           <% if (records && records.length > 0) { %>
             <% records.forEach(bill => { %>
-              <tr>
+              <tr data-record-type="supplierBill" data-record-id="<%= bill.id %>" tabindex="0" aria-label="Open record details">
                 <td class="ps-4 fw-bold font-monospace text-primary"><%= bill.billNumber %></td>
                 <td class="fw-medium text-dark"><%= bill.supplierName %></td>
                 <td class="small text-muted"><%= new Date(bill.billDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) %></td>
@@ -159,7 +159,7 @@
                 </td>
                 <td class="text-end pe-4">
                   <% if (bill.status === 'ACTIVE') { %>
-                    <button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="voidBill(<%= bill.id %>)">Void</button>
+                    <button class="btn btn-sm btn-outline-danger px-3" onclick="voidBill(<%= bill.id %>)">Void</button>
                   <% } else { %>
                     <span class="text-muted small">Locked</span>
                   <% } %>
@@ -187,15 +187,15 @@ async function voidBill(id) {
   try {
     const res = await fetch(`/api/supplier-bills/${id}/void`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Accept:'application/json', 'X-CSRF-Token':document.querySelector('meta[name="csrf-token"]').content },
       body: JSON.stringify({ reason })
     });
     const data = await res.json();
-    if (data.success) {
+    if (res.ok && data.success) {
       alert('Supplier Bill voided and accounting ledger reversed.');
       location.reload();
     } else {
-      alert('Error: ' + data.error);
+      alert('Error: ' + (data.error || data.message || 'Request failed.'));
     }
   } catch (err) {
     alert('Failed to void supplier bill.');

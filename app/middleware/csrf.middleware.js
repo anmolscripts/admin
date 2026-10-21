@@ -34,6 +34,8 @@ function csrfProtection(req, res, next) {
     if (safeMethods.includes(req.method.toUpperCase())) {
         return next();
     }
+    // These multipart forms validate CSRF again on their routes after bounded memory parsing.
+    if(req.method==='POST' && ['/profile','/settings'].includes(req.path) && req.is?.('multipart/form-data') && req.body===undefined) return next();
 
     // State-changing methods require validation
     const submittedToken =
@@ -51,9 +53,11 @@ function csrfProtection(req, res, next) {
 
     if (!submittedToken || typeof submittedToken !== 'string') {
         if (isApi && typeof res.json === 'function') {
-            return res.status(403).json({ success: false, message: 'CSRF token missing or invalid.' });
+            return res.status(403).json({ success: false, error: 'CSRF token missing or invalid.', message: 'CSRF token missing or invalid.' });
         }
         return res.status(403).render('errors/500', {
+            statusCode:403,
+            errorMessage:'Your form security token is missing or expired. Refresh the page and try again.',
             pageTitle: 'Forbidden',
             error: process.env.NODE_ENV === 'development'
                 ? new Error('CSRF token missing or invalid.')
@@ -70,9 +74,11 @@ function csrfProtection(req, res, next) {
         !crypto.timingSafeEqual(sessionTokenBuf, submittedTokenBuf)
     ) {
         if (isApi && typeof res.json === 'function') {
-            return res.status(403).json({ success: false, message: 'Invalid CSRF token.' });
+            return res.status(403).json({ success: false, error: 'Invalid CSRF token.', message: 'Invalid CSRF token.' });
         }
         return res.status(403).render('errors/500', {
+            statusCode:403,
+            errorMessage:'Your form security token is invalid. Refresh the page and try again.',
             pageTitle: 'Forbidden',
             error: process.env.NODE_ENV === 'development'
                 ? new Error('Invalid CSRF token.')

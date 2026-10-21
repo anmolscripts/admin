@@ -1,10 +1,10 @@
-<%- include('../layouts/header') %>
+<%- include('../layouts/header', { showPageHeader: false }) %>
 
 <div class="content-wrapper p-4">
   <!-- Page Header -->
   <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
     <div>
-      <h1 class="h3 fw-bold mb-1"><%= pageTitle %></h1>
+      <h1 class="page-title fw-bold mb-1"><%= pageTitle %></h1>
       <p class="text-muted small mb-0"><%= pageSubtitle %></p>
     </div>
     <div class="d-flex gap-2">
@@ -36,7 +36,7 @@
       <span class="badge bg-light text-muted border"><%= financialYears.length %> period(s)</span>
     </div>
     <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0">
+      <table data-spark-datatable="true" class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
             <th>FY Code</th>

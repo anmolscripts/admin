@@ -183,9 +183,7 @@
               <td class="ps-4 text-center text-muted small"><%= (pagination.page - 1) * pagination.limit + idx + 1 %></td>
               <td data-sort="<%= m.name %>">
                 <div class="d-flex align-items-center">
-                  <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center text-dark fw-bold me-2" style="width: 36px; height: 36px;">
-                    <%= m.name ? m.name.charAt(0).toUpperCase() : 'U' %>
-                  </div>
+                  <img src="<%= m.avatarUrl || '/images/default-avatar.png' %>" alt="<%= m.name || 'User' %>" class="rounded-circle object-fit-cover me-2" width="36" height="36" />
                   <div>
                     <a href="/team/<%= m.id %>" class="fw-semibold text-dark text-decoration-none member-name">
                       <%= m.name %>

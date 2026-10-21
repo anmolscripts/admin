@@ -31,6 +31,7 @@ async function renderPurchaseOrders(req, res, next) {
     try {
         const { search, status, page, limit } = req.query;
         const result = await purchaseOrderService.listPurchaseOrders({
+            dateFrom:req.query.dateFrom, dateTo:req.query.dateTo,
             businessId: req.businessId || req.session?.activeBusinessId,
             search,
             status,
@@ -172,6 +173,7 @@ async function renderSupplierBills(req, res, next) {
     try {
         const { search, status, page, limit } = req.query;
         const result = await supplierBillService.listSupplierBills({
+            dateFrom:req.query.dateFrom, dateTo:req.query.dateTo,
             search,
             status,
             page,
@@ -254,6 +256,7 @@ async function renderExpenses(req, res, next) {
         const { search, category, projectId, page, limit } = req.query;
         const [result, projects] = await Promise.all([
             expenseService.listExpenses({
+            dateFrom:req.query.dateFrom, dateTo:req.query.dateTo,
                 businessId,
                 projectId: projectId ? parseInt(projectId, 10) : undefined,
                 search,
@@ -307,6 +310,7 @@ async function renderOtherIncome(req, res, next) {
     try {
         const { search, source, page, limit } = req.query;
         const result = await otherIncomeService.listOtherIncomes({
+            dateFrom:req.query.dateFrom, dateTo:req.query.dateTo,
             search,
             source,
             page,
@@ -400,6 +404,7 @@ async function createGoodsReceipt(req, res, next) {
 
         const grn = await goodsReceiptService.createGoodsReceipt({
             ...req.body,
+            idempotencyKey:req.body.idempotencyKey || req.headers['idempotency-key'],
             purchaseOrderId: poId,
             items,
             businessId

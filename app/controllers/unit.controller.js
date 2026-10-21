@@ -1,6 +1,7 @@
 const unitService = require('../services/unit.service');
 
 function handleControllerError(err, res, next) {
+    if ([400,403,404,409].includes(err.statusCode)) return res.status(err.statusCode).json({success:false,error:err.message});
     if (err instanceof unitService.ValidationError) {
         return res.status(400).json({ success: false, error: err.message });
     }
@@ -24,7 +25,7 @@ function handleControllerError(err, res, next) {
 async function renderUnitsPage(req, res, next) {
     try {
         const { search, active, page, limit } = req.query;
-        const result = await unitService.listUnits({
+        const result = await unitService.listUnits({ businessId:req.businessId,
             search,
             active,
             page,
@@ -56,7 +57,7 @@ async function renderUnitsPage(req, res, next) {
  */
 async function getActiveUnits(req, res, next) {
     try {
-        const units = await unitService.getActiveUnits();
+        const units = await unitService.getActiveUnits(req.businessId);
         return res.status(200).json({
             success: true,
             data: units
@@ -73,7 +74,7 @@ async function getActiveUnits(req, res, next) {
 async function listUnits(req, res, next) {
     try {
         const { search, active, page, limit } = req.query;
-        const result = await unitService.listUnits({
+        const result = await unitService.listUnits({ businessId:req.businessId,
             search,
             active,
             page,

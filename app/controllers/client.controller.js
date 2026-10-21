@@ -1,6 +1,7 @@
 const clientService = require('../services/client.service');
 
 function handleControllerError(err, res) {
+    if ([400,403,404,409].includes(err.statusCode)) return res.status(err.statusCode).json({success:false,error:err.message});
     if (err instanceof clientService.ValidationError) {
         return res.status(400).json({ success: false, error: err.message });
     }
@@ -19,7 +20,7 @@ function handleControllerError(err, res) {
  */
 async function listClients(req, res) {
     try {
-        const result = await clientService.listClients(req.query);
+        const result = await clientService.listClients({ ...req.query, businessId:req.businessId });
         return res.status(200).json({ success: true, ...result });
     } catch (err) {
         return handleControllerError(err, res);
@@ -32,7 +33,7 @@ async function listClients(req, res) {
 async function searchClients(req, res) {
     try {
         const query = req.query.q || req.query.search || '';
-        const clients = await clientService.searchClients(query);
+        const clients = await clientService.searchClients(query, req.businessId);
         return res.status(200).json({ success: true, data: clients });
     } catch (err) {
         return handleControllerError(err, res);

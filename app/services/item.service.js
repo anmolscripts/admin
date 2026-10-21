@@ -340,6 +340,7 @@ async function updateItem(id, data, userId) {
             const dup = await prisma.item.findFirst({
                 where: {
                     name: { equals: name },
+                    businessId: existing.businessId,
                     id: { not: numericId }
                 }
             });
@@ -383,10 +384,7 @@ async function updateItem(id, data, userId) {
     }
 
     try {
-        const updated = await prisma.item.update({
-            where: { id: numericId },
-            data: updateData
-        });
+        const updated = await require('./recordHistory.service').commit({ type: 'item', existing, data: updateData, actorId: userId, expectedVersion: data._recordVersion });
 
         if (userId) {
             await activityService.log({
@@ -480,7 +478,7 @@ async function ensureItemsExistFromDocument(items, userId, tx = prisma, business
  * Parse CSV content and validate for dry-run preview (Phase 5 Inventory import).
  * Zero database mutations occur during preview.
  */
-async function parseAndValidateItemCsv(csvContent) {
+async function parseAndValidateItemCsv(csvContent, businessId = null) {
     if (!csvContent || typeof csvContent !== 'string') {
         throw new ValidationError('CSV content is required.');
     }
@@ -507,7 +505,7 @@ async function parseAndValidateItemCsv(csvContent) {
     const seenNamesInCsv = new Set();
 
     // Fetch existing items for delta check
-    const existingItems = await prisma.item.findMany({ select: { name: true, id: true } });
+    const existingItems = await prisma.item.findMany({ where: businessId ? {businessId:Number(businessId)} : {}, select: { name: true, id: true } });
     const existingMap = new Map(existingItems.map(i => [i.name.toLowerCase(), i.id]));
 
     let newCount = 0;
@@ -590,9 +588,15 @@ async function parseAndValidateItemCsv(csvContent) {
 /**
  * Commits previously validated CSV import rows transactionally.
  */
-async function importItemsFromCsv(validRows = [], userId = null) {
+async function importItemsFromCsv(validRows = [], userId = null, businessId = null) {
     if (!Array.isArray(validRows) || validRows.length === 0) {
         throw new ValidationError('No valid rows provided for import.');
+    }
+    if(validRows.length > 1000) throw new ValidationError('Import at most 1,000 items at a time.');
+    for(const row of validRows) {
+        if(!row || typeof row.name !== 'string' || !row.name.trim() || row.name.length > 191 || !['CREATE','UPDATE'].includes(row.action)) throw new ValidationError('Invalid import item.');
+        for(const field of ['rate','gstRate']) if(!Number.isFinite(Number(row[field] ?? 0)) || Number(row[field] ?? 0) < 0 || (field==='gstRate' && Number(row[field] ?? 0)>100)) throw new ValidationError(`Invalid import ${field}.`);
+        if(row.action==='UPDATE' && !Number.isSafeInteger(Number(row.existingId))) throw new ValidationError('Invalid existing item ID.');
     }
 
     return prisma.$transaction(async (tx) => {
@@ -601,8 +605,9 @@ async function importItemsFromCsv(validRows = [], userId = null) {
 
         for (const row of validRows) {
             if (row.action === 'UPDATE' && row.existingId) {
-                await tx.item.update({
-                    where: { id: row.existingId },
+                const existing=await tx.item.findUnique({where:{id:Number(row.existingId)}});
+                if(!existing || (businessId && existing.businessId!==Number(businessId))) throw new NotFoundError('Item not found in the current business.');
+                await require('./recordHistory.service').commit({type:'item',existing,actorId:userId,transaction:tx,
                     data: {
                         unit: row.unit || 'PCS',
                         rate: row.rate || 0,
@@ -615,6 +620,7 @@ async function importItemsFromCsv(validRows = [], userId = null) {
             } else {
                 await tx.item.create({
                     data: {
+                        businessId: businessId ? Number(businessId) : null,
                         name: row.name,
                         unit: row.unit || 'PCS',
                         rate: row.rate || 0,

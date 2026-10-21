@@ -1,15 +1,15 @@
 <%
   const wbHeaderAction = `
-    <div class="d-flex gap-2">
-      <a href="/reports/workbench/export?${new URLSearchParams({ ...filters, format: 'excel' }).toString()}" class="btn btn-outline-success d-inline-flex align-items-center gap-2 rounded-pill px-3">
+    <div class="d-flex flex-wrap gap-2">
+      <a href="/reports/workbench/export?${new URLSearchParams({ ...filters, format: 'excel' }).toString()}" class="btn btn-outline-success d-inline-flex align-items-center gap-2 px-3">
         <i class="bi bi-file-earmark-excel"></i>
         <span>Export Excel</span>
       </a>
-      <a href="/reports/workbench/export?${new URLSearchParams({ ...filters, format: 'csv' }).toString()}" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2 rounded-pill px-3">
+      <a href="/reports/workbench/export?${new URLSearchParams({ ...filters, format: 'csv' }).toString()}" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2 px-3">
         <i class="bi bi-file-earmark-spreadsheet"></i>
         <span>Export CSV</span>
       </a>
-      <a href="/reports/workbench/export?${new URLSearchParams({ ...filters, format: 'pdf' }).toString()}" class="btn btn-outline-danger d-inline-flex align-items-center gap-2 rounded-pill px-3">
+      <a href="/reports/workbench/export?${new URLSearchParams({ ...filters, format: 'pdf' }).toString()}" class="btn btn-outline-danger d-inline-flex align-items-center gap-2 px-3">
         <i class="bi bi-file-earmark-pdf"></i>
         <span>Export PDF</span>
       </a>
@@ -135,10 +135,10 @@
 
         <!-- Action Buttons -->
         <div class="col-md-2 d-flex align-items-end gap-2">
-          <button type="submit" class="btn btn-sm btn-primary flex-grow-1 rounded-pill">
+          <button type="submit" class="btn btn-sm btn-primary flex-grow-1">
             <i class="bi bi-funnel-fill me-1"></i> Apply
           </button>
-          <a href="/reports/workbench?dataset=<%= selectedDataset %>" class="btn btn-sm btn-outline-secondary rounded-pill px-3" title="Reset Filters">
+          <a href="/reports/workbench?dataset=<%= selectedDataset %>" class="btn btn-sm btn-outline-secondary px-3" title="Reset Filters">
             <i class="bi bi-arrow-counterclockwise"></i>
           </a>
         </div>

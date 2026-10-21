@@ -1,6 +1,7 @@
 const itemService = require('../services/item.service');
 
 function handleControllerError(err, res, next) {
+    if ([400,403,404,409].includes(err.statusCode)) return res.status(err.statusCode).json({success:false,error:err.message});
     if (err instanceof itemService.ValidationError) {
         return res.status(400).json({ success: false, error: err.message });
     }
@@ -52,7 +53,7 @@ async function searchItems(req, res, next) {
 async function listItems(req, res, next) {
     try {
         const { search, active, page, limit } = req.query;
-        const result = await itemService.listItems({
+        const result = await itemService.listItems({ businessId:req.businessId,
             search,
             active,
             page,
@@ -125,7 +126,7 @@ async function updateItem(req, res, next) {
 async function previewImport(req, res, next) {
     try {
         const { csvContent } = req.body;
-        const result = await itemService.parseAndValidateItemCsv(csvContent);
+        const result = await itemService.parseAndValidateItemCsv(csvContent,req.businessId);
         return res.status(200).json({
             success: true,
             ...result
@@ -143,7 +144,8 @@ async function commitImport(req, res, next) {
     try {
         const { rows } = req.body;
         const userId = req.session && req.session.user ? req.session.user.id : null;
-        const result = await itemService.importItemsFromCsv(rows, userId);
+        if (Array.isArray(rows) && rows.some(row=>row.action==='UPDATE') && !req.userPermissions?.hasPermission('ITEMS','EDIT')) return res.status(403).json({success:false,error:'Your role cannot update existing items.'});
+        const result = await itemService.importItemsFromCsv(rows, userId, req.businessId);
         return res.status(200).json({
             success: true,
             ...result

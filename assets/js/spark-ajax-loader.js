@@ -76,10 +76,12 @@
             return origFetch.apply(this, arguments)
                 .then(function (response) {
                     onRequestEnd();
+                    if(!response.ok && (response.headers.get('content-type')||'').includes('application/json'))response.clone().json().then(data=>window.SparkFeedback?.error((data.error||data.message||'Request failed.')+(data.requestId?' Reference: '+data.requestId:''))).catch(()=>{});
                     return response;
                 })
                 .catch(function (error) {
                     onRequestEnd();
+                    window.SparkFeedback?.error('Connection lost. Check your network and try again.');
                     throw error;
                 });
         };
@@ -146,8 +148,9 @@
             }
 
             toast.style.cssText = `background:${bg};color:#ffffff;padding:12px 18px;border-radius:10px;font-size:14px;font-weight:500;display:flex;align-items:center;gap:10px;pointer-events:auto;min-width:280px;max-width:420px;border:1px solid rgba(255,255,255,0.15);`;
-            toast.innerHTML = `<i class="bi ${icon} fs-5"></i><span class="flex-grow-1">${message}</span><button type="button" style="background:none;border:none;color:#fff;opacity:0.7;cursor:pointer;font-size:16px;" onclick="this.parentElement.remove()">&times;</button>`;
+            toast.innerHTML = `<i class="bi ${icon} fs-5"></i><span class="flex-grow-1"></span><button type="button" style="background:none;border:none;color:#fff;opacity:0.7;cursor:pointer;font-size:16px;" onclick="this.parentElement.remove()">&times;</button>`;
             
+            toast.querySelector('.flex-grow-1').textContent=String(message);
             container.appendChild(toast);
             setTimeout(function () {
                 toast.style.transition = 'opacity 0.4s ease, transform 0.4s ease';

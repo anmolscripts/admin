@@ -1,4 +1,4 @@
-<%- include('../layouts/header', { extraCss: '<link rel="stylesheet" href="/css/projects.css">' }) %>
+<%- include('../layouts/header', { showPageHeader: false, extraCss: '<link rel="stylesheet" href="/css/projects.css">' }) %>
 
 <div class="content-wrapper p-4">
   <input type="hidden" id="csrf-token" value="<%= locals.csrfToken || '' %>" />
@@ -12,11 +12,11 @@
         <li class="breadcrumb-item active" aria-current="page"><%= project.code %></li>
       </ol>
     </nav>
-    <div class="d-flex gap-2">
-      <a href="/projects/<%= project.id %>/edit" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+    <div class="d-flex flex-wrap gap-2">
+      <a href="/projects/<%= project.id %>/edit" class="btn btn-sm btn-outline-secondary px-3">
         <i class="bi bi-pencil me-1"></i> Edit Project
       </a>
-      <a href="/projects" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+      <a href="/projects" class="btn btn-sm btn-outline-primary px-3">
         <i class="bi bi-arrow-left me-1"></i> All Projects
       </a>
     </div>
@@ -39,7 +39,7 @@
           <% } %>
           <span class="badge bg-light text-muted border small"><%= project.billingType.replace(/_/g, ' ') %></span>
         </div>
-        <h2 class="h4 fw-bold text-dark mb-1"><%= project.name %></h2>
+        <h1 class="page-title fw-bold text-dark mb-1"><%= project.name %></h1>
         <div class="d-flex flex-wrap gap-4 text-muted small mt-2">
           <div><i class="bi bi-building me-1 text-primary"></i><strong>Client:</strong> <%= project.client ? project.client.name : 'Internal Operation' %></div>
           <div><i class="bi bi-geo-alt me-1 text-danger"></i><strong>Site:</strong> <%= project.siteLocation || 'Unspecified' %></div>
@@ -50,16 +50,16 @@
 
       <!-- Quick Action Buttons -->
       <div class="d-flex flex-wrap gap-2">
-        <button class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#modal-register-bill">
+        <button class="btn btn-sm btn-primary px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#modal-register-bill">
           <i class="bi bi-receipt me-1"></i> Register Bill
         </button>
-        <button class="btn btn-sm btn-outline-success rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#modal-issue-stock">
+        <button class="btn btn-sm btn-outline-success px-3" data-bs-toggle="modal" data-bs-target="#modal-issue-stock">
           <i class="bi bi-box-arrow-up-right me-1"></i> Issue Stock
         </button>
-        <button class="btn btn-sm btn-outline-warning rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#modal-daily-labour">
+        <button class="btn btn-sm btn-outline-warning px-3" data-bs-toggle="modal" data-bs-target="#modal-daily-labour">
           <i class="bi bi-people me-1"></i> Daily Labour
         </button>
-        <button class="btn btn-sm btn-outline-info rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#modal-upload-attachment">
+        <button class="btn btn-sm btn-outline-info px-3" data-bs-toggle="modal" data-bs-target="#modal-upload-attachment">
           <i class="bi bi-paperclip me-1"></i> Attach File
         </button>
       </div>
@@ -316,7 +316,7 @@
             <h6 class="fw-bold mb-0">Procurement Commitments & Purchase Orders</h6>
             <span class="text-muted small">Legally binding supplier commitments allocated to this project (zero immediate financial liability until billing)</span>
           </div>
-          <a href="/purchases/orders/new?projectId=<%= project.id %>" class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm">
+          <a href="/purchases/orders/new?projectId=<%= project.id %>" class="btn btn-sm btn-primary px-3 shadow-sm">
             <i class="bi bi-plus-circle me-1"></i> New Purchase Order
           </a>
         </div>
@@ -337,7 +337,7 @@
             <tbody>
               <% if (purchaseOrders && purchaseOrders.length > 0) { %>
                 <% purchaseOrders.forEach(po => { %>
-                  <tr id="project-po-<%= po.id %>">
+                  <tr id="project-po-<%= po.id %>" data-record-type="purchaseOrder" data-record-id="<%= po.id %>" tabindex="0">
                     <td class="ps-3 fw-bold">
                       <a href="/purchases/orders/<%= po.id %>" class="text-decoration-none text-primary font-monospace"><%= po.orderNumber %></a>
                     </td>
@@ -381,7 +381,7 @@
             <h6 class="fw-bold mb-0">Goods Receipts (GRN) & Store Deliveries</h6>
             <span class="text-muted small">Warehouse receipts against project procurement. Stock received without duplicate expense recognition.</span>
           </div>
-          <a href="/purchases/receipts" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+          <a href="/purchases/receipts" class="btn btn-sm btn-outline-primary px-3">
             <i class="bi bi-box-seam me-1"></i> All Store Receipts
           </a>
         </div>
@@ -402,7 +402,7 @@
             <tbody>
               <% if (goodsReceipts && goodsReceipts.length > 0) { %>
                 <% goodsReceipts.forEach(grn => { %>
-                  <tr id="project-grn-<%= grn.id %>">
+                  <tr id="project-grn-<%= grn.id %>" data-record-type="goodsReceipt" data-record-id="<%= grn.id %>" tabindex="0">
                     <td class="ps-3 fw-bold">
                       <a href="/purchases/receipts/<%= grn.id %>" class="text-decoration-none text-primary font-monospace"><%= grn.receiptNumber %></a>
                     </td>
@@ -434,7 +434,7 @@
             <h6 class="fw-bold mb-0">Supplier Bills & External Invoices</h6>
             <span class="text-muted small">Purchased materials, equipment, and subcontractor invoices allocated to this project</span>
           </div>
-          <button class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#modal-register-bill">
+          <button class="btn btn-sm btn-primary px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#modal-register-bill">
             <i class="bi bi-plus-circle me-1"></i> Register Supplier Bill
           </button>
         </div>
@@ -458,7 +458,7 @@
             <tbody>
               <% if (supplierBills && supplierBills.length > 0) { %>
                 <% supplierBills.forEach(b => { %>
-                  <tr id="project-bill-<%= b.id %>">
+                  <tr id="project-bill-<%= b.id %>" data-record-type="supplierBill" data-record-id="<%= b.id %>" tabindex="0">
                     <td class="ps-3 fw-bold text-primary"><%= b.billNumber %></td>
                     <td>
                       <div class="fw-semibold text-dark"><%= b.supplierName %></div>
@@ -508,10 +508,10 @@
             <span class="text-muted small">Warehouse stock issued to project. Recognised at time of issue to avoid double-counting. Returns credit project cost.</span>
           </div>
           <div class="d-flex gap-2">
-            <button class="btn btn-sm btn-outline-warning rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#modal-return-stock">
+            <button class="btn btn-sm btn-outline-warning px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#modal-return-stock">
               <i class="bi bi-arrow-return-left me-1"></i> Return Material to Inventory
             </button>
-            <button class="btn btn-sm btn-success rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#modal-issue-stock">
+            <button class="btn btn-sm btn-success px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#modal-issue-stock">
               <i class="bi bi-box-arrow-up-right me-1"></i> Issue Material from Inventory
             </button>
           </div>
@@ -536,7 +536,7 @@
               <% if (stockMovements && stockMovements.length > 0) { %>
                 <% stockMovements.forEach(sm => { %>
                   <% const isIssue = sm.movementType === 'ISSUE'; %>
-                  <tr id="project-movement-<%= sm.id %>">
+                  <tr id="project-movement-<%= sm.id %>" data-record-type="stockMovement" data-record-id="<%= sm.id %>" tabindex="0">
                     <td class="ps-3 fw-bold text-primary font-monospace"><%= sm.movementNumber %></td>
                     <td>
                       <span class="badge <%= isIssue ? 'bg-danger-subtle text-danger border border-danger-subtle' : 'bg-success-subtle text-success border border-success-subtle' %> rounded-pill px-2">
@@ -579,17 +579,17 @@
         <!-- Sub-pills -->
         <ul class="nav nav-pills mb-4" id="labourSubTabs" role="tablist">
           <li class="nav-item" role="presentation">
-            <button class="nav-link active rounded-pill px-4 btn-sm" id="pills-staff-btn" data-bs-toggle="pill" data-bs-target="#pills-staff" type="button" role="tab">
+            <button class="nav-link active px-4 btn-sm" id="pills-staff-btn" data-bs-toggle="pill" data-bs-target="#pills-staff" type="button" role="tab">
               <i class="bi bi-person-workspace me-1"></i> Internal Staff Timesheets (<%= (timesheets || []).length %>)
             </button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link rounded-pill px-4 btn-sm ms-2" id="pills-daily-btn" data-bs-toggle="pill" data-bs-target="#pills-daily" type="button" role="tab">
+            <button class="nav-link px-4 btn-sm ms-2" id="pills-daily-btn" data-bs-toggle="pill" data-bs-target="#pills-daily" type="button" role="tab">
               <i class="bi bi-people me-1"></i> Daily / Casual Labour Muster (<%= (dailyLabour || []).length %>)
             </button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link rounded-pill px-4 btn-sm ms-2" id="pills-contractors-btn" data-bs-toggle="pill" data-bs-target="#pills-contractors" type="button" role="tab">
+            <button class="nav-link px-4 btn-sm ms-2" id="pills-contractors-btn" data-bs-toggle="pill" data-bs-target="#pills-contractors" type="button" role="tab">
               <i class="bi bi-shield-check me-1"></i> Labour Contractors & Subcontractors (<%= (contractorOrders || []).length %>)
             </button>
           </li>
@@ -600,7 +600,7 @@
           <div class="tab-pane fade show active" id="pills-staff" role="tabpanel">
             <div class="d-flex justify-content-between align-items-center mb-3">
               <span class="text-muted small">Internal staff hours recorded against project and tasks. Separate sales rate from cost rate.</span>
-              <button class="btn btn-sm btn-primary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#modal-log-timesheet">
+              <button class="btn btn-sm btn-primary px-3" data-bs-toggle="modal" data-bs-target="#modal-log-timesheet">
                 <i class="bi bi-clock me-1"></i> Log Staff Timesheet
               </button>
             </div>
@@ -622,7 +622,7 @@
                 <tbody>
                   <% if (timesheets && timesheets.length > 0) { %>
                     <% timesheets.forEach(ts => { %>
-                      <tr id="project-timesheet-<%= ts.id %>">
+                      <tr id="project-timesheet-<%= ts.id %>" data-record-type="timesheetEntry" data-record-id="<%= ts.id %>" tabindex="0">
                         <td class="ps-3 small text-muted"><%= new Date(ts.entryDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) %></td>
                         <td class="fw-semibold text-dark"><%= ts.user ? ts.user.name : 'Unknown' %></td>
                         <td class="small text-secondary"><%= ts.task ? ts.task.title : 'General' %></td>
@@ -639,7 +639,7 @@
                           <% if (ts.status === 'APPROVED') { %>
                             <span class="badge bg-success-subtle text-success rounded-pill px-2">Approved</span>
                           <% } else { %>
-                            <button class="btn btn-sm btn-outline-success py-0 px-2 rounded-pill btn-approve-timesheet" data-id="<%= ts.id %>">Approve</button>
+                            <button class="btn btn-sm btn-outline-success py-0 px-2 btn-approve-timesheet" data-id="<%= ts.id %>">Approve</button>
                           <% } %>
                         </td>
                       </tr>
@@ -659,10 +659,10 @@
             <div class="d-flex justify-content-between align-items-center mb-3">
               <span class="text-muted small">Daily attendance, trade, wage basis, advances and payable earnings.</span>
               <div class="d-flex gap-2">
-                <button class="btn btn-sm btn-outline-primary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#modal-add-worker">
+                <button class="btn btn-sm btn-outline-primary px-3" data-bs-toggle="modal" data-bs-target="#modal-add-worker">
                   <i class="bi bi-person-plus me-1"></i> Register Worker
                 </button>
-                <button class="btn btn-sm btn-warning rounded-pill px-3 shadow-sm text-dark" data-bs-toggle="modal" data-bs-target="#modal-daily-labour">
+                <button class="btn btn-sm btn-warning px-3 shadow-sm text-dark" data-bs-toggle="modal" data-bs-target="#modal-daily-labour">
                   <i class="bi bi-plus-circle me-1"></i> Record Daily Labour
                 </button>
               </div>
@@ -713,7 +713,7 @@
           <div class="tab-pane fade" id="pills-contractors" role="tabpanel">
             <div class="d-flex justify-content-between align-items-center mb-3">
               <span class="text-muted small">Vendor contracts, work orders, agreed contract values, and withholding tax terms.</span>
-              <button class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#modal-contractor-order">
+              <button class="btn btn-sm btn-primary px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#modal-contractor-order">
                 <i class="bi bi-plus-circle me-1"></i> Create Contractor Work Order
               </button>
             </div>
@@ -777,7 +777,7 @@
             <tbody>
               <% if (expenses && expenses.length > 0) { %>
                 <% expenses.forEach(e => { %>
-                  <tr id="project-expense-<%= e.id %>">
+                  <tr id="project-expense-<%= e.id %>" data-record-type="expense" data-record-id="<%= e.id %>" tabindex="0">
                     <td class="ps-3 fw-bold text-primary font-monospace"><%= e.expenseNumber || `EXP-${e.id}` %></td>
                     <td class="small text-muted"><%= new Date(e.expenseDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) %></td>
                     <td><span class="badge bg-light text-dark border"><%= e.category || 'General' %></span></td>
@@ -803,7 +803,7 @@
             <h6 class="fw-bold mb-0">Quotations & Commercial Proposals</h6>
             <span class="text-muted small">Agreed scopes and client quotes linked to this project (conversion creates authoritative billing invoice)</span>
           </div>
-          <a href="/documents/new?type=QUOTATION&projectId=<%= project.id %><%= project.clientId ? '&clientId=' + project.clientId : '' %>" class="btn btn-sm btn-outline-primary rounded-pill px-3 shadow-sm" id="btn-project-new-quotation">
+          <a href="/documents/new?type=QUOTATION&projectId=<%= project.id %><%= project.clientId ? '&clientId=' + project.clientId : '' %>" class="btn btn-sm btn-outline-primary px-3 shadow-sm" id="btn-project-new-quotation">
             <i class="bi bi-file-earmark-plus me-1"></i> New Quotation
           </a>
         </div>
@@ -869,7 +869,7 @@
             <h6 class="fw-bold mb-0">Customer Invoices & Collections</h6>
             <span class="text-muted small">Invoiced sales revenue, credit notes, and actual cash receipts from customer</span>
           </div>
-          <a href="/documents/new?type=INVOICE&projectId=<%= project.id %><%= project.clientId ? '&clientId=' + project.clientId : '' %>" class="btn btn-sm btn-success rounded-pill px-3 shadow-sm text-white" id="btn-project-new-invoice">
+          <a href="/documents/new?type=INVOICE&projectId=<%= project.id %><%= project.clientId ? '&clientId=' + project.clientId : '' %>" class="btn btn-sm btn-success px-3 shadow-sm text-white" id="btn-project-new-invoice">
             <i class="bi bi-plus-circle me-1"></i> New Invoice
           </a>
         </div>
@@ -970,7 +970,7 @@
             <h6 class="fw-bold mb-0">Project Milestones & Task Progress</h6>
             <span class="text-muted small">Deliverables, assigned staff, estimated vs actual hours worked</span>
           </div>
-          <button class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#modal-add-task">
+          <button class="btn btn-sm btn-primary px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#modal-add-task">
             <i class="bi bi-plus-circle me-1"></i> Add Task
           </button>
         </div>
@@ -1019,7 +1019,7 @@
             <h6 class="fw-bold mb-0">Secure File Attachments & Project Certificates</h6>
             <span class="text-muted small">Third-party certificates (TPT), insurance policies, engineering drawings, and regulatory permits stored in private encrypted storage.</span>
           </div>
-          <button class="btn btn-sm btn-info rounded-pill px-3 shadow-sm text-white" data-bs-toggle="modal" data-bs-target="#modal-upload-attachment">
+          <button class="btn btn-sm btn-info px-3 shadow-sm text-white" data-bs-toggle="modal" data-bs-target="#modal-upload-attachment">
             <i class="bi bi-cloud-arrow-up me-1"></i> Upload File / Certificate
           </button>
         </div>
@@ -1070,7 +1070,7 @@
                       <div class="text-secondary" style="font-size: 0.75rem;"><%= new Date(att.createdAt).toLocaleDateString('en-IN') %></div>
                     </td>
                     <td class="pe-3 text-end">
-                      <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2 me-1 btn-edit-att"
+                      <button type="button" class="btn btn-sm btn-outline-secondary px-2 me-1 btn-edit-att"
                         data-id="<%= att.id %>"
                         data-title="<%= att.title || '' %>"
                         data-category="<%= att.category || 'OTHER' %>"
@@ -1081,7 +1081,7 @@
                         onclick="openEditAttachmentModal(this)">
                         <i class="bi bi-pencil"></i>
                       </button>
-                      <a href="/api/attachments/<%= att.id %>/download" class="btn btn-sm btn-outline-primary rounded-pill px-3" target="_blank">
+                      <a href="/api/attachments/<%= att.id %>/download" class="btn btn-sm btn-outline-primary px-3" target="_blank">
                         <i class="bi bi-download me-1"></i> Download
                       </a>
                     </td>
@@ -1134,10 +1134,10 @@
                 <p class="text-muted small">Export full project costing ledger and profitability report for executive review or audit documentation.</p>
               </div>
               <div class="d-flex gap-2">
-                <button class="btn btn-outline-primary rounded-pill px-3 btn-sm" onclick="window.print()">
+                <button class="btn btn-outline-primary px-3 btn-sm" onclick="window.print()">
                   <i class="bi bi-printer me-1"></i> Print Summary Report
                 </button>
-                <a href="/reports/workbench?projectId=<%= project.id %>" class="btn btn-outline-secondary rounded-pill px-3 btn-sm">
+                <a href="/reports/workbench?projectId=<%= project.id %>" class="btn btn-outline-secondary px-3 btn-sm">
                   <i class="bi bi-table me-1"></i> Advanced Query in Workbench
                 </a>
               </div>
@@ -1310,8 +1310,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3" id="btn-submit-bill">Save & Post Bill</button>
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm px-3" id="btn-submit-bill">Save & Post Bill</button>
         </div>
       </form>
     </div>
@@ -1353,8 +1353,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-success btn-sm rounded-pill px-3" id="btn-submit-stock">Issue & Post Cost</button>
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success btn-sm px-3" id="btn-submit-stock">Issue & Post Cost</button>
         </div>
       </form>
     </div>
@@ -1400,8 +1400,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-warning btn-sm rounded-pill px-3 text-dark" id="btn-submit-return-stock">Return & Credit Cost</button>
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-warning btn-sm px-3 text-dark" id="btn-submit-return-stock">Return & Credit Cost</button>
         </div>
       </form>
     </div>
@@ -1456,8 +1456,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-warning btn-sm rounded-pill px-3 text-dark" id="btn-submit-labour">Save Muster Entry</button>
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-warning btn-sm px-3 text-dark" id="btn-submit-labour">Save Muster Entry</button>
         </div>
       </form>
     </div>
@@ -1503,8 +1503,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3">Register Worker</button>
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm px-3">Register Worker</button>
         </div>
       </form>
     </div>
@@ -1546,8 +1546,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3">Create Work Order</button>
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm px-3">Create Work Order</button>
         </div>
       </form>
     </div>
@@ -1616,8 +1616,8 @@
           <input type="hidden" id="att-entity-type" value="PROJECT" />
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-info btn-sm rounded-pill px-3 text-white" id="btn-submit-att">Upload Securely</button>
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-info btn-sm px-3 text-white" id="btn-submit-att">Upload Securely</button>
         </div>
       </form>
     </div>
@@ -1674,8 +1674,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3" id="btn-save-edit-att">Save Metadata</button>
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm px-3" id="btn-save-edit-att">Save Metadata</button>
         </div>
       </form>
     </div>
@@ -1708,8 +1708,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3">Add Task</button>
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm px-3">Add Task</button>
         </div>
       </form>
     </div>
@@ -1751,8 +1751,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3">Log Timesheet</button>
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm px-3">Log Timesheet</button>
         </div>
       </form>
     </div>

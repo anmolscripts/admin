@@ -271,9 +271,8 @@ async function updateProject(id, data = {}, userId, authorizedBusinessId) {
     updatePayload.clientId = clientId;
     updatePayload.managerId = managerId;
 
-    const updated = await prisma.project.update({
-        where: { id: project.id },
-        data: updatePayload,
+    const updated = await require('./recordHistory.service').commit({
+        type: 'project', existing: project, data: updatePayload, actorId: userId, expectedVersion: data._recordVersion,
         include: {
             client: true,
             manager: { select: { id: true, name: true, email: true } }

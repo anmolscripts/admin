@@ -1,9 +1,9 @@
-<%- include('../layouts/header') %>
+<%- include('../layouts/header', { showPageHeader: false }) %>
 
 <div class="content-wrapper p-4">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-      <h1 class="h3 fw-bold mb-1"><%= pageTitle %></h1>
+      <h1 class="page-title fw-bold mb-1"><%= pageTitle %></h1>
       <p class="text-muted small mb-0"><%= pageSubtitle %></p>
     </div>
     <a href="/purchases/bills" class="btn btn-outline-secondary">Back to Bills</a>
@@ -11,7 +11,7 @@
 
   <div class="card border-0 shadow-sm">
     <div class="card-body p-4">
-      <form id="billForm">
+      <form id="billForm" method="POST" action="/api/supplier-bills">
         <div class="row g-3 mb-4">
           <div class="col-md-3">
             <label class="form-label fw-bold">Vendor Bill # <span class="text-danger">*</span></label>
@@ -144,13 +144,15 @@ function removeItem(btn) {
 
 document.getElementById('billForm').addEventListener('submit', async (e) => {
   e.preventDefault();
+  const submit=e.target.querySelector('[type="submit"]');
+  if(submit.disabled)return;
   const formData = new FormData(e.target);
   const items = [];
   document.querySelectorAll('#itemsBody tr').forEach(tr => {
     items.push({
       name: tr.querySelector('.item-name').value,
       hsnSac: tr.querySelector('.item-hsn').value,
-      quantity: parseFloat(tr.querySelector('.item-qty').value) || 1,
+      quantity: Number(tr.querySelector('.item-qty').value),
       rate: parseFloat(tr.querySelector('.item-rate').value) || 0
     });
   });
@@ -164,21 +166,24 @@ document.getElementById('billForm').addEventListener('submit', async (e) => {
     items
   };
 
+  submit.disabled=true;
   try {
     const res = await fetch('/api/supplier-bills', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Accept:'application/json', 'X-CSRF-Token':document.querySelector('meta[name="csrf-token"]').content },
       body: JSON.stringify(payload)
     });
     const data = await res.json();
-    if (data.success) {
+    if (res.ok && data.success) {
       alert('Supplier Bill successfully posted to accounting ledger!');
       window.location.href = '/purchases/bills';
     } else {
-      alert('Error: ' + data.error);
+      alert('Error: ' + (data.error || data.message || 'Request failed.'));
     }
   } catch (err) {
     alert('Failed to save supplier bill.');
+  } finally {
+    submit.disabled=false;
   }
 });
 </script>

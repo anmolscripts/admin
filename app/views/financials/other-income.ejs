@@ -1,9 +1,9 @@
-<%- include('../layouts/header') %>
+<%- include('../layouts/header', { showPageHeader: false }) %>
 
 <div class="content-wrapper p-4">
   <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
     <div>
-      <h1 class="h3 fw-bold mb-1"><%= pageTitle %></h1>
+      <h1 class="page-title fw-bold mb-1"><%= pageTitle %></h1>
       <p class="text-muted small mb-0"><%= pageSubtitle %></p>
     </div>
     <button class="btn btn-success d-inline-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#newIncomeModal">
@@ -33,7 +33,7 @@
   <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
       <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
+        <table data-spark-datatable="true" data-server-paginated="true" class="table table-hover align-middle mb-0">
           <thead class="table-light">
             <tr>
               <th class="ps-3">Date</th>
@@ -45,7 +45,7 @@
           <tbody>
             <% if (records && records.length > 0) { %>
               <% records.forEach(inc => { %>
-                <tr>
+                <tr data-record-type="otherIncome" data-record-id="<%= inc.id %>" tabindex="0" aria-label="Open record details">
                   <td class="ps-3"><%= new Date(inc.incomeDate).toLocaleDateString() %></td>
                   <td><span class="badge bg-info text-dark"><%= inc.source || 'General' %></span></td>
                   <td><%= inc.description %></td>

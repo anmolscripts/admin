@@ -214,8 +214,15 @@
             left = 12;
         }
 
+        const header = document.querySelector('.navbar-custom');
+        const headerBottom = header ? header.getBoundingClientRect().bottom : 0;
+        const safeTop = Math.max(8, headerBottom + 8);
+        if (rect.top < headerBottom) {
+            hideAutocompletePortal();
+            return;
+        }
         const spaceBelow = vpHeight - rect.bottom;
-        const spaceAbove = rect.top;
+        const spaceAbove = Math.max(0, rect.top - safeTop);
         const estimatedHeight = Math.min(autocompletePortalEl.scrollHeight || 300, 320);
 
         let top;
@@ -223,7 +230,7 @@
             top = rect.bottom + 4;
             autocompletePortalEl.style.maxHeight = `${Math.min(320, Math.max(120, spaceBelow - 16))}px`;
         } else {
-            top = Math.max(8, rect.top - estimatedHeight - 4);
+            top = Math.max(safeTop, rect.top - estimatedHeight - 4);
             autocompletePortalEl.style.maxHeight = `${Math.min(320, Math.max(120, spaceAbove - 16))}px`;
         }
 
@@ -797,11 +804,15 @@
             const halfGstAmount = Math.round((gstAmount / 2) * 100) / 100;
             const remainingGst = Math.round((gstAmount - halfGstAmount) * 100) / 100;
 
-            summaryCgstLabelEl.textContent = `CGST (${halfRate}%):`;
-            summaryCgstAmountEl.textContent = formatIndianCurrency(halfGstAmount);
+            const sellerState = String(window.__SELLER_STATE_CODE__ || '').trim();
+            const supplyState = placeOfSupplyInput ? placeOfSupplyInput.value.trim() : '';
+            const interState = !!(sellerState && supplyState && sellerState !== supplyState);
+            summaryCgstLabelEl.textContent = interState ? `IGST (${gstRate.toFixed(2)}%):` : `CGST (${halfRate}%):`;
+            summaryCgstAmountEl.textContent = formatIndianCurrency(interState ? gstAmount : halfGstAmount);
 
             summarySgstLabelEl.textContent = `SGST (${halfRate}%):`;
             summarySgstAmountEl.textContent = formatIndianCurrency(remainingGst);
+            summarySgstLabelEl.parentElement.classList.toggle('d-none', interState);
 
             summaryGstTotalEl.textContent = formatIndianCurrency(gstAmount);
         } else {
@@ -1118,6 +1129,11 @@
             }
 
             // Redirect back to listing after brief success display
+            if (window.parent !== window && new URLSearchParams(window.location.search).get('embedded') === '1') {
+                window.parent.postMessage({type:'spark-record-saved',id:savedDoc?.id},window.location.origin);
+                resetSaveButton();
+                return;
+            }
             setTimeout(() => {
                 window.location.href = `/documents?highlight=${savedDoc ? savedDoc.invoiceNumber : ''}`;
             }, 850);
@@ -1478,6 +1494,7 @@
                         const s = opt.dataset.shipping || '';
                         if ((!s && b) || (b && s && b === s)) {
                             sameAsBillingToggle.checked = true;
+                            shippingAddressInput.value = b;
                             shippingAddressInput.readOnly = true;
                             shippingAddressInput.classList.add('bg-light');
                         } else {
@@ -1493,6 +1510,7 @@
                     if (clientIdInput) clientIdInput.value = '';
                     if (btnClearClient) btnClearClient.classList.add('d-none');
                 }
+                recalculateTotals();
             });
         }
 
@@ -1506,6 +1524,7 @@
         }
 
         // Associated Project Selection
+        if (placeOfSupplyInput) placeOfSupplyInput.addEventListener('input', recalculateTotals);
         if (projectSelect) {
             projectSelect.addEventListener('change', () => {
                 const opt = projectSelect.options[projectSelect.selectedIndex];

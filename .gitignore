@@ -66,6 +66,8 @@ data/
 .last_backup_path
 assets/uploads/avatars/*
 !assets/uploads/avatars/.gitkeep
+assets/uploads/logos/*
+!assets/uploads/logos/.gitkeep
 
 
 # ==========================================
@@ -103,3 +105,6 @@ desktop.ini
 .claude/
 .windsurf/
 skills-lock.json
+/evidence/ui_audit_*/
+
+/evidence/theme-reference/

@@ -31,6 +31,7 @@ class ConflictError extends Error {
  * Validates raster magic bytes (PNG, JPEG, WebP)
  */
 function validateRasterMagicBytes(filePath) {
+    if(Buffer.isBuffer(filePath)) return validateRasterBuffer(filePath);
     if (!fs.existsSync(filePath)) {
         return false;
     }
@@ -40,6 +41,9 @@ function validateRasterMagicBytes(filePath) {
     fs.readSync(fd, buffer, 0, 16, 0);
     fs.closeSync(fd);
 
+    return validateRasterBuffer(buffer);
+}
+function validateRasterBuffer(buffer) {
     // PNG: 89 50 4E 47 0D 0A 1A 0A
     const isPng = buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47 &&
                   buffer[4] === 0x0D && buffer[5] === 0x0A && buffer[6] === 0x1A && buffer[7] === 0x0A;
@@ -116,14 +120,15 @@ async function updateUserProfile(userId, data = {}, file = null) {
         throw new ValidationError('User not found.');
     }
 
+    if(typeof data.name!=='string' || typeof data.email!=='string' || (data.phone!=null && typeof data.phone!=='string')) throw new ValidationError('Name, email and phone must contain text.');
     const name = (data.name || '').trim();
-    if (!name || name.length < 2) {
+    if (!name || name.length < 2 || name.length > 100) {
         if (file && file.path && fs.existsSync(file.path)) fs.unlinkSync(file.path);
         throw new ValidationError('Full name must be at least 2 characters.');
     }
 
     const email = (data.email || '').trim().toLowerCase();
-    if (!email || !email.includes('@')) {
+    if (!email || email.length>191 || !email.includes('@')) {
         if (file && file.path && fs.existsSync(file.path)) fs.unlinkSync(file.path);
         throw new ValidationError('A valid email address is required.');
     }
@@ -143,25 +148,32 @@ async function updateUserProfile(userId, data = {}, file = null) {
 
     const phone = data.phone !== undefined ? (data.phone ? data.phone.trim() : null) : existing.phone;
 
+    if(phone && phone.length>50) throw new ValidationError('Phone number must not exceed 50 characters.');
     let newAvatarUrl = existing.avatarUrl;
     if (file) {
         // Validate magic bytes
-        if (!validateRasterMagicBytes(file.path)) {
-            if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+        if (!validateRasterMagicBytes(file.buffer || file.path)) {
+            if (file.path && fs.existsSync(file.path)) fs.unlinkSync(file.path);
             throw new ValidationError('Invalid image content. Only authentic PNG, JPEG, and WebP images are allowed.');
         }
 
+        if(file.buffer) {
+            const ext=path.extname(file.originalname || '').toLowerCase();
+            if(!['.png','.jpg','.jpeg','.webp'].includes(ext)) throw new ValidationError('Unsupported image extension.');
+            const directory=path.join(__dirname,'../../assets/uploads/avatars');
+            fs.mkdirSync(directory,{recursive:true});
+            file.path=path.join(directory,require('node:crypto').randomUUID()+ext);
+            fs.writeFileSync(file.path,file.buffer,{flag:'wx'});
+        }
         const safeFilename = path.basename(file.path);
         newAvatarUrl = `/uploads/avatars/${safeFilename}`;
 
-        // Cleanup previous avatar if it was a local upload
-        if (existing.avatarUrl && existing.avatarUrl !== newAvatarUrl) {
-            removeAvatarFile(existing.avatarUrl);
-        }
+
     }
 
     // Role cannot be updated via personal profile
-    const updated = await prisma.user.update({
+    let updated;
+    try { updated = await prisma.user.update({
         where: { id },
         data: {
             name,
@@ -180,6 +192,12 @@ async function updateUserProfile(userId, data = {}, file = null) {
         }
     });
 
+    } catch(error) {
+        if(file?.path && newAvatarUrl!==existing.avatarUrl) removeAvatarFile(newAvatarUrl);
+        if(error.code==='P2002') throw new ConflictError('This email is already in use by another account.');
+        throw error;
+    }
+    if(file && existing.avatarUrl && existing.avatarUrl!==newAvatarUrl) removeAvatarFile(existing.avatarUrl);
     return updated;
 }
 

@@ -1,4 +1,4 @@
-<%- include('../layouts/header') %>
+<%- include('../layouts/header', { showPageHeader: false }) %>
 
 <div class="content-wrapper p-4">
   <div class="d-flex justify-content-between align-items-center mb-4">
@@ -7,7 +7,7 @@
         <a href="/credit-debit-notes" class="btn btn-sm btn-outline-secondary">
           <i class="bi bi-arrow-left"></i>
         </a>
-        <h1 class="h3 fw-bold mb-0">Create <%= noteType === 'DEBIT' ? 'Debit Note' : 'Credit Note' %></h1>
+        <h1 class="page-title fw-bold mb-0">Create <%= noteType === 'DEBIT' ? 'Debit Note' : 'Credit Note' %></h1>
       </div>
       <p class="text-muted small mb-0 ms-5 ps-1">
         <%= noteType === 'DEBIT' ? 'Issue an upward adjustment note to increase accounts receivable.' : 'Issue a downward adjustment / return note to reduce accounts receivable.' %>

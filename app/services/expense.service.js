@@ -7,6 +7,7 @@ const journalService = require('./journal.service');
 const numberingService = require('./numbering.service');
 const businessService = require('./business.service');
 const projectCostLedgerService = require('./projectCostLedger.service');
+const coaService = require('./chartOfAccounts.service');
 const { ValidationError, NotFoundError, ConflictError } = require('./errorTypes');
 
 /**
@@ -14,7 +15,7 @@ const { ValidationError, NotFoundError, ConflictError } = require('./errorTypes'
  */
 async function createExpense(data = {}, userId) {
     const amount = parseFloat(data.amount);
-    if (isNaN(amount) || amount <= 0) {
+    if (!Number.isFinite(amount) || amount <= 0) {
         throw new ValidationError('Expense amount must be a positive number.');
     }
 
@@ -63,6 +64,7 @@ async function createExpense(data = {}, userId) {
     }
 
     return prisma.$transaction(async (tx) => {
+        await coaService.ensureSystemAccounts(userId, businessId, tx);
         const expenseNumber = data.expenseNumber || await numberingService.allocateNumber({
             businessId,
             entityType: 'EXPENSE',
@@ -90,22 +92,22 @@ async function createExpense(data = {}, userId) {
         // 2. Identify double-entry accounts
         // Debit: Admin Expense (5210)
         let expenseAccount = await tx.chartOfAccount.findFirst({
-            where: { code: '5210' }
+            where: { businessId, code: '5210', active: true, allowPosting: true }
         });
         if (!expenseAccount) {
             expenseAccount = await tx.chartOfAccount.findFirst({
-                where: { type: 'EXPENSE', allowPosting: true }
+                where: { businessId, type: 'EXPENSE', active: true, allowPosting: true }
             });
         }
 
         // Credit: Bank (1112) or Cash (1111)
         const creditAccountKey = paymentMethod === 'CASH' ? 'CASH_ON_HAND' : 'BANK_ACCOUNT';
         let cashBankAccount = await tx.chartOfAccount.findFirst({
-            where: { systemAccountKey: creditAccountKey }
+            where: { businessId, systemAccountKey: creditAccountKey, active: true, allowPosting: true }
         });
         if (!cashBankAccount) {
             cashBankAccount = await tx.chartOfAccount.findFirst({
-                where: { type: 'ASSET', subtype: 'CASH_BANK', allowPosting: true }
+                where: { businessId, type: 'ASSET', subtype: 'CASH_BANK', active: true, allowPosting: true }
             });
         }
 
@@ -191,8 +193,8 @@ async function listExpenses({ businessId, projectId, category, dateFrom, dateTo,
     if (category) where.category = category;
     if (dateFrom || dateTo) {
         where.expenseDate = {};
-        if (dateFrom) where.expenseDate.gte = new Date(dateFrom);
-        if (dateTo) where.expenseDate.lte = new Date(dateTo);
+        if (dateFrom) where.expenseDate.gte = new Date(/^\d{4}-\d{2}-\d{2}$/.test(dateFrom) ? dateFrom + 'T00:00:00' : dateFrom);
+        if (dateTo) where.expenseDate.lte = new Date(/^\d{4}-\d{2}-\d{2}$/.test(dateTo) ? dateTo + 'T23:59:59.999' : dateTo);
     }
     if (search) {
         where.description = { contains: search };

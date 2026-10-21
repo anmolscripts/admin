@@ -1,0 +1,13 @@
+# UI and business-flow verification — 19 October 2026
+
+The shared Tom Select integration now removes copied native input styling, reserves space for its clear control, avoids a second clear control beside an existing clear button, and dispatches each native change once. Single-select input groups keep the select and action on one row. Page scrolling closes detached menus; scrolling inside options remains supported. Removed dynamic rows destroy their detached dropdowns and listeners. Modal selects retain their own overlay layer.
+
+Clear, remove and close controls use larger centered targets, danger colors and keyboard focus indicators. Table search clear controls reserve enough input padding. Multi-selects can wrap instead of being constrained to a single fixed-height row. Form dropdowns and item autocomplete remain below the sticky application header.
+
+Document previews now distinguish IGST from CGST/SGST using seller and place-of-supply states, matching the server's calculation. Selecting a client with no separate shipping address copies billing into the checked, read-only shipping field. Numeric invoice, expense and income validation rejects non-finite values.
+
+The business audit also identified and corrected unscoped account selection in expense and other-income posting. These operations provision and use accounts belonging to their business. Default-company financial reports and customer statements now include both legacy NULL-business accounts and explicit business-1 accounts, while excluding other tenants. No historical accounts, balances or journals are rewritten or deleted by these fixes.
+
+Integration checks run in a separate generated `ui_audit_*` database, with synthetic fixtures and an independent checkout under ignored `evidence/`. The exercised flows cover authentication/CSRF/RBAC, invoice and quotation creation/editing, optimistic concurrency, tenant isolation, purchases, receipts, inventory valuation, project costs, payments and reversals, payroll, accounting posting, trial balance, P&L, balance sheet, receivables, year closing and report format parity. DOM checks execute the actual vendor select bundle and document-editor scripts with network access disabled. All eight application CSS files were parsed without syntax errors.
+
+Visual limitation: the browser permission gate declined access to the local audit application. An authenticated, pixel-level desktop/mobile walkthrough was therefore not completed. DOM and CSS checks verify behavior and structure but cannot certify appearance at every viewport or establish that every business scenario is correct. Production deployment uses the backup, forward-migration and row-count checks documented in LOCAL_LIVE_DEPLOYMENT.md.

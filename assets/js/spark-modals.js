@@ -10,7 +10,9 @@
     'use strict';
 
     function promoteModalToBody(modalEl) {
-        if (!modalEl || modalEl.parentElement === document.body) return;
+        if (!modalEl) return;
+        modalEl.querySelector('.modal-dialog')?.classList.add('modal-dialog-scrollable','modal-dialog-centered');
+        if (modalEl.parentElement === document.body) return;
         try {
             document.body.appendChild(modalEl);
         } catch (err) {
@@ -33,7 +35,7 @@
     // Intercept when Bootstrap starts opening any modal
     document.addEventListener('show.bs.modal', function (event) {
         const modal = event.target;
-        if (modal && modal.parentElement !== document.body) {
+        if (modal) {
             promoteModalToBody(modal);
         }
     });

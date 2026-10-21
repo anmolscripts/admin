@@ -291,10 +291,15 @@ describe('Accounting Report Multi-Tenant Isolation & Account Collision Regressio
 
         // The bank accounts in tbDefault should only belong to businessId: null or 1
         const bankRows = tbDefault.rows.filter(r => r.code === '1112');
-        assert.equal(bankRows.length, 1, 'Default company must have exactly one canonical bank account row');
+        const expectedBanks = await prisma.chartOfAccount.findMany({
+            where: { code: '1112', allowPosting: true, active: true, OR: [{ businessId: 1 }, { businessId: null }] },
+            select: { id: true }
+        });
+        assert.deepEqual(bankRows.map(row => row.id).sort((a,b) => a-b), expectedBanks.map(row => row.id).sort((a,b) => a-b),
+            'Default company must include every legacy and explicit default-company bank account');
 
         // Must NOT match Tenant A or Tenant B specific accounts
-        assert.notEqual(bankRows[0].id, bankA.id, 'Must not be Tenant A bank account');
-        assert.notEqual(bankRows[0].id, bankB.id, 'Must not be Tenant B bank account');
+        assert.ok(bankRows.every(row => row.id !== bankA.id), 'Must not be Tenant A bank account');
+        assert.ok(bankRows.every(row => row.id !== bankB.id), 'Must not be Tenant B bank account');
     });
 });

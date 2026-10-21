@@ -1,0 +1,58 @@
+'use strict';
+const {test,after}=require('node:test');
+const assert=require('node:assert/strict');
+const prisma=require('../app/config/prisma');
+const desk=require('../app/services/recordDesk.service');
+const history=require('../app/services/recordHistory.service');
+const clients=require('../app/services/client.service');
+const context=(businessId,edit=true)=>({businessId,userId:null,permissions:{hasPermission:(_module,action)=>action==='VIEW'||edit}});
+after(()=>prisma.$disconnect());
+test('record editing preserves atomic history, rejects stale saves and enforces tenant and role boundaries',async()=>{
+    assert.match(process.env.DATABASE_NAME,/^ui_audit_/,'Run only in the disposable audit database');
+    const business=await prisma.business.findFirst();assert.ok(business);
+    const client=await prisma.client.create({data:{businessId:business.id,clientCode:`HIST-${Date.now()}`,name:'History original',active:true}});
+    const original=await desk.inspect('client',client.id,context(business.id));
+    assert.equal(original.canEdit,true);assert.equal(original.data.name,'History original');
+    await assert.rejects(desk.inspect('client',client.id,context(business.id+999999)),{statusCode:404});
+    await assert.rejects(desk.update('client',client.id,{version:original.version,changes:{name:'Forbidden'}},context(business.id,false)),{statusCode:403});
+    await assert.rejects(desk.update('client',client.id,{version:original.version,changes:{businessId:2}},context(business.id)),{statusCode:400});
+    await assert.rejects(desk.update('client',client.id,{version:'',changes:{name:'Missing version'}},context(business.id)),{statusCode:409});
+    const updated=await desk.update('client',client.id,{version:original.version,changes:{name:'History updated',email:'history@example.test'}},context(business.id));
+    assert.equal(updated.data.name,'History updated');assert.notEqual(updated.version,original.version);
+    await assert.rejects(desk.update('client',client.id,{version:original.version,changes:{name:'Stale overwrite'}},context(business.id)),{statusCode:409});
+    let revisions=await desk.listHistory('client',client.id,context(business.id));
+    assert.equal(revisions.entries.length,1);assert.deepEqual(revisions.entries[0].changes.find(c=>c.field==='name'),{field:'name',before:'History original',after:'History updated'});
+    await clients.updateClient(client.id,{phone:'9876543210'});
+    revisions=await desk.listHistory('client',client.id,context(business.id));assert.equal(revisions.entries.length,2);
+    await clients.toggleClientStatus(client.id);
+    revisions=await desk.listHistory('client',client.id,context(business.id));assert.equal(revisions.entries.length,3);
+    const fresh=await prisma.client.findUnique({where:{id:client.id}});
+    await assert.rejects(history.commit({type:'client',existing:fresh,data:{name:'Must roll back'},actorId:2147483647}));
+    assert.equal((await prisma.client.findUnique({where:{id:client.id}})).name,'History updated');
+    assert.equal((await desk.listHistory('client',client.id,context(business.id))).entries.length,3);
+    await assert.rejects(desk.inspect('constructor',client.id,context(business.id)),{statusCode:404});
+});
+test('authenticated record API applies CSRF and returns useful conflict errors',async()=>{
+    const app=require('../app/app');
+    const server=require('node:http').createServer(app);
+    await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+    const base=`http://127.0.0.1:${server.address().port}`;
+    try {
+        const login=await fetch(base+'/login');const initialCookie=login.headers.get('set-cookie').match(/spark\.sid=[^;]+/)[0];
+        const csrf=(await login.text()).match(/name="_csrf"\s+value="([^"]+)"/)[1];
+        const response=await fetch(base+'/login',{method:'POST',redirect:'manual',headers:{Cookie:initialCookie,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({_csrf:csrf,email:'admin@email.com',password:process.env.SEED_ADMIN_PASSWORD})});
+        assert.equal(response.status,302);
+        const cookie=response.headers.get('set-cookie').match(/spark\.sid=[^;]+/)[0];
+        const business=await prisma.business.findFirst();
+        const headers={Cookie:cookie,'X-Business-Id':String(business.id),Accept:'application/json'};
+        const client=await prisma.client.create({data:{businessId:business.id,clientCode:`HTTP-${Date.now()}`,name:'API history client',active:true}});
+        const recordResponse=await fetch(`${base}/api/records/client/${client.id}`,{headers});assert.equal(recordResponse.status,200);
+        const record=(await recordResponse.json()).data;assert.equal(record.canEdit,true);
+        const denied=await fetch(`${base}/api/records/client/${client.id}`,{method:'PUT',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({version:record.version,changes:{name:'Missing CSRF'}})});assert.equal(denied.status,403);
+        const page=await fetch(base+'/clients',{headers});const html=await page.text();assert.equal(page.status,200);assert.match(html,/data-record-type="client"/);
+        const token=html.match(/name="csrf-token" content="([^"]+)"/)[1];
+        const saved=await fetch(`${base}/api/records/client/${client.id}`,{method:'PUT',headers:{...headers,'Content-Type':'application/json','X-CSRF-Token':token},body:JSON.stringify({version:record.version,changes:{name:'API history updated'}})});assert.equal(saved.status,200,await saved.text());
+        const stale=await fetch(`${base}/api/records/client/${client.id}`,{method:'PUT',headers:{...headers,'Content-Type':'application/json','X-CSRF-Token':token},body:JSON.stringify({version:record.version,changes:{name:'Stale API update'}})});assert.equal(stale.status,409);assert.match((await stale.json()).error,/Reload/);
+        const log=await fetch(`${base}/api/records/client/${client.id}/history`,{headers});assert.equal(log.status,200);assert.equal((await log.json()).data.entries.find(entry=>entry.action==='RECORD_UPDATED').changes[0].after,'API history updated');
+    } finally {server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}
+});

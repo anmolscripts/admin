@@ -1,11 +1,11 @@
-<%- include('../layouts/header') %>
+<%- include('../layouts/header', { showPageHeader: false }) %>
 
 <div class="content-wrapper p-4">
   <!-- Page Header -->
   <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
     <div>
       <div class="d-flex align-items-center gap-2 mb-1">
-        <h1 class="h3 fw-bold mb-0 text-dark"><%= journal.entryNumber %></h1>
+        <h1 class="page-title fw-bold mb-0 text-dark"><%= journal.entryNumber %></h1>
         <% if (journal.status === 'POSTED') { %>
           <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1">POSTED</span>
         <% } else if (journal.status === 'REVERSED') { %>
@@ -17,11 +17,11 @@
       <p class="text-muted small mb-0"><%= pageSubtitle %></p>
     </div>
     <div class="d-flex gap-2">
-      <button onclick="window.print()" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2 rounded-pill px-3">
+      <button onclick="window.print()" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2 px-3">
         <i class="bi bi-printer"></i>
         <span>Print Entry</span>
       </button>
-      <a href="/reports/journals" class="btn btn-outline-primary d-inline-flex align-items-center gap-2 rounded-pill px-3">
+      <a href="/reports/journals" class="btn btn-outline-primary d-inline-flex align-items-center gap-2 px-3">
         <i class="bi bi-arrow-left"></i>
         <span>Journal Register</span>
       </a>

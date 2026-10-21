@@ -295,8 +295,8 @@ async function listPurchaseOrders({ businessId, supplierId, projectId, status, d
     if (status) where.status = status;
     if (dateFrom || dateTo) {
         where.orderDate = {};
-        if (dateFrom) where.orderDate.gte = new Date(dateFrom);
-        if (dateTo) where.orderDate.lte = new Date(dateTo);
+        if (dateFrom) where.orderDate.gte = new Date(/^\d{4}-\d{2}-\d{2}$/.test(dateFrom) ? dateFrom + 'T00:00:00' : dateFrom);
+        if (dateTo) where.orderDate.lte = new Date(/^\d{4}-\d{2}-\d{2}$/.test(dateTo) ? dateTo + 'T23:59:59.999' : dateTo);
     }
     if (search) {
         where.OR = [

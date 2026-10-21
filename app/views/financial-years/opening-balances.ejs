@@ -1,4 +1,4 @@
-<%- include('../layouts/header') %>
+<%- include('../layouts/header', { showPageHeader: false }) %>
 
 <div class="content-wrapper p-4">
   <!-- Page Header -->
@@ -8,7 +8,7 @@
         <a href="/financial-years/<%= fy.id %>" class="btn btn-sm btn-light border" title="Back">
           <i class="bi bi-arrow-left"></i>
         </a>
-        <h1 class="h3 fw-bold mb-0">Initial Opening Balances — FY <%= fy.code %></h1>
+        <h1 class="page-title fw-bold mb-0">Initial Opening Balances — FY <%= fy.code %></h1>
       </div>
       <p class="text-muted small mt-1 mb-0">
         Record initial opening balances for assets, liabilities, and equity at the inception of company accounting records.

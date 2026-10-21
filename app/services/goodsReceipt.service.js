@@ -1,6 +1,9 @@
 'use strict';
 
 const prisma = require('../config/prisma');
+const crypto = require('node:crypto');
+const receiptInclude={items:{include:{stockMovement:true,purchaseOrderItem:true,item:true}},purchaseOrder:true,project:true,supplier:true,receivedBy:{select:{id:true,name:true,email:true}}};
+function canonical(value) { if(Array.isArray(value))return value.map(canonical); if(value && typeof value==='object')return Object.fromEntries(Object.keys(value).sort().filter(key=>value[key]!==undefined).map(key=>[key,canonical(value[key])]));return value; }
 const activityService = require('./activity.service');
 const numberingService = require('./numbering.service');
 const { ValidationError, NotFoundError, ConflictError } = require('./errorTypes');
@@ -57,129 +60,148 @@ async function createGoodsReceipt(data = {}, userId, authorizedBusinessId) {
     const deliveryChallanNumber = data.deliveryChallanNumber ? String(data.deliveryChallanNumber).trim() : null;
     const notes = data.notes ? String(data.notes).trim() : null;
 
-    let purchaseOrder = null;
-    let supplier = null;
-    let supplierId = data.supplierId ? parseInt(data.supplierId, 10) : null;
-    let supplierName = (data.supplierName || '').trim();
-    let projectId = data.projectId ? parseInt(data.projectId, 10) : null;
-
-    if (data.purchaseOrderId) {
-        const poId = parseInt(data.purchaseOrderId, 10);
-        purchaseOrder = await prisma.purchaseOrder.findFirst({
-            where: { id: poId, businessId: activeBusinessId },
-            include: { items: true, supplier: true }
-        });
-        if (!purchaseOrder) {
-            throw new NotFoundError(`Purchase Order #${poId} not found in this organization.`);
-        }
-        if (purchaseOrder.status === 'VOID' || purchaseOrder.status === 'CANCELLED') {
-            throw new ValidationError(`Cannot receive goods against ${purchaseOrder.status} Purchase Order.`);
-        }
-        if (purchaseOrder.status === 'RECEIVED') {
-            throw new ValidationError(`Purchase Order ${purchaseOrder.orderNumber} is already fully received.`);
-        }
-
-        supplierId = purchaseOrder.supplierId;
-        supplierName = purchaseOrder.supplierName;
-        if (!projectId && purchaseOrder.projectId) {
-            projectId = purchaseOrder.projectId;
-        }
-    } else {
-        if (!supplierId) throw new ValidationError('Supplier is required for direct goods receipt.');
-        supplier = await prisma.supplier.findFirst({
-            where: { id: supplierId, businessId: activeBusinessId }
-        });
-        if (!supplier) throw new NotFoundError(`Supplier #${supplierId} not found in this organization.`);
-        supplierName = supplier.name;
-    }
-
-    if (projectId) {
-        const project = await prisma.project.findFirst({
-            where: { id: projectId, businessId: activeBusinessId }
-        });
-        if (!project) throw new NotFoundError(`Project #${projectId} not found in this organization.`);
-    }
-
-    if (!Array.isArray(data.items) || data.items.length === 0) {
-        throw new ValidationError('At least one receipt line item is required.');
-    }
-
-    // Validate receipt lines against PO remaining quantities if linked
-    const validatedLines = [];
-    for (let idx = 0; idx < data.items.length; idx++) {
-        const line = data.items[idx];
-        const lineNum = idx + 1;
-        const name = (line.name || '').trim();
-        if (!name) throw new ValidationError(`Item name is required for line ${lineNum}.`);
-
-        const receivedQty = parseFloat(line.receivedQuantity);
-        if (isNaN(receivedQty) || receivedQty <= 0) {
-            throw new ValidationError(`Received quantity must be greater than 0 for line ${lineNum} (${name}).`);
-        }
-
-        const acceptedQty = line.acceptedQuantity !== undefined ? parseFloat(line.acceptedQuantity) : receivedQty;
-        const rejectedQty = line.rejectedQuantity !== undefined ? parseFloat(line.rejectedQuantity) : 0;
-
-        if (isNaN(acceptedQty) || acceptedQty < 0) {
-            throw new ValidationError(`Accepted quantity must be non-negative for line ${lineNum}.`);
-        }
-        if (isNaN(rejectedQty) || rejectedQty < 0) {
-            throw new ValidationError(`Rejected quantity must be non-negative for line ${lineNum}.`);
-        }
-
-        const totalReconciled = Math.round((acceptedQty + rejectedQty) * 100) / 100;
-        const totalReceived = Math.round(receivedQty * 100) / 100;
-        if (Math.abs(totalReconciled - totalReceived) > 0.01) {
-            throw new ValidationError(
-                `Line ${lineNum} (${name}): Accepted (${acceptedQty}) + Rejected (${rejectedQty}) does not equal Received (${receivedQty}).`
-            );
-        }
-
-        let poItem = null;
-        let orderedQty = 0;
-        if (line.purchaseOrderItemId && purchaseOrder) {
-            const poItemId = parseInt(line.purchaseOrderItemId, 10);
-            poItem = purchaseOrder.items.find(i => i.id === poItemId);
-            if (!poItem) {
-                throw new ValidationError(`PO Item line #${poItemId} does not belong to Purchase Order #${purchaseOrder.id}.`);
+    const requestKey=data.idempotencyKey ? String(data.idempotencyKey).trim() : null;
+    if(requestKey && !/^[A-Za-z0-9._:-]{8,100}$/.test(requestKey)) throw new ValidationError('Invalid receipt request key.');
+    const fingerprint=Object.fromEntries(['purchaseOrderId','supplierId','supplierName','projectId','receiptNumber','receiptDate','storeLocation','deliveryChallanNumber','notes','items'].map(key=>[key,data[key]??null]));
+    const requestHash=requestKey ? crypto.createHash('sha256').update(JSON.stringify(canonical(fingerprint))).digest('hex') : null;
+    return prisma.$transaction(async (tx) => {
+        // Keep a consistent business -> PO lock order for keyed and legacy requests.
+        await tx.$queryRawUnsafe('SELECT id FROM businesses WHERE id = ? FOR UPDATE',activeBusinessId);
+        if(requestKey) {
+            const replay=await tx.goodsReceipt.findFirst({where:{businessId:activeBusinessId,requestKey},include:receiptInclude});
+            if(replay) {
+                if(replay.requestHash!==requestHash) throw new ConflictError('This request key was already used with different receipt details.');
+                return replay;
             }
-            orderedQty = parseFloat(poItem.quantity) || 0;
+        }
+        let purchaseOrder = null;
+        let supplier = null;
+        let supplierId = data.supplierId ? parseInt(data.supplierId, 10) : null;
+        let supplierName = (data.supplierName || '').trim();
+        let projectId = data.projectId ? parseInt(data.projectId, 10) : null;
 
-            // Compute previously received quantity for this PO line
-            const pastReceiptItems = await prisma.goodsReceiptItem.findMany({
-                where: {
-                    purchaseOrderItemId: poItemId,
-                    goodsReceipt: { status: { not: 'CANCELLED' } }
-                }
+        if (data.purchaseOrderId) {
+            const poId = parseInt(data.purchaseOrderId, 10);
+            await tx.$queryRawUnsafe('SELECT id FROM purchase_orders WHERE id = ? AND businessId = ? FOR UPDATE',poId,activeBusinessId);
+            purchaseOrder = await tx.purchaseOrder.findFirst({
+                where: { id: poId, businessId: activeBusinessId },
+                include: { items: true, supplier: true }
             });
-            const previouslyReceived = pastReceiptItems.reduce((acc, it) => acc + (parseFloat(it.receivedQuantity) || 0), 0);
-            const remainingAllowed = Math.round((orderedQty - previouslyReceived) * 100) / 100;
+            if (!purchaseOrder) {
+                throw new NotFoundError(`Purchase Order #${poId} not found in this organization.`);
+            }
+            if (purchaseOrder.status === 'VOID' || purchaseOrder.status === 'CANCELLED') {
+                throw new ValidationError(`Cannot receive goods against ${purchaseOrder.status} Purchase Order.`);
+            }
+            if (purchaseOrder.status === 'RECEIVED') {
+                throw new ValidationError(`Purchase Order ${purchaseOrder.orderNumber} is already fully received.`);
+            }
 
-            if (receivedQty > remainingAllowed + 0.001) {
+            supplierId = purchaseOrder.supplierId;
+            supplierName = purchaseOrder.supplierName;
+            if (!projectId && purchaseOrder.projectId) {
+                projectId = purchaseOrder.projectId;
+            }
+        } else {
+            if (!supplierId) throw new ValidationError('Supplier is required for direct goods receipt.');
+            supplier = await tx.supplier.findFirst({
+                where: { id: supplierId, businessId: activeBusinessId }
+            });
+            if (!supplier) throw new NotFoundError(`Supplier #${supplierId} not found in this organization.`);
+            supplierName = supplier.name;
+        }
+
+        if (projectId) {
+            const project = await tx.project.findFirst({
+                where: { id: projectId, businessId: activeBusinessId }
+            });
+            if (!project) throw new NotFoundError(`Project #${projectId} not found in this organization.`);
+        }
+
+        if (!Array.isArray(data.items) || data.items.length === 0) {
+            throw new ValidationError('At least one receipt line item is required.');
+        }
+
+        // Validate receipt lines against PO remaining quantities if linked
+        const validatedLines = [];
+        const seenPoLines=new Set();
+        for (let idx = 0; idx < data.items.length; idx++) {
+            const line = data.items[idx];
+            const lineNum = idx + 1;
+            const name = (line.name || '').trim();
+            if (!name) throw new ValidationError(`Item name is required for line ${lineNum}.`);
+
+            const receivedQty = parseFloat(line.receivedQuantity);
+            if (!Number.isFinite(receivedQty) || receivedQty <= 0) {
+                throw new ValidationError(`Received quantity must be greater than 0 for line ${lineNum} (${name}).`);
+            }
+
+            const acceptedQty = line.acceptedQuantity !== undefined ? parseFloat(line.acceptedQuantity) : receivedQty;
+            const rejectedQty = line.rejectedQuantity !== undefined ? parseFloat(line.rejectedQuantity) : 0;
+
+            if (!Number.isFinite(acceptedQty) || acceptedQty < 0) {
+                throw new ValidationError(`Accepted quantity must be non-negative for line ${lineNum}.`);
+            }
+            if (!Number.isFinite(rejectedQty) || rejectedQty < 0) {
+                throw new ValidationError(`Rejected quantity must be non-negative for line ${lineNum}.`);
+            }
+
+            const totalReconciled = Math.round((acceptedQty + rejectedQty) * 100) / 100;
+            const totalReceived = Math.round(receivedQty * 100) / 100;
+            if (Math.abs(totalReconciled - totalReceived) > 0.01) {
                 throw new ValidationError(
-                    `Line ${lineNum} (${name}): Received quantity (${receivedQty}) exceeds remaining allowed quantity (${remainingAllowed}) against PO #${purchaseOrder.orderNumber}. Over-receipt blocked.`
+                    `Line ${lineNum} (${name}): Accepted (${acceptedQty}) + Rejected (${rejectedQty}) does not equal Received (${receivedQty}).`
                 );
             }
+
+            let poItem = null;
+            let orderedQty = 0;
+            if (line.purchaseOrderItemId && purchaseOrder) {
+                const poItemId = parseInt(line.purchaseOrderItemId, 10);
+                if(seenPoLines.has(poItemId)) throw new ValidationError('A purchase-order line may appear only once per receipt.');
+                seenPoLines.add(poItemId);
+                poItem = purchaseOrder.items.find(i => i.id === poItemId);
+                if (!poItem) {
+                    throw new ValidationError(`PO Item line #${poItemId} does not belong to Purchase Order #${purchaseOrder.id}.`);
+                }
+                orderedQty = parseFloat(poItem.quantity) || 0;
+
+                // Compute previously received quantity for this PO line
+                const pastReceiptItems = await tx.goodsReceiptItem.findMany({
+                    where: {
+                        purchaseOrderItemId: poItemId,
+                        goodsReceipt: { status: { not: 'CANCELLED' } }
+                    }
+                });
+                const previouslyReceived = pastReceiptItems.reduce((acc, it) => acc + (parseFloat(it.receivedQuantity) || 0), 0);
+                const remainingAllowed = Math.round((orderedQty - previouslyReceived) * 100) / 100;
+
+                if (receivedQty > remainingAllowed + 0.001) {
+                    throw new ValidationError(
+                        `Line ${lineNum} (${name}): Received quantity (${receivedQty}) exceeds remaining allowed quantity (${remainingAllowed}) against PO #${purchaseOrder.orderNumber}. Over-receipt blocked.`
+                    );
+                }
+            }
+
+            const unitCost = line.unitCost !== undefined ? parseFloat(line.unitCost) : (poItem ? parseFloat(poItem.rate) : 0);
+            if(!Number.isFinite(unitCost) || unitCost<0) throw new ValidationError(`Invalid unit cost for line ${lineNum}.`);
+            const totalCost = Math.round(acceptedQty * unitCost * 100) / 100;
+
+            validatedLines.push({
+                purchaseOrderItemId: poItem ? poItem.id : null,
+                itemId: line.itemId ? parseInt(line.itemId, 10) : null,
+                name,
+                unit: line.unit ? String(line.unit).trim() : (poItem ? poItem.unit : 'PCS'),
+                orderedQuantity: orderedQty,
+                receivedQuantity: totalReceived,
+                acceptedQuantity: acceptedQty,
+                rejectedQuantity: rejectedQty,
+                unitCost,
+                totalCost
+            });
         }
 
-        const unitCost = line.unitCost !== undefined ? parseFloat(line.unitCost) : (poItem ? parseFloat(poItem.rate) : 0);
-        const totalCost = Math.round(acceptedQty * unitCost * 100) / 100;
 
-        validatedLines.push({
-            purchaseOrderItemId: poItem ? poItem.id : null,
-            itemId: line.itemId ? parseInt(line.itemId, 10) : null,
-            name,
-            unit: line.unit ? String(line.unit).trim() : (poItem ? poItem.unit : 'PCS'),
-            orderedQuantity: orderedQty,
-            receivedQuantity: totalReceived,
-            acceptedQuantity: acceptedQty,
-            rejectedQuantity: rejectedQty,
-            unitCost,
-            totalCost
-        });
-    }
-
-    return prisma.$transaction(async (tx) => {
         const receiptNumber = data.receiptNumber && data.receiptNumber.trim()
             ? data.receiptNumber.trim()
             : await generateReceiptNumber(tx, receiptDate, activeBusinessId);
@@ -194,6 +216,8 @@ async function createGoodsReceipt(data = {}, userId, authorizedBusinessId) {
             data: {
                 businessId: activeBusinessId,
                 receiptNumber,
+                requestKey,
+                requestHash,
                 purchaseOrderId: purchaseOrder ? purchaseOrder.id : null,
                 supplierId,
                 supplierName,
@@ -309,7 +333,7 @@ async function createGoodsReceipt(data = {}, userId, authorizedBusinessId) {
                 targetType: 'GOODS_RECEIPT',
                 targetId: grn.id,
                 description: `Created Goods Receipt ${grn.receiptNumber} from ${supplierName} (${validatedLines.length} lines)`
-            });
+            }, tx);
         }
 
         return await tx.goodsReceipt.findUnique({

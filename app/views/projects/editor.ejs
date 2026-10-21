@@ -1,4 +1,4 @@
-<%- include('../layouts/header') %>
+<%- include('../layouts/header', { showPageHeader: false }) %>
 
 <div class="content-wrapper p-4">
   <!-- Breadcrumbs & Header -->
@@ -10,8 +10,8 @@
       </ol>
     </nav>
     <div class="d-flex justify-content-between align-items-center">
-      <h1 class="h3 fw-bold mb-0"><%= isEdit ? `Edit Project: ${project.name}` : 'Create New Project' %></h1>
-      <a href="/projects<%= isEdit ? `/${project.id}` : '' %>" class="btn btn-outline-secondary rounded-pill px-3 btn-sm">
+      <h1 class="page-title fw-bold mb-0"><%= isEdit ? `Edit Project: ${project.name}` : 'Create New Project' %></h1>
+      <a href="/projects<%= isEdit ? `/${project.id}` : '' %>" class="btn btn-outline-secondary px-3 btn-sm">
         <i class="bi bi-arrow-left me-1"></i> Back
       </a>
     </div>
@@ -183,10 +183,10 @@
         </div>
 
         <div class="d-grid gap-2">
-          <button type="submit" class="btn btn-primary rounded-pill py-2 shadow-sm" id="btn-save-project">
+          <button type="submit" class="btn btn-primary py-2 shadow-sm" id="btn-save-project">
             <i class="bi bi-check2-circle me-1"></i> <%= isEdit ? 'Save Changes' : 'Create Project' %>
           </button>
-          <a href="/projects<%= isEdit ? `/${project.id}` : '' %>" class="btn btn-outline-secondary rounded-pill py-2">
+          <a href="/projects<%= isEdit ? `/${project.id}` : '' %>" class="btn btn-outline-secondary py-2">
             Cancel
           </a>
         </div>

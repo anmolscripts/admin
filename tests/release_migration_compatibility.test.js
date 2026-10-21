@@ -16,6 +16,7 @@ function loadReceiptService(prisma, numbering) {
     Module._load = function (request, parent, ...rest) {
         if (parent?.filename === filename) {
             if (request === '../config/prisma') return prisma;
+            if (request === 'node:crypto') return require('node:crypto');
             if (request === './numbering.service') return numbering;
             if (request === './activity.service') return { log: async () => {} };
             if (request === './business.service') return {};
@@ -33,14 +34,14 @@ function loadReceiptService(prisma, numbering) {
     }
 }
 
-test('R11: replaying one request key returns the original receipt without another write', {
-    todo: 'Blocked on approval of durable request identity; current code allocates a second GRN.'
-}, async () => {
+test('R11: replaying one request key returns the original receipt without another write', async () => {
     const receipts = [];
     let sequence = 0;
     const tx = {
+        $queryRawUnsafe:async()=>[],
+        supplier:{findFirst:async()=>({id:3,name:'Mock supplier',businessId:2})},
         goodsReceipt: {
-            findFirst: async ({ where }) => receipts.find(row => row.receiptNumber === where.receiptNumber) || null,
+            findFirst: async ({ where }) => receipts.find(row => where.requestKey ? row.requestKey === where.requestKey : row.receiptNumber === where.receiptNumber) || null,
             create: async ({ data }) => {
                 const row = { id: receipts.length + 1, ...data };
                 receipts.push(row);
@@ -66,9 +67,7 @@ test('R11: replaying one request key returns the original receipt without anothe
     assert.equal(replay.id, first.id);
 });
 
-test('R11: PO remaining quantity is never read before entering the write transaction', {
-    todo: 'Current remaining-quantity query runs outside the transaction and without row locks.'
-}, async () => {
+test('R11: PO remaining quantity is never read before entering the write transaction', async () => {
     const outsideReads = [];
     const transactionBoundary = new Error('Mock stopped before any write');
     const service = loadReceiptService({

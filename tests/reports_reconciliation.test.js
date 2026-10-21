@@ -431,13 +431,13 @@ describe('Milestone 7: Core Financial Reports & Accounting Reconciliation', () =
             assert.equal(bs.summary.totalAssets, bs.summary.totalLiabilitiesAndEquity);
 
             // Confirm assets include Trade Receivables (1121) and Bank (1112)
-            const arAsset = bs.assets.items.find(i => i.code === '1121');
-            assert.ok(arAsset);
-            assert.ok(parseFloat(arAsset.balance) > 0);
+            const arAssets = bs.assets.items.filter(i => i.code === '1121');
+            assert.ok(arAssets.length);
+            assert.ok(arAssets.reduce((sum, item) => sum + parseFloat(item.balance), 0) > 0);
 
-            const bankAsset = bs.assets.items.find(i => i.code === '1112');
-            assert.ok(bankAsset);
-            assert.ok(parseFloat(bankAsset.balance) > 0);
+            const bankAssets = bs.assets.items.filter(i => i.code === '1112');
+            assert.ok(bankAssets.length);
+            assert.ok(bankAssets.reduce((sum, item) => sum + parseFloat(item.balance), 0) > 0);
 
             // Confirm liabilities include Output GST accounts
             const gstLiab = bs.liabilities.items.filter(i => i.code.startsWith('211'));
@@ -702,9 +702,12 @@ describe('Milestone 7: Core Financial Reports & Accounting Reconciliation', () =
             assert.equal(tbFY27.summary.difference, '0.00');
 
             // Bank balance should reflect carried forward prior year balance
-            const bankRow = tbFY27.rows.find(r => r.code === '1112');
+            const bankAccount = await coaService.getSystemAccount('BANK_ACCOUNT');
+            const bankRow = tbFY27.rows.find(row => row.id === bankAccount.id);
             assert.ok(bankRow);
-            assert.ok(parseFloat(bankRow.debitBalance) > 0, 'Bank balance must carry forward prior year balance');
+            const bankLedger = await reportService.getGeneralLedgerReport({ accountId: bankAccount.id, financialYearId: fy2026_27.id });
+            assert.equal(Number(bankRow.debitBalance) - Number(bankRow.creditBalance), Number(bankLedger.account.closingBalance),
+                'Trial Balance must exactly match the bank ledger including carried-forward balances');
         });
 
         it('9.3 should accurately calculate General Ledger opening balance for FY 2026-27', async () => {

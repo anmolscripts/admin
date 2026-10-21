@@ -210,7 +210,8 @@ async function listUnits({ search = '', active, page = 1, limit = 50, businessId
 
     const where = {};
     if (businessId) {
-        where.businessId = parseInt(businessId, 10);
+        if(Number(businessId)===1) where.AND=[{OR:[{businessId:1},{businessId:null}]}];
+        else where.businessId = parseInt(businessId, 10);
     }
     if (active !== undefined && active !== '') {
         where.active = active === 'true' || active === true;
@@ -253,7 +254,8 @@ async function listUnits({ search = '', active, page = 1, limit = 50, businessId
 async function getActiveUnits(businessId = null) {
     const where = { active: true };
     if (businessId) {
-        where.businessId = parseInt(businessId, 10);
+        if(Number(businessId)===1) where.AND=[{OR:[{businessId:1},{businessId:null}]}];
+        else where.businessId = parseInt(businessId, 10);
     }
     const units = await prisma.unit.findMany({
         where,
@@ -308,6 +310,7 @@ async function updateUnit(idInput, data = {}, userId = null) {
             const duplicate = await prisma.unit.findFirst({
                 where: {
                     symbol: { equals: symbol },
+                    businessId: existing.businessId,
                     id: { not: id }
                 }
             });
@@ -327,10 +330,7 @@ async function updateUnit(idInput, data = {}, userId = null) {
     }
 
     try {
-        const updated = await prisma.unit.update({
-            where: { id },
-            data: updateData
-        });
+        const updated = await require('./recordHistory.service').commit({ type: 'unit', existing, data: updateData, actorId: userId, expectedVersion: data._recordVersion });
 
         if (userId) {
             await activityService.log({
@@ -369,10 +369,7 @@ async function toggleUnitStatus(idInput, userId = null) {
         throw new NotFoundError(`Unit with ID ${id} was not found.`);
     }
 
-    const updated = await prisma.unit.update({
-        where: { id },
-        data: { active: !existing.active }
-    });
+    const updated = await require('./recordHistory.service').commit({type:'unit',existing,data:{active:!existing.active},actorId:userId});
 
     if (userId) {
         await activityService.log({
@@ -406,14 +403,13 @@ async function deleteUnit(idInput, userId = null) {
         throw new NotFoundError(`Unit with ID ${id} was not found.`);
     }
 
-    await prisma.unit.delete({
-        where: { id }
-    });
+    // Retain the master record and its history for historical documents.
+    await require('./recordHistory.service').commit({type:'unit',existing,data:{active:false},actorId:userId});
 
     if (userId) {
         await activityService.log({
             actorUserId: userId,
-            action: 'DELETE_UNIT',
+            action: 'ARCHIVE_UNIT',
             module: 'UNITS',
             targetType: 'UNIT',
             targetId: existing.id,
@@ -421,7 +417,7 @@ async function deleteUnit(idInput, userId = null) {
         }).catch(() => {});
     }
 
-    return { success: true, message: `Unit "${existing.symbol}" deleted.` };
+    return { success: true, message: `Unit "${existing.symbol}" archived. Its data and history were preserved.` };
 }
 
 /**

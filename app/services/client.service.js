@@ -214,10 +214,7 @@ async function updateClient(idInput, data = {}, userId = null) {
     if (data.shippingAddress !== undefined) updateData.shippingAddress = data.shippingAddress ? data.shippingAddress.trim() : null;
     if (data.active !== undefined) updateData.active = Boolean(data.active);
 
-    const updated = await prisma.client.update({
-        where: { id },
-        data: updateData
-    });
+    const updated = await require('./recordHistory.service').commit({ type: 'client', existing, data: updateData, actorId: userId, expectedVersion: data._recordVersion });
 
     if (userId) {
         await activityService.log({
@@ -247,10 +244,7 @@ async function toggleClientStatus(idInput, userId = null) {
         throw new NotFoundError(`Client with ID ${id} not found.`);
     }
 
-    const updated = await prisma.client.update({
-        where: { id },
-        data: { active: !existing.active }
-    });
+    const updated = await require('./recordHistory.service').commit({type:'client',existing,data:{active:!existing.active},actorId:userId});
 
     if (userId) {
         await activityService.log({

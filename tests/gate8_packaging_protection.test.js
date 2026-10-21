@@ -110,6 +110,12 @@ describe('Gate 8 Packaging Protection & Database Cleanup Safety Suite', () => {
 
     describe('2. package-release.js Overwrite Guard', () => {
         it('refuses to overwrite existing dist/spark-admin-release.zip without override flag', () => {
+            // Create the precondition explicitly; the first packaging run may create a new archive.
+            const existed=fs.existsSync(origReleaseZip);
+            fs.mkdirSync(path.dirname(origReleaseZip),{recursive:true});
+            if(!existed) fs.writeFileSync(origReleaseZip,'test overwrite guard sentinel');
+            const before=crypto.createHash('sha256').update(fs.readFileSync(origReleaseZip)).digest('hex');
+            try {
             const res = spawnSync('node', ['scripts/package-release.js'], {
                 cwd: ROOT_DIR,
                 encoding: 'utf-8',
@@ -121,7 +127,9 @@ describe('Gate 8 Packaging Protection & Database Cleanup Safety Suite', () => {
                 assert.strictEqual(res.status, 1, 'Must exit with code 1 to protect existing release');
                 const out = res.stdout + res.stderr;
                 assert.ok(out.includes('CRITICAL RELEASE GUARD'), 'Must state release guard prevented overwrite');
+                assert.equal(crypto.createHash('sha256').update(fs.readFileSync(origReleaseZip)).digest('hex'),before);
             }
+            } finally { if(!existed) fs.unlinkSync(origReleaseZip); }
         });
     });
 

@@ -12,6 +12,7 @@
   const showHsn = tpl.showHsn !== false;
   const showUpiQr = tpl.showUpiQr !== false;
   const customCss = tpl.customCss || '';
+  const isRajesh = themeClass === 'theme-rajesh-signature';
 %>
 <div class="spark-unified-document <%= model.isQuotation ? 'doc-theme-quotation' : 'doc-theme-invoice' %> <%= themeClass %>" id="unified-document-root" style="--doc-accent: <%= docAccent %>; --doc-accent-subtle: <%= docAccentSubtle %>; font-family: <%= docFont %>;">
   <style>
@@ -559,6 +560,9 @@
     }
   </style>
 
+  <% if (isRajesh) { %>
+    <%- include('rajesh-letterhead', { position: 'top', logo: tpl.brandLogo }) %>
+  <% } %>
   <!-- TOP ACCENT LINE -->
   <div class="doc-top-bar"></div>
 
@@ -571,18 +575,24 @@
   <div class="doc-content-container">
     <!-- CENTERED BRAND LOGO / NAME -->
     <div class="doc-brand-header">
-      <% if (model.seller && model.seller.logo) { %>
+      <% if (isRajesh) { %>
+        <img src="<%= tpl.brandLogo %>" alt="Rajesh International" class="ri-brand-logo" />
+        <div class="ri-tagline">CONNECTING<br>OPPORTUNITIES<br>GLOBALLY<span></span></div>
+      <% } else if (model.seller && model.seller.logo) { %>
         <img src="<%= model.seller.logo %>" alt="<%= model.seller.name %>" class="doc-brand-logo" />
       <% } else { %>
         <h1 class="doc-brand-name"><%= model.seller.name %></h1>
       <% } %>
     </div>
+    <% if (isRajesh) { %>
+      <div class="ri-seller-identity"><strong><%= model.seller.name %></strong><% if (model.seller.gstin) { %><span>GSTIN: <%= model.seller.gstin %></span><% } %></div>
+    <% } %>
 
     <!-- TWO-COLUMN CLIENT & DOCUMENT INFORMATION -->
     <div class="doc-header-grid">
       <!-- BILL TO (LEFT) -->
       <div class="bill-to-section">
-        <div class="bill-to-label">BILL TO</div>
+        <div class="bill-to-label"><%= isRajesh && model.isQuotation ? 'QUOTATION FOR' : 'BILL TO' %></div>
         <div class="bill-to-name"><%= model.client.name %></div>
 
         <% if (model.client.phone && model.client.phone !== '—') { %>
@@ -688,6 +698,7 @@
               <td class="col-no"><%= item.lineNumber %></td>
               <td class="item-desc-cell">
                 <strong><%= item.name %></strong>
+                <% if (isRajesh && item.description) { %><div class="ri-item-description"><%= item.description %></div><% } %>
               </td>
               <td class="col-hsn"><%= item.hsnSac || '—' %></td>
               <td class="col-qty"><%= item.quantity %> <%= item.unit %></td>
@@ -824,6 +835,7 @@
   <!-- FULL-WIDTH RED FOOTER -->
   <div class="doc-footer-bar">
     <div class="footer-address">
+      <% if (isRajesh) { %><span class="ri-contact-icon" aria-hidden="true">⌖</span><% } %>
       <%= model.seller.address %>
     </div>
     <div class="footer-contact">
@@ -838,5 +850,9 @@
       </svg>
       <span><%= model.seller.email %></span>
     </div>
+    <% if (isRajesh && model.seller.website) { %>
+      <div class="footer-contact"><span class="ri-contact-icon" aria-hidden="true">◎</span><span><%= model.seller.website %></span></div>
+    <% } %>
   </div>
+  <% if (isRajesh) { %><%- include('rajesh-letterhead', { position: 'bottom', logo: tpl.brandLogo }) %><% } %>
 </div>

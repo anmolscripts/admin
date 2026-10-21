@@ -152,10 +152,7 @@ async function updateSupplier(id, data = {}, userId = null, businessId = null) {
     if (data.address !== undefined) updateData.address = data.address ? data.address.trim() : null;
     if (data.active !== undefined) updateData.active = Boolean(data.active);
 
-    const updated = await prisma.supplier.update({
-        where: { id: existing.id },
-        data: updateData
-    });
+    const updated = await require('./recordHistory.service').commit({ type: 'supplier', existing, data: updateData, actorId: userId, expectedVersion: data._recordVersion });
 
     if (userId) {
         await activityService.log({
@@ -174,7 +171,7 @@ async function updateSupplier(id, data = {}, userId = null, businessId = null) {
 async function setSupplierActive(id, active, userId = null, businessId = null) {
     const supplier = await getSupplierById(id, businessId);
     if (supplier.active === Boolean(active)) return supplier;
-    const updated = await prisma.supplier.update({ where: { id: supplier.id }, data: { active: Boolean(active) } });
+    const updated = await require('./recordHistory.service').commit({type:'supplier',existing:supplier,data:{active:Boolean(active)},actorId:userId});
     if (userId) {
         await activityService.log({
             actorUserId: userId,

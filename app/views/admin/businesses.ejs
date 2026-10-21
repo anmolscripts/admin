@@ -1,10 +1,10 @@
-<%- include('../layouts/header') %>
+<%- include('../layouts/header', { showPageHeader: false }) %>
 
 <div class="content-wrapper p-4">
   <!-- Page Header -->
   <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
     <div>
-      <h1 class="h3 fw-bold mb-1">Multi-Business Organizations</h1>
+      <h1 class="page-title fw-bold mb-1">Multi-Business Organizations</h1>
       <p class="text-muted small mb-0">Platform Administration: Manage legal entities, workspaces, and team memberships.</p>
     </div>
     <div>
@@ -28,7 +28,7 @@
       <h5 class="fw-bold mb-0">Registered Business Workspaces (<%= businesses.length %>)</h5>
     </div>
     <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0">
+      <table data-spark-datatable="true" class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
             <th>ID</th>
@@ -47,7 +47,7 @@
               <td class="text-muted small">#<%= b.id %></td>
               <td>
                 <div class="fw-bold text-dark"><%= b.name %></div>
-                <small class="text-muted">Slug: <%= b.slug %></small>
+                <small class="text-muted">Code: <%= b.code %></small>
               </td>
               <td><%= b.legalName || '-' %></td>
               <td><code><%= b.gstin || '-' %></code></td>
@@ -67,6 +67,9 @@
                 </span>
               </td>
               <td class="text-end">
+                <% if ((locals.editableBusinessIds || []).includes(b.id)) { %>
+                  <button type="button" class="btn btn-sm btn-outline-primary me-1" data-bs-toggle="modal" data-bs-target="#editBusinessModal" data-business="<%= JSON.stringify({id:b.id,name:b.name,legalName:b.legalName,updatedAt:b.updatedAt}) %>" aria-label="Edit <%= b.name %>"><i class="bi bi-pencil me-1" aria-hidden="true"></i>Edit</button>
+                <% } %>
                 <form action="/switch-business" method="POST" class="d-inline">
                   <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                   <input type="hidden" name="businessId" value="<%= b.id %>">
@@ -91,10 +94,10 @@
         <h5 class="modal-title fw-bold">Create New Business Workspace</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <form id="createBusinessForm" action="/api/businesses/create" method="POST">
+      <form id="createBusinessForm" data-business-form action="/api/businesses/create" method="POST">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <div class="modal-body">
-          <div id="createBusinessAlert" class="alert alert-danger d-none py-2 px-3 small rounded-3 mb-3"></div>
+          <div id="createBusinessAlert" role="alert" class="alert alert-danger d-none py-2 px-3 small rounded-3 mb-3"></div>
           <div class="mb-3">
             <label class="form-label small fw-semibold">Workspace Display Name *</label>
             <input type="text" name="name" class="form-control" placeholder="e.g. Acme Retailers" required>
@@ -127,49 +130,46 @@
   </div>
 </div>
 
+<div class="modal fade" id="editBusinessModal" tabindex="-1" aria-labelledby="edit-business-title" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header"><div><div class="small text-muted mb-1">Organization settings</div><h2 class="modal-title fs-5" id="edit-business-title">Edit organization</h2></div><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+    <form id="editBusinessForm" data-business-form method="POST">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>"><input type="hidden" name="_version">
+      <div class="modal-body">
+        <div class="alert alert-danger d-none" role="alert"></div>
+        <div class="mb-3"><label for="business-edit-name" class="form-label">Organization display name <span class="text-danger">*</span></label><input id="business-edit-name" name="name" class="form-control" required maxlength="255" autocomplete="organization"><div class="form-text">Used in the organization switcher and workspace branding.</div></div>
+        <div><label for="business-edit-legal" class="form-label">Legal / registered name</label><input id="business-edit-legal" name="legalName" class="form-control" maxlength="255"></div>
+      </div>
+      <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary">Save changes</button></div>
+    </form>
+  </div></div>
+</div>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  const form = document.getElementById('createBusinessForm');
-  const alertEl = document.getElementById('createBusinessAlert');
-  if (!form) return;
-
-  form.addEventListener('submit', async function(e) {
-    e.preventDefault();
-    if (alertEl) alertEl.classList.add('d-none');
-    const submitBtn = document.getElementById('btn-submit-business') || form.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Creating...';
-
-    try {
-      const formData = new FormData(form);
-      const payload = Object.fromEntries(formData.entries());
-
-      const res = await fetch('/api/businesses/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Failed to create business workspace.');
-      }
-
-      window.location.reload();
-    } catch (err) {
-      if (alertEl) {
-        alertEl.textContent = err.message || 'An error occurred. Please try again.';
-        alertEl.classList.remove('d-none');
-      } else {
-        alert(err.message);
-      }
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = originalText;
-    }
+  document.getElementById('editBusinessModal').addEventListener('show.bs.modal', function(event) {
+    const business=JSON.parse(event.relatedTarget.dataset.business);
+    const form=document.getElementById('editBusinessForm');
+    form.action='/api/businesses/'+business.id;
+    form.elements.name.value=business.name;
+    form.elements.legalName.value=business.legalName || '';
+    form.elements._version.value=business.updatedAt;
+    form.querySelector('[role="alert"]').classList.add('d-none');
+  });
+  document.querySelectorAll('[data-business-form]').forEach(function(form) {
+    form.addEventListener('submit',async function(event) {
+      event.preventDefault();
+      const alertEl=form.querySelector('[role="alert"]');
+      const button=form.querySelector('button[type="submit"]');
+      if(button.disabled)return;
+      const original=button.textContent;button.disabled=true;button.textContent='Saving…';alertEl.classList.add('d-none');
+      try {
+        const response=await fetch(form.action,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(form).entries()))});
+        const data=await response.json();
+        if(!response.ok || !data.success)throw new Error(data.error || 'Could not save the organization.');
+        window.location.reload();
+      } catch(error) {alertEl.textContent=error.message;alertEl.classList.remove('d-none');}
+      finally {button.disabled=false;button.textContent=original;}
+    });
   });
 });
 </script>

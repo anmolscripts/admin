@@ -19,7 +19,8 @@ const reportController = require('../controllers/report.controller');
 const financialYearController = require('../controllers/financialYear.controller');
 const journalService = require('../services/journal.service');
 const profileController = require('../controllers/profile.controller');
-const { uploadAvatar, uploadAttachmentFile, handleAttachmentUpload } = require('../middleware/upload.middleware');
+const { parseProfileUpload, parseLogoUpload, uploadAttachmentFile, handleAttachmentUpload } = require('../middleware/upload.middleware');
+const {csrfProtection}=require('../middleware/csrf.middleware');
 const purchaseController = require('../controllers/purchase.controller');
 const supplierController = require('../controllers/supplier.controller');
 const erpController = require('../controllers/erp.controller');
@@ -29,6 +30,10 @@ const reportingWorkbenchController = require('../controllers/reportingWorkbench.
 const prisma = require('../config/prisma');
 
 const router = express.Router();
+const productGuide=require('../controllers/productGuide.controller');
+router.get('/product-guide',requireAuth,productGuide.render);
+router.get('/product-guide/screens/:id',requireAuth,productGuide.screenshot);
+router.get('/product-guide/demo/:id',requireAuth,productGuide.demo);
 
 // -------------------------------------------------------------
 // MULTI-BUSINESS WORKSPACE & CONTEXT
@@ -104,7 +109,7 @@ router.get('/documents/new', requireAuth, requirePermission('DOCUMENTS', 'CREATE
 
         const [clientList, unitList, profile, projectList] = await Promise.all([
             clientService.searchClients('', req.businessId),
-            unitService.getActiveUnits(),
+            unitService.getActiveUnits(req.businessId),
             businessProfileService.getProfile(req.businessId),
             prisma.project.findMany({
                 where: { businessId: req.businessId, status: 'ACTIVE' },
@@ -194,6 +199,7 @@ router.get('/documents/new', requireAuth, requirePermission('DOCUMENTS', 'CREATE
             mode: 'create',
             documentType,
             document: initialDoc,
+            sellerStateCode: profile.stateCode,
             clientList,
             projectList,
             unitList,
@@ -238,14 +244,15 @@ router.get('/documents/:id/edit', requireAuth, requirePermission('DOCUMENTS', 'E
         }
 
         const isQuotation = doc.documentType === 'QUOTATION';
-        const [clientList, unitList, projectList] = await Promise.all([
+        const [clientList, unitList, projectList, editorProfile] = await Promise.all([
             clientService.searchClients('', doc.businessId || req.businessId),
-            unitService.getActiveUnits(),
+            unitService.getActiveUnits(req.businessId),
             prisma.project.findMany({
                 where: { businessId: doc.businessId || req.businessId },
                 select: { id: true, code: true, name: true, clientId: true },
                 orderBy: { name: 'asc' }
-            })
+            }),
+            businessProfileService.getProfile(doc.businessId || req.businessId)
         ]);
 
         res.render('documents/editor', {
@@ -254,6 +261,7 @@ router.get('/documents/:id/edit', requireAuth, requirePermission('DOCUMENTS', 'E
             mode: 'edit',
             documentType: doc.documentType,
             document: doc,
+            sellerStateCode: doc.sellerStateCode || editorProfile.stateCode,
             clientList,
             projectList,
             unitList,
@@ -392,7 +400,7 @@ router.get('/documents/:id', requireAuth, requirePermission('DOCUMENTS', 'VIEW')
 router.get('/clients', requireAuth, requirePermission('CLIENTS', 'VIEW'), async (req, res, next) => {
     try {
         const { search, active } = req.query;
-        const result = await clientService.listClients({ search, active, limit: 100 });
+        const result = await clientService.listClients({ search, active, limit: 100, businessId:req.businessId });
         res.render('clients/index', {
             pageTitle: 'Clients Directory',
             pageSubtitle: 'Manage customer accounts, tax registrations, and contact information.',
@@ -496,9 +504,10 @@ router.get('/settings', requireAuth, requirePermission('SETTINGS', 'VIEW'), asyn
     }
 });
 
-router.post('/settings', requireAuth, requirePermission('SETTINGS', 'EDIT'), async (req, res) => {
+router.post('/settings', requireAuth, requirePermission('SETTINGS', 'EDIT'), parseLogoUpload, csrfProtection, async (req, res) => {
     try {
-        const profile = await businessProfileService.updateProfile(req.body, req.businessId);
+        if(req.logoUploadError)throw req.logoUploadError;
+        const profile = await businessProfileService.updateProfile(req.body, req.businessId, req.file);
         const templates = templateService.listTemplates(req.businessId);
         const activeTemplates = templateService.getActiveTemplates(req.businessId);
 
@@ -515,10 +524,11 @@ router.post('/settings', requireAuth, requirePermission('SETTINGS', 'EDIT'), asy
     } catch (err) {
         const templates = templateService.listTemplates(req.businessId);
         const activeTemplates = templateService.getActiveTemplates(req.businessId);
-        res.status(400).render('settings/index', {
+        const savedProfile=await businessProfileService.getProfile(req.businessId);
+        res.status(err.statusCode||400).render('settings/index', {
             pageTitle: 'Organization Profile & Defaults',
             pageSubtitle: 'Manage business identity, GST registration, bank details, and invoice templates.',
-            profile: req.body,
+            profile: {...savedProfile,...req.body,logoUrl:savedProfile.logoUrl},
             templates,
             activeTemplates,
             error: err.message,
@@ -582,7 +592,7 @@ router.delete('/api/settings/templates/:id', requireAuth, requirePermission('SET
 // USER PROFILE WEB ROUTES
 // -------------------------------------------------------------
 router.get('/profile', requireAuth, profileController.renderProfile);
-router.post('/profile', requireAuth, uploadAvatar.single('avatar'), profileController.updateProfile);
+router.post('/profile', requireAuth, parseProfileUpload, csrfProtection, profileController.updateProfile);
 router.post('/profile/password', requireAuth, profileController.changePassword);
 
 // -------------------------------------------------------------
@@ -592,8 +602,8 @@ router.get('/items', requireAuth, requirePermission('ITEMS', 'VIEW'), async (req
     try {
         const { search, active } = req.query;
         const [result, unitList] = await Promise.all([
-            itemService.listItems({ search, active, limit: 100 }),
-            unitService.getActiveUnits()
+            itemService.listItems({ search, active, limit: 100, businessId:req.businessId }),
+            unitService.getActiveUnits(req.businessId)
         ]);
         res.render('items/index', {
             pageTitle: 'Item Master',
@@ -765,6 +775,15 @@ router.get('/reports/customer-statement/:clientId/export', requireAuth, requireP
 // -------------------------------------------------------------
 // FINANCIAL YEAR CLOSING, OPENING BALANCES & PERIOD LOCKING (MILESTONE 8)
 // -------------------------------------------------------------
+router.use('/financial-years/:id',requireAuth,async(req,res,next)=>{
+    try{
+        const id=Number(req.params.id);
+        if(!Number.isSafeInteger(id)||id<=0)throw Object.assign(new Error('Invalid financial year.'),{statusCode:400});
+        const year=await prisma.financialYear.findFirst({where:{id,businessId:req.businessId}});
+        if(!year)throw Object.assign(new Error('Financial year not found in this business.'),{statusCode:404});
+        next();
+    }catch(error){next(error);}
+});
 router.get('/financial-years', requireAuth, requirePermission('FINANCIAL_YEARS', 'VIEW'), financialYearController.renderFinancialYearsList);
 router.get('/financial-years/:id', requireAuth, requirePermission('FINANCIAL_YEARS', 'VIEW'), financialYearController.renderFinancialYearDetail);
 router.get('/financial-years/:id/close-preview', requireAuth, requirePermission('FINANCIAL_YEARS', 'VIEW'), financialYearController.renderClosePreview);
