@@ -1,0 +1,20 @@
+<%- include('../layouts/header',{extraCss:'<link rel="stylesheet" href="/css/letters.css">'}) %>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+ <div class="d-flex flex-wrap align-items-center gap-2"><a class="btn btn-outline-secondary" href="/documents/letters">All Letters</a><span class="badge <%= letter.status==='ACTIVE'?'text-bg-success':'text-bg-secondary' %>"><%= letter.status %></span><span class="small text-muted">Version <%= letter.version %></span></div>
+ <div class="d-flex flex-wrap gap-2">
+ <% if(letter.status==='ACTIVE'&&hasPermission('DOCUMENTS','EDIT')){ %><a class="btn btn-primary" href="/documents/letters/<%= letter.id %>/edit">Edit Letter</a><% } %>
+ <% if(hasPermission('DOCUMENTS','CREATE')){ %><a class="btn btn-outline-primary" href="/documents/letters/new?copyFrom=<%= letter.id %>">Copy Letter</a><% } %>
+ <% if(hasPermission('DOCUMENTS','PRINT')){ %><a class="btn btn-outline-secondary" target="_blank" rel="noopener" href="/documents/letters/<%= letter.id %>/print">Print</a><% } %>
+ <% if(hasPermission('DOCUMENTS','EXPORT')){ %><a class="btn btn-outline-secondary" href="/documents/letters/<%= letter.id %>/pdf">Export PDF</a><a class="btn btn-outline-secondary" href="/documents/letters/<%= letter.id %>/excel">Export Excel</a><% } %>
+ </div>
+</div>
+<div class="card card-glass mb-4"><div class="card-body p-0"><iframe src="/documents/letters/<%= letter.id %>/preview" class="letter-preview-frame" title="Letter preview" sandbox="allow-same-origin"></iframe></div></div>
+<div class="card card-glass mb-4"><div class="card-body"><div class="d-flex flex-wrap justify-content-between align-items-center gap-3"><div><strong>Letter actions</strong><p class="text-muted mb-0 small">Changes and reasons are retained in history. Deleted letters can be restored.</p></div><div class="d-flex flex-wrap gap-2" id="letter-actions" data-letter-id="<%= letter.id %>" data-version="<%= letter.version %>">
+ <% if(letter.status==='ACTIVE'&&hasPermission('DOCUMENTS','VOID')){ %><button class="btn btn-outline-danger" data-letter-action="void">Void Letter</button><% } %>
+ <% if(letter.status!=='DELETED'&&hasPermission('DOCUMENTS','DELETE')){ %><button class="btn btn-danger" data-letter-action="delete">Delete Letter</button><% } %>
+ <% if(letter.status==='DELETED'&&hasPermission('DOCUMENTS','RESTORE')){ %><button class="btn btn-primary" data-letter-action="restore">Restore Letter</button><% } %>
+</div></div></div></div>
+<section class="card card-glass"><div class="card-body"><h2 class="fs-5">Version History</h2><p class="small text-muted">Every saved version and action is preserved, including full letter content.</p>
+ <% for(const r of revisions){ %><details class="border rounded p-3 mb-2"><summary><strong>Version <%= r.version %> · <%= r.action %></strong> · <%= actorNames[r.changedById]||'User #'+r.changedById %> · <%= r.changedAt.toLocaleString('en-IN') %></summary><% if(r.reason){ %><p class="mt-3"><strong>Reason:</strong> <%= r.reason %></p><% } %><dl class="row mt-3"><dt class="col-sm-3">Subject</dt><dd class="col-sm-9"><%= r.snapshot.subject %></dd><dt class="col-sm-3">Recipient</dt><dd class="col-sm-9"><%= r.snapshot.recipientName %></dd><dt class="col-sm-3">Date / Template</dt><dd class="col-sm-9"><%= String(r.snapshot.letterDate).slice(0,10) %> · <%= r.snapshot.templateId %></dd></dl><pre class="letter-history-body"><%= r.contentText %></pre></details><% } %>
+</div></section>
+<%- include('../layouts/footer',{extraJs:'<script src="/js/letters.js"></script>'}) %>

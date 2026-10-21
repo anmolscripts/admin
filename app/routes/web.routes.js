@@ -30,6 +30,7 @@ const reportingWorkbenchController = require('../controllers/reportingWorkbench.
 const prisma = require('../config/prisma');
 
 const router = express.Router();
+router.use(require('./letter.routes'));
 const productGuide=require('../controllers/productGuide.controller');
 router.get('/product-guide',requireAuth,productGuide.render);
 router.get('/product-guide/screens/:id',requireAuth,productGuide.screenshot);

@@ -14,6 +14,9 @@ test('reuses only an HTTPS tunnel pointing to the local production port',()=>{
 test('permits schema additions for live deployment', () => {
     assert.doesNotThrow(() => assertAdditive('-- add optional field\nALTER TABLE `clients` ADD COLUMN `reference` VARCHAR(40) NULL; CREATE INDEX `reference_idx` ON `clients` (`reference`);', 'safe'));
     assert.doesNotThrow(() => assertAdditive('CREATE TABLE `notes` (`id` INTEGER NOT NULL);', 'safe'));
+    const migration=require('node:fs').readFileSync(require('node:path').join(__dirname,'../prisma/migrations/20261021000100_letters/migration.sql'),'utf8');
+    assert.doesNotThrow(()=>assertAdditive(migration,'letters'));
+    assert.throws(()=>assertAdditive(migration+' UPDATE clients SET name=NULL;','unsafe'),/not strictly additive/);
 });
 test('blocks data deletion, rewrites and mixed destructive ALTER operations', () => {
     for (const sql of [

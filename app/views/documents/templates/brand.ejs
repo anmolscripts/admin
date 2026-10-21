@@ -1,0 +1,15 @@
+    <!-- CENTERED BRAND LOGO / NAME -->
+    <div class="doc-brand-header">
+      <% if (isRajesh) { %>
+        <img src="<%= tpl.brandLogo %>" alt="Rajesh International" class="ri-brand-logo" />
+        <div class="ri-tagline">CONNECTING<br>OPPORTUNITIES<br>GLOBALLY<span></span></div>
+      <% } else if (model.seller && model.seller.logo) { %>
+        <img src="<%= model.seller.logo %>" alt="<%= model.seller.name %>" class="doc-brand-logo" />
+      <% } else { %>
+        <h1 class="doc-brand-name"><%= model.seller.name %></h1>
+      <% } %>
+    </div>
+    <% if (isRajesh) { %>
+      <div class="ri-seller-identity"><strong><%= model.seller.name %></strong><% if (model.seller.gstin) { %><span>GSTIN: <%= model.seller.gstin %></span><% } %></div>
+    <% } %>
+

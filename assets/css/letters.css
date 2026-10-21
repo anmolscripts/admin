@@ -1,0 +1,11 @@
+.letter-compose .ql-toolbar.ql-snow{border:0;border-bottom:1px solid var(--component-border);padding:12px;background:var(--component-soft);color:var(--component-text)}
+.letter-compose .ql-container.ql-snow{border:0;font-family:inherit;font-size:16px}.letter-compose .ql-editor{min-height:560px;padding:36px;line-height:1.8;color:var(--component-text);overflow-wrap:anywhere}
+.letter-compose .ql-toolbar button{width:32px;min-width:32px;height:32px;border-radius:5px}.letter-compose .ql-toolbar button:hover,.letter-compose .ql-toolbar button:focus-visible{background:var(--component-hover)}
+.letter-compose .ql-snow .ql-stroke{stroke:var(--component-text)}.letter-compose .ql-snow .ql-fill{fill:var(--component-text)}.letter-compose .ql-snow .ql-picker{color:var(--component-text)}
+.letter-compose .ql-snow .ql-picker-options,.letter-compose .ql-snow .ql-tooltip{background:var(--component-surface);color:var(--component-text);border-color:var(--component-border)}
+.letter-compose .ql-snow .ql-picker.ql-expanded .ql-picker-label{color:var(--component-text);border-color:var(--component-border)}
+.letter-compose .ql-editor.ql-blank::before{color:var(--component-muted)}.letter-compose .ql-snow .ql-tooltip input{background:var(--component-surface);color:var(--component-text);max-width:100%}
+.letter-compose .ql-toolbar button.ql-active,.letter-compose .ql-toolbar .ql-picker-item.ql-selected{background:var(--component-hover);color:var(--ui-focus)}
+.letter-compose .letter-page-break{height:24px;border-top:2px dashed var(--component-border);margin:24px 0;text-align:center}.letter-compose .letter-page-break::after{content:'Page break';font-size:11px;color:var(--component-muted)}
+.letter-preview-frame{display:block;width:100%;height:75vh;min-height:300px;border:0;background:#fff}.letter-history-body{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;background:var(--component-soft);color:var(--component-text);padding:1rem;border-radius:8px}
+@media(max-width:767.98px){.letter-compose .ql-editor{padding:20px;min-height:420px}.letter-compose .ql-toolbar.ql-snow .ql-formats{margin-right:5px;margin-bottom:6px}.letter-compose .ql-snow .ql-tooltip{left:0!important;max-width:calc(100vw - 50px);white-space:normal}.letter-preview-frame{height:65vh;min-height:240px}}

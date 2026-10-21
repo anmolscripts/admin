@@ -572,22 +572,11 @@
     </div>
   <% } %>
 
+  <% if (model.isLetter) { %>
+    <%- include('letter-body',{model,tpl,isRajesh}) %>
+  <% } else { %>
   <div class="doc-content-container">
-    <!-- CENTERED BRAND LOGO / NAME -->
-    <div class="doc-brand-header">
-      <% if (isRajesh) { %>
-        <img src="<%= tpl.brandLogo %>" alt="Rajesh International" class="ri-brand-logo" />
-        <div class="ri-tagline">CONNECTING<br>OPPORTUNITIES<br>GLOBALLY<span></span></div>
-      <% } else if (model.seller && model.seller.logo) { %>
-        <img src="<%= model.seller.logo %>" alt="<%= model.seller.name %>" class="doc-brand-logo" />
-      <% } else { %>
-        <h1 class="doc-brand-name"><%= model.seller.name %></h1>
-      <% } %>
-    </div>
-    <% if (isRajesh) { %>
-      <div class="ri-seller-identity"><strong><%= model.seller.name %></strong><% if (model.seller.gstin) { %><span>GSTIN: <%= model.seller.gstin %></span><% } %></div>
-    <% } %>
-
+    <%- include('brand', {model,tpl,isRajesh}) %>
     <!-- TWO-COLUMN CLIENT & DOCUMENT INFORMATION -->
     <div class="doc-header-grid">
       <!-- BILL TO (LEFT) -->
@@ -832,27 +821,7 @@
     </div>
   </div>
 
-  <!-- FULL-WIDTH RED FOOTER -->
-  <div class="doc-footer-bar">
-    <div class="footer-address">
-      <% if (isRajesh) { %><span class="ri-contact-icon" aria-hidden="true">⌖</span><% } %>
-      <%= model.seller.address %>
-    </div>
-    <div class="footer-contact">
-      <svg class="footer-icon" viewBox="0 0 24 24">
-        <path d="M6.62 10.79a15.053 15.053 0 006.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
-      </svg>
-      <span><%= model.seller.phone %></span>
-    </div>
-    <div class="footer-contact">
-      <svg class="footer-icon" viewBox="0 0 24 24">
-        <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
-      </svg>
-      <span><%= model.seller.email %></span>
-    </div>
-    <% if (isRajesh && model.seller.website) { %>
-      <div class="footer-contact"><span class="ri-contact-icon" aria-hidden="true">◎</span><span><%= model.seller.website %></span></div>
-    <% } %>
-  </div>
+  <%- include('footer', {model,isRajesh}) %>
   <% if (isRajesh) { %><%- include('rajesh-letterhead', { position: 'bottom', logo: tpl.brandLogo }) %><% } %>
+  <% } %>
 </div>

@@ -146,6 +146,10 @@ function renderPdfWithBrowser(browserPath, htmlContent) {
  * @returns {Promise<Buffer>} PDF file buffer
  */
 async function generateDocumentPdf(document, businessProfile = {}, templateConfig = null) {
+    return generateHtmlPdf(await renderDocumentHtml(document, businessProfile, templateConfig));
+}
+
+async function generateHtmlPdf(html) {
     const browserPath = findBrowserExecutable();
 
     if (!browserPath) {
@@ -155,11 +159,11 @@ async function generateDocumentPdf(document, businessProfile = {}, templateConfi
         );
     }
 
-    const html = await renderDocumentHtml(document, businessProfile, templateConfig);
     return renderPdfWithBrowser(browserPath, html);
 }
 
 module.exports = {
+    generateHtmlPdf,
     generateDocumentPdf,
     renderDocumentHtml,
     findBrowserExecutable,

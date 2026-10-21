@@ -301,6 +301,7 @@
                 <i class="bi bi-file-earmark-text text-info me-2"></i> New Quotation
               </a>
             </li>
+            <% if (typeof hasPermission==='function' && hasPermission('DOCUMENTS','CREATE')) { %><li><a class="dropdown-item" href="/documents/letters/new"><i class="bi bi-envelope-paper me-2"></i>New Letter</a></li><% } %>
             <li>
               <a class="dropdown-item" href="/purchases/orders/new">
                 <i class="bi bi-cart-plus text-primary me-2"></i> New Purchase Order

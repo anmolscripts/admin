@@ -28,6 +28,7 @@ const prismaClient = require('../config/prisma');
 const DEFAULT_PREFIXES = Object.freeze({
     INVOICE: 'INVO',
     QUOTATION: 'QUOT',
+    LETTER: 'LTR',
     CREDIT_NOTE: 'CRN',
     CRN: 'CRN',
     DEBIT_NOTE: 'DBN',
@@ -76,6 +77,7 @@ const DEFAULT_PREFIXES = Object.freeze({
 const CANONICAL_ENTITIES = Object.freeze([
     'INVOICE',
     'QUOTATION',
+    'LETTER',
     'CREDIT_NOTE',
     'DEBIT_NOTE',
     'PURCHASE_ORDER',
@@ -100,6 +102,7 @@ const ENTITY_DESCRIPTIONS = Object.freeze({
     GOODS_RECEIPT: 'Goods receipt notes (GRN) and store receiving challans',
     INVOICE: 'Sales invoices and official tax documents',
     QUOTATION: 'Formal sales estimates and client price proposals',
+    LETTER: 'Branded letters and non-financial correspondence',
     CREDIT_NOTE: 'Inward credit notes and invoice reduction adjustments',
     DEBIT_NOTE: 'Outward debit notes and supplementary charges',
     PURCHASE_ORDER: 'Procurement orders issued to vendor suppliers',
@@ -152,6 +155,9 @@ const CANONICAL_ALIAS_MAP = Object.freeze({
     INVOICE: 'INVOICE',
     INVOICES: 'INVOICE',
     QUOTATION: 'QUOTATION',
+    LETTER: 'LETTER',
+    LETTERS: 'LETTER',
+    LTR: 'LETTER',
     QUOTATIONS: 'QUOTATION',
     CREDIT_NOTE: 'CREDIT_NOTE',
     CREDIT_NOTES: 'CREDIT_NOTE',
@@ -497,6 +503,8 @@ function parseIdentifier(identifier) {
 async function candidateExistsInTargetEntity(client, businessId, normType, candidate) {
     try {
         switch (normType) {
+            case 'LETTER':
+                return !!(await client.letter.findFirst({where:{businessId,letterNumber:candidate}}));
             case 'INVOICE':
             case 'QUOTATION':
                 return !!(await client.invoice.findFirst({
@@ -667,6 +675,9 @@ async function syncAndRecoverSequence({
         let identifiers = [];
 
         switch (normType) {
+            case 'LETTER':
+                identifiers = (await client.letter.findMany({where:{businessId:activeBusinessId},select:{letterNumber:true}})).map(r=>r.letterNumber);
+                break;
             case 'INVOICE':
                 identifiers = (await client.invoice.findMany({
                     where: { businessId: activeBusinessId, documentType: 'INVOICE' },
