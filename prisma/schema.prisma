@@ -138,6 +138,8 @@ model Letter {
   recipientAddress String? @db.Text
   letterDate    DateTime @db.Date
   bodyHtml      String @db.LongText
+  bodyCss       String? @db.Text
+  editorMode    String @default("RICH") @db.VarChar(10)
   templateId    String @db.VarChar(100)
   status        InvoiceStatus @default(ACTIVE)
   version       Int @default(1)

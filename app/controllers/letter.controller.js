@@ -35,10 +35,11 @@ exports.preview=wrap(async(req,res)=>{
     const letter={...letters.validate(req.body,req.businessId),businessId:req.businessId,letterNumber:'UNSAVED PREVIEW',status:'ACTIVE'};
     res.type('html').send(await presentation.render(letter,await profiles.getProfile(req.businessId)));
 });
+exports.contentPreview=wrap(async(req,res)=>res.type('html').send(require('../services/letterContent.service').preview(req.body?.bodyHtml,req.body?.bodyCss)));
 exports.html=wrap(async(req,res)=>{
     const letter=await letters.get(id(req),req.businessId);
     let html=await presentation.render(letter,await profiles.getProfile(req.businessId));
-    if(req.path.endsWith('/print')) html=html.replace('</body>','<button class="print-action" onclick="window.print()">Print / Save as PDF</button><style>.print-action{position:fixed;right:20px;bottom:20px;padding:12px 20px;background:#123d2b;color:#fff;border:0;border-radius:8px;cursor:pointer}@media print{.print-action{display:none}}</style></body>');
+    if(req.path.endsWith('/print')) html=html.replace("default-src 'none';","default-src 'none'; script-src 'unsafe-inline';").replace('</body>','<button class="print-action" onclick="window.print()">Print / Save as PDF</button><style>.print-action{position:fixed;right:20px;bottom:20px;padding:12px 20px;background:#123d2b;color:#fff;border:0;border-radius:8px;cursor:pointer}@media print{.print-action{display:none}}</style></body>');
     res.type('html').send(html);
 });
 exports.pdf=wrap(async(req,res)=>{

@@ -4,22 +4,13 @@ const sanitizeHtml = require('sanitize-html');
 const numbering = require('./numbering.service');
 const templates = require('./template.service');
 const {ValidationError,NotFoundError,ConflictError} = require('./errorTypes');
+const content=require('./letterContent.service');
 
 function cleanBody(html) {
-    if (typeof html !== 'string' || Buffer.byteLength(html,'utf8') > 200000) throw new ValidationError('Letter content must be under 200 KB.');
-    return sanitizeHtml(html, {
-        allowedTags:['p','br','strong','b','em','i','u','s','h1','h2','h3','blockquote','ol','ul','li','span','a','div'],
-        allowedAttributes:{'*':['class','style'],a:['href','title','rel','target']},
-        allowedClasses:{'*':['ql-align-center','ql-align-right','ql-align-justify','ql-indent-1','ql-indent-2','ql-indent-3','ql-font-serif','ql-font-monospace','ql-size-small','ql-size-large','ql-size-huge'],div:['letter-page-break']},
-        allowedStyles:{'*':{'color':[/^#[0-9a-f]{3,8}$/i,/^rgb\(\d{1,3},\s*\d{1,3},\s*\d{1,3}\)$/],
-            'background-color':[/^#[0-9a-f]{3,8}$/i,/^rgb\(\d{1,3},\s*\d{1,3},\s*\d{1,3}\)$/],
-            'text-align':[/^(left|right|center|justify)$/],'font-size':[/^(small|large|x-large|[12](\.\d+)?em)$/]}},
-        allowedSchemes:['https','http','mailto'],allowProtocolRelative:false,
-        transformTags:{a:(tagName,attribs)=>({tagName,attribs:{...attribs,rel:'noopener noreferrer',target:'_blank'}})}
-    });
+    return content.cleanHtml(html);
 }
 function plainText(html) {
-    return sanitizeHtml(html.replace(/<\/(?:p|h[1-3]|li|blockquote)>/g,'\n'),{allowedTags:[],allowedAttributes:{}})
+    return sanitizeHtml(html.replace(/<\/(?:p|h[1-6]|li|blockquote|td|th|tr|pre|div|section)>/g,'\n'),{allowedTags:[],allowedAttributes:{}})
         .replace(/&(amp|lt|gt|quot|#39|nbsp);/g,(_,key)=>({amp:'&',lt:'<',gt:'>',quot:'"','#39':"'",nbsp:' '}[key])).trim();
 }
 function validate(input,businessId) {
@@ -36,7 +27,9 @@ function validate(input,businessId) {
     if (!plainText(bodyHtml)) throw new ValidationError('Write some letter content before saving.');
     const templateId=text('templateId',100,true);
     if(!templates.listTemplates(businessId).some(t=>t.id===templateId)) throw new ValidationError('Choose an available document template.');
-    return {subject:text('subject',255,true),recipientName:text('recipientName',255,true),recipientAddress:text('recipientAddress',5000),letterDate:new Date(date),bodyHtml,templateId};
+    const editorMode=input.editorMode||'RICH';
+    if(!['RICH','CODE'].includes(editorMode))throw new ValidationError('Invalid editor mode.');
+    return {subject:text('subject',255,true),recipientName:text('recipientName',255,true),recipientAddress:text('recipientAddress',5000),letterDate:new Date(date),bodyHtml,bodyCss:content.cleanCss(input.bodyCss),editorMode,templateId};
 }
 function scope(businessId) {
     const id=Number(businessId);

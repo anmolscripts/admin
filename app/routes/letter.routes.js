@@ -14,6 +14,7 @@ router.get('/documents/letters/:id/pdf',...permit('EXPORT'),c.pdf);
 router.get('/documents/letters/:id/excel',...permit('EXPORT'),c.excel);
 router.get('/documents/letters/:id',...permit('VIEW'),c.view);
 router.post('/api/letters/preview',...permit('VIEW'),c.preview);
+router.post('/api/letters/content-preview',...permit('VIEW'),c.contentPreview);
 router.post('/api/letters',...permit('CREATE'),c.create);
 router.put('/api/letters/:id',...permit('EDIT'),c.update);
 router.post('/api/letters/:id/void',...permit('VOID'),c.action('VOIDED'));

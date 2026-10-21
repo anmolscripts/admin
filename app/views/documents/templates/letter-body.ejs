@@ -6,19 +6,21 @@
  .letter-paper>tfoot>tr>td{padding:0}.letter-paper .doc-brand-header{margin:0;padding:0 0 14px}
  .letter-meta{display:flex;justify-content:space-between;gap:16px;font-size:12px;margin-bottom:20px;color:#536176}
  .letter-recipient{white-space:pre-line;margin-bottom:20px}.letter-subject{font-size:18px;font-weight:700;margin:0 0 24px;color:var(--doc-accent);overflow-wrap:anywhere}
- .letter-richtext{overflow-wrap:anywhere}.letter-richtext p{margin:0 0 1em}.letter-richtext h1,.letter-richtext h2,.letter-richtext h3{break-after:avoid;line-height:1.3}
+ .letter-content-boundary{position:relative;isolation:isolate;contain:paint;overflow:hidden;max-width:100%;min-width:0}.letter-richtext{overflow-wrap:anywhere}.letter-richtext p{margin:0 0 1em}.letter-richtext h1,.letter-richtext h2,.letter-richtext h3{break-after:avoid;line-height:1.3}
+ .letter-richtext table{width:100%;border-collapse:collapse;table-layout:fixed}.letter-richtext :is(td,th){border:1px solid #b8c4d2;padding:7px;overflow-wrap:anywhere}.letter-richtext pre{white-space:pre-wrap;background:#f2f5f8;padding:12px}.letter-richtext hr{border:0;border-top:1px solid #aab7c6;margin:20px 0}
  .letter-richtext li{margin-bottom:.4em}.letter-richtext blockquote{border-left:3px solid var(--doc-accent);margin-left:0;padding-left:16px}
  .letter-richtext .ql-align-center{text-align:center}.letter-richtext .ql-align-right{text-align:right}.letter-richtext .ql-align-justify{text-align:justify}
- .letter-richtext .ql-indent-1{padding-left:2em}.letter-richtext .ql-indent-2{padding-left:4em}.letter-richtext .ql-indent-3{padding-left:6em}
+ .letter-richtext .ql-indent-1{padding-left:2em}.letter-richtext .ql-indent-2{padding-left:4em}.letter-richtext .ql-indent-3{padding-left:6em}.letter-richtext .ql-indent-4{padding-left:8em}.letter-richtext .ql-indent-5{padding-left:10em}.letter-richtext .ql-indent-6{padding-left:12em}.letter-richtext .ql-indent-7{padding-left:14em}.letter-richtext .ql-indent-8{padding-left:16em}.letter-richtext li[data-list="bullet"]{list-style-type:disc}.letter-richtext li[data-list="checked"],.letter-richtext li[data-list="unchecked"]{list-style-type:none}.letter-richtext li[data-list="checked"]::before{content:"☑ ";}.letter-richtext li[data-list="unchecked"]::before{content:"☐ ";}
  .letter-richtext .ql-font-serif{font-family:Georgia,serif}.letter-richtext .ql-font-monospace{font-family:monospace}
  .letter-richtext .ql-size-small{font-size:.75em}.letter-richtext .ql-size-large{font-size:1.5em}.letter-richtext .ql-size-huge{font-size:2em}
  .letter-richtext p,.letter-richtext li{orphans:3;widows:3}.letter-page-break{break-after:page;page-break-after:always;height:0}
  .letter-paper .doc-footer-bar{margin:0}.theme-rajesh-signature .letter-paper>thead>tr>td{padding-top:78px}
  .letter-paper .ri-bottom-art{height:62px}.letter-paper .ri-brand-logo{max-width:64%}
  .letter-paper .letter-page-break-row>td{padding:0;height:0}.letter-page-break-row{break-after:page;page-break-after:always}
- @media print{.spark-unified-document:has(.letter-paper){width:100%;max-width:none;border-radius:0;box-shadow:none}.spark-unified-document:has(.letter-paper)>.doc-watermark{position:fixed;top:48%}.letter-paper>thead>tr>td{padding-top:6mm}.theme-rajesh-signature .ri-top-art,.theme-rajesh-signature .ri-watermark{position:fixed}.letter-paper>thead,.letter-paper>tfoot,.letter-paper>thead>tr,.letter-paper>tfoot>tr{break-inside:avoid;page-break-inside:avoid}.letter-paper a{color:inherit;text-decoration:underline}}
+ @media print{.letter-paper>tbody>tr{break-inside:auto;page-break-inside:auto}.spark-unified-document:has(.letter-paper){width:100%;max-width:none;border-radius:0;box-shadow:none}.spark-unified-document:has(.letter-paper)>.doc-watermark{position:fixed;top:48%}.letter-paper>thead>tr>td{padding-top:6mm}.theme-rajesh-signature .ri-top-art,.theme-rajesh-signature .ri-watermark{position:fixed}.letter-paper>thead,.letter-paper>tfoot,.letter-paper>thead>tr,.letter-paper>tfoot>tr{break-inside:avoid;page-break-inside:avoid}.letter-paper a{color:inherit;text-decoration:underline}}
  @media screen and (max-width:600px){.letter-paper>thead>tr>td{padding-inline:18px}.letter-paper>tbody>tr>td{padding-inline:18px}.letter-meta{flex-wrap:wrap}.letter-paper .ri-tagline{font-size:7px}}
 </style>
+<% if(model.letter.scopedCss){ %><style><%- model.letter.scopedCss %></style><% } %>
 <table class="letter-paper" aria-label="Letter">
  <thead><tr><td><%- include('brand',{model,tpl,isRajesh}) %></td></tr></thead>
  <tfoot><tr><td><%- include('footer',{model,isRajesh}) %><% if(isRajesh){ %><%- include('rajesh-letterhead',{position:'bottom',logo:tpl.brandLogo}) %><% } %></td></tr></tfoot>
@@ -27,6 +29,6 @@
   <div class="letter-recipient"><strong><%= model.client.name %></strong><% if(model.letter.recipientAddress){ %><br><%= model.letter.recipientAddress %><% } %></div>
   <h2 class="letter-subject"><%= model.letter.subject %></h2>
  </td></tr>
- <% for(const block of model.letter.blocks){ %><tr class="<%= block.pageBreak?'letter-page-break-row':'' %>"><td><% if(!block.pageBreak){ %><div class="letter-richtext"><%- block.html %></div><% } %></td></tr><% } %>
+ <% for(const block of model.letter.blocks){ %><tr class="<%= block.pageBreak?'letter-page-break-row':'' %>"><td><% if(!block.pageBreak){ %><div class="letter-content-boundary"><div class="letter-richtext"><%- block.html %></div></div><% } %></td></tr><% } %>
  </tbody>
 </table>

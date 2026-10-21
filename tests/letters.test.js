@@ -16,7 +16,7 @@ after(()=>prisma.$disconnect());
 test('letter rich text permits formatting and page breaks but blocks scripts, remote assets and dangerous CSS',()=>{
  const html=letters.cleanBody('<script>alert(1)</script><img src="http://private.test"><iframe src="https://example.test"></iframe><p onclick="alert(1)" style="color:rgb(10, 20, 30);position:fixed;background-image:url(https://private.test)"><strong>Safe</strong></p><a href="javascript:alert(1)">Bad</a><a href="https://example.test">Good</a><div class="letter-page-break evil"></div>');
  assert.ok(!/script|iframe|<img|onclick|position:|background-image|href="javascript/.test(html));
- assert.ok(html.includes('<strong>Safe</strong>'));assert.ok(html.includes('class="letter-page-break"'));assert.ok(html.includes('rel="noopener noreferrer"'));
+ assert.ok(html.includes('<strong>Safe</strong>'));assert.ok(new JSDOM(html).window.document.querySelector('.letter-page-break'));assert.ok(html.includes('rel="noopener noreferrer"'));
  for(const data of [{...base,bodyHtml:'<p><br></p>'},{...base,bodyHtml:'x'.repeat(200001)},{...base,letterDate:'2026-02-30'},{...base,templateId:'foreign-template'},{...base,subject:[]},{...base,recipientName:''}])assert.throws(()=>letters.validate(data,1),{statusCode:400});
  assert.equal(letters.validate(base,1).subject,base.subject);
 });
@@ -34,6 +34,9 @@ test('actual rich text editor retains formatting and round-trips page breaks thr
   const result=letters.cleanBody(editor.getSemanticHTML());assert.ok(result.includes('class="letter-page-break"'));
   editor.clipboard.dangerouslyPasteHTML(result,'silent');assert.ok(editor.getSemanticHTML().includes('letter-page-break'));
   assert.equal(editor.root.getAttribute('aria-label'),'Letter content');
+  editor.setText('Rich content\n','silent');editor.setSelection(0,4,'silent');editor.format('size','24px','user');editor.format('background','#ffff00','user');editor.format('script','super','user');
+  const rich=letters.cleanBody(editor.getSemanticHTML());assert.ok(rich.includes('24px'));assert.ok(rich.includes('background-color'));assert.ok(rich.includes('<sup'));
+  editor.setSelection(editor.getLength()-1,0,'silent');const table=editor.getModule('table');table.insertTable(2,2);assert.equal(editor.root.querySelectorAll('td').length,4);table.insertRowBelow();table.insertColumnRight();assert.equal(editor.root.querySelectorAll('td').length,9);assert.match(letters.cleanBody(editor.getSemanticHTML()),/<table[\s>]/);
  }finally{dom.window.close();}
 });
 test('letters are tenant scoped, versioned, soft deleted and never post accounting entries',async()=>{
@@ -82,11 +85,13 @@ test('letter HTTP workflow enforces CSRF and permissions and exports multi-page 
   const cookie=login.headers.get('set-cookie').match(/spark\.sid=[^;]+/)[0];
   const page=await fetch(origin+'/documents/letters',{headers:{Cookie:cookie}});assert.equal(page.status,200);const csrf=(await page.text()).match(/name="csrf-token" content="([^"]+)"/)[1];
   const headers={Cookie:cookie,Accept:'application/json','Content-Type':'application/json','X-CSRF-Token':csrf};
-  const payload={...base,bodyHtml:base.bodyHtml+'<div class="letter-page-break"></div>'+Array.from({length:260},(_,i)=>`<p>Paragraph ${i+1}: This correspondence explains the delivery and coordination process in detail, retaining its company letterhead and footer on every page.</p>`).join('')};
+  const payload={...base,editorMode:'CODE',bodyCss:'p { line-height: 1.8; } .callout { color: #145a32; }',bodyHtml:base.bodyHtml+'<div class="letter-page-break"></div>'+Array.from({length:260},(_,i)=>`<p>Paragraph ${i+1}: This correspondence explains the delivery and coordination process in detail, retaining its company letterhead and footer on every page.</p>`).join('')};
   const noCsrf=await fetch(origin+'/api/letters',{method:'POST',headers:{Cookie:cookie,'Content-Type':'application/json'},body:JSON.stringify(payload)});assert.equal(noCsrf.status,403);
-  const saved=await fetch(origin+'/api/letters',{method:'POST',headers,body:JSON.stringify(payload)});assert.equal(saved.status,201,await saved.clone().text());const letter=(await saved.json()).letter;
+  const saved=await fetch(origin+'/api/letters',{method:'POST',headers,body:JSON.stringify(payload)});assert.equal(saved.status,201,await saved.clone().text());const letter=(await saved.json()).letter;assert.equal(letter.editorMode,'CODE');assert.equal(letter.bodyCss,payload.bodyCss);
   for(const endpoint of [`/documents/letters/${letter.id}`,`/documents/letters/${letter.id}/edit`,`/documents/letters/new?copyFrom=${letter.id}`,`/documents/letters/${letter.id}/print`]){const response=await fetch(origin+endpoint,{headers:{Cookie:cookie}});assert.equal(response.status,200,endpoint+' '+await response.text());}
   const preview=await fetch(origin+'/api/letters/preview',{method:'POST',headers,body:JSON.stringify(payload)});assert.equal(preview.status,200);assert.ok((await preview.text()).includes('letter-page-break'));
+  const contentPreview=await fetch(origin+'/api/letters/content-preview',{method:'POST',headers,body:JSON.stringify({bodyHtml:'<p class="callout">Isolated content</p><script>alert(1)</script>',bodyCss:payload.bodyCss})});assert.equal(contentPreview.status,200);const previewHtml=await contentPreview.text();assert.ok(previewHtml.includes('letter-content-boundary > .letter-richtext'));assert.ok(!previewHtml.includes('<script>'));assert.ok(!previewHtml.includes('doc-brand-header'));
+  const invalidCss=await fetch(origin+'/api/letters/preview',{method:'POST',headers,body:JSON.stringify({...payload,bodyCss:'@import "https://example.test/style.css";'})});assert.equal(invalidCss.status,400);
   const excel=await fetch(origin+`/documents/letters/${letter.id}/excel`,{headers:{Cookie:cookie}});assert.equal(excel.status,200);const workbook=new ExcelJS.Workbook();await workbook.xlsx.load(Buffer.from(await excel.arrayBuffer()));const sheet=workbook.worksheets[0];assert.equal(sheet.getCell('A2').value,letter.letterNumber);const chunks=sheet.getColumn('H').values.slice(2);assert.ok(chunks.length>1);assert.ok(chunks.every(text=>text.length<=32000));assert.equal(chunks.join(''),letters.plainText(payload.bodyHtml));assert.ok(chunks.join('').includes('Paragraph 260'));
   const pdf=await fetch(origin+`/documents/letters/${letter.id}/pdf`,{headers:{Cookie:cookie}});assert.equal(pdf.status,200,await pdf.clone().text());const buffer=Buffer.from(await pdf.arrayBuffer());assert.equal(buffer.subarray(0,5).toString(),'%PDF-');const pages=buffer.toString('latin1').match(/\/Type\s*\/Page\b/g)||[];assert.ok(pages.length>2,'Long letter must have multiple PDF pages');
   fs.mkdirSync('data/letter-test-evidence',{recursive:true});fs.writeFileSync('data/letter-test-evidence/multi-page-letter.pdf',buffer);
