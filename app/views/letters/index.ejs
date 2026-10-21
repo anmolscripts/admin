@@ -1,0 +1,22 @@
+<%- include('../layouts/header') %>
+<nav class="nav nav-pills gap-2 mb-4" aria-label="Document categories"><a class="nav-link" href="/documents">Invoices &amp; Quotations</a><a class="nav-link active" href="/documents/letters" aria-current="page">Letters</a></nav>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+ <p class="text-muted mb-0">Branded correspondence, with version history. Showing up to 500 matching letters.</p>
+ <div class="d-flex flex-wrap gap-2">
+ <% if(hasPermission('DOCUMENTS','EXPORT')){ %><a class="btn btn-outline-secondary" href="/documents/letters/export/excel?<%= new URLSearchParams({q:filters.q||'',status:filters.status||'ACTIVE'}) %>">Export Excel</a><% } %>
+ <% if(hasPermission('DOCUMENTS','CREATE')){ %><a class="btn btn-primary" href="/documents/letters/new"><i class="bi bi-plus-lg me-2"></i>New Letter</a><% } %>
+ </div>
+</div>
+<form class="row g-3 align-items-center mb-4" method="GET">
+ <div class="col-md-7"><input class="form-control" name="q" value="<%= filters.q||'' %>" placeholder="Search reference, subject or recipient" aria-label="Search letters"></div>
+ <div class="col-md-3"><select class="form-select" name="status" aria-label="Letter status"><% for(const state of ['ACTIVE','VOID','DELETED','ALL']){ %><option value="<%= state %>" <%= (filters.status||'ACTIVE')===state?'selected':'' %>><%= state %></option><% } %></select></div>
+ <div class="col-md-2"><button class="btn btn-primary w-100">Filter</button></div>
+</form>
+<div class="card card-glass"><div class="card-body p-0"><% if(letters.length){ %><div class="table-responsive">
+ <table class="table table-hover align-middle mb-0" data-spark-datatable="true" data-title="Letters">
+ <thead><tr><th scope="col">Reference</th><th scope="col">Subject</th><th scope="col">Recipient</th><th scope="col">Date</th><th scope="col">Status</th><th scope="col">Version</th></tr></thead>
+ <tbody><% for(const letter of letters){ %><tr>
+ <td><a href="/documents/letters/<%= letter.id %>"><%= letter.letterNumber %></a></td><td><a href="/documents/letters/<%= letter.id %>"><%= letter.subject %></a></td><td><%= letter.recipientName %></td><td><%= letter.letterDate.toISOString().slice(0,10) %></td><td><span class="badge <%= letter.status==='ACTIVE'?'text-bg-success':letter.status==='VOID'?'text-bg-warning':'text-bg-secondary' %>"><%= letter.status %></span></td><td><%= letter.version %></td>
+ </tr><% } %></tbody></table>
+</div><% } else { %><div class="text-center p-4"><p class="text-muted">No letters to show. Create a letter to start your correspondence.</p><% if(hasPermission('DOCUMENTS','CREATE')){ %><a href="/documents/letters/new" class="btn btn-primary">Write your first letter</a><% } %></div><% } %></div></div>
+<%- include('../layouts/footer') %>

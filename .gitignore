@@ -108,3 +108,6 @@ skills-lock.json
 /evidence/ui_audit_*/
 
 /evidence/theme-reference/
+
+# Local screenshot contains account contact information
+/evidence/letters/editor-live.png

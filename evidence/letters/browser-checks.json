@@ -1,0 +1,82 @@
+[
+  {
+    "editorColor": "rgb(11, 19, 15)",
+    "overflow": 0,
+    "theme": "light",
+    "toolbarOverflow": 0,
+    "viewport": [
+      359,
+      800
+    ]
+  },
+  {
+    "editorColor": "rgb(11, 19, 15)",
+    "overflow": 0,
+    "theme": "light",
+    "toolbarOverflow": 0,
+    "viewport": [
+      768,
+      1023
+    ]
+  },
+  {
+    "editorColor": "rgb(11, 19, 15)",
+    "overflow": 0,
+    "theme": "light",
+    "toolbarOverflow": 0,
+    "viewport": [
+      1280,
+      800
+    ]
+  },
+  {
+    "editorColor": "rgb(11, 19, 15)",
+    "overflow": 0,
+    "theme": "light",
+    "toolbarOverflow": 0,
+    "viewport": [
+      1440,
+      900
+    ]
+  },
+  {
+    "editorColor": "rgb(237, 246, 240)",
+    "overflow": 0,
+    "theme": "dark",
+    "toolbarOverflow": 0,
+    "viewport": [
+      359,
+      800
+    ]
+  },
+  {
+    "editorColor": "rgb(237, 246, 240)",
+    "overflow": 0,
+    "theme": "dark",
+    "toolbarOverflow": 0,
+    "viewport": [
+      768,
+      1023
+    ]
+  },
+  {
+    "editorColor": "rgb(237, 246, 240)",
+    "overflow": 0,
+    "theme": "dark",
+    "toolbarOverflow": 0,
+    "viewport": [
+      1280,
+      800
+    ]
+  },
+  {
+    "editorColor": "rgb(237, 246, 240)",
+    "overflow": 0,
+    "theme": "dark",
+    "toolbarOverflow": 0,
+    "viewport": [
+      1440,
+      900
+    ]
+  }
+]

@@ -1,0 +1,3 @@
+ALTER TABLE `letters`
+  ADD COLUMN `bodyCss` TEXT NULL,
+  ADD COLUMN `editorMode` VARCHAR(10) NOT NULL DEFAULT 'RICH';

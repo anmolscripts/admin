@@ -35,8 +35,11 @@ function assertAdditive(sql, name) {
     if (/\/\*(?:!|M!)/i.test(sql)) throw new Error(`Migration ${name} contains executable comments; review it separately.`);
     const clean = sql.replace(/\/\*[\s\S]*?\*\//g, '').replace(/--[^\n]*/g, '').trim();
     for (const statement of clean.split(';').map(s => s.trim()).filter(Boolean)) {
+        // Referential actions on a newly created table do not rewrite existing rows.
+        const checked = /^CREATE\s+TABLE\b/i.test(statement)
+            ? statement.replace(/\bON\s+(?:DELETE|UPDATE)\s+(?:RESTRICT|CASCADE|NO\s+ACTION|SET\s+NULL)\b/gi, '') : statement;
         if (!/^(CREATE\s+(TABLE|(?:UNIQUE\s+)?INDEX)\b|ALTER\s+TABLE\s+`?\w+`?\s+ADD\s+)/i.test(statement) ||
-            /\b(DROP|TRUNCATE|DELETE|UPDATE|INSERT|REPLACE|RENAME|MODIFY|CHANGE)\b/i.test(statement)) {
+            /\b(DROP|TRUNCATE|DELETE|UPDATE|INSERT|REPLACE|RENAME|MODIFY|CHANGE)\b/i.test(checked)) {
             throw new Error(`Migration ${name} is not strictly additive. Review it separately; no migration was applied.`);
         }
     }

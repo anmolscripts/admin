@@ -74,6 +74,7 @@ model User {
 }
 
 model Business {
+  letters Letter[]
   id               Int                     @id @default(autoincrement())
   code             String                  @unique @db.VarChar(50)
   name             String                  @db.VarChar(255)
@@ -125,6 +126,47 @@ model Business {
 
   @@index([status])
   @@map("businesses")
+}
+
+model Letter {
+  id            Int @id @default(autoincrement())
+  businessId    Int
+  business      Business @relation(fields: [businessId], references: [id])
+  letterNumber  String @db.VarChar(80)
+  subject       String @db.VarChar(255)
+  recipientName String @db.VarChar(255)
+  recipientAddress String? @db.Text
+  letterDate    DateTime @db.Date
+  bodyHtml      String @db.LongText
+  bodyCss       String? @db.Text
+  editorMode    String @default("RICH") @db.VarChar(10)
+  templateId    String @db.VarChar(100)
+  status        InvoiceStatus @default(ACTIVE)
+  version       Int @default(1)
+  createdById   Int
+  updatedById   Int
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  revisions     LetterRevision[]
+
+  @@unique([businessId, letterNumber])
+  @@index([businessId, letterDate])
+  @@map("letters")
+}
+
+model LetterRevision {
+  id          Int @id @default(autoincrement())
+  letterId    Int
+  letter      Letter @relation(fields: [letterId], references: [id])
+  version     Int
+  action      String @db.VarChar(30)
+  reason      String? @db.Text
+  changedById Int
+  changedAt   DateTime @default(now())
+  snapshot    Json
+
+  @@unique([letterId, version])
+  @@map("letter_revisions")
 }
 
 model BusinessMembership {

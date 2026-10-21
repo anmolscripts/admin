@@ -1,7 +1,7 @@
 <% 
   const headerActionHtml = `
     <div class="dropdown">
-      <button class="btn-new-doc-toggle dropdown-toggle" type="button" id="dropdownNewDoc" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Create new quotation or invoice">
+      <button class="btn-new-doc-toggle dropdown-toggle" type="button" id="dropdownNewDoc" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Create new document">
         <i class="bi bi-plus-lg"></i>
         <span>New Document</span>
       </button>
@@ -18,6 +18,7 @@
             <span>New Invoice</span>
           </a>
         </li>
+        <li><a class="dropdown-item" href="/documents/letters/new" id="btn-new-letter"><i class="bi bi-envelope-paper text-primary"></i><span>New Letter</span></a></li>
       </ul>
     </div>
   `;
@@ -29,6 +30,8 @@
     extraCss: '<link rel="stylesheet" href="/css/documents.css">', 
     headerAction: headerActionHtml 
 }) %>
+
+<nav class="nav nav-pills gap-2 mb-4" aria-label="Document categories"><a class="nav-link active" href="/documents" aria-current="page">Invoices &amp; Quotations</a><a class="nav-link" href="/documents/letters"><i class="bi bi-envelope-paper me-2"></i>Letters</a></nav>
 
 <!-- START: KPI Summary Metric Cards -->
 <section class="row g-3 mb-4" id="kpi-strip" aria-label="Key Performance Indicators">

@@ -1,0 +1,35 @@
+{
+  "releaseCommit": "1e64c08",
+  "fullSuite": {
+    "passed": 975,
+    "failed": 0
+  },
+  "finalLetterChecks": {
+    "passed": 11,
+    "failed": 0
+  },
+  "browser": {
+    "sourceEditing": true,
+    "formatting": true,
+    "suggestions": true,
+    "renameCommand": true,
+    "automaticTagClosing": true,
+    "automaticTagRename": true,
+    "pairedRemoval": true,
+    "richTables": true,
+    "modeConversionConfirmation": true,
+    "livePreview": true,
+    "productionConsoleErrors": 0
+  },
+  "production": {
+    "url": "https://penniless-shallow-goliath.ngrok-free.dev",
+    "migration": "20261021000200_letter_code_editor",
+    "existingRowCountsPreserved": true,
+    "testRecordsCreated": 0
+  },
+  "pdf": {
+    "customSectionFirstPageFlow": true,
+    "paragraphsRetained": 40,
+    "pages": 3
+  }
+}
