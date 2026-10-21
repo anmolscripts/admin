@@ -1,0 +1,7648 @@
+{
+  "baseline": [
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/settings",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/profile?success=true",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/dashboard",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/documents/new?type=QUOTATION",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [
+        {
+          "cls": "d-flex gap-2",
+          "id": "",
+          "right": 596,
+          "tag": "DIV",
+          "w": 556,
+          "x": 40
+        }
+      ],
+      "overflow": 242,
+      "pageWidth": 595,
+      "path": "/purchases/orders",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [
+        {
+          "cls": "",
+          "id": "",
+          "right": 434,
+          "tag": "DIV",
+          "w": 418,
+          "x": 16
+        },
+        {
+          "cls": "d-flex gap-2",
+          "id": "",
+          "right": 434,
+          "tag": "DIV",
+          "w": 418,
+          "x": 16
+        }
+      ],
+      "overflow": 81,
+      "pageWidth": 434,
+      "path": "/reports/workbench",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/team",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/clients",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/clients/new",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/suppliers",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/suppliers/new",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/items",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/units",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/credit-debit-notes",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/credit-debit-notes/new",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [
+        {
+          "cls": "d-flex gap-2",
+          "id": "",
+          "right": 404,
+          "tag": "DIV",
+          "w": 364,
+          "x": 40
+        }
+      ],
+      "overflow": 51,
+      "pageWidth": 404,
+      "path": "/projects",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/projects/new",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/purchases/orders/new",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/purchases/receipts",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [
+        {
+          "cls": "d-flex gap-2",
+          "id": "",
+          "right": 400,
+          "tag": "DIV",
+          "w": 360,
+          "x": 40
+        }
+      ],
+      "overflow": 47,
+      "pageWidth": 400,
+      "path": "/purchases/bills",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/purchases/bills/new",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/financials/expenses",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/financials/other-income",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/reports",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [
+        {
+          "cls": "btn btn-sm btn-outline-secondary btn-daterange-clear",
+          "id": "",
+          "right": 367,
+          "tag": "BUTTON",
+          "w": 40,
+          "x": 327
+        }
+      ],
+      "overflow": 14,
+      "pageWidth": 367,
+      "path": "/reports/journals",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [
+        {
+          "cls": "btn btn-sm btn-outline-secondary btn-daterange-clear",
+          "id": "",
+          "right": 367,
+          "tag": "BUTTON",
+          "w": 40,
+          "x": 327
+        }
+      ],
+      "overflow": 14,
+      "pageWidth": 367,
+      "path": "/reports/general-ledger",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [
+        {
+          "cls": "btn btn-sm btn-outline-secondary btn-daterange-clear",
+          "id": "",
+          "right": 367,
+          "tag": "BUTTON",
+          "w": 40,
+          "x": 327
+        }
+      ],
+      "overflow": 14,
+      "pageWidth": 367,
+      "path": "/reports/trial-balance",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [
+        {
+          "cls": "btn btn-sm btn-outline-secondary btn-daterange-clear",
+          "id": "",
+          "right": 367,
+          "tag": "BUTTON",
+          "w": 40,
+          "x": 327
+        }
+      ],
+      "overflow": 14,
+      "pageWidth": 367,
+      "path": "/reports/profit-and-loss",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [
+        {
+          "cls": "text-end",
+          "id": "",
+          "right": 437,
+          "tag": "DIV",
+          "w": 243,
+          "x": 194
+        }
+      ],
+      "overflow": 84,
+      "pageWidth": 437,
+      "path": "/reports/balance-sheet",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [
+        {
+          "cls": "text-end",
+          "id": "",
+          "right": 406,
+          "tag": "DIV",
+          "w": 226,
+          "x": 180
+        }
+      ],
+      "overflow": 52,
+      "pageWidth": 405,
+      "path": "/reports/customer-receivables",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [
+        {
+          "cls": "text-end",
+          "id": "",
+          "right": 384,
+          "tag": "DIV",
+          "w": 318,
+          "x": 65
+        }
+      ],
+      "overflow": 30,
+      "pageWidth": 383,
+      "path": "/reports/customer-statement",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/financial-years",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/team/activity",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/team/analytics",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/admin/businesses",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/admin/numbering",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/product-guide",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ]
+    }
+  ],
+  "narrowBaseline": [
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 352,
+      "path": "/settings",
+      "theme": "light",
+      "viewport": [
+        358,
+        568
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 352,
+      "path": "/profile?success=true",
+      "theme": "light",
+      "viewport": [
+        358,
+        568
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 352,
+      "path": "/dashboard",
+      "theme": "light",
+      "viewport": [
+        358,
+        568
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 352,
+      "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+      "theme": "light",
+      "viewport": [
+        358,
+        568
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 352,
+      "path": "/documents/new?type=INVOICE",
+      "theme": "light",
+      "viewport": [
+        358,
+        568
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 352,
+      "path": "/clients",
+      "theme": "light",
+      "viewport": [
+        358,
+        568
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 352,
+      "path": "/items",
+      "theme": "light",
+      "viewport": [
+        358,
+        568
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 352,
+      "path": "/units",
+      "theme": "light",
+      "viewport": [
+        358,
+        568
+      ]
+    },
+    {
+      "offenders": [
+        {
+          "cls": "d-flex gap-2",
+          "id": "",
+          "right": 404,
+          "tag": "DIV",
+          "w": 364,
+          "x": 40
+        }
+      ],
+      "overflow": 52,
+      "pageWidth": 404,
+      "path": "/projects",
+      "theme": "light",
+      "viewport": [
+        358,
+        568
+      ]
+    },
+    {
+      "offenders": [
+        {
+          "cls": "d-flex gap-2",
+          "id": "",
+          "right": 596,
+          "tag": "DIV",
+          "w": 556,
+          "x": 40
+        }
+      ],
+      "overflow": 243,
+      "pageWidth": 595,
+      "path": "/purchases/orders",
+      "theme": "light",
+      "viewport": [
+        358,
+        568
+      ]
+    },
+    {
+      "offenders": [
+        {
+          "cls": "d-flex gap-2",
+          "id": "",
+          "right": 400,
+          "tag": "DIV",
+          "w": 360,
+          "x": 40
+        }
+      ],
+      "overflow": 48,
+      "pageWidth": 400,
+      "path": "/purchases/bills",
+      "theme": "light",
+      "viewport": [
+        358,
+        568
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 352,
+      "path": "/financials/expenses",
+      "theme": "light",
+      "viewport": [
+        358,
+        568
+      ]
+    },
+    {
+      "offenders": [
+        {
+          "cls": "",
+          "id": "",
+          "right": 434,
+          "tag": "DIV",
+          "w": 418,
+          "x": 16
+        },
+        {
+          "cls": "d-flex gap-2",
+          "id": "",
+          "right": 434,
+          "tag": "DIV",
+          "w": 418,
+          "x": 16
+        }
+      ],
+      "overflow": 82,
+      "pageWidth": 434,
+      "path": "/reports/workbench",
+      "theme": "light",
+      "viewport": [
+        358,
+        568
+      ]
+    },
+    {
+      "offenders": [
+        {
+          "cls": "text-end",
+          "id": "",
+          "right": 437,
+          "tag": "DIV",
+          "w": 243,
+          "x": 194
+        }
+      ],
+      "overflow": 85,
+      "pageWidth": 437,
+      "path": "/reports/balance-sheet",
+      "theme": "light",
+      "viewport": [
+        358,
+        568
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 352,
+      "path": "/financial-years",
+      "theme": "light",
+      "viewport": [
+        358,
+        568
+      ]
+    },
+    {
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 352,
+      "path": "/team",
+      "theme": "light",
+      "viewport": [
+        358,
+        568
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 352,
+      "path": "/team/activity",
+      "theme": "light",
+      "title": "User Activity Log | Rajesh Interntional",
+      "viewport": [
+        358,
+        568
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 515,
+      "pageWidth": 850,
+      "path": "/team/analytics",
+      "title": "ERR_NGROK_8012 - Traffic successfully made it to the ngrok agent, but the agent failed to establish a connection to the upstream web service at 127.0.0.1:3000.",
+      "viewport": [
+        358,
+        568
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 515,
+      "pageWidth": 850,
+      "path": "/admin/businesses",
+      "title": "ERR_NGROK_8012 - Traffic successfully made it to the ngrok agent, but the agent failed to establish a connection to the upstream web service at 127.0.0.1:3000.",
+      "viewport": [
+        358,
+        568
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 515,
+      "pageWidth": 850,
+      "path": "/admin/numbering",
+      "title": "ERR_NGROK_8012 - Traffic successfully made it to the ngrok agent, but the agent failed to establish a connection to the upstream web service at 127.0.0.1:3000.",
+      "viewport": [
+        358,
+        568
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 515,
+      "pageWidth": 850,
+      "path": "/product-guide",
+      "title": "ERR_NGROK_8012 - Traffic successfully made it to the ngrok agent, but the agent failed to establish a connection to the upstream web service at 127.0.0.1:3000.",
+      "viewport": [
+        358,
+        568
+      ]
+    }
+  ],
+  "afterFirstPass": [
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/settings",
+      "theme": "light",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        359,
+        800
+      ],
+      "target": [
+        360,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 368,
+      "path": "/settings",
+      "theme": "light",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        374,
+        811
+      ],
+      "target": [
+        375,
+        812
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 383,
+      "path": "/settings",
+      "theme": "light",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        389,
+        843
+      ],
+      "target": [
+        390,
+        844
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 407,
+      "path": "/settings",
+      "theme": "light",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        413,
+        895
+      ],
+      "target": [
+        414,
+        896
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 474,
+      "path": "/settings",
+      "theme": "light",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        480,
+        800
+      ],
+      "target": [
+        480,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 570,
+      "path": "/settings",
+      "theme": "light",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        576,
+        768
+      ],
+      "target": [
+        576,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 634,
+      "path": "/settings",
+      "theme": "light",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        640,
+        800
+      ],
+      "target": [
+        640,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 762,
+      "path": "/settings",
+      "theme": "light",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        768,
+        1023
+      ],
+      "target": [
+        768,
+        1024
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 813,
+      "path": "/settings",
+      "theme": "light",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        819,
+        1180
+      ],
+      "target": [
+        820,
+        1180
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [
+        {
+          "cls": "navbar-profile-btn dropdown-toggle d-flex align-items-center",
+          "id": "profile-dropdown",
+          "right": 1140,
+          "tag": "BUTTON",
+          "w": 176,
+          "x": 963
+        }
+      ],
+      "overflow": 154,
+      "pageWidth": 1140,
+      "path": "/settings",
+      "theme": "light",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        992,
+        768
+      ],
+      "target": [
+        992,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [
+        {
+          "cls": "navbar-profile-btn dropdown-toggle d-flex align-items-center",
+          "id": "profile-dropdown",
+          "right": 1140,
+          "tag": "BUTTON",
+          "w": 176,
+          "x": 963
+        }
+      ],
+      "overflow": 123,
+      "pageWidth": 1140,
+      "path": "/settings",
+      "theme": "light",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        1023,
+        768
+      ],
+      "target": [
+        1024,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1274,
+      "path": "/settings",
+      "theme": "light",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        1280,
+        800
+      ],
+      "target": [
+        1280,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1434,
+      "path": "/settings",
+      "theme": "light",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        1440,
+        900
+      ],
+      "target": [
+        1440,
+        900
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1913,
+      "path": "/settings",
+      "theme": "light",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        1919,
+        1080
+      ],
+      "target": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 837,
+      "path": "/settings",
+      "theme": "light",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        843,
+        389
+      ],
+      "target": [
+        844,
+        390
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/settings",
+      "theme": "dark",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        359,
+        800
+      ],
+      "target": [
+        360,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 368,
+      "path": "/settings",
+      "theme": "dark",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        374,
+        811
+      ],
+      "target": [
+        375,
+        812
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 383,
+      "path": "/settings",
+      "theme": "dark",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        389,
+        843
+      ],
+      "target": [
+        390,
+        844
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 407,
+      "path": "/settings",
+      "theme": "dark",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        413,
+        895
+      ],
+      "target": [
+        414,
+        896
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 474,
+      "path": "/settings",
+      "theme": "dark",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        480,
+        800
+      ],
+      "target": [
+        480,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 570,
+      "path": "/settings",
+      "theme": "dark",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        576,
+        768
+      ],
+      "target": [
+        576,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 634,
+      "path": "/settings",
+      "theme": "dark",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        640,
+        800
+      ],
+      "target": [
+        640,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 762,
+      "path": "/settings",
+      "theme": "dark",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        768,
+        1023
+      ],
+      "target": [
+        768,
+        1024
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 813,
+      "path": "/settings",
+      "theme": "dark",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        819,
+        1180
+      ],
+      "target": [
+        820,
+        1180
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [
+        {
+          "cls": "navbar-profile-btn dropdown-toggle d-flex align-items-center",
+          "id": "profile-dropdown",
+          "right": 1140,
+          "tag": "BUTTON",
+          "w": 176,
+          "x": 963
+        }
+      ],
+      "overflow": 154,
+      "pageWidth": 1140,
+      "path": "/settings",
+      "theme": "dark",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        992,
+        768
+      ],
+      "target": [
+        992,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [
+        {
+          "cls": "navbar-profile-btn dropdown-toggle d-flex align-items-center",
+          "id": "profile-dropdown",
+          "right": 1140,
+          "tag": "BUTTON",
+          "w": 176,
+          "x": 963
+        }
+      ],
+      "overflow": 123,
+      "pageWidth": 1140,
+      "path": "/settings",
+      "theme": "dark",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        1023,
+        768
+      ],
+      "target": [
+        1024,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1274,
+      "path": "/settings",
+      "theme": "dark",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        1280,
+        800
+      ],
+      "target": [
+        1280,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1434,
+      "path": "/settings",
+      "theme": "dark",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        1440,
+        900
+      ],
+      "target": [
+        1440,
+        900
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1913,
+      "path": "/settings",
+      "theme": "dark",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        1919,
+        1080
+      ],
+      "target": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 837,
+      "path": "/settings",
+      "theme": "dark",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        843,
+        389
+      ],
+      "target": [
+        844,
+        390
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/profile?success=true",
+      "theme": "light",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        359,
+        800
+      ],
+      "target": [
+        360,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 368,
+      "path": "/profile?success=true",
+      "theme": "light",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        374,
+        811
+      ],
+      "target": [
+        375,
+        812
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 383,
+      "path": "/profile?success=true",
+      "theme": "light",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        389,
+        843
+      ],
+      "target": [
+        390,
+        844
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 407,
+      "path": "/profile?success=true",
+      "theme": "light",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        413,
+        895
+      ],
+      "target": [
+        414,
+        896
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 474,
+      "path": "/profile?success=true",
+      "theme": "light",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        480,
+        800
+      ],
+      "target": [
+        480,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 570,
+      "path": "/profile?success=true",
+      "theme": "light",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        576,
+        768
+      ],
+      "target": [
+        576,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 634,
+      "path": "/profile?success=true",
+      "theme": "light",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        640,
+        800
+      ],
+      "target": [
+        640,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 762,
+      "path": "/profile?success=true",
+      "theme": "light",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        768,
+        1023
+      ],
+      "target": [
+        768,
+        1024
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 813,
+      "path": "/profile?success=true",
+      "theme": "light",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        819,
+        1180
+      ],
+      "target": [
+        820,
+        1180
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [
+        {
+          "cls": "navbar-profile-btn dropdown-toggle d-flex align-items-center",
+          "id": "profile-dropdown",
+          "right": 1089,
+          "tag": "BUTTON",
+          "w": 127,
+          "x": 963
+        }
+      ],
+      "overflow": 103,
+      "pageWidth": 1089,
+      "path": "/profile?success=true",
+      "theme": "light",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        992,
+        768
+      ],
+      "target": [
+        992,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [
+        {
+          "cls": "navbar-profile-btn dropdown-toggle d-flex align-items-center",
+          "id": "profile-dropdown",
+          "right": 1090,
+          "tag": "BUTTON",
+          "w": 127,
+          "x": 963
+        }
+      ],
+      "overflow": 72,
+      "pageWidth": 1089,
+      "path": "/profile?success=true",
+      "theme": "light",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        1023,
+        768
+      ],
+      "target": [
+        1024,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1274,
+      "path": "/profile?success=true",
+      "theme": "light",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        1280,
+        800
+      ],
+      "target": [
+        1280,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1434,
+      "path": "/profile?success=true",
+      "theme": "light",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        1440,
+        900
+      ],
+      "target": [
+        1440,
+        900
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1913,
+      "path": "/profile?success=true",
+      "theme": "light",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        1919,
+        1080
+      ],
+      "target": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 837,
+      "path": "/profile?success=true",
+      "theme": "light",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        843,
+        389
+      ],
+      "target": [
+        844,
+        390
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/profile?success=true",
+      "theme": "dark",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        359,
+        800
+      ],
+      "target": [
+        360,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 368,
+      "path": "/profile?success=true",
+      "theme": "dark",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        374,
+        811
+      ],
+      "target": [
+        375,
+        812
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 383,
+      "path": "/profile?success=true",
+      "theme": "dark",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        389,
+        843
+      ],
+      "target": [
+        390,
+        844
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 407,
+      "path": "/profile?success=true",
+      "theme": "dark",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        413,
+        895
+      ],
+      "target": [
+        414,
+        896
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 474,
+      "path": "/profile?success=true",
+      "theme": "dark",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        480,
+        800
+      ],
+      "target": [
+        480,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 570,
+      "path": "/profile?success=true",
+      "theme": "dark",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        576,
+        768
+      ],
+      "target": [
+        576,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 634,
+      "path": "/profile?success=true",
+      "theme": "dark",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        640,
+        800
+      ],
+      "target": [
+        640,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 762,
+      "path": "/profile?success=true",
+      "theme": "dark",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        768,
+        1023
+      ],
+      "target": [
+        768,
+        1024
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 813,
+      "path": "/profile?success=true",
+      "theme": "dark",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        819,
+        1180
+      ],
+      "target": [
+        820,
+        1180
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [
+        {
+          "cls": "navbar-profile-btn dropdown-toggle d-flex align-items-center",
+          "id": "profile-dropdown",
+          "right": 1088,
+          "tag": "BUTTON",
+          "w": 127,
+          "x": 961
+        }
+      ],
+      "overflow": 102,
+      "pageWidth": 1088,
+      "path": "/profile?success=true",
+      "theme": "dark",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        992,
+        768
+      ],
+      "target": [
+        992,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [
+        {
+          "cls": "navbar-profile-btn dropdown-toggle d-flex align-items-center",
+          "id": "profile-dropdown",
+          "right": 1090,
+          "tag": "BUTTON",
+          "w": 127,
+          "x": 963
+        }
+      ],
+      "overflow": 72,
+      "pageWidth": 1089,
+      "path": "/profile?success=true",
+      "theme": "dark",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        1023,
+        768
+      ],
+      "target": [
+        1024,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1274,
+      "path": "/profile?success=true",
+      "theme": "dark",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        1280,
+        800
+      ],
+      "target": [
+        1280,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1434,
+      "path": "/profile?success=true",
+      "theme": "dark",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        1440,
+        900
+      ],
+      "target": [
+        1440,
+        900
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1913,
+      "path": "/profile?success=true",
+      "theme": "dark",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        1919,
+        1080
+      ],
+      "target": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 837,
+      "path": "/profile?success=true",
+      "theme": "dark",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        843,
+        389
+      ],
+      "target": [
+        844,
+        390
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/dashboard",
+      "theme": "light",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        359,
+        800
+      ],
+      "target": [
+        360,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 368,
+      "path": "/dashboard",
+      "theme": "light",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        374,
+        811
+      ],
+      "target": [
+        375,
+        812
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 383,
+      "path": "/dashboard",
+      "theme": "light",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        389,
+        843
+      ],
+      "target": [
+        390,
+        844
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 407,
+      "path": "/dashboard",
+      "theme": "light",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        413,
+        895
+      ],
+      "target": [
+        414,
+        896
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 474,
+      "path": "/dashboard",
+      "theme": "light",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        480,
+        800
+      ],
+      "target": [
+        480,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 570,
+      "path": "/dashboard",
+      "theme": "light",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        576,
+        768
+      ],
+      "target": [
+        576,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 634,
+      "path": "/dashboard",
+      "theme": "light",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        640,
+        800
+      ],
+      "target": [
+        640,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 762,
+      "path": "/dashboard",
+      "theme": "light",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        768,
+        1023
+      ],
+      "target": [
+        768,
+        1024
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 813,
+      "path": "/dashboard",
+      "theme": "light",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        819,
+        1180
+      ],
+      "target": [
+        820,
+        1180
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [
+        {
+          "cls": "navbar-profile-btn dropdown-toggle d-flex align-items-center",
+          "id": "profile-dropdown",
+          "right": 1140,
+          "tag": "BUTTON",
+          "w": 176,
+          "x": 963
+        }
+      ],
+      "overflow": 154,
+      "pageWidth": 1140,
+      "path": "/dashboard",
+      "theme": "light",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        992,
+        768
+      ],
+      "target": [
+        992,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [
+        {
+          "cls": "navbar-profile-btn dropdown-toggle d-flex align-items-center",
+          "id": "profile-dropdown",
+          "right": 1140,
+          "tag": "BUTTON",
+          "w": 176,
+          "x": 963
+        }
+      ],
+      "overflow": 123,
+      "pageWidth": 1140,
+      "path": "/dashboard",
+      "theme": "light",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        1023,
+        768
+      ],
+      "target": [
+        1024,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1274,
+      "path": "/dashboard",
+      "theme": "light",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        1280,
+        800
+      ],
+      "target": [
+        1280,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1434,
+      "path": "/dashboard",
+      "theme": "light",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        1440,
+        900
+      ],
+      "target": [
+        1440,
+        900
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1913,
+      "path": "/dashboard",
+      "theme": "light",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        1919,
+        1080
+      ],
+      "target": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 837,
+      "path": "/dashboard",
+      "theme": "light",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        843,
+        389
+      ],
+      "target": [
+        844,
+        390
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/dashboard",
+      "theme": "dark",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        359,
+        800
+      ],
+      "target": [
+        360,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 368,
+      "path": "/dashboard",
+      "theme": "dark",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        374,
+        811
+      ],
+      "target": [
+        375,
+        812
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 383,
+      "path": "/dashboard",
+      "theme": "dark",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        389,
+        843
+      ],
+      "target": [
+        390,
+        844
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 407,
+      "path": "/dashboard",
+      "theme": "dark",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        413,
+        895
+      ],
+      "target": [
+        414,
+        896
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 474,
+      "path": "/dashboard",
+      "theme": "dark",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        480,
+        800
+      ],
+      "target": [
+        480,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 570,
+      "path": "/dashboard",
+      "theme": "dark",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        576,
+        768
+      ],
+      "target": [
+        576,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 634,
+      "path": "/dashboard",
+      "theme": "dark",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        640,
+        800
+      ],
+      "target": [
+        640,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 762,
+      "path": "/dashboard",
+      "theme": "dark",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        768,
+        1023
+      ],
+      "target": [
+        768,
+        1024
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 813,
+      "path": "/dashboard",
+      "theme": "dark",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        819,
+        1180
+      ],
+      "target": [
+        820,
+        1180
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [
+        {
+          "cls": "navbar-profile-btn dropdown-toggle d-flex align-items-center",
+          "id": "profile-dropdown",
+          "right": 1140,
+          "tag": "BUTTON",
+          "w": 176,
+          "x": 963
+        }
+      ],
+      "overflow": 154,
+      "pageWidth": 1140,
+      "path": "/dashboard",
+      "theme": "dark",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        992,
+        768
+      ],
+      "target": [
+        992,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [
+        {
+          "cls": "navbar-profile-btn dropdown-toggle d-flex align-items-center",
+          "id": "profile-dropdown",
+          "right": 1140,
+          "tag": "BUTTON",
+          "w": 176,
+          "x": 963
+        }
+      ],
+      "overflow": 123,
+      "pageWidth": 1140,
+      "path": "/dashboard",
+      "theme": "dark",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        1023,
+        768
+      ],
+      "target": [
+        1024,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1274,
+      "path": "/dashboard",
+      "theme": "dark",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        1280,
+        800
+      ],
+      "target": [
+        1280,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1434,
+      "path": "/dashboard",
+      "theme": "dark",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        1440,
+        900
+      ],
+      "target": [
+        1440,
+        900
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1913,
+      "path": "/dashboard",
+      "theme": "dark",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        1919,
+        1080
+      ],
+      "target": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 837,
+      "path": "/dashboard",
+      "theme": "dark",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        843,
+        389
+      ],
+      "target": [
+        844,
+        390
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/settings",
+      "theme": "light",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        359,
+        800
+      ],
+      "target": [
+        360,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 368,
+      "path": "/settings",
+      "theme": "light",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        374,
+        811
+      ],
+      "target": [
+        375,
+        812
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 383,
+      "path": "/settings",
+      "theme": "light",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        389,
+        843
+      ],
+      "target": [
+        390,
+        844
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 407,
+      "path": "/settings",
+      "theme": "light",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        413,
+        895
+      ],
+      "target": [
+        414,
+        896
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 474,
+      "path": "/settings",
+      "theme": "light",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        480,
+        800
+      ],
+      "target": [
+        480,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 570,
+      "path": "/settings",
+      "theme": "light",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        576,
+        768
+      ],
+      "target": [
+        576,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 634,
+      "path": "/settings",
+      "theme": "light",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        640,
+        800
+      ],
+      "target": [
+        640,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 762,
+      "path": "/settings",
+      "theme": "light",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        768,
+        1023
+      ],
+      "target": [
+        768,
+        1024
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 813,
+      "path": "/settings",
+      "theme": "light",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        819,
+        1180
+      ],
+      "target": [
+        820,
+        1180
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 986,
+      "path": "/settings",
+      "theme": "light",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        992,
+        768
+      ],
+      "target": [
+        992,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1017,
+      "path": "/settings",
+      "theme": "light",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        1023,
+        768
+      ],
+      "target": [
+        1024,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1274,
+      "path": "/settings",
+      "theme": "light",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        1280,
+        800
+      ],
+      "target": [
+        1280,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1434,
+      "path": "/settings",
+      "theme": "light",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        1440,
+        900
+      ],
+      "target": [
+        1440,
+        900
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1913,
+      "path": "/settings",
+      "theme": "light",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        1919,
+        1080
+      ],
+      "target": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 837,
+      "path": "/settings",
+      "theme": "light",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        843,
+        389
+      ],
+      "target": [
+        844,
+        390
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/settings",
+      "theme": "dark",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        359,
+        800
+      ],
+      "target": [
+        360,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 368,
+      "path": "/settings",
+      "theme": "dark",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        374,
+        811
+      ],
+      "target": [
+        375,
+        812
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 383,
+      "path": "/settings",
+      "theme": "dark",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        389,
+        843
+      ],
+      "target": [
+        390,
+        844
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 407,
+      "path": "/settings",
+      "theme": "dark",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        413,
+        895
+      ],
+      "target": [
+        414,
+        896
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 474,
+      "path": "/settings",
+      "theme": "dark",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        480,
+        800
+      ],
+      "target": [
+        480,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 570,
+      "path": "/settings",
+      "theme": "dark",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        576,
+        768
+      ],
+      "target": [
+        576,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 634,
+      "path": "/settings",
+      "theme": "dark",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        640,
+        800
+      ],
+      "target": [
+        640,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 762,
+      "path": "/settings",
+      "theme": "dark",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        768,
+        1023
+      ],
+      "target": [
+        768,
+        1024
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 813,
+      "path": "/settings",
+      "theme": "dark",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        819,
+        1180
+      ],
+      "target": [
+        820,
+        1180
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 986,
+      "path": "/settings",
+      "theme": "dark",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        992,
+        768
+      ],
+      "target": [
+        992,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1017,
+      "path": "/settings",
+      "theme": "dark",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        1023,
+        768
+      ],
+      "target": [
+        1024,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1274,
+      "path": "/settings",
+      "theme": "dark",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        1280,
+        800
+      ],
+      "target": [
+        1280,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1434,
+      "path": "/settings",
+      "theme": "dark",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        1440,
+        900
+      ],
+      "target": [
+        1440,
+        900
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1913,
+      "path": "/settings",
+      "theme": "dark",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        1919,
+        1080
+      ],
+      "target": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 837,
+      "path": "/settings",
+      "theme": "dark",
+      "title": "Organization Profile & Defaults | Rajesh Interntional",
+      "viewport": [
+        843,
+        389
+      ],
+      "target": [
+        844,
+        390
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/profile?success=true",
+      "theme": "light",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        359,
+        800
+      ],
+      "target": [
+        360,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 368,
+      "path": "/profile?success=true",
+      "theme": "light",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        374,
+        811
+      ],
+      "target": [
+        375,
+        812
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 383,
+      "path": "/profile?success=true",
+      "theme": "light",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        389,
+        843
+      ],
+      "target": [
+        390,
+        844
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 407,
+      "path": "/profile?success=true",
+      "theme": "light",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        413,
+        895
+      ],
+      "target": [
+        414,
+        896
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 474,
+      "path": "/profile?success=true",
+      "theme": "light",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        480,
+        800
+      ],
+      "target": [
+        480,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 570,
+      "path": "/profile?success=true",
+      "theme": "light",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        576,
+        768
+      ],
+      "target": [
+        576,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 634,
+      "path": "/profile?success=true",
+      "theme": "light",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        640,
+        800
+      ],
+      "target": [
+        640,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 762,
+      "path": "/profile?success=true",
+      "theme": "light",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        768,
+        1023
+      ],
+      "target": [
+        768,
+        1024
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 813,
+      "path": "/profile?success=true",
+      "theme": "light",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        819,
+        1180
+      ],
+      "target": [
+        820,
+        1180
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 986,
+      "path": "/profile?success=true",
+      "theme": "light",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        992,
+        768
+      ],
+      "target": [
+        992,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1017,
+      "path": "/profile?success=true",
+      "theme": "light",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        1023,
+        768
+      ],
+      "target": [
+        1024,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1274,
+      "path": "/profile?success=true",
+      "theme": "light",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        1280,
+        800
+      ],
+      "target": [
+        1280,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1434,
+      "path": "/profile?success=true",
+      "theme": "light",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        1440,
+        900
+      ],
+      "target": [
+        1440,
+        900
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1913,
+      "path": "/profile?success=true",
+      "theme": "light",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        1919,
+        1080
+      ],
+      "target": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 837,
+      "path": "/profile?success=true",
+      "theme": "light",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        843,
+        389
+      ],
+      "target": [
+        844,
+        390
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/profile?success=true",
+      "theme": "dark",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        359,
+        800
+      ],
+      "target": [
+        360,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 368,
+      "path": "/profile?success=true",
+      "theme": "dark",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        374,
+        811
+      ],
+      "target": [
+        375,
+        812
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 383,
+      "path": "/profile?success=true",
+      "theme": "dark",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        389,
+        843
+      ],
+      "target": [
+        390,
+        844
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 407,
+      "path": "/profile?success=true",
+      "theme": "dark",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        413,
+        895
+      ],
+      "target": [
+        414,
+        896
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 474,
+      "path": "/profile?success=true",
+      "theme": "dark",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        480,
+        800
+      ],
+      "target": [
+        480,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 570,
+      "path": "/profile?success=true",
+      "theme": "dark",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        576,
+        768
+      ],
+      "target": [
+        576,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 634,
+      "path": "/profile?success=true",
+      "theme": "dark",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        640,
+        800
+      ],
+      "target": [
+        640,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 762,
+      "path": "/profile?success=true",
+      "theme": "dark",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        768,
+        1023
+      ],
+      "target": [
+        768,
+        1024
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 813,
+      "path": "/profile?success=true",
+      "theme": "dark",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        819,
+        1180
+      ],
+      "target": [
+        820,
+        1180
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 986,
+      "path": "/profile?success=true",
+      "theme": "dark",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        992,
+        768
+      ],
+      "target": [
+        992,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1017,
+      "path": "/profile?success=true",
+      "theme": "dark",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        1023,
+        768
+      ],
+      "target": [
+        1024,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1274,
+      "path": "/profile?success=true",
+      "theme": "dark",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        1280,
+        800
+      ],
+      "target": [
+        1280,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1434,
+      "path": "/profile?success=true",
+      "theme": "dark",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        1440,
+        900
+      ],
+      "target": [
+        1440,
+        900
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1913,
+      "path": "/profile?success=true",
+      "theme": "dark",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        1919,
+        1080
+      ],
+      "target": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 837,
+      "path": "/profile?success=true",
+      "theme": "dark",
+      "title": "My Profile | Rajesh Interntional",
+      "viewport": [
+        843,
+        389
+      ],
+      "target": [
+        844,
+        390
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/dashboard",
+      "theme": "light",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        359,
+        800
+      ],
+      "target": [
+        360,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 368,
+      "path": "/dashboard",
+      "theme": "light",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        374,
+        811
+      ],
+      "target": [
+        375,
+        812
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 383,
+      "path": "/dashboard",
+      "theme": "light",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        389,
+        843
+      ],
+      "target": [
+        390,
+        844
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 407,
+      "path": "/dashboard",
+      "theme": "light",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        413,
+        895
+      ],
+      "target": [
+        414,
+        896
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 474,
+      "path": "/dashboard",
+      "theme": "light",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        480,
+        800
+      ],
+      "target": [
+        480,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 570,
+      "path": "/dashboard",
+      "theme": "light",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        576,
+        768
+      ],
+      "target": [
+        576,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 634,
+      "path": "/dashboard",
+      "theme": "light",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        640,
+        800
+      ],
+      "target": [
+        640,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 762,
+      "path": "/dashboard",
+      "theme": "light",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        768,
+        1023
+      ],
+      "target": [
+        768,
+        1024
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 813,
+      "path": "/dashboard",
+      "theme": "light",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        819,
+        1180
+      ],
+      "target": [
+        820,
+        1180
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 986,
+      "path": "/dashboard",
+      "theme": "light",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        992,
+        768
+      ],
+      "target": [
+        992,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1017,
+      "path": "/dashboard",
+      "theme": "light",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        1023,
+        768
+      ],
+      "target": [
+        1024,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1274,
+      "path": "/dashboard",
+      "theme": "light",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        1280,
+        800
+      ],
+      "target": [
+        1280,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1434,
+      "path": "/dashboard",
+      "theme": "light",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        1440,
+        900
+      ],
+      "target": [
+        1440,
+        900
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1913,
+      "path": "/dashboard",
+      "theme": "light",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        1919,
+        1080
+      ],
+      "target": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 837,
+      "path": "/dashboard",
+      "theme": "light",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        843,
+        389
+      ],
+      "target": [
+        844,
+        390
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/dashboard",
+      "theme": "dark",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        359,
+        800
+      ],
+      "target": [
+        360,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 368,
+      "path": "/dashboard",
+      "theme": "dark",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        374,
+        811
+      ],
+      "target": [
+        375,
+        812
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 383,
+      "path": "/dashboard",
+      "theme": "dark",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        389,
+        843
+      ],
+      "target": [
+        390,
+        844
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 407,
+      "path": "/dashboard",
+      "theme": "dark",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        413,
+        895
+      ],
+      "target": [
+        414,
+        896
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 474,
+      "path": "/dashboard",
+      "theme": "dark",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        480,
+        800
+      ],
+      "target": [
+        480,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 570,
+      "path": "/dashboard",
+      "theme": "dark",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        576,
+        768
+      ],
+      "target": [
+        576,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 634,
+      "path": "/dashboard",
+      "theme": "dark",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        640,
+        800
+      ],
+      "target": [
+        640,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 762,
+      "path": "/dashboard",
+      "theme": "dark",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        768,
+        1023
+      ],
+      "target": [
+        768,
+        1024
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 813,
+      "path": "/dashboard",
+      "theme": "dark",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        819,
+        1180
+      ],
+      "target": [
+        820,
+        1180
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 986,
+      "path": "/dashboard",
+      "theme": "dark",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        992,
+        768
+      ],
+      "target": [
+        992,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1017,
+      "path": "/dashboard",
+      "theme": "dark",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        1023,
+        768
+      ],
+      "target": [
+        1024,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1274,
+      "path": "/dashboard",
+      "theme": "dark",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        1280,
+        800
+      ],
+      "target": [
+        1280,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1434,
+      "path": "/dashboard",
+      "theme": "dark",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        1440,
+        900
+      ],
+      "target": [
+        1440,
+        900
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1913,
+      "path": "/dashboard",
+      "theme": "dark",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        1919,
+        1080
+      ],
+      "target": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 837,
+      "path": "/dashboard",
+      "theme": "dark",
+      "title": "Business Analytics Dashboard | Rajesh Interntional",
+      "viewport": [
+        843,
+        389
+      ],
+      "target": [
+        844,
+        390
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+      "theme": "light",
+      "title": "Quotations & Invoices | Rajesh Interntional",
+      "viewport": [
+        359,
+        800
+      ],
+      "target": [
+        360,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 368,
+      "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+      "theme": "light",
+      "title": "Quotations & Invoices | Rajesh Interntional",
+      "viewport": [
+        374,
+        811
+      ],
+      "target": [
+        375,
+        812
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 383,
+      "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+      "theme": "light",
+      "title": "Quotations & Invoices | Rajesh Interntional",
+      "viewport": [
+        389,
+        843
+      ],
+      "target": [
+        390,
+        844
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 407,
+      "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+      "theme": "light",
+      "title": "Quotations & Invoices | Rajesh Interntional",
+      "viewport": [
+        413,
+        895
+      ],
+      "target": [
+        414,
+        896
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 474,
+      "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+      "theme": "light",
+      "title": "Quotations & Invoices | Rajesh Interntional",
+      "viewport": [
+        480,
+        800
+      ],
+      "target": [
+        480,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 570,
+      "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+      "theme": "light",
+      "title": "Quotations & Invoices | Rajesh Interntional",
+      "viewport": [
+        576,
+        768
+      ],
+      "target": [
+        576,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 634,
+      "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+      "theme": "light",
+      "title": "Quotations & Invoices | Rajesh Interntional",
+      "viewport": [
+        640,
+        800
+      ],
+      "target": [
+        640,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 762,
+      "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+      "theme": "light",
+      "title": "Quotations & Invoices | Rajesh Interntional",
+      "viewport": [
+        768,
+        1023
+      ],
+      "target": [
+        768,
+        1024
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 813,
+      "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+      "theme": "light",
+      "title": "Quotations & Invoices | Rajesh Interntional",
+      "viewport": [
+        819,
+        1180
+      ],
+      "target": [
+        820,
+        1180
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 986,
+      "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+      "theme": "light",
+      "title": "Quotations & Invoices | Rajesh Interntional",
+      "viewport": [
+        992,
+        768
+      ],
+      "target": [
+        992,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1017,
+      "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+      "theme": "light",
+      "title": "Quotations & Invoices | Rajesh Interntional",
+      "viewport": [
+        1023,
+        768
+      ],
+      "target": [
+        1024,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1274,
+      "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+      "theme": "light",
+      "title": "Quotations & Invoices | Rajesh Interntional",
+      "viewport": [
+        1280,
+        800
+      ],
+      "target": [
+        1280,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1434,
+      "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+      "theme": "light",
+      "title": "Quotations & Invoices | Rajesh Interntional",
+      "viewport": [
+        1440,
+        900
+      ],
+      "target": [
+        1440,
+        900
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1913,
+      "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+      "theme": "light",
+      "title": "Quotations & Invoices | Rajesh Interntional",
+      "viewport": [
+        1919,
+        1080
+      ],
+      "target": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 837,
+      "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+      "theme": "light",
+      "title": "Quotations & Invoices | Rajesh Interntional",
+      "viewport": [
+        843,
+        389
+      ],
+      "target": [
+        844,
+        390
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 353,
+      "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+      "theme": "dark",
+      "title": "Quotations & Invoices | Rajesh Interntional",
+      "viewport": [
+        359,
+        800
+      ],
+      "target": [
+        360,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 368,
+      "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+      "theme": "dark",
+      "title": "Quotations & Invoices | Rajesh Interntional",
+      "viewport": [
+        374,
+        811
+      ],
+      "target": [
+        375,
+        812
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 383,
+      "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+      "theme": "dark",
+      "title": "Quotations & Invoices | Rajesh Interntional",
+      "viewport": [
+        389,
+        843
+      ],
+      "target": [
+        390,
+        844
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 407,
+      "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+      "theme": "dark",
+      "title": "Quotations & Invoices | Rajesh Interntional",
+      "viewport": [
+        413,
+        895
+      ],
+      "target": [
+        414,
+        896
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 474,
+      "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+      "theme": "dark",
+      "title": "Quotations & Invoices | Rajesh Interntional",
+      "viewport": [
+        480,
+        800
+      ],
+      "target": [
+        480,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 570,
+      "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+      "theme": "dark",
+      "title": "Quotations & Invoices | Rajesh Interntional",
+      "viewport": [
+        576,
+        768
+      ],
+      "target": [
+        576,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 634,
+      "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+      "theme": "dark",
+      "title": "Quotations & Invoices | Rajesh Interntional",
+      "viewport": [
+        640,
+        800
+      ],
+      "target": [
+        640,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 762,
+      "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+      "theme": "dark",
+      "title": "Quotations & Invoices | Rajesh Interntional",
+      "viewport": [
+        768,
+        1023
+      ],
+      "target": [
+        768,
+        1024
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 813,
+      "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+      "theme": "dark",
+      "title": "Quotations & Invoices | Rajesh Interntional",
+      "viewport": [
+        819,
+        1180
+      ],
+      "target": [
+        820,
+        1180
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 986,
+      "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+      "theme": "dark",
+      "title": "Quotations & Invoices | Rajesh Interntional",
+      "viewport": [
+        992,
+        768
+      ],
+      "target": [
+        992,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1017,
+      "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+      "theme": "dark",
+      "title": "Quotations & Invoices | Rajesh Interntional",
+      "viewport": [
+        1023,
+        768
+      ],
+      "target": [
+        1024,
+        768
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1274,
+      "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+      "theme": "dark",
+      "title": "Quotations & Invoices | Rajesh Interntional",
+      "viewport": [
+        1280,
+        800
+      ],
+      "target": [
+        1280,
+        800
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1434,
+      "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+      "theme": "dark",
+      "title": "Quotations & Invoices | Rajesh Interntional",
+      "viewport": [
+        1440,
+        900
+      ],
+      "target": [
+        1440,
+        900
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 1913,
+      "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+      "theme": "dark",
+      "title": "Quotations & Invoices | Rajesh Interntional",
+      "viewport": [
+        1919,
+        1080
+      ],
+      "target": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "errorPage": false,
+      "offenders": [],
+      "overflow": 0,
+      "pageWidth": 837,
+      "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+      "theme": "dark",
+      "title": "Quotations & Invoices | Rajesh Interntional",
+      "viewport": [
+        843,
+        389
+      ],
+      "target": [
+        844,
+        390
+      ]
+    }
+  ],
+  "final": {
+    "checks": [
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 353,
+        "path": "/settings",
+        "theme": "light",
+        "title": "Organization Profile & Defaults | Rajesh Interntional",
+        "viewport": [
+          359,
+          800
+        ],
+        "target": [
+          360,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 368,
+        "path": "/settings",
+        "theme": "light",
+        "title": "Organization Profile & Defaults | Rajesh Interntional",
+        "viewport": [
+          374,
+          811
+        ],
+        "target": [
+          375,
+          812
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 383,
+        "path": "/settings",
+        "theme": "light",
+        "title": "Organization Profile & Defaults | Rajesh Interntional",
+        "viewport": [
+          389,
+          843
+        ],
+        "target": [
+          390,
+          844
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 407,
+        "path": "/settings",
+        "theme": "light",
+        "title": "Organization Profile & Defaults | Rajesh Interntional",
+        "viewport": [
+          413,
+          895
+        ],
+        "target": [
+          414,
+          896
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 474,
+        "path": "/settings",
+        "theme": "light",
+        "title": "Organization Profile & Defaults | Rajesh Interntional",
+        "viewport": [
+          480,
+          800
+        ],
+        "target": [
+          480,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 570,
+        "path": "/settings",
+        "theme": "light",
+        "title": "Organization Profile & Defaults | Rajesh Interntional",
+        "viewport": [
+          576,
+          768
+        ],
+        "target": [
+          576,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 634,
+        "path": "/settings",
+        "theme": "light",
+        "title": "Organization Profile & Defaults | Rajesh Interntional",
+        "viewport": [
+          640,
+          800
+        ],
+        "target": [
+          640,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 762,
+        "path": "/settings",
+        "theme": "light",
+        "title": "Organization Profile & Defaults | Rajesh Interntional",
+        "viewport": [
+          768,
+          1023
+        ],
+        "target": [
+          768,
+          1024
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 813,
+        "path": "/settings",
+        "theme": "light",
+        "title": "Organization Profile & Defaults | Rajesh Interntional",
+        "viewport": [
+          819,
+          1180
+        ],
+        "target": [
+          820,
+          1180
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 986,
+        "path": "/settings",
+        "theme": "light",
+        "title": "Organization Profile & Defaults | Rajesh Interntional",
+        "viewport": [
+          992,
+          768
+        ],
+        "target": [
+          992,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1017,
+        "path": "/settings",
+        "theme": "light",
+        "title": "Organization Profile & Defaults | Rajesh Interntional",
+        "viewport": [
+          1023,
+          768
+        ],
+        "target": [
+          1024,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1274,
+        "path": "/settings",
+        "theme": "light",
+        "title": "Organization Profile & Defaults | Rajesh Interntional",
+        "viewport": [
+          1280,
+          800
+        ],
+        "target": [
+          1280,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1434,
+        "path": "/settings",
+        "theme": "light",
+        "title": "Organization Profile & Defaults | Rajesh Interntional",
+        "viewport": [
+          1440,
+          900
+        ],
+        "target": [
+          1440,
+          900
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1913,
+        "path": "/settings",
+        "theme": "light",
+        "title": "Organization Profile & Defaults | Rajesh Interntional",
+        "viewport": [
+          1919,
+          1080
+        ],
+        "target": [
+          1920,
+          1080
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 837,
+        "path": "/settings",
+        "theme": "light",
+        "title": "Organization Profile & Defaults | Rajesh Interntional",
+        "viewport": [
+          843,
+          389
+        ],
+        "target": [
+          844,
+          390
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 353,
+        "path": "/settings",
+        "theme": "dark",
+        "title": "Organization Profile & Defaults | Rajesh Interntional",
+        "viewport": [
+          359,
+          800
+        ],
+        "target": [
+          360,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 368,
+        "path": "/settings",
+        "theme": "dark",
+        "title": "Organization Profile & Defaults | Rajesh Interntional",
+        "viewport": [
+          374,
+          811
+        ],
+        "target": [
+          375,
+          812
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 383,
+        "path": "/settings",
+        "theme": "dark",
+        "title": "Organization Profile & Defaults | Rajesh Interntional",
+        "viewport": [
+          389,
+          843
+        ],
+        "target": [
+          390,
+          844
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 407,
+        "path": "/settings",
+        "theme": "dark",
+        "title": "Organization Profile & Defaults | Rajesh Interntional",
+        "viewport": [
+          413,
+          895
+        ],
+        "target": [
+          414,
+          896
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 474,
+        "path": "/settings",
+        "theme": "dark",
+        "title": "Organization Profile & Defaults | Rajesh Interntional",
+        "viewport": [
+          480,
+          800
+        ],
+        "target": [
+          480,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 570,
+        "path": "/settings",
+        "theme": "dark",
+        "title": "Organization Profile & Defaults | Rajesh Interntional",
+        "viewport": [
+          576,
+          768
+        ],
+        "target": [
+          576,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 634,
+        "path": "/settings",
+        "theme": "dark",
+        "title": "Organization Profile & Defaults | Rajesh Interntional",
+        "viewport": [
+          640,
+          800
+        ],
+        "target": [
+          640,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 762,
+        "path": "/settings",
+        "theme": "dark",
+        "title": "Organization Profile & Defaults | Rajesh Interntional",
+        "viewport": [
+          768,
+          1023
+        ],
+        "target": [
+          768,
+          1024
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 813,
+        "path": "/settings",
+        "theme": "dark",
+        "title": "Organization Profile & Defaults | Rajesh Interntional",
+        "viewport": [
+          819,
+          1180
+        ],
+        "target": [
+          820,
+          1180
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 986,
+        "path": "/settings",
+        "theme": "dark",
+        "title": "Organization Profile & Defaults | Rajesh Interntional",
+        "viewport": [
+          992,
+          768
+        ],
+        "target": [
+          992,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1017,
+        "path": "/settings",
+        "theme": "dark",
+        "title": "Organization Profile & Defaults | Rajesh Interntional",
+        "viewport": [
+          1023,
+          768
+        ],
+        "target": [
+          1024,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1274,
+        "path": "/settings",
+        "theme": "dark",
+        "title": "Organization Profile & Defaults | Rajesh Interntional",
+        "viewport": [
+          1280,
+          800
+        ],
+        "target": [
+          1280,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1434,
+        "path": "/settings",
+        "theme": "dark",
+        "title": "Organization Profile & Defaults | Rajesh Interntional",
+        "viewport": [
+          1440,
+          900
+        ],
+        "target": [
+          1440,
+          900
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1913,
+        "path": "/settings",
+        "theme": "dark",
+        "title": "Organization Profile & Defaults | Rajesh Interntional",
+        "viewport": [
+          1919,
+          1080
+        ],
+        "target": [
+          1920,
+          1080
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 837,
+        "path": "/settings",
+        "theme": "dark",
+        "title": "Organization Profile & Defaults | Rajesh Interntional",
+        "viewport": [
+          843,
+          389
+        ],
+        "target": [
+          844,
+          390
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 353,
+        "path": "/profile?success=true",
+        "theme": "light",
+        "title": "My Profile | Rajesh Interntional",
+        "viewport": [
+          359,
+          800
+        ],
+        "target": [
+          360,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 368,
+        "path": "/profile?success=true",
+        "theme": "light",
+        "title": "My Profile | Rajesh Interntional",
+        "viewport": [
+          374,
+          811
+        ],
+        "target": [
+          375,
+          812
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 383,
+        "path": "/profile?success=true",
+        "theme": "light",
+        "title": "My Profile | Rajesh Interntional",
+        "viewport": [
+          389,
+          843
+        ],
+        "target": [
+          390,
+          844
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 407,
+        "path": "/profile?success=true",
+        "theme": "light",
+        "title": "My Profile | Rajesh Interntional",
+        "viewport": [
+          413,
+          895
+        ],
+        "target": [
+          414,
+          896
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 474,
+        "path": "/profile?success=true",
+        "theme": "light",
+        "title": "My Profile | Rajesh Interntional",
+        "viewport": [
+          480,
+          800
+        ],
+        "target": [
+          480,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 570,
+        "path": "/profile?success=true",
+        "theme": "light",
+        "title": "My Profile | Rajesh Interntional",
+        "viewport": [
+          576,
+          768
+        ],
+        "target": [
+          576,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 634,
+        "path": "/profile?success=true",
+        "theme": "light",
+        "title": "My Profile | Rajesh Interntional",
+        "viewport": [
+          640,
+          800
+        ],
+        "target": [
+          640,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 762,
+        "path": "/profile?success=true",
+        "theme": "light",
+        "title": "My Profile | Rajesh Interntional",
+        "viewport": [
+          768,
+          1023
+        ],
+        "target": [
+          768,
+          1024
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 813,
+        "path": "/profile?success=true",
+        "theme": "light",
+        "title": "My Profile | Rajesh Interntional",
+        "viewport": [
+          819,
+          1180
+        ],
+        "target": [
+          820,
+          1180
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 986,
+        "path": "/profile?success=true",
+        "theme": "light",
+        "title": "My Profile | Rajesh Interntional",
+        "viewport": [
+          992,
+          768
+        ],
+        "target": [
+          992,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1017,
+        "path": "/profile?success=true",
+        "theme": "light",
+        "title": "My Profile | Rajesh Interntional",
+        "viewport": [
+          1023,
+          768
+        ],
+        "target": [
+          1024,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1274,
+        "path": "/profile?success=true",
+        "theme": "light",
+        "title": "My Profile | Rajesh Interntional",
+        "viewport": [
+          1280,
+          800
+        ],
+        "target": [
+          1280,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1434,
+        "path": "/profile?success=true",
+        "theme": "light",
+        "title": "My Profile | Rajesh Interntional",
+        "viewport": [
+          1440,
+          900
+        ],
+        "target": [
+          1440,
+          900
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1913,
+        "path": "/profile?success=true",
+        "theme": "light",
+        "title": "My Profile | Rajesh Interntional",
+        "viewport": [
+          1919,
+          1080
+        ],
+        "target": [
+          1920,
+          1080
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 837,
+        "path": "/profile?success=true",
+        "theme": "light",
+        "title": "My Profile | Rajesh Interntional",
+        "viewport": [
+          843,
+          389
+        ],
+        "target": [
+          844,
+          390
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 353,
+        "path": "/profile?success=true",
+        "theme": "dark",
+        "title": "My Profile | Rajesh Interntional",
+        "viewport": [
+          359,
+          800
+        ],
+        "target": [
+          360,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 368,
+        "path": "/profile?success=true",
+        "theme": "dark",
+        "title": "My Profile | Rajesh Interntional",
+        "viewport": [
+          374,
+          811
+        ],
+        "target": [
+          375,
+          812
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 383,
+        "path": "/profile?success=true",
+        "theme": "dark",
+        "title": "My Profile | Rajesh Interntional",
+        "viewport": [
+          389,
+          843
+        ],
+        "target": [
+          390,
+          844
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 407,
+        "path": "/profile?success=true",
+        "theme": "dark",
+        "title": "My Profile | Rajesh Interntional",
+        "viewport": [
+          413,
+          895
+        ],
+        "target": [
+          414,
+          896
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 474,
+        "path": "/profile?success=true",
+        "theme": "dark",
+        "title": "My Profile | Rajesh Interntional",
+        "viewport": [
+          480,
+          800
+        ],
+        "target": [
+          480,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 570,
+        "path": "/profile?success=true",
+        "theme": "dark",
+        "title": "My Profile | Rajesh Interntional",
+        "viewport": [
+          576,
+          768
+        ],
+        "target": [
+          576,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 634,
+        "path": "/profile?success=true",
+        "theme": "dark",
+        "title": "My Profile | Rajesh Interntional",
+        "viewport": [
+          640,
+          800
+        ],
+        "target": [
+          640,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 762,
+        "path": "/profile?success=true",
+        "theme": "dark",
+        "title": "My Profile | Rajesh Interntional",
+        "viewport": [
+          768,
+          1023
+        ],
+        "target": [
+          768,
+          1024
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 813,
+        "path": "/profile?success=true",
+        "theme": "dark",
+        "title": "My Profile | Rajesh Interntional",
+        "viewport": [
+          819,
+          1180
+        ],
+        "target": [
+          820,
+          1180
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 986,
+        "path": "/profile?success=true",
+        "theme": "dark",
+        "title": "My Profile | Rajesh Interntional",
+        "viewport": [
+          992,
+          768
+        ],
+        "target": [
+          992,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1017,
+        "path": "/profile?success=true",
+        "theme": "dark",
+        "title": "My Profile | Rajesh Interntional",
+        "viewport": [
+          1023,
+          768
+        ],
+        "target": [
+          1024,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1274,
+        "path": "/profile?success=true",
+        "theme": "dark",
+        "title": "My Profile | Rajesh Interntional",
+        "viewport": [
+          1280,
+          800
+        ],
+        "target": [
+          1280,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1434,
+        "path": "/profile?success=true",
+        "theme": "dark",
+        "title": "My Profile | Rajesh Interntional",
+        "viewport": [
+          1440,
+          900
+        ],
+        "target": [
+          1440,
+          900
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1913,
+        "path": "/profile?success=true",
+        "theme": "dark",
+        "title": "My Profile | Rajesh Interntional",
+        "viewport": [
+          1919,
+          1080
+        ],
+        "target": [
+          1920,
+          1080
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 837,
+        "path": "/profile?success=true",
+        "theme": "dark",
+        "title": "My Profile | Rajesh Interntional",
+        "viewport": [
+          843,
+          389
+        ],
+        "target": [
+          844,
+          390
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 353,
+        "path": "/dashboard",
+        "theme": "light",
+        "title": "Business Analytics Dashboard | Rajesh Interntional",
+        "viewport": [
+          359,
+          800
+        ],
+        "target": [
+          360,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 368,
+        "path": "/dashboard",
+        "theme": "light",
+        "title": "Business Analytics Dashboard | Rajesh Interntional",
+        "viewport": [
+          374,
+          811
+        ],
+        "target": [
+          375,
+          812
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 383,
+        "path": "/dashboard",
+        "theme": "light",
+        "title": "Business Analytics Dashboard | Rajesh Interntional",
+        "viewport": [
+          389,
+          843
+        ],
+        "target": [
+          390,
+          844
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 407,
+        "path": "/dashboard",
+        "theme": "light",
+        "title": "Business Analytics Dashboard | Rajesh Interntional",
+        "viewport": [
+          413,
+          895
+        ],
+        "target": [
+          414,
+          896
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 474,
+        "path": "/dashboard",
+        "theme": "light",
+        "title": "Business Analytics Dashboard | Rajesh Interntional",
+        "viewport": [
+          480,
+          800
+        ],
+        "target": [
+          480,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 570,
+        "path": "/dashboard",
+        "theme": "light",
+        "title": "Business Analytics Dashboard | Rajesh Interntional",
+        "viewport": [
+          576,
+          768
+        ],
+        "target": [
+          576,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 634,
+        "path": "/dashboard",
+        "theme": "light",
+        "title": "Business Analytics Dashboard | Rajesh Interntional",
+        "viewport": [
+          640,
+          800
+        ],
+        "target": [
+          640,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 762,
+        "path": "/dashboard",
+        "theme": "light",
+        "title": "Business Analytics Dashboard | Rajesh Interntional",
+        "viewport": [
+          768,
+          1023
+        ],
+        "target": [
+          768,
+          1024
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 813,
+        "path": "/dashboard",
+        "theme": "light",
+        "title": "Business Analytics Dashboard | Rajesh Interntional",
+        "viewport": [
+          819,
+          1180
+        ],
+        "target": [
+          820,
+          1180
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 986,
+        "path": "/dashboard",
+        "theme": "light",
+        "title": "Business Analytics Dashboard | Rajesh Interntional",
+        "viewport": [
+          992,
+          768
+        ],
+        "target": [
+          992,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1017,
+        "path": "/dashboard",
+        "theme": "light",
+        "title": "Business Analytics Dashboard | Rajesh Interntional",
+        "viewport": [
+          1023,
+          768
+        ],
+        "target": [
+          1024,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1274,
+        "path": "/dashboard",
+        "theme": "light",
+        "title": "Business Analytics Dashboard | Rajesh Interntional",
+        "viewport": [
+          1280,
+          800
+        ],
+        "target": [
+          1280,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1434,
+        "path": "/dashboard",
+        "theme": "light",
+        "title": "Business Analytics Dashboard | Rajesh Interntional",
+        "viewport": [
+          1440,
+          900
+        ],
+        "target": [
+          1440,
+          900
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1913,
+        "path": "/dashboard",
+        "theme": "light",
+        "title": "Business Analytics Dashboard | Rajesh Interntional",
+        "viewport": [
+          1919,
+          1080
+        ],
+        "target": [
+          1920,
+          1080
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 837,
+        "path": "/dashboard",
+        "theme": "light",
+        "title": "Business Analytics Dashboard | Rajesh Interntional",
+        "viewport": [
+          843,
+          389
+        ],
+        "target": [
+          844,
+          390
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 353,
+        "path": "/dashboard",
+        "theme": "dark",
+        "title": "Business Analytics Dashboard | Rajesh Interntional",
+        "viewport": [
+          359,
+          800
+        ],
+        "target": [
+          360,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 368,
+        "path": "/dashboard",
+        "theme": "dark",
+        "title": "Business Analytics Dashboard | Rajesh Interntional",
+        "viewport": [
+          374,
+          811
+        ],
+        "target": [
+          375,
+          812
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 383,
+        "path": "/dashboard",
+        "theme": "dark",
+        "title": "Business Analytics Dashboard | Rajesh Interntional",
+        "viewport": [
+          389,
+          843
+        ],
+        "target": [
+          390,
+          844
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 407,
+        "path": "/dashboard",
+        "theme": "dark",
+        "title": "Business Analytics Dashboard | Rajesh Interntional",
+        "viewport": [
+          413,
+          895
+        ],
+        "target": [
+          414,
+          896
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 474,
+        "path": "/dashboard",
+        "theme": "dark",
+        "title": "Business Analytics Dashboard | Rajesh Interntional",
+        "viewport": [
+          480,
+          800
+        ],
+        "target": [
+          480,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 570,
+        "path": "/dashboard",
+        "theme": "dark",
+        "title": "Business Analytics Dashboard | Rajesh Interntional",
+        "viewport": [
+          576,
+          768
+        ],
+        "target": [
+          576,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 634,
+        "path": "/dashboard",
+        "theme": "dark",
+        "title": "Business Analytics Dashboard | Rajesh Interntional",
+        "viewport": [
+          640,
+          800
+        ],
+        "target": [
+          640,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 762,
+        "path": "/dashboard",
+        "theme": "dark",
+        "title": "Business Analytics Dashboard | Rajesh Interntional",
+        "viewport": [
+          768,
+          1023
+        ],
+        "target": [
+          768,
+          1024
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 813,
+        "path": "/dashboard",
+        "theme": "dark",
+        "title": "Business Analytics Dashboard | Rajesh Interntional",
+        "viewport": [
+          819,
+          1180
+        ],
+        "target": [
+          820,
+          1180
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 986,
+        "path": "/dashboard",
+        "theme": "dark",
+        "title": "Business Analytics Dashboard | Rajesh Interntional",
+        "viewport": [
+          992,
+          768
+        ],
+        "target": [
+          992,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1017,
+        "path": "/dashboard",
+        "theme": "dark",
+        "title": "Business Analytics Dashboard | Rajesh Interntional",
+        "viewport": [
+          1023,
+          768
+        ],
+        "target": [
+          1024,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1274,
+        "path": "/dashboard",
+        "theme": "dark",
+        "title": "Business Analytics Dashboard | Rajesh Interntional",
+        "viewport": [
+          1280,
+          800
+        ],
+        "target": [
+          1280,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1434,
+        "path": "/dashboard",
+        "theme": "dark",
+        "title": "Business Analytics Dashboard | Rajesh Interntional",
+        "viewport": [
+          1440,
+          900
+        ],
+        "target": [
+          1440,
+          900
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1913,
+        "path": "/dashboard",
+        "theme": "dark",
+        "title": "Business Analytics Dashboard | Rajesh Interntional",
+        "viewport": [
+          1919,
+          1080
+        ],
+        "target": [
+          1920,
+          1080
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 837,
+        "path": "/dashboard",
+        "theme": "dark",
+        "title": "Business Analytics Dashboard | Rajesh Interntional",
+        "viewport": [
+          843,
+          389
+        ],
+        "target": [
+          844,
+          390
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 353,
+        "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+        "theme": "light",
+        "title": "Quotations & Invoices | Rajesh Interntional",
+        "viewport": [
+          359,
+          800
+        ],
+        "target": [
+          360,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 368,
+        "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+        "theme": "light",
+        "title": "Quotations & Invoices | Rajesh Interntional",
+        "viewport": [
+          374,
+          811
+        ],
+        "target": [
+          375,
+          812
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 383,
+        "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+        "theme": "light",
+        "title": "Quotations & Invoices | Rajesh Interntional",
+        "viewport": [
+          389,
+          843
+        ],
+        "target": [
+          390,
+          844
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 407,
+        "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+        "theme": "light",
+        "title": "Quotations & Invoices | Rajesh Interntional",
+        "viewport": [
+          413,
+          895
+        ],
+        "target": [
+          414,
+          896
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 474,
+        "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+        "theme": "light",
+        "title": "Quotations & Invoices | Rajesh Interntional",
+        "viewport": [
+          480,
+          800
+        ],
+        "target": [
+          480,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 570,
+        "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+        "theme": "light",
+        "title": "Quotations & Invoices | Rajesh Interntional",
+        "viewport": [
+          576,
+          768
+        ],
+        "target": [
+          576,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 634,
+        "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+        "theme": "light",
+        "title": "Quotations & Invoices | Rajesh Interntional",
+        "viewport": [
+          640,
+          800
+        ],
+        "target": [
+          640,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 762,
+        "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+        "theme": "light",
+        "title": "Quotations & Invoices | Rajesh Interntional",
+        "viewport": [
+          768,
+          1023
+        ],
+        "target": [
+          768,
+          1024
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 813,
+        "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+        "theme": "light",
+        "title": "Quotations & Invoices | Rajesh Interntional",
+        "viewport": [
+          819,
+          1180
+        ],
+        "target": [
+          820,
+          1180
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 986,
+        "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+        "theme": "light",
+        "title": "Quotations & Invoices | Rajesh Interntional",
+        "viewport": [
+          992,
+          768
+        ],
+        "target": [
+          992,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1017,
+        "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+        "theme": "light",
+        "title": "Quotations & Invoices | Rajesh Interntional",
+        "viewport": [
+          1023,
+          768
+        ],
+        "target": [
+          1024,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1274,
+        "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+        "theme": "light",
+        "title": "Quotations & Invoices | Rajesh Interntional",
+        "viewport": [
+          1280,
+          800
+        ],
+        "target": [
+          1280,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1434,
+        "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+        "theme": "light",
+        "title": "Quotations & Invoices | Rajesh Interntional",
+        "viewport": [
+          1440,
+          900
+        ],
+        "target": [
+          1440,
+          900
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1913,
+        "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+        "theme": "light",
+        "title": "Quotations & Invoices | Rajesh Interntional",
+        "viewport": [
+          1919,
+          1080
+        ],
+        "target": [
+          1920,
+          1080
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 837,
+        "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+        "theme": "light",
+        "title": "Quotations & Invoices | Rajesh Interntional",
+        "viewport": [
+          843,
+          389
+        ],
+        "target": [
+          844,
+          390
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 353,
+        "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+        "theme": "dark",
+        "title": "Quotations & Invoices | Rajesh Interntional",
+        "viewport": [
+          359,
+          800
+        ],
+        "target": [
+          360,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 368,
+        "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+        "theme": "dark",
+        "title": "Quotations & Invoices | Rajesh Interntional",
+        "viewport": [
+          374,
+          811
+        ],
+        "target": [
+          375,
+          812
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 383,
+        "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+        "theme": "dark",
+        "title": "Quotations & Invoices | Rajesh Interntional",
+        "viewport": [
+          389,
+          843
+        ],
+        "target": [
+          390,
+          844
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 407,
+        "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+        "theme": "dark",
+        "title": "Quotations & Invoices | Rajesh Interntional",
+        "viewport": [
+          413,
+          895
+        ],
+        "target": [
+          414,
+          896
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 474,
+        "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+        "theme": "dark",
+        "title": "Quotations & Invoices | Rajesh Interntional",
+        "viewport": [
+          480,
+          800
+        ],
+        "target": [
+          480,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 570,
+        "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+        "theme": "dark",
+        "title": "Quotations & Invoices | Rajesh Interntional",
+        "viewport": [
+          576,
+          768
+        ],
+        "target": [
+          576,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 634,
+        "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+        "theme": "dark",
+        "title": "Quotations & Invoices | Rajesh Interntional",
+        "viewport": [
+          640,
+          800
+        ],
+        "target": [
+          640,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 762,
+        "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+        "theme": "dark",
+        "title": "Quotations & Invoices | Rajesh Interntional",
+        "viewport": [
+          768,
+          1023
+        ],
+        "target": [
+          768,
+          1024
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 813,
+        "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+        "theme": "dark",
+        "title": "Quotations & Invoices | Rajesh Interntional",
+        "viewport": [
+          819,
+          1180
+        ],
+        "target": [
+          820,
+          1180
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 986,
+        "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+        "theme": "dark",
+        "title": "Quotations & Invoices | Rajesh Interntional",
+        "viewport": [
+          992,
+          768
+        ],
+        "target": [
+          992,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1017,
+        "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+        "theme": "dark",
+        "title": "Quotations & Invoices | Rajesh Interntional",
+        "viewport": [
+          1023,
+          768
+        ],
+        "target": [
+          1024,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1274,
+        "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+        "theme": "dark",
+        "title": "Quotations & Invoices | Rajesh Interntional",
+        "viewport": [
+          1280,
+          800
+        ],
+        "target": [
+          1280,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1434,
+        "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+        "theme": "dark",
+        "title": "Quotations & Invoices | Rajesh Interntional",
+        "viewport": [
+          1440,
+          900
+        ],
+        "target": [
+          1440,
+          900
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1913,
+        "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+        "theme": "dark",
+        "title": "Quotations & Invoices | Rajesh Interntional",
+        "viewport": [
+          1919,
+          1080
+        ],
+        "target": [
+          1920,
+          1080
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 837,
+        "path": "/documents?dateFrom=2026-04-01&dateTo=2027-03-31",
+        "theme": "dark",
+        "title": "Quotations & Invoices | Rajesh Interntional",
+        "viewport": [
+          843,
+          389
+        ],
+        "target": [
+          844,
+          390
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 353,
+        "path": "/documents/new?type=QUOTATION",
+        "theme": "light",
+        "title": "New Quotation | Rajesh Interntional",
+        "viewport": [
+          359,
+          800
+        ],
+        "target": [
+          360,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 368,
+        "path": "/documents/new?type=QUOTATION",
+        "theme": "light",
+        "title": "New Quotation | Rajesh Interntional",
+        "viewport": [
+          374,
+          811
+        ],
+        "target": [
+          375,
+          812
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 383,
+        "path": "/documents/new?type=QUOTATION",
+        "theme": "light",
+        "title": "New Quotation | Rajesh Interntional",
+        "viewport": [
+          389,
+          843
+        ],
+        "target": [
+          390,
+          844
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 407,
+        "path": "/documents/new?type=QUOTATION",
+        "theme": "light",
+        "title": "New Quotation | Rajesh Interntional",
+        "viewport": [
+          413,
+          895
+        ],
+        "target": [
+          414,
+          896
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 474,
+        "path": "/documents/new?type=QUOTATION",
+        "theme": "light",
+        "title": "New Quotation | Rajesh Interntional",
+        "viewport": [
+          480,
+          800
+        ],
+        "target": [
+          480,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 570,
+        "path": "/documents/new?type=QUOTATION",
+        "theme": "light",
+        "title": "New Quotation | Rajesh Interntional",
+        "viewport": [
+          576,
+          768
+        ],
+        "target": [
+          576,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 634,
+        "path": "/documents/new?type=QUOTATION",
+        "theme": "light",
+        "title": "New Quotation | Rajesh Interntional",
+        "viewport": [
+          640,
+          800
+        ],
+        "target": [
+          640,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 762,
+        "path": "/documents/new?type=QUOTATION",
+        "theme": "light",
+        "title": "New Quotation | Rajesh Interntional",
+        "viewport": [
+          768,
+          1023
+        ],
+        "target": [
+          768,
+          1024
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 813,
+        "path": "/documents/new?type=QUOTATION",
+        "theme": "light",
+        "title": "New Quotation | Rajesh Interntional",
+        "viewport": [
+          819,
+          1180
+        ],
+        "target": [
+          820,
+          1180
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 986,
+        "path": "/documents/new?type=QUOTATION",
+        "theme": "light",
+        "title": "New Quotation | Rajesh Interntional",
+        "viewport": [
+          992,
+          768
+        ],
+        "target": [
+          992,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1017,
+        "path": "/documents/new?type=QUOTATION",
+        "theme": "light",
+        "title": "New Quotation | Rajesh Interntional",
+        "viewport": [
+          1023,
+          768
+        ],
+        "target": [
+          1024,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1274,
+        "path": "/documents/new?type=QUOTATION",
+        "theme": "light",
+        "title": "New Quotation | Rajesh Interntional",
+        "viewport": [
+          1280,
+          800
+        ],
+        "target": [
+          1280,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1434,
+        "path": "/documents/new?type=QUOTATION",
+        "theme": "light",
+        "title": "New Quotation | Rajesh Interntional",
+        "viewport": [
+          1440,
+          900
+        ],
+        "target": [
+          1440,
+          900
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1913,
+        "path": "/documents/new?type=QUOTATION",
+        "theme": "light",
+        "title": "New Quotation | Rajesh Interntional",
+        "viewport": [
+          1919,
+          1080
+        ],
+        "target": [
+          1920,
+          1080
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 837,
+        "path": "/documents/new?type=QUOTATION",
+        "theme": "light",
+        "title": "New Quotation | Rajesh Interntional",
+        "viewport": [
+          843,
+          389
+        ],
+        "target": [
+          844,
+          390
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 353,
+        "path": "/documents/new?type=QUOTATION",
+        "theme": "dark",
+        "title": "New Quotation | Rajesh Interntional",
+        "viewport": [
+          359,
+          800
+        ],
+        "target": [
+          360,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 368,
+        "path": "/documents/new?type=QUOTATION",
+        "theme": "dark",
+        "title": "New Quotation | Rajesh Interntional",
+        "viewport": [
+          374,
+          811
+        ],
+        "target": [
+          375,
+          812
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 383,
+        "path": "/documents/new?type=QUOTATION",
+        "theme": "dark",
+        "title": "New Quotation | Rajesh Interntional",
+        "viewport": [
+          389,
+          843
+        ],
+        "target": [
+          390,
+          844
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 407,
+        "path": "/documents/new?type=QUOTATION",
+        "theme": "dark",
+        "title": "New Quotation | Rajesh Interntional",
+        "viewport": [
+          413,
+          895
+        ],
+        "target": [
+          414,
+          896
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 474,
+        "path": "/documents/new?type=QUOTATION",
+        "theme": "dark",
+        "title": "New Quotation | Rajesh Interntional",
+        "viewport": [
+          480,
+          800
+        ],
+        "target": [
+          480,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 570,
+        "path": "/documents/new?type=QUOTATION",
+        "theme": "dark",
+        "title": "New Quotation | Rajesh Interntional",
+        "viewport": [
+          576,
+          768
+        ],
+        "target": [
+          576,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 634,
+        "path": "/documents/new?type=QUOTATION",
+        "theme": "dark",
+        "title": "New Quotation | Rajesh Interntional",
+        "viewport": [
+          640,
+          800
+        ],
+        "target": [
+          640,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 762,
+        "path": "/documents/new?type=QUOTATION",
+        "theme": "dark",
+        "title": "New Quotation | Rajesh Interntional",
+        "viewport": [
+          768,
+          1023
+        ],
+        "target": [
+          768,
+          1024
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 813,
+        "path": "/documents/new?type=QUOTATION",
+        "theme": "dark",
+        "title": "New Quotation | Rajesh Interntional",
+        "viewport": [
+          819,
+          1180
+        ],
+        "target": [
+          820,
+          1180
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 986,
+        "path": "/documents/new?type=QUOTATION",
+        "theme": "dark",
+        "title": "New Quotation | Rajesh Interntional",
+        "viewport": [
+          992,
+          768
+        ],
+        "target": [
+          992,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1017,
+        "path": "/documents/new?type=QUOTATION",
+        "theme": "dark",
+        "title": "New Quotation | Rajesh Interntional",
+        "viewport": [
+          1023,
+          768
+        ],
+        "target": [
+          1024,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1274,
+        "path": "/documents/new?type=QUOTATION",
+        "theme": "dark",
+        "title": "New Quotation | Rajesh Interntional",
+        "viewport": [
+          1280,
+          800
+        ],
+        "target": [
+          1280,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1434,
+        "path": "/documents/new?type=QUOTATION",
+        "theme": "dark",
+        "title": "New Quotation | Rajesh Interntional",
+        "viewport": [
+          1440,
+          900
+        ],
+        "target": [
+          1440,
+          900
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1913,
+        "path": "/documents/new?type=QUOTATION",
+        "theme": "dark",
+        "title": "New Quotation | Rajesh Interntional",
+        "viewport": [
+          1919,
+          1080
+        ],
+        "target": [
+          1920,
+          1080
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 837,
+        "path": "/documents/new?type=QUOTATION",
+        "theme": "dark",
+        "title": "New Quotation | Rajesh Interntional",
+        "viewport": [
+          843,
+          389
+        ],
+        "target": [
+          844,
+          390
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 353,
+        "path": "/documents/new?type=INVOICE",
+        "theme": "light",
+        "title": "New Invoice | Rajesh Interntional",
+        "viewport": [
+          359,
+          800
+        ],
+        "target": [
+          360,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 368,
+        "path": "/documents/new?type=INVOICE",
+        "theme": "light",
+        "title": "New Invoice | Rajesh Interntional",
+        "viewport": [
+          374,
+          811
+        ],
+        "target": [
+          375,
+          812
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 383,
+        "path": "/documents/new?type=INVOICE",
+        "theme": "light",
+        "title": "New Invoice | Rajesh Interntional",
+        "viewport": [
+          389,
+          843
+        ],
+        "target": [
+          390,
+          844
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 407,
+        "path": "/documents/new?type=INVOICE",
+        "theme": "light",
+        "title": "New Invoice | Rajesh Interntional",
+        "viewport": [
+          413,
+          895
+        ],
+        "target": [
+          414,
+          896
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 474,
+        "path": "/documents/new?type=INVOICE",
+        "theme": "light",
+        "title": "New Invoice | Rajesh Interntional",
+        "viewport": [
+          480,
+          800
+        ],
+        "target": [
+          480,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 570,
+        "path": "/documents/new?type=INVOICE",
+        "theme": "light",
+        "title": "New Invoice | Rajesh Interntional",
+        "viewport": [
+          576,
+          768
+        ],
+        "target": [
+          576,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 634,
+        "path": "/documents/new?type=INVOICE",
+        "theme": "light",
+        "title": "New Invoice | Rajesh Interntional",
+        "viewport": [
+          640,
+          800
+        ],
+        "target": [
+          640,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 762,
+        "path": "/documents/new?type=INVOICE",
+        "theme": "light",
+        "title": "New Invoice | Rajesh Interntional",
+        "viewport": [
+          768,
+          1023
+        ],
+        "target": [
+          768,
+          1024
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 813,
+        "path": "/documents/new?type=INVOICE",
+        "theme": "light",
+        "title": "New Invoice | Rajesh Interntional",
+        "viewport": [
+          819,
+          1180
+        ],
+        "target": [
+          820,
+          1180
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 986,
+        "path": "/documents/new?type=INVOICE",
+        "theme": "light",
+        "title": "New Invoice | Rajesh Interntional",
+        "viewport": [
+          992,
+          768
+        ],
+        "target": [
+          992,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1017,
+        "path": "/documents/new?type=INVOICE",
+        "theme": "light",
+        "title": "New Invoice | Rajesh Interntional",
+        "viewport": [
+          1023,
+          768
+        ],
+        "target": [
+          1024,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1274,
+        "path": "/documents/new?type=INVOICE",
+        "theme": "light",
+        "title": "New Invoice | Rajesh Interntional",
+        "viewport": [
+          1280,
+          800
+        ],
+        "target": [
+          1280,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1434,
+        "path": "/documents/new?type=INVOICE",
+        "theme": "light",
+        "title": "New Invoice | Rajesh Interntional",
+        "viewport": [
+          1440,
+          900
+        ],
+        "target": [
+          1440,
+          900
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1913,
+        "path": "/documents/new?type=INVOICE",
+        "theme": "light",
+        "title": "New Invoice | Rajesh Interntional",
+        "viewport": [
+          1919,
+          1080
+        ],
+        "target": [
+          1920,
+          1080
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 837,
+        "path": "/documents/new?type=INVOICE",
+        "theme": "light",
+        "title": "New Invoice | Rajesh Interntional",
+        "viewport": [
+          843,
+          389
+        ],
+        "target": [
+          844,
+          390
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 353,
+        "path": "/documents/new?type=INVOICE",
+        "theme": "dark",
+        "title": "New Invoice | Rajesh Interntional",
+        "viewport": [
+          359,
+          800
+        ],
+        "target": [
+          360,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 368,
+        "path": "/documents/new?type=INVOICE",
+        "theme": "dark",
+        "title": "New Invoice | Rajesh Interntional",
+        "viewport": [
+          374,
+          811
+        ],
+        "target": [
+          375,
+          812
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 383,
+        "path": "/documents/new?type=INVOICE",
+        "theme": "dark",
+        "title": "New Invoice | Rajesh Interntional",
+        "viewport": [
+          389,
+          843
+        ],
+        "target": [
+          390,
+          844
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 407,
+        "path": "/documents/new?type=INVOICE",
+        "theme": "dark",
+        "title": "New Invoice | Rajesh Interntional",
+        "viewport": [
+          413,
+          895
+        ],
+        "target": [
+          414,
+          896
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 474,
+        "path": "/documents/new?type=INVOICE",
+        "theme": "dark",
+        "title": "New Invoice | Rajesh Interntional",
+        "viewport": [
+          480,
+          800
+        ],
+        "target": [
+          480,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 570,
+        "path": "/documents/new?type=INVOICE",
+        "theme": "dark",
+        "title": "New Invoice | Rajesh Interntional",
+        "viewport": [
+          576,
+          768
+        ],
+        "target": [
+          576,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 634,
+        "path": "/documents/new?type=INVOICE",
+        "theme": "dark",
+        "title": "New Invoice | Rajesh Interntional",
+        "viewport": [
+          640,
+          800
+        ],
+        "target": [
+          640,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 762,
+        "path": "/documents/new?type=INVOICE",
+        "theme": "dark",
+        "title": "New Invoice | Rajesh Interntional",
+        "viewport": [
+          768,
+          1023
+        ],
+        "target": [
+          768,
+          1024
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 813,
+        "path": "/documents/new?type=INVOICE",
+        "theme": "dark",
+        "title": "New Invoice | Rajesh Interntional",
+        "viewport": [
+          819,
+          1180
+        ],
+        "target": [
+          820,
+          1180
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 986,
+        "path": "/documents/new?type=INVOICE",
+        "theme": "dark",
+        "title": "New Invoice | Rajesh Interntional",
+        "viewport": [
+          992,
+          768
+        ],
+        "target": [
+          992,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1017,
+        "path": "/documents/new?type=INVOICE",
+        "theme": "dark",
+        "title": "New Invoice | Rajesh Interntional",
+        "viewport": [
+          1023,
+          768
+        ],
+        "target": [
+          1024,
+          768
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1274,
+        "path": "/documents/new?type=INVOICE",
+        "theme": "dark",
+        "title": "New Invoice | Rajesh Interntional",
+        "viewport": [
+          1280,
+          800
+        ],
+        "target": [
+          1280,
+          800
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1434,
+        "path": "/documents/new?type=INVOICE",
+        "theme": "dark",
+        "title": "New Invoice | Rajesh Interntional",
+        "viewport": [
+          1440,
+          900
+        ],
+        "target": [
+          1440,
+          900
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 1913,
+        "path": "/documents/new?type=INVOICE",
+        "theme": "dark",
+        "title": "New Invoice | Rajesh Interntional",
+        "viewport": [
+          1919,
+          1080
+        ],
+        "target": [
+          1920,
+          1080
+        ]
+      },
+      {
+        "errorPage": false,
+        "offenders": [],
+        "overflow": 0,
+        "pageWidth": 837,
+        "path": "/documents/new?type=INVOICE",
+        "theme": "dark",
+        "title": "New Invoice | Rajesh Interntional",
+        "viewport": [
+          843,
+          389
+        ],
+        "target": [
+          844,
+          390
+        ]
+      }
+    ],
+    "failures": [
+      {
+        "page": "/clients",
+        "reason": "Error: Timed out running CDP command \"Emulation.setFocusEmulationEnabled\" for tab 2"
+      }
+    ],
+    "pages": [
+      "/settings",
+      "/profile?success=true",
+      "/dashboard",
+      "/documents",
+      "/documents/new?type=QUOTATION",
+      "/documents/new?type=INVOICE"
+    ],
+    "recoveredNavigationIssues": [
+      {
+        "page": "/documents/new?type=INVOICE",
+        "reason": "Error: Browser Use cannot open https://penniless-shallow-goliath.ngrok-free.dev/documents/new in tab 2. Browser reported: net::ERR_ABORTED"
+      }
+    ]
+  },
+  "sizes": [
+    [
+      360,
+      800
+    ],
+    [
+      375,
+      812
+    ],
+    [
+      390,
+      844
+    ],
+    [
+      414,
+      896
+    ],
+    [
+      480,
+      800
+    ],
+    [
+      576,
+      768
+    ],
+    [
+      640,
+      800
+    ],
+    [
+      768,
+      1024
+    ],
+    [
+      820,
+      1180
+    ],
+    [
+      992,
+      768
+    ],
+    [
+      1024,
+      768
+    ],
+    [
+      1280,
+      800
+    ],
+    [
+      1440,
+      900
+    ],
+    [
+      1920,
+      1080
+    ],
+    [
+      844,
+      390
+    ]
+  ],
+  "initialTheme": "light"
+}

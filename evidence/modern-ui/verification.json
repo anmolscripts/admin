@@ -1,0 +1,35 @@
+{
+  "release": "C:\\Users\\USER\\Documents\\project\\admin\\dist\\builds\\spark-admin-1.0.0-2026-10-20T13-01-10-925Z",
+  "url": "https://penniless-shallow-goliath.ngrok-free.dev",
+  "verifiedAt": "2026-10-20T13:04:17.322Z",
+  "health": 200,
+  "publicAssets": [
+    "assets/css/components.css",
+    "assets/js/dashboard.js",
+    "assets/js/profile.js",
+    "assets/js/spark-feedback.js",
+    "assets/js/spark-modals.js",
+    "assets/js/spark-tom-select.js",
+    "assets/js/reporting-period.js",
+    "assets/libs/sweetalert2/sweetalert2.all.min.js"
+  ],
+  "rowCountsPreserved": 54,
+  "errorLogVerified": true,
+  "tests": {
+    "total": 951,
+    "passed": 951,
+    "failed": 0,
+    "skipped": 0
+  },
+  "browserChecks": [
+    "current FY created automatically",
+    "multi-FY reporting range",
+    "profile component",
+    "template editor and SweetAlert validation",
+    "theme persistence",
+    "dark dropdown and toolbar contrast",
+    "empty dashboard charts",
+    "no dashboard console errors"
+  ],
+  "visualProof": "evidence/modern-ui/profile-light.png"
+}

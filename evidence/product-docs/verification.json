@@ -1,0 +1,28 @@
+{
+  "verifiedAt": "2026-10-20T14:45:53.748Z",
+  "release": "C:\\Users\\USER\\Documents\\project\\admin\\dist\\builds\\spark-admin-1.0.0-2026-10-20T14-42-24-223Z",
+  "url": "https://penniless-shallow-goliath.ngrok-free.dev/product-guide",
+  "regressionTests": 962,
+  "regressionFailures": 0,
+  "finalFocusedTests": 11,
+  "finalFocusedFailures": 0,
+  "matchedDeployedFiles": 11,
+  "defaultAvatarMatchesUserImage": true,
+  "productionDataPreserved": true,
+  "browserVerified": [
+    "Documentation article layout",
+    "32 permission-filtered articles",
+    "Section search including reference notes",
+    "Deep link focus",
+    "Browser back navigation",
+    "Saved pages persist after reload",
+    "Screenshot zoom and Escape",
+    "Uploaded photo retained",
+    "Light and dark themes",
+    "No browser console errors"
+  ],
+  "notVerified": [
+    "Physical mobile devices",
+    "Printed output"
+  ]
+}

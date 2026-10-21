@@ -1,0 +1,364 @@
+{
+  "checks": [
+    {
+      "bodyScroll": true,
+      "bounds": {
+        "bottom": 783.9785413742065,
+        "left": 15.998133659362791,
+        "right": 343.6800184249878,
+        "top": 15.998133659362791
+      },
+      "closeInsideHeader": true,
+      "footerVisible": true,
+      "id": "templateEditorModal",
+      "theme": "dark",
+      "viewport": [
+        359,
+        800
+      ],
+      "withinViewport": true
+    },
+    {
+      "bodyScroll": false,
+      "bounds": {
+        "bottom": 988.362865447998,
+        "left": 134.32835388183594,
+        "right": 634.3283233642578,
+        "top": 35.4710807800293
+      },
+      "closeInsideHeader": true,
+      "footerVisible": true,
+      "id": "templateEditorModal",
+      "theme": "dark",
+      "viewport": [
+        768,
+        1023
+      ],
+      "withinViewport": true
+    },
+    {
+      "bodyScroll": true,
+      "bounds": {
+        "bottom": 752.6352186203003,
+        "left": 111.94029235839844,
+        "right": 911.9402923583984,
+        "top": 15.998133659362791
+      },
+      "closeInsideHeader": true,
+      "footerVisible": true,
+      "id": "templateEditorModal",
+      "theme": "dark",
+      "viewport": [
+        1023,
+        768
+      ],
+      "withinViewport": true
+    },
+    {
+      "bodyScroll": false,
+      "bounds": {
+        "bottom": 855.7135581970215,
+        "left": 320.14923095703125,
+        "right": 1120.1492309570312,
+        "top": 44.263057708740234
+      },
+      "closeInsideHeader": true,
+      "footerVisible": true,
+      "id": "templateEditorModal",
+      "theme": "dark",
+      "viewport": [
+        1440,
+        900
+      ],
+      "withinViewport": true
+    },
+    {
+      "bodyScroll": true,
+      "bounds": {
+        "bottom": 373.5307569503784,
+        "left": 171.64178466796875,
+        "right": 671.6417541503906,
+        "top": 15.998133659362791
+      },
+      "closeInsideHeader": true,
+      "footerVisible": true,
+      "id": "templateEditorModal",
+      "theme": "dark",
+      "viewport": [
+        843,
+        389
+      ],
+      "withinViewport": true
+    },
+    {
+      "bodyScroll": true,
+      "bounds": {
+        "bottom": 783.9785413742065,
+        "left": 15.998133659362791,
+        "right": 343.6800184249878,
+        "top": 15.998133659362791
+      },
+      "closeInsideHeader": true,
+      "footerVisible": true,
+      "id": "templateEditorModal",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ],
+      "withinViewport": true
+    },
+    {
+      "bodyScroll": false,
+      "bounds": {
+        "bottom": 988.362865447998,
+        "left": 134.32835388183594,
+        "right": 634.3283233642578,
+        "top": 35.4710807800293
+      },
+      "closeInsideHeader": true,
+      "footerVisible": true,
+      "id": "templateEditorModal",
+      "theme": "light",
+      "viewport": [
+        768,
+        1023
+      ],
+      "withinViewport": true
+    },
+    {
+      "bodyScroll": true,
+      "bounds": {
+        "bottom": 752.6352186203003,
+        "left": 111.94029235839844,
+        "right": 911.9402923583984,
+        "top": 15.998133659362791
+      },
+      "closeInsideHeader": true,
+      "footerVisible": true,
+      "id": "templateEditorModal",
+      "theme": "light",
+      "viewport": [
+        1023,
+        768
+      ],
+      "withinViewport": true
+    },
+    {
+      "bodyScroll": false,
+      "bounds": {
+        "bottom": 855.7135581970215,
+        "left": 320.14923095703125,
+        "right": 1120.1492309570312,
+        "top": 44.263057708740234
+      },
+      "closeInsideHeader": true,
+      "footerVisible": true,
+      "id": "templateEditorModal",
+      "theme": "light",
+      "viewport": [
+        1440,
+        900
+      ],
+      "withinViewport": true
+    },
+    {
+      "bodyScroll": true,
+      "bounds": {
+        "bottom": 373.5307569503784,
+        "left": 171.64178466796875,
+        "right": 671.6417541503906,
+        "top": 15.998133659362791
+      },
+      "closeInsideHeader": true,
+      "footerVisible": true,
+      "id": "templateEditorModal",
+      "theme": "light",
+      "viewport": [
+        843,
+        389
+      ],
+      "withinViewport": true
+    },
+    {
+      "bodyScroll": false,
+      "bounds": {
+        "bottom": 559.9346618652344,
+        "left": 15.998133659362791,
+        "right": 343.6800184249878,
+        "top": 240.04196166992188
+      },
+      "closeInsideHeader": false,
+      "footerVisible": true,
+      "id": "editPrefixModal_INVOICE",
+      "theme": "light",
+      "viewport": [
+        359,
+        800
+      ],
+      "withinViewport": true
+    },
+    {
+      "bodyScroll": false,
+      "bounds": {
+        "bottom": 662.8731079101562,
+        "left": 134.32835388183594,
+        "right": 634.3283233642578,
+        "top": 360.9608154296875
+      },
+      "closeInsideHeader": false,
+      "footerVisible": true,
+      "id": "editPrefixModal_INVOICE",
+      "theme": "light",
+      "viewport": [
+        768,
+        1023
+      ],
+      "withinViewport": true
+    },
+    {
+      "bodyScroll": false,
+      "bounds": {
+        "bottom": 535.2611694335938,
+        "left": 261.9402770996094,
+        "right": 761.9402465820312,
+        "top": 233.348876953125
+      },
+      "closeInsideHeader": true,
+      "footerVisible": true,
+      "id": "editPrefixModal_INVOICE",
+      "theme": "light",
+      "viewport": [
+        1023,
+        768
+      ],
+      "withinViewport": true
+    },
+    {
+      "bodyScroll": false,
+      "bounds": {
+        "bottom": 600.9328002929688,
+        "left": 470.1492309570313,
+        "right": 970.1492004394532,
+        "top": 299.0205078125
+      },
+      "closeInsideHeader": true,
+      "footerVisible": true,
+      "id": "editPrefixModal_INVOICE",
+      "theme": "light",
+      "viewport": [
+        1440,
+        900
+      ],
+      "withinViewport": true
+    },
+    {
+      "bodyScroll": false,
+      "bounds": {
+        "bottom": 345.7089309692383,
+        "left": 171.64178466796875,
+        "right": 671.6417541503906,
+        "top": 43.79663848876953
+      },
+      "closeInsideHeader": true,
+      "footerVisible": true,
+      "id": "editPrefixModal_INVOICE",
+      "theme": "light",
+      "viewport": [
+        843,
+        389
+      ],
+      "withinViewport": true
+    },
+    {
+      "bodyScroll": false,
+      "bounds": {
+        "bottom": 559.9346618652344,
+        "left": 15.998133659362791,
+        "right": 343.6800184249878,
+        "top": 240.04196166992188
+      },
+      "closeInsideHeader": false,
+      "footerVisible": true,
+      "id": "editPrefixModal_INVOICE",
+      "theme": "dark",
+      "viewport": [
+        359,
+        800
+      ],
+      "withinViewport": true
+    },
+    {
+      "bodyScroll": false,
+      "bounds": {
+        "bottom": 662.8731079101562,
+        "left": 134.32835388183594,
+        "right": 634.3283233642578,
+        "top": 360.9608154296875
+      },
+      "closeInsideHeader": false,
+      "footerVisible": true,
+      "id": "editPrefixModal_INVOICE",
+      "theme": "dark",
+      "viewport": [
+        768,
+        1023
+      ],
+      "withinViewport": true
+    },
+    {
+      "bodyScroll": false,
+      "bounds": {
+        "bottom": 535.2611694335938,
+        "left": 261.9402770996094,
+        "right": 761.9402465820312,
+        "top": 233.348876953125
+      },
+      "closeInsideHeader": true,
+      "footerVisible": true,
+      "id": "editPrefixModal_INVOICE",
+      "theme": "dark",
+      "viewport": [
+        1023,
+        768
+      ],
+      "withinViewport": true
+    },
+    {
+      "bodyScroll": false,
+      "bounds": {
+        "bottom": 600.9328002929688,
+        "left": 470.1492309570313,
+        "right": 970.1492004394532,
+        "top": 299.0205078125
+      },
+      "closeInsideHeader": true,
+      "footerVisible": true,
+      "id": "editPrefixModal_INVOICE",
+      "theme": "dark",
+      "viewport": [
+        1440,
+        900
+      ],
+      "withinViewport": true
+    },
+    {
+      "bodyScroll": false,
+      "bounds": {
+        "bottom": 345.7089309692383,
+        "left": 171.64178466796875,
+        "right": 671.6417541503906,
+        "top": 43.79663848876953
+      },
+      "closeInsideHeader": true,
+      "footerVisible": true,
+      "id": "editPrefixModal_INVOICE",
+      "theme": "dark",
+      "viewport": [
+        843,
+        389
+      ],
+      "withinViewport": true
+    }
+  ]
+}

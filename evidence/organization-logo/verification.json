@@ -1,0 +1,27 @@
+{
+  "verifiedAt": "2026-10-20T14:58:49.280Z",
+  "url": "https://penniless-shallow-goliath.ngrok-free.dev/settings",
+  "release": "C:\\Users\\USER\\Documents\\project\\admin\\dist\\builds\\spark-admin-1.0.0-2026-10-20T14-55-08-385Z",
+  "tests": {
+    "passed": 964,
+    "failed": 0,
+    "database": "isolated test database"
+  },
+  "browser": [
+    "File chooser opens",
+    "Selected logo renders as local data preview",
+    "Ready to save filename appears",
+    "Undo restores saved logo and clears selection",
+    "No console errors"
+  ],
+  "security": [
+    "SETTINGS EDIT enforced before parsing upload",
+    "CSRF checked after bounded multipart parsing",
+    "2MB limit and PNG/JPEG/WebP allowlist",
+    "Raster signature check",
+    "Random server-side filenames",
+    "Old uploaded logos retained"
+  ],
+  "productionLogoChangedDuringTesting": false,
+  "productionRowCountsPreserved": true
+}

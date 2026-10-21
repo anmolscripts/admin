@@ -1,0 +1,46 @@
+{
+  "verifiedAt": "2026-10-20T14:08:17.960Z",
+  "url": "https://penniless-shallow-goliath.ngrok-free.dev/product-guide",
+  "release": "C:\\Users\\USER\\Documents\\project\\admin\\dist\\builds\\spark-admin-1.0.0-2026-10-20T14-04-57-586Z",
+  "chapters": 32,
+  "steps": 134,
+  "trainingScreenshots": [
+    "workspace",
+    "profile",
+    "documents",
+    "clients",
+    "editor",
+    "history",
+    "reports",
+    "templates"
+  ],
+  "regression": {
+    "passed": 959,
+    "failed": 0,
+    "database": "isolated ui_audit test database"
+  },
+  "finalGuideTests": {
+    "passed": 8,
+    "failed": 0,
+    "includesProtectedImageDownload": true
+  },
+  "browserChecks": [
+    "Account menu link directly below My Profile",
+    "Task search",
+    "Sample calculator total 2124.00",
+    "Quiz feedback",
+    "Bookmark and completion persist through reload",
+    "Screenshot at 150% zoom",
+    "Escape closes image and returns focus",
+    "Light and dark themes",
+    "No browser console errors"
+  ],
+  "deployedFilesMatch": 14,
+  "databaseMigrationRequired": false,
+  "productionRowCountsPreserved": true,
+  "limitations": [
+    "Progress is local to each browser/user/business",
+    "Training screenshots use fictional illustrative values",
+    "Physical mobile devices and print output not exercised"
+  ]
+}
