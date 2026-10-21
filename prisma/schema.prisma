@@ -7,6 +7,9 @@ datasource db {
 }
 
 model User {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id                      Int                     @id @default(autoincrement())
   name                    String                  @db.VarChar(100)
   email                   String                  @unique @db.VarChar(150)
@@ -74,6 +77,9 @@ model User {
 }
 
 model Business {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   letters Letter[]
   id               Int                     @id @default(autoincrement())
   code             String                  @unique @db.VarChar(50)
@@ -129,6 +135,9 @@ model Business {
 }
 
 model Letter {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id            Int @id @default(autoincrement())
   businessId    Int
   business      Business @relation(fields: [businessId], references: [id])
@@ -155,6 +164,9 @@ model Letter {
 }
 
 model LetterRevision {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id          Int @id @default(autoincrement())
   letterId    Int
   letter      Letter @relation(fields: [letterId], references: [id])
@@ -170,6 +182,9 @@ model LetterRevision {
 }
 
 model BusinessMembership {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id         Int      @id @default(autoincrement())
   userId     Int
   businessId Int
@@ -188,6 +203,9 @@ model BusinessMembership {
 }
 
 model NumberingSequence {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id            Int      @id @default(autoincrement())
   businessId    Int
   entityType    String   @db.VarChar(50)
@@ -204,6 +222,9 @@ model NumberingSequence {
 }
 
 model BusinessPrefixConfig {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id         Int      @id @default(autoincrement())
   businessId Int
   entityType String   @db.VarChar(50)
@@ -218,6 +239,9 @@ model BusinessPrefixConfig {
 }
 
 model Client {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id               Int                @id @default(autoincrement())
   clientCode       String?            @db.VarChar(50)
   name             String
@@ -250,6 +274,9 @@ model Client {
 }
 
 model Supplier {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id               Int               @id @default(autoincrement())
   supplierCode     String?           @db.VarChar(50)
   name             String
@@ -282,6 +309,9 @@ model Supplier {
 }
 
 model PurchaseOrder {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id                     Int                 @id @default(autoincrement())
   orderNumber            String              @db.VarChar(50)
   businessId             Int?
@@ -327,6 +357,9 @@ model PurchaseOrder {
 }
 
 model PurchaseOrderItem {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id                Int                @id @default(autoincrement())
   purchaseOrderId   Int
   lineNumber        Int
@@ -354,6 +387,9 @@ model PurchaseOrderItem {
 }
 
 model PurchaseOrderNumberSequence {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id            Int      @id @default(autoincrement())
   year          Int      @unique
   currentNumber Int      @default(0)
@@ -364,6 +400,9 @@ model PurchaseOrderNumberSequence {
 }
 
 model SupplierBill {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id                   Int                @id @default(autoincrement())
   billNumber           String             @db.VarChar(50)
   internalNumber       String?            @db.VarChar(50)
@@ -421,6 +460,9 @@ model SupplierBill {
 }
 
 model SupplierBillItem {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id             Int          @id @default(autoincrement())
   supplierBillId Int
   lineNumber     Int
@@ -450,6 +492,9 @@ model SupplierBillItem {
 }
 
 model Expense {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id              Int            @id @default(autoincrement())
   expenseDate     DateTime       @db.Date
   amount          Decimal        @db.Decimal(12, 2)
@@ -475,6 +520,9 @@ model Expense {
 }
 
 model OtherIncome {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id              Int            @id @default(autoincrement())
   incomeDate      DateTime       @db.Date
   amount          Decimal        @db.Decimal(12, 2)
@@ -497,6 +545,9 @@ model OtherIncome {
 }
 
 model BusinessProfile {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id                  Int       @id @default(autoincrement())
   legalName           String
   displayName         String?
@@ -530,6 +581,9 @@ model BusinessProfile {
 }
 
 model Invoice {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id                         Int               @id @default(autoincrement())
   invoiceNumber              String            @db.VarChar(50)
   businessId                 Int?
@@ -613,6 +667,9 @@ model Invoice {
 }
 
 model InvoiceItem {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id                   Int                   @id @default(autoincrement())
   invoiceId            Int
   lineNumber           Int
@@ -635,6 +692,9 @@ model InvoiceItem {
 }
 
 model Item {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id             Int             @id @default(autoincrement())
   itemCode       String?         @db.VarChar(50)
   name           String          @db.VarChar(255)
@@ -663,6 +723,9 @@ model Item {
 }
 
 model Unit {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id          Int       @id @default(autoincrement())
   unitCode    String?   @db.VarChar(50)
   name        String    @db.VarChar(100)
@@ -687,6 +750,9 @@ model Unit {
 }
 
 model InvoiceRevision {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id          Int      @id @default(autoincrement())
   invoiceId   Int
   revisionNo  Int
@@ -707,6 +773,9 @@ model InvoiceRevision {
 }
 
 model Payment {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id              Int            @id @default(autoincrement())
   invoiceId       Int
   paymentDate     DateTime       @db.Date
@@ -736,6 +805,9 @@ model Payment {
 }
 
 model InvoiceNumberSequence {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id            Int          @id @default(autoincrement())
   year          Int
   currentNumber Int          @default(0)
@@ -748,6 +820,9 @@ model InvoiceNumberSequence {
 }
 
 model Role {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id              Int              @id @default(autoincrement())
   name            String           @unique @db.VarChar(50)
   description     String?          @db.VarChar(255)
@@ -761,6 +836,9 @@ model Role {
 }
 
 model Permission {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id              Int              @id @default(autoincrement())
   module          String           @db.VarChar(50)
   action          String           @db.VarChar(50)
@@ -776,6 +854,9 @@ model Permission {
 }
 
 model RolePermission {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id           Int        @id @default(autoincrement())
   roleId       Int
   permissionId Int
@@ -790,6 +871,9 @@ model RolePermission {
 }
 
 model UserPermission {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id           Int        @id @default(autoincrement())
   userId       Int
   permissionId Int
@@ -804,6 +888,9 @@ model UserPermission {
 }
 
 model Invitation {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id          Int       @id @default(autoincrement())
   userId      Int       @unique
   tokenHash   String    @unique @db.VarChar(64)
@@ -824,6 +911,9 @@ model Invitation {
 }
 
 model UserActivityLog {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id              Int       @id @default(autoincrement())
   actorUserId     Int?
   action          String    @db.VarChar(50)
@@ -849,6 +939,9 @@ model UserActivityLog {
 }
 
 model FinancialYear {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id                       Int                       @id @default(autoincrement())
   code                     String                    @db.VarChar(20)
   businessId               Int?
@@ -883,6 +976,9 @@ model FinancialYear {
 }
 
 model ChartOfAccount {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id                 Int                @id @default(autoincrement())
   code               String             @db.VarChar(50)
   businessId         Int?
@@ -922,6 +1018,9 @@ model ChartOfAccount {
 }
 
 model JournalEntry {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id              Int                @id @default(autoincrement())
   entryNumber     String             @db.VarChar(50)
   businessId      Int?
@@ -958,6 +1057,9 @@ model JournalEntry {
 }
 
 model JournalEntryLine {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id             Int            @id @default(autoincrement())
   journalEntryId Int
   accountId      Int
@@ -979,6 +1081,9 @@ model JournalEntryLine {
 }
 
 model JournalNumberSequence {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id              Int           @id @default(autoincrement())
   financialYearId Int           @unique
   currentNumber   Int           @default(0)
@@ -990,6 +1095,9 @@ model JournalNumberSequence {
 }
 
 model CreditDebitNote {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id                        Int                   @id @default(autoincrement())
   noteNumber                String                @db.VarChar(50)
   businessId                Int?
@@ -1059,6 +1167,9 @@ model CreditDebitNote {
 }
 
 model CreditDebitNoteItem {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id            Int             @id @default(autoincrement())
   noteId        Int
   invoiceItemId Int?
@@ -1085,6 +1196,9 @@ model CreditDebitNoteItem {
 }
 
 model CreditDebitNoteSequence {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id              Int           @id @default(autoincrement())
   noteType        NoteType
   financialYearId Int
@@ -1130,6 +1244,9 @@ enum AccountType {
 }
 
 model SupplierPayment {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id              Int            @id @default(autoincrement())
   paymentNumber   String         @db.VarChar(50)
   businessId      Int?
@@ -1161,6 +1278,9 @@ model SupplierPayment {
 }
 
 model StockMovement {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id             Int       @id @default(autoincrement())
   movementNumber String    @db.VarChar(50)
   requestKey     String?   @db.VarChar(100)
@@ -1197,6 +1317,9 @@ model StockMovement {
 }
 
 model Employee {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id                Int                     @id @default(autoincrement())
   employeeCode      String                  @db.VarChar(50)
   businessId        Int?
@@ -1231,6 +1354,9 @@ model Employee {
 }
 
 model SalaryStructure {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id               Int       @id @default(autoincrement())
   employeeId       Int
   effectiveFrom    DateTime  @db.Date
@@ -1257,6 +1383,9 @@ model SalaryStructure {
 }
 
 model PayrollPeriod {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id              Int            @id @default(autoincrement())
   financialYearId Int
   periodCode      String         @db.VarChar(20)
@@ -1288,6 +1417,9 @@ model PayrollPeriod {
 }
 
 model PayrollEntry {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id               Int           @id @default(autoincrement())
   payrollPeriodId  Int
   employeeId       Int
@@ -1319,6 +1451,9 @@ model PayrollEntry {
 }
 
 model EmployeeReimbursement {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id              Int            @id @default(autoincrement())
   employeeId      Int
   expenseDate     DateTime       @db.Date
@@ -1347,6 +1482,9 @@ model EmployeeReimbursement {
 }
 
 model Project {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id                       Int                          @id @default(autoincrement())
   code                     String                       @db.VarChar(50)
   businessId               Int
@@ -1412,6 +1550,9 @@ model Project {
 }
 
 model ProjectTask {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id               Int              @id @default(autoincrement())
   projectId        Int
   title            String           @db.VarChar(255)
@@ -1433,6 +1574,9 @@ model ProjectTask {
 }
 
 model TimesheetEntry {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id           Int          @id @default(autoincrement())
   projectId    Int
   taskId       Int?
@@ -1461,6 +1605,9 @@ model TimesheetEntry {
 }
 
 model ProjectCost {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id               Int           @id @default(autoincrement())
   businessId       Int
   projectId        Int
@@ -1497,6 +1644,9 @@ model ProjectCost {
 }
 
 model ProjectAttachment {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id               Int      @id @default(autoincrement())
   businessId       Int
   projectId        Int?
@@ -1528,6 +1678,9 @@ model ProjectAttachment {
 }
 
 model DailyWorker {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id              Int                  @id @default(autoincrement())
   businessId      Int
   workerCode      String               @db.VarChar(50)
@@ -1549,6 +1702,9 @@ model DailyWorker {
 }
 
 model ProjectDailyLabour {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id               Int           @id @default(autoincrement())
   businessId       Int
   projectId        Int
@@ -1584,6 +1740,9 @@ model ProjectDailyLabour {
 }
 
 model ProjectContractorWorkOrder {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id                 Int       @id @default(autoincrement())
   businessId         Int
   projectId          Int
@@ -1610,6 +1769,9 @@ model ProjectContractorWorkOrder {
 }
 
 model GoodsReceipt {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id                    Int                @id @default(autoincrement())
   requestKey            String?            @db.VarChar(100)
   requestHash           String?            @db.Char(64)
@@ -1646,6 +1808,9 @@ model GoodsReceipt {
 }
 
 model GoodsReceiptItem {
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
   id                  Int                @id @default(autoincrement())
   goodsReceiptId      Int
   goodsReceipt        GoodsReceipt       @relation(fields: [goodsReceiptId], references: [id], onDelete: Cascade)
@@ -1672,7 +1837,11 @@ model GoodsReceiptItem {
 }
 
 model Session {
-  id        String   @id @db.VarChar(128)
+  CREATED_BY Int?
+  CREATED_AT DateTime? @default(now())
+  IP_ADDRESS String? @db.VarChar(45)
+  id        Int      @id @default(autoincrement())
+  legacyId  String?  @unique @db.VarChar(128)
   sid       String   @unique @db.VarChar(128)
   data      String   @db.MediumText
   expiresAt DateTime

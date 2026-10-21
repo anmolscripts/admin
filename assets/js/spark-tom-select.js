@@ -81,8 +81,7 @@
             return null;
         }
 
-        const optionCount = el.options ? el.options.length : 0;
-        const isSearchable = (optionCount > 7 && el.dataset.searchable !== 'false') || el.dataset.searchable === 'true';
+        const isSearchable = el.dataset.searchable !== 'false';
         const isSmall = el.classList.contains('form-select-sm') ||
                         el.classList.contains('pagination-size-select') ||
                         el.classList.contains('spark-dt-size-select');
@@ -99,7 +98,7 @@
         }
 
         // Detect modal container so dropdown is never clipped and focus isn't trapped
-        const modalContainer = el.closest('.modal-content') || el.closest('.modal-body') || el.closest('.modal');
+        const modalContainer = el.closest('.modal');
         const dropdownParent = modalContainer ? modalContainer : 'body';
 
         const plugins = {};
@@ -156,6 +155,19 @@
                     // Tom Select already updates the native select and dispatches change once.
                 }
             });
+
+            if (modalContainer) {
+                // Tom Select only positions detached menus itself when their parent is body.
+                tsInstance.positionDropdown = function () {
+                    const control = this.control.getBoundingClientRect();
+                    const parent = modalContainer.getBoundingClientRect();
+                    Object.assign(this.dropdown.style, {
+                        left: `${control.left - parent.left + modalContainer.scrollLeft}px`,
+                        top: `${control.bottom - parent.top + modalContainer.scrollTop}px`,
+                        width: `${control.width}px`
+                    });
+                };
+            }
 
             // Detached menus must not float over the header after the page scrolls.
             // Keep scrolling/searching inside the menu working normally.

@@ -112,13 +112,11 @@ describe('Password Rotation Guard & Security Suite', () => {
         await prisma.session.createMany({
             data: [
                 {
-                    id: userSid,
                     sid: userSid,
                     data: JSON.stringify({ user: { id: user.id, email: user.email, role: user.role } }),
                     expiresAt: new Date(Date.now() + 3600000)
                 },
                 {
-                    id: unrelatedSid,
                     sid: unrelatedSid,
                     data: JSON.stringify({ user: { id: unrelatedUser.id, email: unrelatedUser.email, role: unrelatedUser.role } }),
                     expiresAt: new Date(Date.now() + 3600000)

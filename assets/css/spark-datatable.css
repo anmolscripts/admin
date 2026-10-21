@@ -248,7 +248,7 @@
 .spark-dt-table thead th.sortable {
   cursor: pointer;
   user-select: none;
-  position: relative;
+  position: sticky;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 

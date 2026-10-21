@@ -984,7 +984,6 @@ describe('Authentication Module Test Suite', () => {
                 // Insert expired session directly
                 await prisma.session.create({
                     data: {
-                        id: expiredSid,
                         sid: expiredSid,
                         data: JSON.stringify({ expired: true }),
                         expiresAt: new Date(Date.now() - 5000)

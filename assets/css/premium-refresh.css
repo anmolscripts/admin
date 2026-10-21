@@ -2330,11 +2330,15 @@ tr[data-record-type]:focus-visible { outline: 2px solid var(--bs-primary, #0d6ef
 .form-check-input:checked, .form-check-input-custom:checked { background-color: var(--component-accent); border-color: var(--component-accent); }
 .form-check-input[type="checkbox"] { border-radius: 6px; }
 .form-check-input[type="checkbox"]:checked, .form-check-input-custom[type="checkbox"]:checked {
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23072f1f' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m6 10 3 3 6-6'/%3e%3c/svg%3e");
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m6 10 3 3 6-6'/%3e%3c/svg%3e");
 }
-.form-check-input[type="radio"]:checked { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3ccircle cx='8' cy='8' r='3' fill='%23072f1f'/%3e%3c/svg%3e"); }
+.form-check-input[type="radio"]:checked { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3ccircle cx='8' cy='8' r='3' fill='%23ffffff'/%3e%3c/svg%3e"); }
 .form-switch .form-check-input { width: 2.375rem; height: 1.25rem; border-radius: 2rem; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%236c7e75'/%3e%3c/svg%3e"); }
-.form-switch .form-check-input:checked { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23072f1f'/%3e%3c/svg%3e"); }
+.form-switch .form-check-input:checked { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='white'/%3e%3c/svg%3e"); background-position: right center; }
+.form-check { padding-left: 0; display: flex; align-items: center; gap: .6rem; min-height: 1.5rem; }
+.form-check .form-check-input { float: none; margin: 0; flex-shrink: 0; }
+.form-check.d-inline-block { display: inline-flex !important; }
+.form-check-label { cursor: pointer; }
 .form-check-input:focus, .form-check-input-custom:focus { border-color: #91b52d; box-shadow: 0 0 0 .2rem var(--component-focus); }
 .form-check-input:disabled { cursor: not-allowed; opacity: .5; }
 .table, .table-custom, .spark-dt-table, .documents-table {

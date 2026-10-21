@@ -61,6 +61,8 @@ function parseArguments(argv) {
         const arg = argv[index];
         if (arg === '--backup-confirmed') {
             options.backupConfirmed = true;
+        } else if (arg === '--skip-backup') {
+            options.skipBackup = true;
         } else if (arg === '--create-database') {
             options.createDatabase = true;
         } else if (arg === '--confirm-db') {
@@ -72,6 +74,7 @@ function parseArguments(argv) {
             throw new Error(`Unknown option "${arg}".`);
         }
     }
+    if (options.backupConfirmed && options.skipBackup) throw new Error('Choose --backup-confirmed or --skip-backup, not both.');
     return options;
 }
 
@@ -129,8 +132,8 @@ async function main(argv = process.argv.slice(2), env, dependencies = {}) {
     if (options.confirmDatabase !== target.database) {
         throw new Error(`Target confirmation is required: pass --confirm-db=${target.database}.`);
     }
-    if (!options.backupConfirmed) {
-        throw new Error('Confirm a verified pre-upgrade backup with --backup-confirmed before continuing.');
+    if (!options.backupConfirmed && !options.skipBackup) {
+        throw new Error('Confirm a verified pre-upgrade backup with --backup-confirmed or explicitly pass --skip-backup before continuing.');
     }
     const cli = dependencies.runPrisma || runPrisma;
     const log = dependencies.log || console.log;
@@ -139,6 +142,7 @@ async function main(argv = process.argv.slice(2), env, dependencies = {}) {
     const migrations = readMigrations(dependencies.migrationsDirectory || path.join(ROOT_DIR, 'prisma', 'migrations'));
 
     log(`Target: ${target.database} on ${target.host}:${target.port} (${target.protocol})`);
+    if (options.skipBackup) log('Backup skipped by explicit --skip-backup option.');
     log('Policy: shipped forward migrations only; creation requires --create-database; no reset, seed, grants, or db push.');
 
     cli(['validate'], env);

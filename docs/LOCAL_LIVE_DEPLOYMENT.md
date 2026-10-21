@@ -2,6 +2,16 @@
 
 Run `npm run build` from the project root. It backs up the previous release and configured database, validates and packages the application, installs production dependencies, stops the managed app, applies committed forward migrations, verifies existing table row counts, starts the production release, refreshes ngrok, and prints the verified HTTPS link.
 
+To run the same deployment without creating a SQL dump or copying the previous release:
+
+```sh
+npm run build -- --skip-backup
+```
+
+The `--` passes the option from npm to the deployment command. This mode keeps schema validation, forward migrations, row-count verification, production dependency installation, restart, health checks and ngrok handling. It never resets or seeds the database, deletes existing backups, or removes uploads. Deployment row-count evidence is saved under `data/deployments/deploy-*`; deployment state records `backup: null`. There is no new recovery backup for this deployment. Normal `npm run build` still creates backups.
+
+For a schema-only upgrade without backup acknowledgement, use `npm run db:upgrade -- --confirm-db=<exact-database-name> --skip-backup`. Exact target confirmation, migration provenance and history checks still apply. The skip option does not allow otherwise-rejected migrations or bypass the deployment's strictly additive SQL check.
+
 The development checkout keeps its own `.env`. Releases have production settings and share the project's existing attachment and upload storage. You can develop with `npm run dev` using a different port (for example `PORT=3001` in your development `.env`); the public production app uses port 3000. Use a separate development database if development should not change live records.
 
 - `npm run live:status`: verify local and public database health and display the deployed release/link.

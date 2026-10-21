@@ -73,6 +73,33 @@ describe('Phase 5: Inventory & Item CSV Import with Dry-Run Preview Tests', () =
         await prisma.$disconnect();
     });
 
+    it('item transfer routes render, download every format, preview multipart Excel and reject missing CSRF', async () => {
+        const headers = { Cookie: authCookie };
+        const page = await fetch(`${baseUrl}/items`, { headers });
+        assert.equal(page.status, 200);
+        assert.ok((await page.text()).includes('item-import-form'));
+        for (const format of ['xlsx','csv','pdf','print']) {
+            const response = await fetch(`${baseUrl}/api/items/export?format=${format}`, { headers });
+            assert.equal(response.status, 200, await response.clone().text());
+            if (format === 'pdf') assert.equal(Buffer.from(await response.arrayBuffer()).subarray(0,4).toString(), '%PDF');
+            else assert.ok((await response.arrayBuffer()).byteLength > 0);
+        }
+        for (const format of ['xlsx','csv']) {
+            const sample = await fetch(`${baseUrl}/api/items/import/sample?format=${format}`, { headers });
+            assert.equal(sample.status, 200);
+            const body = new FormData();
+            body.set('file', new Blob([await sample.arrayBuffer()]), `sample.${format}`);
+            const preview = await fetch(`${baseUrl}/api/items/import/preview`, { method: 'POST', headers: { ...headers, 'X-CSRF-Token': csrfToken }, body });
+            assert.equal(preview.status, 200, await preview.clone().text());
+            assert.equal((await preview.json()).summary.validCount, 1);
+            const denied = await fetch(`${baseUrl}/api/items/import/preview`, { method: 'POST', headers, body });
+            assert.equal(denied.status, 403);
+        }
+        const invalid = await fetch(`${baseUrl}/api/items/export?format=unknown`, { headers });
+        assert.equal(invalid.status, 400);
+        assert.equal((await fetch(`${baseUrl}/health`)).status, 200);
+    });
+
     describe('1. CSV Parsing & Dry-Run Preview', () => {
         it('1.1 parses valid CSV with preview details and action detection', async () => {
             const csv = `name,unit,rate,hsn,gstrate,description

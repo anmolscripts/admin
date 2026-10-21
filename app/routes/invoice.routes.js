@@ -20,7 +20,10 @@ router.get('/dashboard/metrics', requirePermission('DASHBOARD', 'VIEW'), dashboa
 
 // Item Master API routes (must precede parameterized routes)
 router.get('/items/search', requirePermission('ITEMS', 'VIEW'), itemController.searchItems);
-router.post('/items/import/preview', requirePermission('ITEMS', 'CREATE'), itemController.previewImport);
+router.get('/items/export', requirePermission('ITEMS', 'VIEW'), itemController.exportItems);
+router.get('/items/import/sample', requirePermission('ITEMS', 'CREATE'), itemController.importSample);
+const itemUpload = require('multer')({ storage: require('multer').memoryStorage(), limits: { fileSize: 2 * 1024 * 1024, files: 1 } }).single('file');
+router.post('/items/import/preview', requirePermission('ITEMS', 'CREATE'), (req, res, next) => itemUpload(req, res, error => error ? res.status(400).json({ success: false, error: 'Upload one CSV or Excel file up to 2 MB.' }) : next()), itemController.previewImport);
 router.post('/items/import/commit', requirePermission('ITEMS', 'CREATE'), itemController.commitImport);
 router.get('/items', requirePermission('ITEMS', 'VIEW'), itemController.listItems);
 router.get('/items/:id', requirePermission('ITEMS', 'VIEW'), itemController.getItem);

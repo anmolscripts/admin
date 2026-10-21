@@ -131,18 +131,26 @@ function releaseEnvironment(release, base, previous) {
     return { ...process.env, ...env };
 }
 
-async function main() {
+function parseArguments(argv) {
+    const { values } = require('node:util').parseArgs({ args: argv, options: {
+        status: { type: 'boolean' }, 'skip-backup': { type: 'boolean' }
+    } });
+    if (values.status && values['skip-backup']) throw new Error('--status cannot be combined with --skip-backup.');
+    return { status: !!values.status, skipBackup: !!values['skip-backup'] };
+}
+
+async function main(argv = process.argv.slice(2)) {
+    const options = parseArguments(argv);
     fs.mkdirSync(DATA, { recursive: true });
     const config = read(CONFIG);
     let state = read(STATE);
-    if (process.argv.includes('--status')) {
+    if (options.status) {
         if (!state.url) throw new Error('No managed deployment found. Run npm run build first.');
         await health('http://127.0.0.1:3000', 1);
         await health(state.url, 1);
         console.log(`Production healthy: ${state.url}\nRelease: ${state.release}\nDeployed: ${state.deployedAt}`);
         return;
     }
-    if (process.argv.slice(2).length) throw new Error('Supported option: --status');
     const lock = path.join(DATA, 'deployment.lock');
     const fd = fs.openSync(lock, 'wx');
     fs.writeFileSync(fd, String(process.pid));
@@ -163,23 +171,30 @@ async function main() {
         db = await require('mariadb').createConnection(preflight.connectionOptions(env, target));
         const applied = new Set((await db.query('SELECT migration_name FROM _prisma_migrations')).map(r => r.migration_name));
         for (const m of migrations.filter(m => !applied.has(m.name))) assertAdditive(fs.readFileSync(path.join(ROOT, 'prisma/migrations', m.name, 'migration.sql'), 'utf8'), m.name);
-        const backup = path.join(DATA, 'backups', 'deploy-' + new Date().toISOString().replace(/[:.]/g, '-'));
-        fs.mkdirSync(backup, { recursive: true });
+        const deploymentId = 'deploy-' + new Date().toISOString().replace(/[:.]/g, '-');
+        const backup = options.skipBackup ? null : path.join(DATA, 'backups', deploymentId);
         if (state.release) {
             const releaseRoot = path.join(ROOT, 'dist/builds') + path.sep;
             if (!path.resolve(state.release).startsWith(releaseRoot)) throw new Error('Current release is outside dist/builds.');
-            fs.cpSync(state.release, path.join(backup, 'release'), { recursive: true,
-                filter: source => !fs.lstatSync(source).isSymbolicLink() && !source.split(path.sep).includes('node_modules') });
         }
-        const url = new URL(env.DATABASE_URL);
-        const dumpPath = config.mysqldumpPath || (process.platform === 'win32' ? 'C:/Program Files/MySQL/MySQL Server 8.4/bin/mysqldump.exe' : 'mysqldump');
-        const dump = path.join(backup, target.database + '.sql');
-        const result = spawnSync(dumpPath, ['--host='+target.host, '--port='+target.port, '--user='+decodeURIComponent(url.username), '--single-transaction', '--routines', '--events', '--triggers', '--hex-blob', '--no-tablespaces', '--set-gtid-purged=OFF', '--result-file='+dump, target.database], {
-            env: { ...env, MYSQL_PWD: decodeURIComponent(url.password) }, encoding: 'utf8'
-        });
-        if (result.status !== 0 || !fs.existsSync(dump) || !fs.readFileSync(dump, 'utf8').includes('-- Dump completed on')) throw new Error('Complete SQL backup could not be verified; deployment stopped.');
-        save(path.join(backup, 'previous-state.json'), previous);
-        console.log(`Previous release and database backed up: ${backup}`);
+        if (backup) {
+            fs.mkdirSync(backup, { recursive: true });
+            if (state.release) {
+                fs.cpSync(state.release, path.join(backup, 'release'), { recursive: true,
+                    filter: source => !fs.lstatSync(source).isSymbolicLink() && !source.split(path.sep).includes('node_modules') });
+            }
+            const url = new URL(env.DATABASE_URL);
+            const dumpPath = config.mysqldumpPath || (process.platform === 'win32' ? 'C:/Program Files/MySQL/MySQL Server 8.4/bin/mysqldump.exe' : 'mysqldump');
+            const dump = path.join(backup, target.database + '.sql');
+            const result = spawnSync(dumpPath, ['--host='+target.host, '--port='+target.port, '--user='+decodeURIComponent(url.username), '--single-transaction', '--routines', '--events', '--triggers', '--hex-blob', '--no-tablespaces', '--set-gtid-purged=OFF', '--result-file='+dump, target.database], {
+                env: { ...env, MYSQL_PWD: decodeURIComponent(url.password) }, encoding: 'utf8'
+            });
+            if (result.status !== 0 || !fs.existsSync(dump) || !fs.readFileSync(dump, 'utf8').includes('-- Dump completed on')) throw new Error('Complete SQL backup could not be verified; deployment stopped.');
+            save(path.join(backup, 'previous-state.json'), previous);
+            console.log(`Previous release and database backed up: ${backup}`);
+        } else console.log('Backup skipped (--skip-backup). Schema and existing-data checks remain enabled.');
+        const evidence = backup || path.join(DATA, 'deployments', deploymentId);
+        fs.mkdirSync(evidence, { recursive: true });
         const release = require('./build').build();
         const productionEnv = releaseEnvironment(release, base, previous.release);
         run([process.env.npm_execpath, 'ci', '--omit=dev', '--no-audit', '--no-fund'], release, productionEnv);
@@ -190,14 +205,14 @@ async function main() {
             const table = Object.values(row)[0];
             before[table] = String((await db.query('SELECT COUNT(*) AS n FROM '+db.escapeId(table)))[0].n);
         }
-        save(path.join(backup, 'row-counts-before.json'), before);
-        run([path.join(release, 'scripts/db-upgrade.js'), '--confirm-db='+target.database, '--backup-confirmed'], release, productionEnv);
+        save(path.join(evidence, 'row-counts-before.json'), before);
+        run([path.join(release, 'scripts/db-upgrade.js'), '--confirm-db='+target.database, options.skipBackup ? '--skip-backup' : '--backup-confirmed'], release, productionEnv);
         const after = {};
         for (const table of Object.keys(before)) {
             after[table] = String((await db.query('SELECT COUNT(*) AS n FROM '+db.escapeId(table)))[0].n);
-            if (table !== '_prisma_migrations' && before[table] !== after[table]) throw new Error(`Row count changed in ${table}. Review backup and migration; no automatic database restore attempted.`);
+            if (table !== '_prisma_migrations' && before[table] !== after[table]) throw new Error(`Row count changed in ${table}. Review migration and deployment evidence; no automatic database restore attempted.`);
         }
-        save(path.join(backup, 'row-counts-after.json'), after);
+        save(path.join(evidence, 'row-counts-after.json'), after);
         const server = path.join(release, 'app/server.js');
         newPid = launch(process.execPath, [server], release, productionEnv, 'production');
         state = { ...state, release, appPid: newPid, appIdentity: server, backup, deployedAt: new Date().toISOString() };
@@ -253,4 +268,4 @@ if (require.main === module) main().catch(error => {
     console.error('[DEPLOYMENT FAILED] ' + require('./db-upgrade').sanitizeOutput(error.message, env.DATABASE_URL));
     process.exitCode = 1;
 });
-module.exports = { assertAdditive, health, tunnelUrl };
+module.exports = { assertAdditive, health, tunnelUrl, main, parseArguments };

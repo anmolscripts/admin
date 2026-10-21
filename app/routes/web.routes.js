@@ -603,7 +603,11 @@ router.get('/items', requireAuth, requirePermission('ITEMS', 'VIEW'), async (req
     try {
         const { search, active } = req.query;
         const [result, unitList] = await Promise.all([
-            itemService.listItems({ search, active, limit: 100, businessId:req.businessId }),
+            prisma.item.findMany({ where: {
+                businessId: req.businessId,
+                ...(search ? { OR: ['name','description','hsnSac','itemCode'].map(key => ({ [key]: { contains: String(search) } })) } : {}),
+                ...(['true','false'].includes(active) ? { active: active === 'true' } : {})
+            }, orderBy: { name: 'asc' }, include: { createdBy: { select: { name: true } } } }).then(data => ({ data })),
             unitService.getActiveUnits(req.businessId)
         ]);
         res.render('items/index', {

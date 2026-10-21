@@ -84,6 +84,26 @@ test('dropdown closes on viewport scroll but remains usable when scrolling its o
         ts.destroy();
     } finally { instance.window.close(); }
 });
+
+test('small modal dropdowns are searchable and remain inside the focus trap outside clipped content', async () => {
+    const instance = await dom('<div class="modal"><div class="modal-content"><div class="modal-body"><select id="sample"><option value="0">Nil</option><option value="18">Standard</option></select></div></div></div>');
+    try {
+        const w = instance.window, ts = w.document.getElementById('sample').tomselect;
+        assert.equal(ts.dropdown.parentElement, w.document.querySelector('.modal'));
+        assert.ok(ts.dropdown.querySelector('input'));
+        ts.control.getBoundingClientRect = () => ({ left: 120, bottom: 240, width: 180 });
+        ts.dropdown.parentElement.getBoundingClientRect = () => ({ left: 20, top: 30 });
+        ts.open();
+        assert.equal(ts.dropdown.style.left, '100px');
+        assert.equal(ts.dropdown.style.top, '210px');
+        assert.equal(ts.dropdown.style.width, '180px');
+        ts.setTextboxValue('Standard');
+        ts.refreshOptions(false);
+        assert.equal(ts.dropdown_content.querySelectorAll('[data-selectable]').length, 1);
+        ts.setValue('18');
+        assert.equal(w.document.getElementById('sample').value, '18');
+    } finally { instance.window.close(); }
+});
 test('removed dynamic rows release their detached dropdowns and select instances', async () => {
     const instance = await dom('<div id="row"><select id="sample"><option value="">Choose</option><option value="a">Alpha</option></select></div>');
     try {

@@ -57,6 +57,21 @@ function harness(options = {}) {
 }
 
 describe('guarded migration orchestration with mocked driver and Prisma only', () => {
+    it('explicitly skips backup acknowledgement while preserving target checks and forward-only commands', async () => {
+        const h = harness();
+        const before = structuredClone(h.state.businessRows);
+        await main(['--confirm-db=approved_release', '--skip-backup'], env, h.deps);
+        assert.deepEqual(h.cli, ['validate', 'migrate deploy', 'migrate status', 'generate']);
+        assert.deepEqual(h.state.businessRows, before);
+        assert.ok(h.logs.some(line => line.includes('Backup skipped')));
+        assert.ok(h.queries.every(sql => sql.startsWith('SELECT ')));
+        for (const args of [['--skip-backup'], ['--confirm-db=wrong','--skip-backup'], [...flags,'--skip-backup']]) {
+            const denied = harness();
+            await assert.rejects(main(args, env, denied.deps), /confirmation|not both/);
+            assert.deepEqual(denied.cli, []);
+            assert.deepEqual(denied.connections, []);
+        }
+    });
     it('upgrades an existing populated database without CREATE, reset, seed or row changes', async () => {
         const h = harness();
         const before = structuredClone(h.state.businessRows);

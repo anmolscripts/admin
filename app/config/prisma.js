@@ -56,7 +56,7 @@ function createPrismaClient() {
             timeout: 20000
         },
         log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error']
-    });
+    }).$extends(require('./creationTracking').extension(require('@prisma/client').Prisma));
 
     return prismaInstance;
 }

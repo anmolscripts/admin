@@ -573,10 +573,11 @@ async function run() {
 
         // 11.7 Migration 20: Persistent Sessions and Master Record Identifiers
         await upgConn.query(`
-            INSERT INTO sessions (id, sid, data, expiresAt, createdAt, updatedAt)
-            VALUES ('test-sess-1', 'test-sess-1', '{"test":true}', DATE_ADD(NOW(), INTERVAL 1 HOUR), NOW(), NOW())
+            INSERT INTO sessions (sid, data, expiresAt, createdAt, updatedAt)
+            VALUES ('test-sess-1', '{"test":true}', DATE_ADD(NOW(), INTERVAL 1 HOUR), NOW(), NOW())
         `);
-        const sess = (await upgConn.query(`SELECT id, sid FROM sessions WHERE id = 'test-sess-1'`))[0];
+        const sess = (await upgConn.query(`SELECT id, sid FROM sessions WHERE sid = 'test-sess-1'`))[0];
+        if (!Number.isSafeInteger(sess.id) || sess.id < 1) throw new Error('Session primary key must auto-increment.');
         console.log(`  ✔ Migration 20: Persistent session storage operative: session ID "${sess.sid}"`);
 
         // 11.8 Migration 21: Tenant-Scoped Payroll Periods

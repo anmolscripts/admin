@@ -71,6 +71,7 @@ const { attachUserPermissions } = require('./middleware/permission.middleware');
 
 // Session management
 app.use(sessionMiddleware);
+app.use((req, res, next) => require('./config/creationTracking').context.run(req, next));
 app.use(require('./middleware/auth.middleware').validateSessionCredentials);
 
 // CSRF protection for all state-changing requests

@@ -1,6 +1,7 @@
 const itemService = require('../services/item.service');
 
 function handleControllerError(err, res, next) {
+    if (err.code === 'P2002') return res.status(409).json({ success: false, error: 'An item with this name or item code already exists in the business.' });
     if ([400,403,404,409].includes(err.statusCode)) return res.status(err.statusCode).json({success:false,error:err.message});
     if (err instanceof itemService.ValidationError) {
         return res.status(400).json({ success: false, error: err.message });
@@ -125,7 +126,13 @@ async function updateItem(req, res, next) {
  */
 async function previewImport(req, res, next) {
     try {
-        const { csvContent } = req.body;
+        let { csvContent } = req.body;
+        if (req.file) {
+            try {
+                const rows = await require('../services/itemTransfer.service').readImport(req.file.buffer, req.file.originalname);
+                csvContent = rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+            } catch (error) { throw new itemService.ValidationError(error.message); }
+        }
         const result = await itemService.parseAndValidateItemCsv(csvContent,req.businessId);
         return res.status(200).json({
             success: true,
@@ -134,6 +141,37 @@ async function previewImport(req, res, next) {
     } catch (err) {
         return handleControllerError(err, res, next);
     }
+}
+
+async function exportItems(req, res, next) {
+    try {
+        const transfer = require('../services/itemTransfer.service');
+        const format = req.query.format || 'xlsx';
+        if (!['xlsx','csv','pdf','print'].includes(format)) throw new itemService.ValidationError('Choose Excel, CSV, PDF or print.');
+        if (!req.businessId) throw new itemService.ValidationError('Business context required.');
+        const where = { businessId: Number(req.businessId) };
+        if (req.query.search) where.OR = ['name','description','hsnSac','itemCode'].map(key => ({ [key]: { contains: String(req.query.search) } }));
+        if (['true','false'].includes(req.query.active)) where.active = req.query.active === 'true';
+        const items = await require('../config/prisma').item.findMany({ where, orderBy: { name: 'asc' } });
+        const branding = await require('../services/businessProfile.service').getBranding(req.businessId);
+        if (format === 'print') return res.type('html').send(transfer.printHtml(items, branding));
+        res.attachment(`item-list.${format}`);
+        if (format === 'pdf') return res.type('pdf').send(await transfer.pdf(items, branding));
+        const workbook = await transfer.workbookFor(items, branding);
+        if (format === 'csv') return res.type('text/csv').send(Buffer.concat([Buffer.from('\uFEFF'), await workbook.csv.writeBuffer()]));
+        return res.type('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet').send(await workbook.xlsx.writeBuffer());
+    } catch (error) { return handleControllerError(error, res, next); }
+}
+
+async function importSample(req, res, next) {
+    try {
+        const format = req.query.format || 'csv';
+        if (!['csv','xlsx'].includes(format)) throw new itemService.ValidationError('Choose CSV or Excel.');
+        const book = await require('../services/itemTransfer.service').workbookFor([], {}, true);
+        res.attachment(`item-import-sample.${format}`);
+        if (format === 'csv') return res.type('text/csv').send(await book.csv.writeBuffer());
+        return res.type('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet').send(await book.xlsx.writeBuffer());
+    } catch (error) { return handleControllerError(error, res, next); }
 }
 
 /**
@@ -156,6 +194,8 @@ async function commitImport(req, res, next) {
 }
 
 module.exports = {
+    exportItems,
+    importSample,
     searchItems,
     listItems,
     getItem,

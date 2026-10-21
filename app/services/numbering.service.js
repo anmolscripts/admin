@@ -352,14 +352,17 @@ async function allocateNumber({ businessId, entityType, date, tx = null, overrid
         while (attempts < maxAttempts) {
             try {
                 // Ensure sequence row exists and atomically increment
+                const request = require('../config/creationTracking').context.getStore();
                 await client.$executeRawUnsafe(
-                    'INSERT INTO numbering_sequences (businessId, entityType, year, month, currentNumber, createdAt, updatedAt) ' +
-                    'VALUES (?, ?, ?, ?, 1, NOW(), NOW()) ' +
+                    'INSERT INTO numbering_sequences (businessId, entityType, year, month, currentNumber, createdAt, updatedAt, CREATED_BY, IP_ADDRESS) ' +
+                    'VALUES (?, ?, ?, ?, 1, NOW(), NOW(), ?, ?) ' +
                     'ON DUPLICATE KEY UPDATE currentNumber = currentNumber + 1, updatedAt = NOW()',
                     activeBusinessId,
                     normType,
                     year,
-                    month
+                    month,
+                    request?.session?.user?.id || null,
+                    request?.ip ? String(request.ip).slice(0,45) : null
                 );
 
                 const rows = await client.$queryRawUnsafe(

@@ -34,8 +34,9 @@ async function inspect(type, id, context) {
     const allowed = context.permissions.hasPermission(def.module,def.editAction);
     const fields=visibleFields(type,context);
     const data = Object.fromEntries(Object.entries(history.snapshot(type,record)).filter(([key])=>fields.includes(key)));
+    for (const key of ['CREATED_BY','CREATED_AT','IP_ADDRESS']) data[key] = record[key] ?? null;
     const result = { type, id:record.id, title: `${def.title}: ${record.name || record.invoiceNumber || record.code || record.symbol || record.id}`,
-        data, fields:def.fields.filter(key => data[key] !== undefined), editableFields:def.edit,
+        data, fields:[...def.fields.filter(key => data[key] !== undefined), 'CREATED_BY','CREATED_AT','IP_ADDRESS'], editableFields:def.edit,
         version:history.version(type,record), canEdit:allowed && !reason, lockReason:reason || (!allowed ? 'Your role has view access only.' : null),
         url:def.page ? `${def.page}/${record.id}` : null,
         editorUrl:type === 'invoice' && allowed && !reason ? `/documents/${record.id}/edit?embedded=1` : null };

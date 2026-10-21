@@ -2,7 +2,7 @@
     'use strict';
     if (window.SparkRecordDesk) return;
     let modal, body, title, active, dirty=false, busy=false, generation=0;
-    const label = key => ({gstin:'GSTIN',hsnSac:'HSN / SAC',gstRate:'GST rate',email:'Email address'}[key] || key.replace(/([A-Z])/g,' $1').replace(/^./,c=>c.toUpperCase()));
+    const label = key => ({CREATED_BY:'Created by (user ID)',CREATED_AT:'Created at',IP_ADDRESS:'IP address',gstin:'GSTIN',hsnSac:'HSN / SAC',gstRate:'GST rate',email:'Email address'}[key] || key.replace(/([A-Z])/g,' $1').replace(/^./,c=>c.toUpperCase()));
     const display = value => value === null || value === undefined || value === '' ? '—' : typeof value === 'boolean' ? (value?'Yes':'No') : typeof value === 'object' ? JSON.stringify(value) : String(value);
     function node(tag,text,cls) { const el=document.createElement(tag); if(text!==undefined) el.textContent=text; if(cls)el.className=cls; return el; }
     async function request(url,options={}) {

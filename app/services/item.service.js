@@ -331,7 +331,7 @@ async function updateItem(id, data, userId) {
         if (!name) {
             throw new ValidationError('Item name cannot be empty.');
         }
-        if (name.length > 255) {
+        if (name.length > 191) {
             throw new ValidationError('Item name cannot exceed 255 characters.');
         }
 
@@ -483,17 +483,21 @@ async function parseAndValidateItemCsv(csvContent, businessId = null) {
         throw new ValidationError('CSV content is required.');
     }
 
-    const lines = csvContent.split(/\r?\n/).filter(line => line.trim().length > 0);
+    let lines;
+    try { lines = await require('./itemTransfer.service').readImport(Buffer.from(csvContent)); }
+    catch (error) { throw new ValidationError(error.message); }
     if (lines.length < 2) {
         throw new ValidationError('CSV must contain a header row and at least one data row.');
     }
 
-    const header = lines[0].split(',').map(h => h.trim().toLowerCase());
+    const header = lines[0].map(h => String(h).trim().toLowerCase());
     const nameIdx = header.indexOf('name');
     const unitIdx = header.indexOf('unit');
     const rateIdx = header.indexOf('rate');
     const hsnIdx = header.indexOf('hsnsac') !== -1 ? header.indexOf('hsnsac') : header.indexOf('hsn');
     const descIdx = header.indexOf('description');
+    const activeIdx = header.indexOf('active');
+    const codeIdx = header.indexOf('itemcode');
     const gstIdx = header.indexOf('gstrate') !== -1 ? header.indexOf('gstrate') : header.indexOf('gst');
 
     if (nameIdx === -1) {
@@ -513,7 +517,7 @@ async function parseAndValidateItemCsv(csvContent, businessId = null) {
 
     for (let i = 1; i < lines.length; i++) {
         const rowNum = i + 1;
-        const cols = lines[i].split(',').map(c => c.trim());
+        const cols = lines[i].map(c => String(c ?? '').trim());
         const rawName = cols[nameIdx] || '';
         const name = normaliseItemName(rawName);
 
@@ -523,7 +527,7 @@ async function parseAndValidateItemCsv(csvContent, businessId = null) {
         }
 
         if (name.length > 255) {
-            errors.push({ row: rowNum, error: 'Item name must not exceed 255 characters.' });
+            errors.push({ row: rowNum, error: 'Item name must not exceed 191 characters.' });
             continue;
         }
 
@@ -537,8 +541,8 @@ async function parseAndValidateItemCsv(csvContent, businessId = null) {
         const unit = unitIdx !== -1 && cols[unitIdx] ? cols[unitIdx] : 'PCS';
         let rate = 0;
         if (rateIdx !== -1 && cols[rateIdx]) {
-            rate = parseFloat(cols[rateIdx]);
-            if (isNaN(rate) || rate < 0) {
+            rate = Number(cols[rateIdx]);
+            if (!Number.isFinite(rate) || rate < 0) {
                 errors.push({ row: rowNum, error: 'Rate must be a non-negative number.' });
                 continue;
             }
@@ -548,19 +552,31 @@ async function parseAndValidateItemCsv(csvContent, businessId = null) {
         const description = descIdx !== -1 && cols[descIdx] ? cols[descIdx] : null;
         let gstRate = 0;
         if (gstIdx !== -1 && cols[gstIdx]) {
-            gstRate = parseFloat(cols[gstIdx]);
-            if (isNaN(gstRate) || gstRate < 0 || gstRate > 100) {
+            gstRate = Number(cols[gstIdx]);
+            if (!Number.isFinite(gstRate) || gstRate < 0 || gstRate > 100) {
                 errors.push({ row: rowNum, error: 'GST rate must be between 0 and 100.' });
                 continue;
             }
         }
 
+        const activeText = activeIdx < 0 ? '' : (cols[activeIdx] || '').toLowerCase();
+        if (activeText && !['true', 'false', '1', '0'].includes(activeText)) {
+            errors.push({ row: rowNum, error: 'Active must be true or false.' });
+            continue;
+        }
+        const itemCode = codeIdx < 0 ? null : (cols[codeIdx] || null);
+        if (unit.length > 30 || (hsnSac && hsnSac.length > 20) || (itemCode && itemCode.length > 50)) {
+            errors.push({ row: rowNum, error: 'Unit, HSN/SAC or item code is too long.' });
+            continue;
+        }
         const isUpdate = existingMap.has(lowerName);
         if (isUpdate) updateCount++;
         else newCount++;
 
         preview.push({
             row: rowNum,
+            active: !['false', '0'].includes(activeText),
+            itemCode,
             name,
             unit,
             rate,
@@ -595,6 +611,8 @@ async function importItemsFromCsv(validRows = [], userId = null, businessId = nu
     if(validRows.length > 1000) throw new ValidationError('Import at most 1,000 items at a time.');
     for(const row of validRows) {
         if(!row || typeof row.name !== 'string' || !row.name.trim() || row.name.length > 191 || !['CREATE','UPDATE'].includes(row.action)) throw new ValidationError('Invalid import item.');
+        if (row.active !== undefined && typeof row.active !== 'boolean') throw new ValidationError('Active must be true or false.');
+        for (const [field, max] of [['unit',30],['hsnSac',20],['itemCode',50],['description',65535]]) if (row[field] != null && (typeof row[field] !== 'string' || row[field].length > max)) throw new ValidationError(`Invalid import ${field}.`);
         for(const field of ['rate','gstRate']) if(!Number.isFinite(Number(row[field] ?? 0)) || Number(row[field] ?? 0) < 0 || (field==='gstRate' && Number(row[field] ?? 0)>100)) throw new ValidationError(`Invalid import ${field}.`);
         if(row.action==='UPDATE' && !Number.isSafeInteger(Number(row.existingId))) throw new ValidationError('Invalid existing item ID.');
     }
@@ -613,7 +631,9 @@ async function importItemsFromCsv(validRows = [], userId = null, businessId = nu
                         rate: row.rate || 0,
                         hsnSac: row.hsnSac || null,
                         description: row.description || null,
-                        gstRate: row.gstRate || 0
+                        gstRate: Number(row.gstRate || 0),
+                        active: row.active !== false,
+                        ...(row.itemCode ? { itemCode: row.itemCode } : {})
                     }
                 });
                 updated++;
@@ -627,7 +647,8 @@ async function importItemsFromCsv(validRows = [], userId = null, businessId = nu
                         hsnSac: row.hsnSac || null,
                         description: row.description || null,
                         gstRate: row.gstRate || 0,
-                        active: true,
+                        active: row.active !== false,
+                        itemCode: row.itemCode || null,
                         createdById: userId
                     }
                 });

@@ -84,7 +84,6 @@ class PrismaSessionStore extends session.Store {
             await prisma.session.upsert({
                 where: { sid },
                 create: {
-                    id: sid,
                     sid,
                     data,
                     expiresAt
