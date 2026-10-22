@@ -188,9 +188,7 @@ describe('Phase 8 Comprehensive Test Suite', () => {
             assert.ok(persistedItem, 'Item should be auto-persisted into Item Master');
             assert.strictEqual(persistedItem.unit, 'MONTH');
             assert.strictEqual(Number(persistedItem.rate), 3500);
-            assert.match(persistedItem.hsnSac, /^\d{4,6}$/);
-            assert.strictEqual(await prisma.item.count({ where: { businessId: persistedItem.businessId, hsnSac: persistedItem.hsnSac } }), 1);
-            assert.strictEqual(doc.items[0].hsnSac, '998315', 'Catalog allocation must preserve the document snapshot');
+            assert.strictEqual(persistedItem.hsnSac, '998315');
         });
 
         it('1.4 should isolate historical document data when Item Master item is updated later', async () => {

@@ -3,29 +3,6 @@ const activityService = require('./activity.service');
 const numberingService = require('./numbering.service');
 const businessService = require('./business.service');
 
-// The business lock serializes allocation across every Item Master writer.
-async function allocateHsn(tx, businessId, supplied, itemId = null) {
-    const business = await tx.$queryRawUnsafe('SELECT id FROM businesses WHERE id = ? FOR UPDATE', businessId);
-    if (!business.length) throw new ValidationError('A valid businessId is required for HSN allocation.');
-    const code = supplied == null ? '' : String(supplied).trim();
-    if (code.length > 20) throw new ValidationError('HSN/SAC cannot exceed 20 characters.');
-    // Locking reads see concurrent commits even inside an existing document transaction.
-    if (code) {
-        const duplicate = await tx.$queryRawUnsafe('SELECT id FROM items WHERE businessId = ? AND hsnSac = ? AND id <> ? FOR UPDATE', businessId, code, itemId || 0);
-        if (!duplicate.length) return code;
-    }
-    const rows = await tx.$queryRawUnsafe('SELECT id, hsnSac FROM items WHERE businessId = ? AND hsnSac IS NOT NULL FOR UPDATE', businessId);
-    const used = new Set(rows.filter(row => row.id !== itemId).map(row => row.hsnSac));
-    const key = { businessId, entityType: 'ITEM_HSN', year: 0, month: 0 };
-    const [sequence] = await tx.$queryRawUnsafe('SELECT currentNumber FROM numbering_sequences WHERE businessId = ? AND entityType = ? AND year = 0 AND month = 0 FOR UPDATE', businessId, key.entityType);
-    let next = Math.max(1000, Number(sequence?.currentNumber || 999) + 1);
-    while (next <= 999999 && used.has(String(next))) next++;
-    if (next > 999999) throw new ValidationError('HSN number range exhausted (1000–999999).');
-    await tx.numberingSequence.upsert({ where: { businessId_entityType_year_month: key },
-        create: { ...key, currentNumber: next }, update: { currentNumber: next } });
-    return String(next);
-}
-
 class ValidationError extends Error {
     constructor(message) {
         super(message);
@@ -266,7 +243,6 @@ async function createItem(data, userId) {
 
     try {
         const item = await prisma.$transaction(async (tx) => {
-            const assignedHsn = await allocateHsn(tx, businessId, hsnSac);
             if (!itemCode) {
                 itemCode = await numberingService.allocateNumber({
                     businessId,
@@ -290,7 +266,7 @@ async function createItem(data, userId) {
                     description,
                     unit,
                     rate,
-                    hsnSac: assignedHsn,
+                    hsnSac,
                     gstRate,
                     active,
                     createdById: userId || null
@@ -408,10 +384,7 @@ async function updateItem(id, data, userId) {
     }
 
     try {
-        const updated = await prisma.$transaction(async tx => {
-            if (data.hsnSac !== undefined) updateData.hsnSac = await allocateHsn(tx, existing.businessId, data.hsnSac, existing.id);
-            return require('./recordHistory.service').commit({ type: 'item', existing, data: updateData, actorId: userId, expectedVersion: data._recordVersion, transaction: tx });
-        });
+        const updated = await require('./recordHistory.service').commit({ type: 'item', existing, data: updateData, actorId: userId, expectedVersion: data._recordVersion });
 
         if (userId) {
             await activityService.log({
@@ -455,7 +428,6 @@ async function updateItem(id, data, userId) {
  */
 async function ensureItemsExistFromDocument(items, userId, tx = prisma, businessId = null) {
     if (!Array.isArray(items) || items.length === 0) return;
-    if (tx === prisma) return prisma.$transaction(transaction => ensureItemsExistFromDocument(items, userId, transaction, businessId));
 
     for (const item of items) {
         const rawName = item.name;
@@ -466,8 +438,6 @@ async function ensureItemsExistFromDocument(items, userId, tx = prisma, business
             const bId = businessId !== null && businessId !== undefined
                 ? parseInt(businessId, 10)
                 : (item.businessId ? parseInt(item.businessId, 10) : 1);
-
-            await tx.$queryRawUnsafe('SELECT id FROM businesses WHERE id = ? FOR UPDATE', bId);
 
             const existing = await tx.item.findFirst({
                 where: {
@@ -481,7 +451,7 @@ async function ensureItemsExistFromDocument(items, userId, tx = prisma, business
                     ? Math.max(parseFloat(item.rate), 0)
                     : 0;
                 const unit = (item.unit || 'PCS').toString().trim() || 'PCS';
-                const assignedHsn = await allocateHsn(tx, bId, item.hsnSac);
+                const hsnSac = item.hsnSac ? item.hsnSac.toString().trim() : null;
 
                 await tx.item.create({
                     data: {
@@ -489,7 +459,7 @@ async function ensureItemsExistFromDocument(items, userId, tx = prisma, business
                         name,
                         unit,
                         rate,
-                        hsnSac: assignedHsn,
+                        hsnSac,
                         active: true,
                         createdById: userId || null
                     }
@@ -647,8 +617,6 @@ async function importItemsFromCsv(validRows = [], userId = null, businessId = nu
         if(row.action==='UPDATE' && !Number.isSafeInteger(Number(row.existingId))) throw new ValidationError('Invalid existing item ID.');
     }
 
-    const importBusinessId = businessId ? Number(businessId) : ((process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') ? 1 : null);
-    if (!Number.isSafeInteger(importBusinessId) || importBusinessId <= 0) throw new ValidationError('A valid businessId is required for item import.');
     return prisma.$transaction(async (tx) => {
         let created = 0;
         let updated = 0;
@@ -661,7 +629,7 @@ async function importItemsFromCsv(validRows = [], userId = null, businessId = nu
                     data: {
                         unit: row.unit || 'PCS',
                         rate: row.rate || 0,
-                        hsnSac: await allocateHsn(tx, existing.businessId, row.hsnSac, existing.id),
+                        hsnSac: row.hsnSac || null,
                         description: row.description || null,
                         gstRate: Number(row.gstRate || 0),
                         active: row.active !== false,
@@ -672,11 +640,11 @@ async function importItemsFromCsv(validRows = [], userId = null, businessId = nu
             } else {
                 await tx.item.create({
                     data: {
-                        businessId: importBusinessId,
+                        businessId: businessId ? Number(businessId) : null,
                         name: row.name,
                         unit: row.unit || 'PCS',
                         rate: row.rate || 0,
-                        hsnSac: await allocateHsn(tx, importBusinessId, row.hsnSac),
+                        hsnSac: row.hsnSac || null,
                         description: row.description || null,
                         gstRate: row.gstRate || 0,
                         active: row.active !== false,
