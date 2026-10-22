@@ -715,6 +715,7 @@ model Item {
 
   @@unique([businessId, name])
   @@unique([businessId, itemCode])
+  @@unique([businessId, hsnSac])
   @@index([businessId])
   @@index([itemCode])
   @@index([active])

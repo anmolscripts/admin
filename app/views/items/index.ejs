@@ -194,7 +194,8 @@ title="<%= item.active ? 'Click to deactivate' : 'Click to activate' %>"
             </div>
             <div class="col-6">
               <label for="modal-item-hsn" class="form-label fw-semibold">HSN/SAC</label>
-              <input type="text" class="form-control font-monospace" id="modal-item-hsn" maxlength="20" placeholder="e.g. 7304">
+              <input type="text" class="form-control font-monospace" id="modal-item-hsn" maxlength="20" placeholder="Leave blank to generate automatically">
+              <div class="form-text">Unique within this business. Blank or duplicate values receive the next available code (1000–999999).</div>
             </div>
           </div>
 

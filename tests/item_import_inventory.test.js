@@ -151,9 +151,11 @@ Unique Item A,PCS,20`;
 
     describe('2. Transactional Commit Execution', () => {
         let importedName = null;
+        let importBusinessId;
 
         it('2.1 commits validated rows into Item Master', async () => {
             importedName = `Test Batch Item ${Date.now()}`;
+            importBusinessId = (await require('../app/services/business.service').createBusiness({ code: `IMPORT_${require('node:crypto').randomUUID()}`, name: 'Item import regression', gstin: '27AABCA1234A1Z5', stateCode: '27' })).id;
             const rows = [
                 {
                     name: importedName,
@@ -166,7 +168,7 @@ Unique Item A,PCS,20`;
                 }
             ];
 
-            const commitRes = await itemService.importItemsFromCsv(rows, testAdmin.id);
+            const commitRes = await itemService.importItemsFromCsv(rows, testAdmin.id, importBusinessId);
             assert.equal(commitRes.created, 1);
             assert.equal(commitRes.updated, 0);
 
@@ -193,7 +195,7 @@ Unique Item A,PCS,20`;
                 }
             ];
 
-            const commitRes = await itemService.importItemsFromCsv(updateRows, testAdmin.id);
+            const commitRes = await itemService.importItemsFromCsv(updateRows, testAdmin.id, importBusinessId);
             assert.equal(commitRes.created, 0);
             assert.equal(commitRes.updated, 1);
 
