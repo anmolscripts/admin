@@ -7,15 +7,17 @@
   const tpl = (typeof templateConfig !== 'undefined' && templateConfig) ? templateConfig : ((model && model.templateConfig) || {});
   const docAccent = tpl.accentColor || (model.isQuotation ? '#0070f3' : '#c8102e');
   const docAccentSubtle = tpl.accentSubtle || (docAccent + '15');
-  const docFont = tpl.fontFamily || '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+  const docFont = 'Montserrat, sans-serif';
   const themeClass = tpl.themeClass || (tpl.id ? 'theme-' + tpl.id : (model.isQuotation ? 'doc-theme-quotation' : 'doc-theme-invoice'));
   const showHsn = tpl.showHsn !== false;
   const showUpiQr = tpl.showUpiQr !== false;
   const customCss = tpl.customCss || '';
   const isRajesh = themeClass === 'theme-rajesh-signature';
+  const isSignatureQuotation = isRajesh && model.isQuotation;
 %>
-<div class="spark-unified-document <%= model.isQuotation ? 'doc-theme-quotation' : 'doc-theme-invoice' %> <%= themeClass %>" id="unified-document-root" style="--doc-accent: <%= docAccent %>; --doc-accent-subtle: <%= docAccentSubtle %>; font-family: <%= docFont %>;">
+<div class="spark-unified-document <%= model.isQuotation ? 'doc-theme-quotation' : 'doc-theme-invoice' %> <%= themeClass %> <%= model.isLetter ? '' : 'doc-sales-paper' %>" id="unified-document-root" style="--doc-accent: <%= docAccent %>; --doc-accent-subtle: <%= docAccentSubtle %>; font-family: <%= docFont %>;">
   <style>
+    <%- model.fontCss || '' %>
     :root {
       --doc-accent: <%= docAccent %>;
       --doc-accent-hover: <%= docAccent %>;
@@ -65,7 +67,7 @@
     <%- customCss %>
 
     .spark-unified-document {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-family: 'Montserrat', sans-serif;
       color: var(--doc-text-body);
       background: var(--doc-white);
       width: 100%;
@@ -161,7 +163,7 @@
     }
     .contact-item {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       gap: 8px;
       font-size: 12px;
       color: var(--doc-text-body);
@@ -172,8 +174,8 @@
       flex-shrink: 0;
       width: 14px;
       height: 14px;
-      margin-top: 2px;
-      color: var(--doc-text-muted);
+      margin-top: 0;
+      color: #d59a28;
     }
 
     /* Right Metadata & Hero Title */
@@ -249,7 +251,8 @@
     }
     .doc-items-table th.col-no { width: 38px; text-align: center; }
     .doc-items-table th.col-hsn { width: 75px; text-align: center; }
-    .doc-items-table th.col-qty { width: 70px; text-align: right; }
+    .doc-items-table th.col-qty { width: 45px; text-align: right; }
+    .doc-items-table th.col-unit { width: 45px; text-align: center; }
     .doc-items-table th.col-rate { width: 100px; text-align: right; }
     .doc-items-table th.col-amt { width: 115px; text-align: right; }
 
@@ -273,8 +276,10 @@
     .col-no { text-align: center; color: var(--doc-text-muted); font-weight: 500; }
     .col-hsn { text-align: center; color: var(--doc-text-muted); font-size: 11px; }
     .col-qty { text-align: right; font-weight: 600; }
-    .col-rate { text-align: right; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
-    .col-amt { text-align: right; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-weight: 600; color: var(--doc-text-dark); }
+    .col-unit { text-align: center; white-space: nowrap; }
+    .item-description { color: #103ca9; font-size: inherit; margin-top: 3px; white-space: pre-line; }
+    .col-rate { text-align: right; font-family: 'Montserrat', sans-serif; }
+    .col-amt { text-align: right; font-family: 'Montserrat', sans-serif; font-weight: 600; color: var(--doc-text-dark); }
 
     .item-desc-cell strong {
       color: var(--doc-text-dark);
@@ -295,6 +300,9 @@
     .terms-block-left {
       text-align: left;
     }
+    .doc-amount-in-words { margin: 0; font-size: 12px; line-height: 1.65; color: var(--doc-text-dark); }
+    .doc-terms-section { margin-bottom: 18px; padding-top: 12px; border-top: 1px solid var(--doc-border); }
+    .doc-terms-section .terms-heading-italic { break-after: avoid; }
     .terms-heading-italic {
       font-style: italic;
       font-size: 15px;
@@ -336,7 +344,7 @@
       text-align: right;
       font-weight: 600;
       color: var(--doc-text-dark);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-family: 'Montserrat', sans-serif;
     }
 
     /* Highlighted TOTAL Block */
@@ -358,7 +366,7 @@
       font-weight: 800;
     }
     .total-badge-val {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-family: 'Montserrat', sans-serif;
       font-weight: 800;
       font-size: 16px;
     }
@@ -401,38 +409,31 @@
       page-break-inside: avoid;
     }
     .doc-thank-you-text {
-      font-family: Georgia, "Times New Roman", serif;
+      font-family: 'Montserrat', sans-serif;
       font-style: italic;
       font-size: 24px;
       color: var(--doc-text-dark);
       letter-spacing: 0.5px;
     }
 
-    /* Authorized Signatory */
+    /* Computer-generated document notice */
     .doc-signatory-row {
       display: flex;
       justify-content: space-between;
-      align-items: flex-end;
-      padding: 0 0 16px 0;
+      align-items: center;
+      gap: 18px;
+      padding: 12px 0 16px;
+      border-top: 1px solid var(--doc-border);
       page-break-inside: avoid;
     }
-    .doc-auth-meta {
-      font-size: 10px;
-      color: var(--doc-text-muted);
-    }
-    .doc-signatory-box {
+    .doc-generation-statement {
+      flex: 1;
+      max-width: 100%;
+      margin: 0;
       text-align: right;
-      min-width: 200px;
-    }
-    .doc-signatory-line {
-      height: 36px;
-      border-bottom: 1px solid var(--doc-border-strong);
-      margin-bottom: 4px;
-    }
-    .doc-signatory-caption {
-      font-size: 10.5px;
-      font-weight: 600;
-      color: var(--doc-text-body);
+      font-size: 10px;
+      line-height: 1.6;
+      color: var(--doc-text-muted);
     }
 
     /* Full-Width Red Footer */
@@ -553,9 +554,9 @@
         align-items: flex-start;
         gap: 12px;
       }
-      .doc-signatory-box {
+      .doc-generation-statement {
         text-align: left;
-        width: 100%;
+        max-width: 100%;
       }
     }
   </style>
@@ -575,13 +576,19 @@
   <% if (model.isLetter) { %>
     <%- include('letter-body',{model,tpl,isRajesh}) %>
   <% } else { %>
+  <% if (isRajesh) { %>
+  <table class="ri-page-frame" role="presentation">
+    <thead><tr><td><div class="ri-page-top-space"></div></td></tr></thead>
+    <tfoot><tr><td><div class="ri-page-bottom-space"></div></td></tr></tfoot>
+    <tbody><tr><td>
+  <% } %>
   <div class="doc-content-container">
     <%- include('brand', {model,tpl,isRajesh}) %>
     <!-- TWO-COLUMN CLIENT & DOCUMENT INFORMATION -->
     <div class="doc-header-grid">
       <!-- BILL TO (LEFT) -->
       <div class="bill-to-section">
-        <div class="bill-to-label"><%= isRajesh && model.isQuotation ? 'QUOTATION FOR' : 'BILL TO' %></div>
+        <div class="bill-to-label"><%= model.invoiceNumber %></div>
         <div class="bill-to-name"><%= model.client.name %></div>
 
         <% if (model.client.phone && model.client.phone !== '—') { %>
@@ -593,7 +600,7 @@
           </div>
         <% } %>
 
-        <% if (model.client.email && model.client.email !== '—') { %>
+        <% if (!isSignatureQuotation && model.client.email && model.client.email !== '—') { %>
           <div class="contact-item">
             <svg class="contact-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
@@ -620,7 +627,7 @@
           </div>
         <% } %>
 
-        <% if (model.client.placeOfSupply) { %>
+        <% if (!isSignatureQuotation && model.client.placeOfSupply) { %>
           <div class="contact-item">
             <span style="color: var(--doc-text-muted);">Place of Supply:</span>
             <span><%= model.client.placeOfSupply %></span>
@@ -631,10 +638,6 @@
       <!-- DOCUMENT METADATA & TITLE (RIGHT) -->
       <div class="doc-meta-section">
         <table class="meta-table">
-          <tr>
-            <td class="meta-key"><%= model.typeLabel %>:</td>
-            <td class="meta-val font-monospace">#<%= model.invoiceNumber %></td>
-          </tr>
           <tr>
             <td class="meta-key"><%= model.isQuotation ? 'Quotation Date' : 'Invoice Date' %>:</td>
             <td class="meta-val"><%= model.dates.invoiceDate %></td>
@@ -654,16 +657,16 @@
               <td class="meta-val" style="color: var(--doc-accent);"><%= model.reference.convertedInvoice.invoiceNumber %></td>
             </tr>
           <% } %>
-          <tr>
+          <% if (!isSignatureQuotation) { %><tr>
             <td class="meta-key">Status:</td>
             <td class="meta-val">
               <span class="doc-status-badge <%= model.statusClass %>"><%= model.status %></span>
             </td>
-          </tr>
+          </tr><% } %>
         </table>
 
         <!-- LARGE HERO TITLE -->
-        <div class="doc-hero-title"><%= model.isQuotation ? 'QUOTATION' : 'INVOICE' %></div>
+        <% if (!isSignatureQuotation) { %><div class="doc-hero-title"><%= model.isQuotation ? 'QUOTATION' : 'INVOICE' %></div><% } %>
         <div style="display: none;"><%= model.documentTitle %></div>
       </div>
     </div>
@@ -676,6 +679,7 @@
           <th>Description</th>
           <th class="col-hsn">HSN/SAC</th>
           <th class="col-qty">QTY</th>
+          <th class="col-unit">Unit</th>
           <th class="col-rate">Unit Price</th>
           <th class="col-amt">Amount</th>
         </tr>
@@ -687,36 +691,28 @@
               <td class="col-no"><%= item.lineNumber %></td>
               <td class="item-desc-cell">
                 <strong><%= item.name %></strong>
-                <% if (isRajesh && item.description) { %><div class="ri-item-description"><%= item.description %></div><% } %>
+                <% if (item.description) { %><div class="item-description"><%= item.description %></div><% } %>
               </td>
               <td class="col-hsn"><%= item.hsnSac || '—' %></td>
-              <td class="col-qty"><%= item.quantity %> <%= item.unit %></td>
+              <td class="col-qty"><%= item.quantity %></td>
+              <td class="col-unit"><%= item.unit %></td>
               <td class="col-rate"><%= item.formattedRate %></td>
               <td class="col-amt"><%= item.formattedAmount %></td>
             </tr>
           <% }); %>
         <% } else { %>
           <tr>
-            <td colspan="6" style="text-align: center; padding: 24px; color: var(--doc-text-muted);">No line items found.</td>
+            <td colspan="7" style="text-align: center; padding: 24px; color: var(--doc-text-muted);">No line items found.</td>
           </tr>
         <% } %>
       </tbody>
     </table>
 
-    <!-- TERMS & CONDITIONS (LEFT) + TOTALS (RIGHT) -->
+    <!-- AMOUNT IN WORDS (LEFT) + TOTALS (RIGHT) -->
     <div class="doc-terms-totals">
-      <!-- TERMS & CONDITIONS (LEFT) -->
       <div class="terms-block-left">
-        <% if (model.terms) { %>
-          <div class="terms-heading-italic">Terms & Conditions</div>
-          <div class="terms-text-content"><%= model.terms %></div>
-        <% } %>
-
-        <% if (model.notes) { %>
-          <div class="doc-remarks-content">
-            <strong>Remarks:</strong> <%= model.notes %>
-          </div>
-        <% } %>
+        <div class="terms-heading-italic">Amount in Words (INR)</div>
+        <p class="doc-amount-in-words"><%= model.financials.amountInWords %></p>
       </div>
 
       <!-- TOTALS BREAKDOWN (RIGHT) -->
@@ -773,6 +769,16 @@
       </div>
     </div>
 
+    <div class="doc-terms-section">
+      <% if (model.terms) { %>
+        <div class="terms-heading-italic">Terms & Conditions</div>
+        <div class="terms-text-content"><%= model.terms %></div>
+      <% } %>
+      <% if (model.notes && (!model.isQuotation || !/^(thanks|thank you) for your business[!.]?$/i.test(model.notes.trim()))) { %>
+        <div class="doc-remarks-content"><strong>Remarks:</strong> <%= model.notes %></div>
+      <% } %>
+    </div>
+
     <!-- LIGHT-GREY PAYMENT / BANK INFORMATION STRIP -->
     <div class="doc-payment-strip">
       <% if (!model.isQuotation) { %>
@@ -804,23 +810,19 @@
     </div>
 
     <!-- THANK-YOU SECTION -->
+    <% if (!model.isQuotation) { %>
     <div class="doc-thank-you-box">
       <div class="doc-thank-you-text">Thanks for your Business!</div>
     </div>
+    <% } %>
 
-    <!-- AUTHORIZED SIGNATORY -->
+    <!-- COMPUTER-GENERATED DOCUMENT NOTICE -->
     <div class="doc-signatory-row">
-      <div class="doc-auth-meta">
-        <div>System-authenticated document</div>
-        <div><%= model.invoiceNumber %></div>
-      </div>
-      <div class="doc-signatory-box">
-        <div class="doc-signatory-line"></div>
-        <div class="doc-signatory-caption">Authorized Signatory for <%= model.seller.name %></div>
-      </div>
+      <p class="doc-generation-statement">This <%= model.isQuotation ? 'quotation' : 'invoice' %> is computer-generated and does not require a physical signature.</p>
     </div>
   </div>
 
+  <% if (isRajesh) { %></td></tr></tbody></table><% } %>
   <%- include('footer', {model,isRajesh}) %>
   <% if (isRajesh) { %><%- include('rajesh-letterhead', { position: 'bottom', logo: tpl.brandLogo }) %><% } %>
   <% } %>

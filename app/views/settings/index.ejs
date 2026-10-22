@@ -542,7 +542,7 @@
                         <i class="bi <%= tpl.showDiscount ? 'bi-check-circle-fill text-success' : 'bi-x-circle text-muted' %> me-1"></i> Discount
                       </span>
                       <span class="badge bg-light text-muted border" style="font-size: 11px;">
-                        <i class="bi bi-fonts me-1"></i> <%= (tpl.fontFamily || 'Inter').split(',')[0].replace(/['"]/g, '') %>
+                        <i class="bi bi-fonts me-1"></i> Montserrat
                       </span>
                     </div>
 
@@ -685,12 +685,7 @@
             <div class="col-12 col-md-6">
               <label for="editor-font-family" class="form-label fw-semibold">Typography / Font Family</label>
               <select class="form-select" id="editor-font-family">
-                <option value='Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'>Inter / System UI (Clean Sans)</option>
-                <option value='Roboto, Arial, sans-serif'>Roboto (Corporate Sans)</option>
-                <option value='Helvetica Neue, Arial, sans-serif'>Helvetica Neue (Modern Swiss)</option>
-                <option value='Georgia, serif'>Georgia (Classic Serif)</option>
-                <option value='Arial, Helvetica, sans-serif'>Arial (Signature Letterhead)</option>
-                <option value='-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'>System Native</option>
+                <option value="Montserrat, sans-serif">Montserrat</option>
               </select>
             </div>
 
@@ -992,7 +987,7 @@
         layoutSelect.value=tpl.baseLayout || tpl.id;
         if(!layoutSelect.value)layoutSelect.value='modern-minimal';
         layoutSelect.tomselect?.setValue(layoutSelect.value);
-        document.getElementById('editor-font-family').value=tpl.fontFamily;
+        document.getElementById('editor-font-family').value='Montserrat, sans-serif';
         document.getElementById('editor-template-id').value = isBuiltIn ? '' : tpl.id;
         document.getElementById('editor-name').value = isBuiltIn ? (tpl.name + ' (Custom)') : tpl.name;
         document.getElementById('editor-category').value = tpl.category || 'Custom';

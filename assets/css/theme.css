@@ -1,3 +1,4 @@
+@import url('fonts.css');
 /* ==========================================================================
    SPARK ADMIN ERP — AURORA GLASS DESIGN SYSTEM SPECIFICATION
    Deep Teal, Turquoise, Mint & Frosted Glass Theme Token Architecture
@@ -272,8 +273,8 @@
   --sa-chart-6: #F59E0B;
   --sa-chart-7: #9B8AFB;
 
-  --sa-font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --sa-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --sa-font-sans: 'Montserrat', sans-serif;
+  --sa-font-mono: 'Montserrat', sans-serif;
 
   --sa-radius-sm: 6px;
   --sa-radius-md: 10px;
@@ -283,6 +284,8 @@
 
   --bs-body-bg: var(--sa-bg);
   --bs-body-font-family: var(--sa-font-sans);
+  --bs-font-sans-serif: var(--sa-font-sans);
+  --bs-font-monospace: var(--sa-font-sans);
   --bs-primary: var(--sa-primary);
   --card-background: var(--sa-surface);
   --text-main: var(--sa-text-main);

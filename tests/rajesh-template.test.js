@@ -18,7 +18,7 @@ test('both document types render current customer, contact, dates and amounts', 
         for (const value of ['+91 12345 67890', profile.website, raw.invoiceNumber, '₹1,59,300.00', 'Industrial Servo', 'data:image/png;base64,']) assert.ok(html.includes(value), value);
         assert.ok(!html.includes('123 Business Avenue'));
         assert.ok(!html.includes('undefined'));
-        assert.ok(!html.replace(/data:image\/png;base64,[A-Za-z0-9+/=]+/g, '').includes('NaN'));
+        assert.ok(!html.replace(/data:(?:image\/png|font\/ttf);base64,[A-Za-z0-9+/=]+/g, '').includes('NaN'));
     }
 });
 test('new template supports complete preview data and keeps old fallback', async () => {

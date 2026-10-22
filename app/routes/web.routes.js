@@ -298,7 +298,7 @@ router.get('/documents/:id/print', requireAuth, requirePermission('DOCUMENTS', '
         const activeTemplates = templateService.getActiveTemplates(docBizId);
         const requestedTemplateId = req.query.template || (doc.documentType === 'QUOTATION' ? activeTemplates.quotationTemplate : activeTemplates.invoiceTemplate);
         const templateConfig = templateService.getTemplate(requestedTemplateId, docBizId);
-        const model = documentViewService.buildDocumentViewModel(doc, profile);
+        const model = documentViewService.buildDocumentViewModel(await documentViewService.withCatalogDescriptions(doc), profile);
         model.templateConfig = templateConfig;
 
         // Audit print event

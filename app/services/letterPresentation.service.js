@@ -18,6 +18,6 @@ async function render(letter,profile) {
         if(fs.existsSync(file)){const ext=path.extname(file).slice(1);model.seller.logo=`data:image/${ext==='jpg'?'jpeg':ext};base64,${fs.readFileSync(file).toString('base64')}`;}
     }
     const body=await ejs.renderFile(path.join(__dirname,'../views/documents/templates/document.ejs'),{model,templateConfig});
-    return '<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; img-src data:; base-uri \'none\'; form-action \'none\'"><title>Letter</title><style>@page{size:A4;margin:10mm 12mm}body{margin:0;background:#fff;print-color-adjust:exact;-webkit-print-color-adjust:exact}</style></head><body>'+body+'</body></html>';
+    return '<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; font-src data:; img-src data:; base-uri \'none\'; form-action \'none\'"><title>Letter</title><style>@page{size:A4;margin:10mm 12mm}body{margin:0;background:#fff;print-color-adjust:exact;-webkit-print-color-adjust:exact}</style></head><body>'+body+'</body></html>';
 }
 module.exports={render};

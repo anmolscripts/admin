@@ -1311,7 +1311,8 @@
                         name: item.name,
                         quantity: Number(item.quantity),
                         unit: item.unit,
-                        rate: Number(item.rate)
+                        rate: Number(item.rate),
+                        hsnSac: item.hsnSac
                     });
                     itemsTbody.appendChild(row);
                 });
@@ -1373,7 +1374,8 @@
                         name: item.name,
                         quantity: Number(item.quantity),
                         unit: item.unit,
-                        rate: Number(item.rate)
+                        rate: Number(item.rate),
+                        hsnSac: item.hsnSac
                     });
                     itemsTbody.appendChild(row);
                 });

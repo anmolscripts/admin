@@ -8,6 +8,11 @@
         "/^node --check app/services/chartOfAccounts\\.service\\.js; node --check app/services/accounting/posting\\.service\\.js; node --check app/services/payment\\.service\\.js; node --check app/controllers/item\\.controller\\.js; node --check app/controllers/project\\.controller\\.js; node --check assets/js/view\\.js$/": {
             "approve": true,
             "matchCommandLine": true
-        }
+        },
+        "/^node --test tests/select-editor-ui\\.test\\.js$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "npm run verify:all": true
     }
 }

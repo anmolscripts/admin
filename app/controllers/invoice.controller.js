@@ -1,6 +1,7 @@
 const invoiceService = require('../services/invoice.service');
 const postingService = require('../services/accounting/posting.service');
 const pdfService = require('../services/pdf.service');
+const documentViewService = require('../services/documentView.service');
 const excelService = require('../services/excel.service');
 const activityService = require('../services/activity.service');
 const businessProfileService = require('../services/businessProfile.service');
@@ -310,7 +311,7 @@ async function exportPdf(req, res, next) {
         const activeTemplates = templateService.getActiveTemplates(docBizId);
         const requestedTemplateId = (req.query && req.query.template) || (invoice.documentType === 'QUOTATION' ? activeTemplates.quotationTemplate : activeTemplates.invoiceTemplate);
         const templateConfig = templateService.getTemplate(requestedTemplateId, docBizId);
-        const pdfBuffer = await pdfService.generateDocumentPdf(invoice, profile, templateConfig);
+        const pdfBuffer = await pdfService.generateDocumentPdf(await documentViewService.withCatalogDescriptions(invoice), profile, templateConfig);
 
         if (req.session && req.session.user) {
             await activityService.log({

@@ -5,6 +5,8 @@ const { Readable } = require('node:stream');
 const fs = require('node:fs');
 const path = require('node:path');
 
+const { embeddedCss, regularFont } = require('./font.service');
+
 const columns = ['name', 'description', 'unit', 'hsnSac', 'rate', 'gstRate', 'active', 'itemCode', 'id', 'CREATED_BY', 'CREATED_AT', 'IP_ADDRESS'];
 const editable = columns.slice(0, 8);
 const sample = ['Sample item', 'Sample description', 'PCS', '7304', 100, 18, true, ''];
@@ -65,11 +67,12 @@ async function workbookFor(items, branding, isSample = false) {
 
 function printHtml(items, branding, date = new Date()) {
     const logo = logoFile(branding.logoUrl);
-    return `<!doctype html><html><head><meta charset="utf-8"><title>Item List</title><style>body{font:12px Arial;color:#172b24}header{display:flex;align-items:center;gap:16px}img{max-width:80px;max-height:60px}table{width:100%;border-collapse:collapse;font-size:10px}th,td{padding:7px;border:1px solid #ccc;overflow-wrap:anywhere}thead{display:table-header-group}@page{size:A3 landscape;margin:12mm}@media print{button{display:none}}</style></head><body><button onclick="window.print()">Print Item List</button><header>${logo ? `<img src="${escapeHtml(branding.logoUrl)}" alt="Brand logo">` : ''}<div><h1>${escapeHtml(branding.companyName)}</h1><h2>Item List</h2><p>Exported: ${exportDate(date, branding.timeZone)}</p></div></header><table><thead><tr>${columns.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr></thead><tbody>${items.map(item => `<tr>${columns.map(c => `<td>${escapeHtml(item[c] instanceof Date ? item[c].toISOString() : item[c])}</td>`).join('')}</tr>`).join('')}</tbody></table></body></html>`;
+    return `<!doctype html><html><head><meta charset="utf-8"><title>Item List</title><style>${embeddedCss}body{font:12px Montserrat,sans-serif;color:#172b24}header{display:flex;align-items:center;gap:16px}img{max-width:80px;max-height:60px}table{width:100%;border-collapse:collapse;font-size:10px}th,td{padding:7px;border:1px solid #ccc;overflow-wrap:anywhere}thead{display:table-header-group}@page{size:A3 landscape;margin:12mm}@media print{button{display:none}}</style></head><body><button onclick="window.print()">Print Item List</button><header>${logo ? `<img src="${escapeHtml(branding.logoUrl)}" alt="Brand logo">` : ''}<div><h1>${escapeHtml(branding.companyName)}</h1><h2>Item List</h2><p>Exported: ${exportDate(date, branding.timeZone)}</p></div></header><table><thead><tr>${columns.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr></thead><tbody>${items.map(item => `<tr>${columns.map(c => `<td>${escapeHtml(item[c] instanceof Date ? item[c].toISOString() : item[c])}</td>`).join('')}</tr>`).join('')}</tbody></table></body></html>`;
 }
 
 async function pdf(items, branding) {
     const doc = new PDFDocument({ size: 'A3', layout: 'landscape', margin: 30 });
+    doc.font(regularFont);
     const chunks = [];
     const result = new Promise((resolve, reject) => { doc.on('data', chunk => chunks.push(chunk)); doc.on('end', () => resolve(Buffer.concat(chunks))); doc.on('error', reject); });
     const logo = logoFile(branding.logoUrl);

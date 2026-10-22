@@ -19,7 +19,11 @@ function loadReceiptService(prisma, numbering) {
             if (request === 'node:crypto') return require('node:crypto');
             if (request === './numbering.service') return numbering;
             if (request === './activity.service') return { log: async () => {} };
-            if (request === './business.service') return {};
+            if (request === './business.service') return { assertUserBusinessAccess: async () => {} };
+            if (request === './stockTransaction.service') return { withStockTransaction: async (businessId, callback) => prisma.$transaction(async tx => {
+                await tx.$queryRawUnsafe('SELECT id FROM businesses WHERE id = ? FOR UPDATE', businessId);
+                return callback(tx);
+            }) };
             if (request === './errorTypes') return { ValidationError, NotFoundError, ConflictError };
             throw new Error(`Unapproved receipt-service dependency: ${request}`);
         }

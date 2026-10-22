@@ -293,7 +293,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 zoom: {
                     enabled: false
                 },
-                fontFamily: 'Plus Jakarta Sans, sans-serif'
+                fontFamily: 'Montserrat, sans-serif'
             },
             colors: ['#072F1F', '#B4F105'], // Dark Green (Income), Lime Green (Expenses)
             states: {
@@ -390,7 +390,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 type: 'donut',
                 height: 250,
                 background: 'transparent',
-                fontFamily: 'Plus Jakarta Sans, sans-serif'
+                fontFamily: 'Montserrat, sans-serif'
             },
             labels: ['View Count', 'Percentage', 'Sales'],
             colors: ['#B4F105', '#051C12', '#F97316'], // Lime, Forest Dark, Orange
@@ -469,7 +469,7 @@ document.addEventListener('DOMContentLoaded', function () {
             sparkline: {
                 enabled: true
             },
-            fontFamily: 'Plus Jakarta Sans, sans-serif'
+            fontFamily: 'Montserrat, sans-serif'
         },
         stroke: {
             curve: 'smooth',
@@ -512,7 +512,7 @@ document.addEventListener('DOMContentLoaded', function () {
             sparkline: {
                 enabled: true
             },
-            fontFamily: 'Plus Jakarta Sans, sans-serif'
+            fontFamily: 'Montserrat, sans-serif'
         },
         stroke: {
             curve: 'smooth',

@@ -15,7 +15,7 @@
 /* ---------------------------------------------------------------------
    TABLE OF CONTENTS
    ---------------------------------------------------------------------
-   1. Google Fonts CDN Import (Plus Jakarta Sans)
+   1. Locally bundled Montserrat typography
    2. Design System Variables
    3. Base Overrides & Typography
    4. Sidebar Component (.sidebar-wrapper)
@@ -42,10 +42,9 @@
 --------------------------------------------------------------------- */
 
 /* ---------------------------------------------------------------------
-   1. Google Fonts CDN Import (Plus Jakarta Sans)
+   1. Locally bundled Montserrat typography
 --------------------------------------------------------------------- */
 
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
 /* ---------------------------------------------------------------------
    2. Design System Variables
@@ -1098,7 +1097,7 @@ a:hover {
 
 .item-hash {
     font-size: 0.75rem;
-    font-family: monospace;
+    font-family: 'Montserrat', sans-serif;
     color: var(--text-muted-green);
     opacity: 0.7;
     margin-bottom: 0;
@@ -1322,7 +1321,7 @@ a:hover {
     border: 1px solid var(--border-light) !important;
     border-radius: 20px !important;
     box-shadow: var(--shadow-lg) !important;
-    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-family: 'Montserrat', sans-serif !important;
     width: 324px !important;
     padding: 16px 14px 10px 14px !important;
 }
@@ -1543,7 +1542,7 @@ span.flatpickr-weekday {
 }
 
 .dropdown-menu-custom .dropdown-item {
-    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-family: 'Montserrat', sans-serif !important;
     font-size: 0.85rem !important;
     font-weight: 600 !important;
     color: var(--text-muted-green) !important;
@@ -3085,7 +3084,7 @@ span.flatpickr-weekday {
     align-items: center;
     justify-content: center;
     gap: 0.15em;
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-family: 'Montserrat', sans-serif;
 }
 
 .error-title-huge .bi-asterisk {

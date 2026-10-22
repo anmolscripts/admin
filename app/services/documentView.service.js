@@ -4,6 +4,39 @@
  * presentation view model consumed identically by Browser Print and PDF generation.
  */
 
+const { embeddedCss } = require('./font.service');
+
+async function withCatalogDescriptions(doc) {
+    if (!doc.businessId || !doc.items?.length) return doc;
+    const names = [...new Set(doc.items.map(item => item.name).filter(Boolean))];
+    if (!names.length) return doc;
+    const catalog = await require('../config/prisma').item.findMany({
+        where: { businessId: doc.businessId, name: { in: names } },
+        select: { name: true, description: true }
+    });
+    const descriptions = new Map(catalog.map(item => [item.name.toLowerCase(), item.description]));
+    // Existing documents intentionally display current catalog descriptions; financial snapshots stay unchanged.
+    return { ...doc, items: doc.items.map(item => ({ ...item, description: item.description || descriptions.get(item.name?.toLowerCase()) || '' })) };
+}
+
+function amountInIndianWords(value) {
+    const match = /^(-?)(\d+)(?:\.(\d{1,2}))?$/.exec(String(value));
+    if (!match) throw new Error('Amount in words requires a decimal amount with at most two decimal places.');
+    const rupees = BigInt(match[2]), paise = BigInt((match[3] || '').padEnd(2, '0'));
+    const small = ['Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+    const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    function words(number) {
+        if (number < 20n) return small[Number(number)];
+        if (number < 100n) return tens[Number(number / 10n)] + (number % 10n ? ' ' + words(number % 10n) : '');
+        for (const [unit, label] of [[10000000n, 'Crore'], [100000n, 'Lakh'], [1000n, 'Thousand'], [100n, 'Hundred']]) {
+            if (number >= unit) return words(number / unit) + ' ' + label + (number % unit ? (unit === 100n ? ' and ' : ' ') + words(number % unit) : '');
+        }
+    }
+    // Work from the displayed decimal string, without floating-point money arithmetic.
+    return (match[1] && (rupees || paise) ? 'Minus ' : '') + 'Rupees ' + words(rupees) +
+        (paise ? ' and ' + words(paise) + (paise === 1n ? ' Paisa' : ' Paise') : '') + ' Only';
+}
+
 function formatCurrency(val) {
     const num = Number(val) || 0;
     return '₹' + num.toLocaleString('en-IN', {
@@ -50,6 +83,8 @@ function buildDocumentViewModel(doc, businessProfile = {}) {
         name: doc.sellerName || businessProfile.legalName || 'Authorized Issuer',
         gstin: doc.sellerGSTIN || businessProfile.gstin || '',
         address: doc.sellerAddress || businessProfile.address || '',
+        footerAddress: (!doc.businessId || !businessProfile.businessId || doc.businessId === businessProfile.businessId)
+            ? (businessProfile.address || doc.sellerAddress || '') : (doc.sellerAddress || ''),
         email: doc.sellerEmail || businessProfile.email || '',
         phone: doc.sellerPhone || businessProfile.phone || '',
         website: businessProfile.website || '',
@@ -155,6 +190,7 @@ function buildDocumentViewModel(doc, businessProfile = {}) {
         formattedIgstAmount: formatCurrency(igstAmount),
         formattedRoundOff: formatCurrency(roundOff),
         formattedGrandTotal: formatCurrency(grandTotal),
+        amountInWords: amountInIndianWords(grandTotal.toFixed(2)),
         formattedPaidAmount: formatCurrency(paidAmount),
         formattedOutstandingAmount: formatCurrency(outstandingAmount)
     };
@@ -196,6 +232,7 @@ function buildDocumentViewModel(doc, businessProfile = {}) {
         : null;
 
     return {
+        fontCss: embeddedCss,
         id: doc.id,
         documentType,
         documentTitle,
@@ -249,7 +286,9 @@ function buildNoteViewModel(note, businessProfile = {}) {
     const seller = {
         name: note.sellerName || businessProfile.legalName || 'Spark ERP Technologies Pvt Ltd',
         gstin: note.sellerGSTIN || businessProfile.gstin || '29AAAAA0000A1Z5',
-        address: note.sellerAddress || businessProfile.address || 'Tech Park Tower, 4th Floor, MG Road, Bengaluru, Karnataka 560001',
+        address: note.sellerAddress || businessProfile.address || '',
+        footerAddress: (!note.businessId || !businessProfile.businessId || note.businessId === businessProfile.businessId)
+            ? (businessProfile.address || note.sellerAddress || '') : (note.sellerAddress || ''),
         email: businessProfile.email || 'billing@sparkadmin.com',
         phone: businessProfile.phone || '+91 80 4000 1234',
         stateCode: note.sellerStateCode || '29'
@@ -316,10 +355,12 @@ function buildNoteViewModel(note, businessProfile = {}) {
         roundOff: roundOff.toFixed(2),
         formattedRoundOff: formatCurrency(roundOff),
         grandTotal: grandTotal.toFixed(2),
-        formattedGrandTotal: formatCurrency(grandTotal)
+        formattedGrandTotal: formatCurrency(grandTotal),
+        amountInWords: amountInIndianWords(grandTotal.toFixed(2))
     };
 
     return {
+        fontCss: embeddedCss,
         id: note.id,
         documentType,
         documentTitle,
@@ -353,8 +394,10 @@ function buildNoteViewModel(note, businessProfile = {}) {
 }
 
 module.exports = {
+    withCatalogDescriptions,
     buildDocumentViewModel,
     buildNoteViewModel,
     formatCurrency,
+    amountInIndianWords,
     formatDate
 };

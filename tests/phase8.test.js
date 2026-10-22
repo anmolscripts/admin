@@ -644,7 +644,7 @@ describe('Phase 8 Comprehensive Test Suite', () => {
             assert.ok(html.includes('TAX INVOICE'), 'Must render document title');
             assert.ok(html.includes('CGST'), 'Must render CGST breakdown');
             assert.ok(html.includes('SGST'), 'Must render SGST breakdown');
-            assert.ok(html.includes('Authorized Signatory'), 'Must render shared signatory footer');
+            assert.ok(html.includes('does not require a physical signature'), 'Must render the shared computer-generated notice');
         });
 
         it('4.3 should render shared template in PDF generator and produce valid PDF buffer', async () => {

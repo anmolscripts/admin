@@ -165,8 +165,9 @@ describe('Quotation & Invoice Shared Template Redesign Verification Suite', () =
         assert.ok(html.includes('Bank Transfer :'));
         assert.ok(html.includes('Thanks for your Business!'));
 
-        // Signatory & Full-width Red Footer
-        assert.ok(html.includes('Authorized Signatory'));
+        // Computer-generated notice & full-width footer
+        assert.ok(html.includes('does not require a physical signature'));
+        assert.ok(!html.includes('Authorized Signatory for'));
         assert.ok(html.includes('doc-footer-bar'));
     });
 
@@ -273,6 +274,25 @@ describe('Quotation & Invoice Shared Template Redesign Verification Suite', () =
         assert.ok(Buffer.isBuffer(pdfBuffer));
         assert.ok(pdfBuffer.length > 5000, 'Multi-page PDF buffer should be substantial for 25 items');
         assert.strictEqual(pdfBuffer.subarray(0, 5).toString('ascii'), '%PDF-');
+    });
+
+    it('existing document print route loads the current saved brand under the item name', async () => {
+        const line = sampleInvoice.items[0];
+        const brand = 'Current catalog brand <img src=x onerror=alert(1)>';
+        const changed = await prisma.item.updateMany({
+            where: { businessId: sampleInvoice.businessId, name: line.name }, data: { description: brand }
+        });
+        assert.strictEqual(changed.count, 1);
+        const response = await fetch(`${baseUrl}/documents/${sampleInvoice.id}/print`, { headers: { Cookie: authCookie } });
+        assert.strictEqual(response.status, 200);
+        const dom = new (require('jsdom').JSDOM)(await response.text());
+        try {
+            const row = dom.window.document.querySelector('.doc-items-table tbody tr');
+            assert.strictEqual(row.querySelector('.item-description').textContent, brand);
+            assert.strictEqual(row.querySelector('.item-description img'), null);
+            assert.strictEqual(row.querySelector('.col-unit').textContent.trim(), line.unit);
+            assert.strictEqual(row.cells.length, 7);
+        } finally { dom.window.close(); }
     });
 
     it('7. should include responsive styling rules and CSS variables in document template', async () => {

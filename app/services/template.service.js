@@ -20,7 +20,7 @@ const BUILT_IN_TEMPLATES = [
         description: 'Reference-inspired navy and metallic gold letterhead, supplied Rajesh International logo, infinity watermark, curved borders and dynamic contact details. For invoices and quotations.',
         accentColor: '#091e49',
         accentSubtle: '#fcf7ec',
-        fontFamily: 'Arial, Helvetica, sans-serif',
+        fontFamily: 'Montserrat, sans-serif',
         themeClass: 'theme-rajesh-signature',
         showHsn: true,
         showUpiQr: false,
@@ -37,7 +37,7 @@ const BUILT_IN_TEMPLATES = [
         description: 'Contemporary tech-grade layout with sleek royal blue accents, clean typography, subtle grey headers, and borderless product table.',
         accentColor: '#2563eb',
         accentSubtle: '#eff6ff',
-        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        fontFamily: 'Montserrat, sans-serif',
         themeClass: 'theme-modern-minimal',
         showHsn: true,
         showUpiQr: true,
@@ -53,7 +53,7 @@ const BUILT_IN_TEMPLATES = [
         description: 'Formal corporate accounting format with deep navy border, structured table cells, and Chartered Accountant auditor sign-off box.',
         accentColor: '#1e3a8a',
         accentSubtle: '#f8fafc',
-        fontFamily: 'Roboto, Arial, sans-serif',
+        fontFamily: 'Montserrat, sans-serif',
         themeClass: 'theme-classic-corporate',
         showHsn: true,
         showUpiQr: true,
@@ -69,7 +69,7 @@ const BUILT_IN_TEMPLATES = [
         description: 'High-contrast crimson red header band, bold item descriptions, centered company branding, and heavy-duty parts/machinery layout.',
         accentColor: '#c8102e',
         accentSubtle: '#fef2f2',
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        fontFamily: 'Montserrat, sans-serif',
         themeClass: 'theme-industrial-bold',
         showHsn: true,
         showUpiQr: false,
@@ -85,7 +85,7 @@ const BUILT_IN_TEMPLATES = [
         description: 'Refined deep emerald/teal aesthetic with luxury typography, subtle borders, compact tables, and elegant totals card.',
         accentColor: '#0f766e',
         accentSubtle: '#f0fdfa',
-        fontFamily: 'Helvetica Neue, Arial, sans-serif',
+        fontFamily: 'Montserrat, sans-serif',
         themeClass: 'theme-executive-emerald',
         showHsn: true,
         showUpiQr: true,
@@ -198,7 +198,7 @@ function saveCustomTemplate(businessId, data) {
     const accentColor = data.accentColor || '#2563eb';
     if (!/^#[0-9a-f]{6}$/i.test(accentColor)) throw new Error('Accent color must be a six-digit hex color.');
     if (data.accentSubtle && !/^#[0-9a-f]{6}$/i.test(data.accentSubtle)) throw new Error('Subtle color must be a six-digit hex color.');
-    const fontFamily = data.fontFamily || 'Inter, -apple-system, sans-serif';
+    const fontFamily = 'Montserrat, sans-serif';
     const customCss = data.customCss ? String(data.customCss).trim() : '';
     const showHsn = data.showHsn !== undefined ? Boolean(data.showHsn) : true;
     const showUpiQr = data.showUpiQr !== undefined ? Boolean(data.showUpiQr) : true;
@@ -315,6 +315,7 @@ function buildSampleViewModel(templateId, documentType = 'INVOICE', profile = {}
         documentType: isQuotation ? 'QUOTATION' : 'INVOICE',
         documentTitle: docTitle,
         typeLabel: isQuotation ? 'Quotation' : 'Invoice',
+        fontCss: require('./font.service').embeddedCss,
         invoiceNumber: docNumber,
         status: 'ACTIVE',
         statusClass: 'badge-active',
@@ -376,6 +377,7 @@ function buildSampleViewModel(templateId, documentType = 'INVOICE', profile = {}
             formattedRoundOff: '₹0.00',
             grandTotal: grandTotalNum.toFixed(2),
             formattedGrandTotal: '₹1,59,300.00',
+            amountInWords: require('./documentView.service').amountInIndianWords(grandTotalNum.toFixed(2)),
             isInterState: false,
             formattedCgstAmount: '₹12,150.00',
             formattedSgstAmount: '₹12,150.00',

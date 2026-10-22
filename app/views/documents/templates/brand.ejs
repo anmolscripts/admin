@@ -10,6 +10,9 @@
       <% } %>
     </div>
     <% if (isRajesh) { %>
-      <div class="ri-seller-identity"><strong><%= model.seller.name %></strong><% if (model.seller.gstin) { %><span>GSTIN: <%= model.seller.gstin %></span><% } %></div>
+      <div class="ri-seller-identity">
+        <% if (model.isQuotation) { %><h1 class="doc-hero-title ri-document-title">QUOTATION</h1><% } else { %><strong><%= model.seller.name %></strong><% } %>
+        <% if (model.seller.gstin) { %><span>GSTIN: <%= model.seller.gstin %></span><% } %>
+      </div>
     <% } %>
 

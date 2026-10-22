@@ -2,7 +2,7 @@
   <div class="doc-footer-bar">
     <div class="footer-address">
       <% if (isRajesh) { %><span class="ri-contact-icon" aria-hidden="true">⌖</span><% } %>
-      <%= model.seller.address %>
+      <%= model.seller.footerAddress ?? model.seller.address %>
     </div>
     <div class="footer-contact">
       <svg class="footer-icon" viewBox="0 0 24 24">

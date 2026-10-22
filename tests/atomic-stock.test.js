@@ -227,6 +227,13 @@ test('real HTTP stock routes enforce authentication, permissions, business conte
         const first = await send(); assert.equal(first.status, 201, await first.clone().text());
         const second = await send(); assert.equal(second.status, 201);
         assert.equal((await first.json()).stockMovement.id, (await second.json()).stockMovement.id);
+        const genericHeaders = { ...headers, 'Idempotency-Key': crypto.randomUUID() };
+        const generic = () => fetch(base + '/api/inventory/movements', { method: 'POST', headers: genericHeaders, body: JSON.stringify({ itemId: f.item.id, movementType: 'ISSUE', quantity: 1, businessId: 999999 }) });
+        const genericFirst = await generic(); assert.equal(genericFirst.status, 201, await genericFirst.clone().text());
+        const genericSecond = await generic(); assert.equal(genericSecond.status, 201);
+        const firstMovement = (await genericFirst.json()).movement;
+        assert.equal(firstMovement.businessId, f.business.id, 'Request-body business IDs cannot override authenticated context');
+        assert.equal(firstMovement.id, (await genericSecond.json()).movement.id);
         const anonymous = await fetch(base + '/api/inventory/movements', { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json' }, body: '{}' });
         assert.ok([401, 403].includes(anonymous.status));
         const viewer = await prisma.role.findUniqueOrThrow({ where: { name: 'VIEWER' } });

@@ -16,12 +16,15 @@ async function dom(html, editor = false) {
     w.eval(script('assets/libs/tom-select/js/tom-select.complete.min.js'));
     w.eval(script('assets/js/spark-tom-select.js'));
     if (editor) {
+        const config = typeof editor === 'object' ? editor : {};
         w.__SELLER_STATE_CODE__ = '27';
-        w.__EDITOR_MODE__ = 'create';
-        w.__DOCUMENT_TYPE__ = 'QUOTATION';
+        w.__EDITOR_MODE__ = config.mode || 'create';
+        w.__DOCUMENT_TYPE__ = config.documentType || 'QUOTATION';
         w.__AVAILABLE_UNITS__ = [{ symbol: 'PCS', name: 'Pieces' }];
-        w.__INITIAL_DOCUMENT__ = { invoiceDate: '2026-10-19', clientName: 'Test client', gstEnabled: true, gstRate: 18,
-            items: [{ name: 'Equipment', quantity: 2, unit: 'PCS', rate: 100 }] };
+        w.__INITIAL_DOCUMENT__ = config.initialDocument || {
+            invoiceDate: '2026-10-19', clientName: 'Test client', gstEnabled: true, gstRate: 18,
+            items: [{ name: 'Equipment', quantity: 2, unit: 'PCS', rate: 100 }]
+        };
         w.eval(script('assets/js/editor.js'));
     }
     await new Promise(resolve => w.addEventListener('load', resolve, { once: true }));
@@ -137,5 +140,39 @@ test('actual editor updates interstate tax and fills shipping from billing witho
         assert.equal(d.getElementById('summary-cgst-label').textContent, 'CGST (9.00%):');
         assert.ok(!d.getElementById('summary-sgst-label').parentElement.classList.contains('d-none'));
         assert.equal(d.getElementById('summary-grandtotal').textContent, '₹236.00');
+    } finally { instance.window.close(); }
+});
+
+test('editing a document keeps each item HSN/SAC in the form and save payload', async () => {
+    const hsnSac = '85044090';
+    const initialDocument = {
+        id: 10, documentType: 'INVOICE', invoiceNumber: 'INVO/2026/10/10', version: 2,
+        invoiceDate: '2026-10-19', clientName: 'Existing customer', gstEnabled: false,
+        items: [{ name: 'Power supply', quantity: 1, unit: 'PCS', rate: 1000, hsnSac }]
+    };
+    const html = await ejs.renderFile(path.join(root, 'app/views/documents/editor.ejs'), {
+        pageTitle: 'Edit invoice', pageSubtitle: 'Audit', mode: 'edit', documentType: 'INVOICE',
+        document: initialDocument, csrfToken: 'audit-only', sellerStateCode: '27',
+        user: { role: 'ADMIN', name: 'Auditor' }, currentPath: '/documents/10/edit',
+        projectList: [], unitList: [{ symbol: 'PCS', name: 'Pieces' }], clientList: []
+    });
+    const instance = await dom(html, {
+        mode: 'edit', documentType: 'INVOICE', initialDocument
+    });
+
+    try {
+        const w = instance.window, d = w.document;
+        const hsnInput = d.querySelector('.item-hsn');
+        assert.equal(hsnInput.value, hsnSac, 'existing HSN/SAC should be visible on the edit form');
+
+        let submittedPayload;
+        w.fetch = async (_url, options) => {
+            submittedPayload = JSON.parse(options.body);
+            return { status: 400, ok: false, json: async () => ({ error: 'Expected test response' }) };
+        };
+        d.getElementById('document-form').dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true }));
+        await new Promise(resolve => w.setTimeout(resolve, 0));
+
+        assert.equal(submittedPayload.items[0].hsnSac, hsnSac, 'saving without changing the code should retain it');
     } finally { instance.window.close(); }
 });
