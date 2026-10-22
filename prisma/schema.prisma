@@ -363,7 +363,7 @@ model PurchaseOrderItem {
   id                Int                @id @default(autoincrement())
   purchaseOrderId   Int
   lineNumber        Int
-  name              String             @db.VarChar(255)
+  name              String             @db.VarChar(500)
   hsnSac            String?            @db.VarChar(20)
   quantity          Decimal            @db.Decimal(10, 2)
   unit              String             @default("PCS") @db.VarChar(30)
@@ -466,7 +466,7 @@ model SupplierBillItem {
   id             Int          @id @default(autoincrement())
   supplierBillId Int
   lineNumber     Int
-  name           String       @db.VarChar(255)
+  name           String       @db.VarChar(500)
   hsnSac         String?      @db.VarChar(20)
   quantity       Decimal      @db.Decimal(10, 2)
   unit           String       @default("PCS") @db.VarChar(30)
@@ -673,7 +673,7 @@ model InvoiceItem {
   id                   Int                   @id @default(autoincrement())
   invoiceId            Int
   lineNumber           Int
-  name                 String                @db.VarChar(255)
+  name                 String                @db.VarChar(500)
   quantity             Decimal               @db.Decimal(10, 2)
   unit                 String                @default("PCS") @db.VarChar(30)
   rate                 Decimal               @db.Decimal(12, 2)
@@ -697,7 +697,7 @@ model Item {
   IP_ADDRESS String? @db.VarChar(45)
   id             Int             @id @default(autoincrement())
   itemCode       String?         @db.VarChar(50)
-  name           String          @db.VarChar(255)
+  name           String          @db.VarChar(500)
   businessId     Int?
   business       Business?       @relation(fields: [businessId], references: [id], onDelete: Cascade)
   description    String?         @db.Text
@@ -1174,7 +1174,7 @@ model CreditDebitNoteItem {
   noteId        Int
   invoiceItemId Int?
   lineNumber    Int
-  name          String          @db.VarChar(255)
+  name          String          @db.VarChar(500)
   description   String?         @db.Text
   hsnSac        String?         @db.VarChar(20)
   quantity      Decimal         @db.Decimal(10, 2)
@@ -1818,7 +1818,7 @@ model GoodsReceiptItem {
   purchaseOrderItem   PurchaseOrderItem? @relation(fields: [purchaseOrderItemId], references: [id], onDelete: SetNull)
   itemId              Int?
   item                Item?              @relation(fields: [itemId], references: [id], onDelete: SetNull)
-  name                String             @db.VarChar(255)
+  name                String             @db.VarChar(500)
   unit                String             @default("PCS") @db.VarChar(30)
   orderedQuantity     Decimal            @default(0.00) @db.Decimal(10, 2)
   receivedQuantity    Decimal            @db.Decimal(10, 2)

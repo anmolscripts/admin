@@ -189,8 +189,8 @@ async function createItem(data, userId) {
     if (!name) {
         throw new ValidationError('Item name is required.');
     }
-    if (name.length > 255) {
-        throw new ValidationError('Item name cannot exceed 255 characters.');
+    if (name.length > 500) {
+        throw new ValidationError('Item name cannot exceed 500 characters.');
     }
 
     const rate = data.rate !== undefined && data.rate !== null && data.rate !== ''
@@ -281,7 +281,8 @@ async function createItem(data, userId) {
                 module: 'ITEMS',
                 targetType: 'ITEM',
                 targetId: item.id,
-                targetReference: `${item.name} (${item.itemCode})`
+                targetReference: `${item.name} (${item.itemCode})`.slice(0, 100),
+                metadata: { name: item.name, itemCode: item.itemCode }
             }).catch(() => {});
         }
 
@@ -331,8 +332,8 @@ async function updateItem(id, data, userId) {
         if (!name) {
             throw new ValidationError('Item name cannot be empty.');
         }
-        if (name.length > 191) {
-            throw new ValidationError('Item name cannot exceed 255 characters.');
+        if (name.length > 500) {
+            throw new ValidationError('Item name cannot exceed 500 characters.');
         }
 
         // Check for duplicate name if changed
@@ -393,7 +394,8 @@ async function updateItem(id, data, userId) {
                 module: 'ITEMS',
                 targetType: 'ITEM',
                 targetId: updated.id,
-                targetReference: updated.name
+                targetReference: updated.name.slice(0, 100),
+                metadata: { name: updated.name }
             }).catch(() => {});
         }
 
@@ -526,8 +528,8 @@ async function parseAndValidateItemCsv(csvContent, businessId = null) {
             continue;
         }
 
-        if (name.length > 255) {
-            errors.push({ row: rowNum, error: 'Item name must not exceed 191 characters.' });
+        if (name.length > 500) {
+            errors.push({ row: rowNum, error: 'Item name must not exceed 500 characters.' });
             continue;
         }
 
@@ -610,7 +612,7 @@ async function importItemsFromCsv(validRows = [], userId = null, businessId = nu
     }
     if(validRows.length > 1000) throw new ValidationError('Import at most 1,000 items at a time.');
     for(const row of validRows) {
-        if(!row || typeof row.name !== 'string' || !row.name.trim() || row.name.length > 191 || !['CREATE','UPDATE'].includes(row.action)) throw new ValidationError('Invalid import item.');
+        if(!row || typeof row.name !== 'string' || !row.name.trim() || row.name.length > 500 || !['CREATE','UPDATE'].includes(row.action)) throw new ValidationError('Invalid import item.');
         if (row.active !== undefined && typeof row.active !== 'boolean') throw new ValidationError('Active must be true or false.');
         for (const [field, max] of [['unit',30],['hsnSac',20],['itemCode',50],['description',65535]]) if (row[field] != null && (typeof row[field] !== 'string' || row[field].length > max)) throw new ValidationError(`Invalid import ${field}.`);
         for(const field of ['rate','gstRate']) if(!Number.isFinite(Number(row[field] ?? 0)) || Number(row[field] ?? 0) < 0 || (field==='gstRate' && Number(row[field] ?? 0)>100)) throw new ValidationError(`Invalid import ${field}.`);

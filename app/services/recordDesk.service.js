@@ -63,7 +63,7 @@ async function update(type,id,payload,context) {
         } else {
             if (value !== null && typeof value !== 'string') throw new ValidationError(`Invalid ${key}.`);
             value = String(value ?? '').trim();
-            const max = ['description','address','billingAddress','shippingAddress'].includes(key) ? 65535 : key==='name' ? (type==='unit'?100:191) : key==='phone'?50:key==='stateCode'?5:key==='gstin'?20:key==='symbol'||key==='unit'?30:key==='hsnSac'?20:255;
+            const max = ['description','address','billingAddress','shippingAddress'].includes(key) ? 65535 : key==='name' ? (type==='item'?500:type==='unit'?100:191) : key==='phone'?50:key==='stateCode'?5:key==='gstin'?20:key==='symbol'||key==='unit'?30:key==='hsnSac'?20:255;
             if (value.length > max) throw new ValidationError(`${key} exceeds ${max} characters.`);
             if (['name','symbol','unit'].includes(key) && !value) throw new ValidationError(`${key} is required.`);
         }
